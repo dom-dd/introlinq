@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IntroLinq — Earn from every expert you'd recommend</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#1a1a2e;--ink-soft:#4a4a6a;--ink-muted:#8888a8;
+  --cream:#faf8f4;--white:#ffffff;
+  --sage:#3d7a5f;--sage-light:#edf5f0;--sage-mid:#c8e4d8;
+  --gold:#b8860b;--gold-light:#fdf8e8;--gold-mid:#f0d060;
+  --blush:#f5f0ea;
+  --border:rgba(26,26,46,0.10);--border-soft:rgba(26,26,46,0.06);
+  --radius:12px;--radius-sm:8px;
+}
+html{font-size:16px}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-soft);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--ink);text-decoration:none;letter-spacing:-0.02em}
+.logo span{color:var(--sage)}
+.nav-cta{background:var(--ink);color:var(--white);border:none;padding:0.5rem 1.25rem;border-radius:100px;font-size:0.875rem;font-weight:500;cursor:pointer;text-decoration:none;transition:opacity 0.15s}
+.nav-cta:hover{opacity:0.85}
+
+/* FOUNDER OFFER BANNER */
+.founder-banner{background:var(--ink);padding:0.625rem 2rem;text-align:center;display:flex;align-items:center;justify-content:center;gap:0.75rem;flex-wrap:wrap}
+.founder-banner-text{font-size:0.875rem;color:rgba(255,255,255,0.85);line-height:1.5}
+.founder-banner-text strong{color:var(--gold-mid)}
+.spots-pill{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.9);font-size:0.75rem;font-weight:500;padding:0.25rem 0.75rem;border-radius:100px;white-space:nowrap}
+.spots-count{color:var(--gold-mid);font-weight:500}
+
+/* HERO */
+.hero{padding:5rem 2rem 3.5rem;text-align:center}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:0.5rem;background:var(--sage-light);color:var(--sage);font-size:0.8125rem;font-weight:500;padding:0.375rem 0.875rem;border-radius:100px;margin-bottom:1.75rem;letter-spacing:0.02em}
+.eyebrow-dot{width:6px;height:6px;background:var(--sage);border-radius:50%;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+.hero h1{font-family:'DM Serif Display',serif;font-size:clamp(2.4rem,5.5vw,3.75rem);line-height:1.1;letter-spacing:-0.03em;color:var(--ink);max-width:700px;margin:0 auto 1.25rem}
+.hero h1 em{font-style:italic;color:var(--sage)}
+.hero-sub{font-size:1.0625rem;color:var(--ink-soft);max-width:480px;margin:0 auto 2rem;line-height:1.75}
+
+/* EARLY SIGNUP FORM — high up */
+.early-form-wrap{max-width:480px;margin:0 auto 1rem}
+.early-form{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem}
+.early-form-label{font-size:0.875rem;font-weight:500;color:var(--ink);margin-bottom:1rem;display:block;text-align:left}
+.early-form-label span{color:var(--sage)}
+.form-input{width:100%;padding:0.75rem 1rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.9375rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);outline:none;transition:border-color 0.15s;margin-bottom:0.75rem}
+.form-input:focus{border-color:var(--sage);background:var(--white)}
+.form-input::placeholder{color:var(--ink-muted)}
+.form-submit{width:100%;background:var(--ink);color:var(--white);border:none;padding:0.875rem;border-radius:100px;font-size:0.9375rem;font-weight:500;cursor:pointer;transition:opacity 0.15s;font-family:'Inter',sans-serif;margin-bottom:0.75rem}
+.form-submit:hover{opacity:0.85}
+.soft-option{display:flex;align-items:center;gap:0.5rem;justify-content:center;margin-top:0.25rem}
+.soft-option input[type="checkbox"]{accent-color:var(--sage);width:15px;height:15px;cursor:pointer}
+.soft-option label{font-size:0.8125rem;color:var(--ink-soft);cursor:pointer}
+.form-fine{font-size:0.75rem;color:var(--ink-muted);text-align:center;margin-top:0.875rem;line-height:1.5}
+
+/* FOUNDER OFFER CARD */
+.founder-card{max-width:480px;margin:1.25rem auto 0;background:var(--gold-light);border:1px solid var(--gold-mid);border-radius:var(--radius);padding:1.25rem 1.5rem;text-align:left}
+.founder-card-header{display:flex;align-items:center;gap:0.625rem;margin-bottom:0.625rem}
+.founder-card-badge{background:var(--gold);color:var(--white);font-size:0.6875rem;font-weight:500;padding:0.2rem 0.625rem;border-radius:100px;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap}
+.founder-card-title{font-weight:500;font-size:0.9375rem;color:var(--ink)}
+.founder-card-desc{font-size:0.875rem;color:var(--ink-soft);line-height:1.6}
+.founder-card-desc strong{color:var(--ink)}
+.spots-remaining{display:flex;align-items:center;gap:0.5rem;margin-top:0.75rem;font-size:0.8125rem;color:var(--ink-soft)}
+.spots-bar-wrap{flex:1;height:6px;background:rgba(184,134,11,0.15);border-radius:100px;overflow:hidden}
+.spots-bar{height:100%;background:var(--gold);border-radius:100px;width:23%}
+.spots-text{white-space:nowrap;font-weight:500;color:var(--gold)}
+
+/* DEMO */
+.demo-wrap{margin:3rem auto 0;max-width:620px}
+.demo-blog{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;text-align:left}
+.demo-blog-label{font-size:0.75rem;font-weight:500;color:var(--ink-muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.875rem}
+.demo-blog-title{font-family:'DM Serif Display',serif;font-size:1.2rem;margin-bottom:0.75rem;color:var(--ink)}
+.demo-blog-text{font-size:0.9375rem;color:var(--ink-soft);line-height:1.75;margin-bottom:0.75rem}
+.highlight{background:var(--sage-light);color:var(--sage);padding:0 3px;border-radius:3px;font-weight:500}
+.expert-widget{margin-top:1.25rem;border:1px solid var(--sage-mid);border-radius:var(--radius-sm);padding:1rem 1.25rem;background:var(--sage-light);display:flex;align-items:center;gap:1rem;animation:fadeUp 0.6s ease 0.4s both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.expert-avatar-img{width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--white)}
+.expert-info{flex:1;min-width:0}
+.expert-name{font-weight:500;font-size:0.9375rem;color:var(--ink)}
+.expert-title{font-size:0.8125rem;color:var(--ink-soft)}
+.expert-cta-btn{background:var(--sage);color:var(--white);border:none;padding:0.5rem 1rem;border-radius:100px;font-size:0.8125rem;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.widget-label{font-size:0.75rem;color:var(--ink-muted);margin-top:0.625rem;text-align:center}
+
+/* EXPERT STRIP */
+.experts-strip{padding:3.5rem 2rem;background:var(--white);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft)}
+.strip-label{font-size:0.8125rem;font-weight:500;color:var(--ink-muted);text-align:center;margin-bottom:2rem;letter-spacing:0.06em;text-transform:uppercase}
+.experts-grid{display:flex;justify-content:center;flex-wrap:wrap;gap:1.5rem}
+.expert-card{display:flex;flex-direction:column;align-items:center;gap:0.625rem;width:130px;text-align:center}
+.expert-card-img{width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--border)}
+.expert-card-name{font-weight:500;font-size:0.875rem;color:var(--ink);line-height:1.3}
+.expert-card-role{font-size:0.75rem;color:var(--ink-soft);line-height:1.4}
+.expert-card-rate{font-size:0.75rem;color:var(--sage);font-weight:500}
+
+/* SECTIONS */
+section{padding:5rem 2rem}
+.container{max-width:880px;margin:0 auto}
+.container-narrow{max-width:620px;margin:0 auto}
+.section-label{font-size:0.75rem;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:0.875rem}
+.section-title{font-family:'DM Serif Display',serif;font-size:clamp(1.75rem,3.5vw,2.4rem);letter-spacing:-0.02em;line-height:1.2;margin-bottom:1rem;color:var(--ink)}
+.section-sub{font-size:1rem;color:var(--ink-soft);line-height:1.75;margin-bottom:2.5rem}
+
+/* HOW IT WORKS */
+.how-bg{background:var(--white);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft)}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.25rem}
+.step{background:var(--cream);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem}
+.step-num{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--sage);line-height:1;margin-bottom:0.875rem}
+.step-title{font-weight:500;font-size:0.9375rem;margin-bottom:0.5rem;color:var(--ink)}
+.step-desc{font-size:0.875rem;color:var(--ink-soft);line-height:1.65}
+
+/* COMMISSION BAND */
+.commission-band{background:var(--ink);padding:4rem 2rem;text-align:center}
+.commission-band .section-label{color:rgba(255,255,255,0.35)}
+.tiers{display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap;margin-top:2.5rem}
+.tier{border-radius:var(--radius);padding:2rem 2.5rem;text-align:center;flex:1;min-width:220px;max-width:280px}
+.tier-founder{background:var(--gold-light);border:2px solid var(--gold-mid)}
+.tier-standard{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12)}
+.tier-badge{font-size:0.6875rem;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;padding:0.25rem 0.75rem;border-radius:100px;display:inline-block;margin-bottom:1rem}
+.tier-founder .tier-badge{background:var(--gold);color:var(--white)}
+.tier-standard .tier-badge{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.6)}
+.tier-pct{font-family:'DM Serif Display',serif;font-size:4rem;line-height:1;margin-bottom:0.25rem}
+.tier-founder .tier-pct{color:var(--gold)}
+.tier-standard .tier-pct{color:var(--white)}
+.tier-sublabel{font-size:0.875rem;margin-bottom:1rem}
+.tier-founder .tier-sublabel{color:var(--ink-soft)}
+.tier-standard .tier-sublabel{color:rgba(255,255,255,0.5)}
+.tier-detail{font-size:0.8125rem;line-height:1.6}
+.tier-founder .tier-detail{color:var(--ink-soft)}
+.tier-standard .tier-detail{color:rgba(255,255,255,0.45)}
+.tier-spots{font-size:0.8125rem;font-weight:500;color:var(--gold);margin-top:0.75rem}
+.commission-note{margin-top:2rem;font-size:0.875rem;color:rgba(255,255,255,0.4);max-width:420px;margin-left:auto;margin-right:auto;line-height:1.6}
+
+/* EARNINGS */
+.earnings-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center}
+@media(max-width:640px){.earnings-grid{grid-template-columns:1fr}}
+.earnings-calc{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:2rem}
+.calc-title{font-weight:500;font-size:0.9375rem;margin-bottom:1.5rem;color:var(--ink)}
+.calc-row{display:flex;justify-content:space-between;align-items:center;padding:0.625rem 0;border-bottom:1px solid var(--border-soft);font-size:0.9rem}
+.calc-row:last-child{border-bottom:none}
+.calc-label{color:var(--ink-soft)}
+.calc-value{font-weight:500;color:var(--ink)}
+.calc-total{margin-top:1rem;padding:1rem;background:var(--sage-light);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center}
+.calc-total-label{font-weight:500;font-size:0.9375rem;color:var(--sage)}
+.calc-total-value{font-family:'DM Serif Display',serif;font-size:1.75rem;color:var(--sage)}
+.calc-note{font-size:0.75rem;color:var(--ink-muted);margin-top:0.75rem;line-height:1.5}
+
+/* FOR READERS */
+.readers-bg{background:var(--blush);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft)}
+.readers-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1.125rem;margin-top:2.5rem}
+.reader-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem}
+.reader-icon{font-size:1.375rem;margin-bottom:0.75rem}
+.reader-card-title{font-weight:500;font-size:0.9375rem;margin-bottom:0.375rem;color:var(--ink)}
+.reader-card-desc{font-size:0.875rem;color:var(--ink-soft);line-height:1.6}
+
+/* PLATFORMS */
+.platforms-list{display:flex;flex-wrap:wrap;gap:0.75rem;margin-top:2rem}
+.platform-pill{background:var(--white);border:1px solid var(--border);border-radius:100px;padding:0.5rem 1.125rem;font-size:0.875rem;color:var(--ink-soft);font-weight:500}
+.platform-pill.coming{color:var(--ink-muted);border-style:dashed}
+
+/* FAQ */
+.faq-list{margin-top:2.5rem}
+.faq-item{border-bottom:1px solid var(--border);padding:1.25rem 0}
+.faq-q{font-weight:500;font-size:1rem;color:var(--ink);margin-bottom:0.5rem}
+.faq-a{font-size:0.9375rem;color:var(--ink-soft);line-height:1.7}
+
+/* SUCCESS */
+.success-state{display:none;text-align:center;padding:1.5rem}
+.success-icon{width:52px;height:52px;background:var(--sage-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.375rem}
+.success-title{font-family:'DM Serif Display',serif;font-size:1.375rem;color:var(--ink);margin-bottom:0.5rem}
+.success-sub{font-size:0.9rem;color:var(--ink-soft);line-height:1.6}
+
+footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
+.footer-logo{font-family:'DM Serif Display',serif;font-size:1.25rem;color:var(--ink);margin-bottom:0.5rem}
+.footer-logo span{color:var(--sage)}
+.footer-note{font-size:0.8125rem;color:var(--ink-muted)}
+
+@media(max-width:640px){
+  nav{padding:0 1.25rem}
+  section{padding:3.5rem 1.25rem}
+  .hero{padding:3.5rem 1.25rem 2.5rem}
+  .steps{grid-template-columns:1fr}
+  .tiers{flex-direction:column;align-items:center}
+  .founder-banner{padding:0.625rem 1.25rem}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BANNER -->
+<div class="founder-banner">
+  <span class="founder-banner-text"><strong>Founder offer:</strong> First 100 publishers keep 90% of every booking — forever.</span>
+  <span class="spots-pill"><span class="spots-count">77 spots</span> remaining</span>
+</div>
+
+<nav>
+  <a href="#" class="logo">Intro<span>Linq</span></a>
+  <a href="#join" class="nav-cta">Claim your spot</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero" id="join">
+  <div class="container">
+    <div class="hero-eyebrow">
+      <span class="eyebrow-dot"></span>
+      Free for publishers · No setup required
+    </div>
+
+    <h1>Your words already help people.<br><em>Now let them pay you too.</em></h1>
+
+    <p class="hero-sub">IntroLinq reads your content and automatically surfaces the right expert for your readers to speak with. You write. We connect. You earn.</p>
+
+    <!-- EARLY FORM — above the fold -->
+    <div class="early-form-wrap">
+      <div class="early-form" id="signup-form-wrap">
+        <form id="signup-form" onsubmit="handleSubmit(event)">
+          <label class="early-form-label">
+            Claim your founder spot — <span>keep 90% for life</span>
+          </label>
+          <input class="form-input" type="text" name="name" placeholder="Your name" required>
+          <input class="form-input" type="email" name="email" placeholder="Your email" required>
+          <input class="form-input" type="url" name="blog" placeholder="Your blog URL (e.g. https://yourblog.com)" required>
+          <button class="form-submit" type="submit">Claim my founder spot →</button>
+          <div class="soft-option">
+            <input type="checkbox" id="interest" name="interest">
+            <label for="interest">I'd be interested in adding this to my blog — keep me posted</label>
+          </div>
+          <p class="form-fine">Free forever. No card needed. You can leave anytime.</p>
+        </form>
+        <div class="success-state" id="success-state">
+          <div class="success-icon">✓</div>
+          <div class="success-title">You're in.</div>
+          <p class="success-sub">Your founder spot is reserved. We'll be in touch shortly with everything you need to get started. Welcome to IntroLinq.</p>
+        </div>
+      </div>
+
+      <!-- FOUNDER OFFER CARD -->
+      <div class="founder-card">
+        <div class="founder-card-header">
+          <span class="founder-card-badge">Founder offer</span>
+          <span class="founder-card-title">First 100 publishers only</span>
+        </div>
+        <p class="founder-card-desc">Sign up now and you keep <strong>90% of every booking, forever</strong> — locked in for life, no matter how big IntroLinq grows. After the first 100 spots, the split moves to 70/30.</p>
+        <div class="spots-remaining">
+          <div class="spots-bar-wrap"><div class="spots-bar"></div></div>
+          <span class="spots-text">77 of 100 spots left</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEMO -->
+    <div class="demo-wrap">
+      <div class="demo-blog">
+        <div class="demo-blog-label">Your blog post</div>
+        <div class="demo-blog-title">How I finally sorted my freelance finances</div>
+        <p class="demo-blog-text">After two years of chaos, I realised I needed to actually understand my numbers. The biggest lesson? <span class="highlight">hiring an accountant who understood creative businesses</span> changed everything. I wish I'd done it sooner.</p>
+        <p class="demo-blog-text">If you're in the same boat, the first step is just talking to someone who gets it...</p>
+        <div class="expert-widget">
+          <img class="expert-avatar-img"
+            src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=,h=,f=auto,dpr=1,fit=contain/f1731497121072x670114122540825600/EI0A8152.jpg"
+            alt="Ahana Banerjee"
+            onerror="this.style.display='none'">
+          <div class="expert-info">
+            <div class="expert-name">Ahana Banerjee</div>
+            <div class="expert-title">YC Founder · Forbes 30u30 · Startup strategy</div>
+          </div>
+          <button class="expert-cta-btn">Book a call</button>
+        </div>
+        <div class="widget-label">↑ IntroLinq detects the topic and adds this automatically</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EXPERT STRIP -->
+<div class="experts-strip">
+  <div class="strip-label">A few of the experts your readers could meet</div>
+  <div class="experts-grid">
+    <div class="expert-card">
+      <img class="expert-card-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=,h=,f=auto,dpr=1,fit=contain/f1731497121072x670114122540825600/EI0A8152.jpg" alt="Ahana Banerjee">
+      <div class="expert-card-name">Ahana Banerjee</div>
+      <div class="expert-card-role">YC Founder · Forbes 30u30</div>
+      <div class="expert-card-rate">from £80/session</div>
+    </div>
+    <div class="expert-card">
+      <img class="expert-card-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=,h=,f=auto,dpr=1,fit=contain/f1769693896955x679353291899212000/Kenneth%20OpenIntro.jpg" alt="Kenneth Kashif Thomas">
+      <div class="expert-card-name">Kenneth Kashif Thomas</div>
+      <div class="expert-card-role">Investor · Startup growth</div>
+      <div class="expert-card-rate">from £120/session</div>
+    </div>
+    <div class="expert-card">
+      <img class="expert-card-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=,h=,f=auto,dpr=1,fit=contain/f1723380298837x390393189267480600/ChrisChaney.jpg" alt="Chris Chaney">
+      <div class="expert-card-name">Chris Chaney</div>
+      <div class="expert-card-role">Serial entrepreneur · $100M exit</div>
+      <div class="expert-card-rate">from £150/session</div>
+    </div>
+    <div class="expert-card">
+      <div style="width:72px;height:72px;border-radius:50%;background:var(--sage-light);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--sage)">+</div>
+      <div class="expert-card-name">500+ experts</div>
+      <div class="expert-card-role">Finance · Career · Health · Legal · Tech</div>
+      <div class="expert-card-rate">across all niches</div>
+    </div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section class="how-bg">
+  <div class="container">
+    <div class="section-label">How it works</div>
+    <h2 class="section-title">Install once. Earn forever.</h2>
+    <p class="section-sub">No link-building, no manual tagging, no ongoing work. IntroLinq runs quietly in the background on every post you've ever written.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-title">Sign up and connect your blog</div>
+        <div class="step-desc">Add one small snippet to your WordPress site. Takes about three minutes, no developer needed.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-title">We read your content</div>
+        <div class="step-desc">IntroLinq scans your posts and detects topics where readers might genuinely benefit from speaking to an expert.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-title">The right expert appears</div>
+        <div class="step-desc">A tasteful widget surfaces on relevant posts, matched to exactly what you're writing about. Never intrusive.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-title">You earn when they book</div>
+        <div class="step-desc">Every completed booking earns you a commission. As a founder publisher, that's 90% of every booking — paid monthly.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMMISSION TIERS -->
+<div class="commission-band">
+  <div class="section-label">The deal</div>
+  <h2 class="section-title" style="color:var(--white);margin-bottom:0.5rem">The earlier you join,<br>the more you keep.</h2>
+  <p style="font-size:1rem;color:rgba(255,255,255,0.5);max-width:440px;margin:0 auto">Forever. Not a trial, not a promo. Locked in for life.</p>
+  <div class="tiers">
+    <div class="tier tier-founder">
+      <span class="tier-badge">Founder — first 100</span>
+      <div class="tier-pct">90%</div>
+      <div class="tier-sublabel">goes to you</div>
+      <div class="tier-detail">The best deal IntroLinq will ever offer. Sign up now and this rate is yours for as long as you use the platform.</div>
+      <div class="tier-spots">77 spots remaining</div>
+    </div>
+    <div class="tier tier-standard">
+      <span class="tier-badge">Standard</span>
+      <div class="tier-pct">70%</div>
+      <div class="tier-sublabel">goes to you</div>
+      <div class="tier-detail">Still well above the industry norm. Available to everyone who joins after the first 100 spots are gone.</div>
+    </div>
+  </div>
+  <p class="commission-note">Both tiers are completely free. IntroLinq only makes money when you do — no subscriptions, no minimums, no hidden fees.</p>
+</div>
+
+<!-- EARNINGS -->
+<section>
+  <div class="container">
+    <div class="earnings-grid">
+      <div>
+        <div class="section-label">The numbers</div>
+        <h2 class="section-title">Real income from content you've already written</h2>
+        <p class="section-sub" style="margin-bottom:1.5rem">Expert calls are worth far more than ad clicks or product commissions. A single booking generates more revenue than a thousand display ad impressions — and your readers get something genuinely useful.</p>
+        <p style="font-size:0.875rem;color:var(--ink-muted);line-height:1.7">Most publishers see their first booking within two weeks of going live. The more specific your content, the better the match and the higher your conversion.</p>
+      </div>
+      <div class="earnings-calc">
+        <div class="calc-title">Estimated monthly earnings (founder rate)</div>
+        <div class="calc-row"><span class="calc-label">Monthly visitors</span><span class="calc-value">20,000</span></div>
+        <div class="calc-row"><span class="calc-label">Posts with expert matches</span><span class="calc-value">~40%</span></div>
+        <div class="calc-row"><span class="calc-label">Readers who click</span><span class="calc-value">~1.5%</span></div>
+        <div class="calc-row"><span class="calc-label">Calls booked per month</span><span class="calc-value">~12</span></div>
+        <div class="calc-row"><span class="calc-label">Average call value</span><span class="calc-value">£150</span></div>
+        <div class="calc-row"><span class="calc-label">Your share (90%)</span><span class="calc-value">£13.50 per call</span></div>
+        <div class="calc-total">
+          <span class="calc-total-label">Your monthly earnings</span>
+          <span class="calc-total-value">~£270</span>
+        </div>
+        <p class="calc-note">Illustrative estimate. Actual earnings depend on niche, traffic quality, and content relevance. Completely passive — no extra work required.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOR READERS -->
+<section class="readers-bg">
+  <div class="container">
+    <div class="section-label">For your readers</div>
+    <h2 class="section-title">Your readers get something genuinely useful</h2>
+    <p class="section-sub" style="max-width:500px">IntroLinq only surfaces experts relevant to what you're actually writing about. It's not an ad. It's a natural next step for a reader who wants to go deeper.</p>
+    <div class="readers-grid">
+      <div class="reader-card">
+        <div class="reader-icon">🎯</div>
+        <div class="reader-card-title">Matched to the topic</div>
+        <div class="reader-card-desc">A finance expert on money posts, a nutritionist on wellness posts. Never generic, always relevant.</div>
+      </div>
+      <div class="reader-card">
+        <div class="reader-icon">✅</div>
+        <div class="reader-card-title">Vetted experts only</div>
+        <div class="reader-card-desc">Verified profiles, real reviews, and transparent pricing shown upfront. No surprises.</div>
+      </div>
+      <div class="reader-card">
+        <div class="reader-icon">💬</div>
+        <div class="reader-card-title">A real conversation</div>
+        <div class="reader-card-desc">Not a lead form. Not a sales funnel. A genuine 1:1 paid call, booked in seconds.</div>
+      </div>
+      <div class="reader-card">
+        <div class="reader-icon">🔒</div>
+        <div class="reader-card-title">Never intrusive</div>
+        <div class="reader-card-desc">The widget sits quietly beneath relevant content. No pop-ups, no auto-play, no interruptions.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PLATFORMS -->
+<section>
+  <div class="container-narrow">
+    <div class="section-label">Expert platforms</div>
+    <h2 class="section-title">Connected to where the best experts already are</h2>
+    <p class="section-sub">IntroLinq brings together experts from the leading advice platforms so your readers always find the right person, whatever they need.</p>
+    <div class="platforms-list">
+      <span class="platform-pill">Clarity.fm</span>
+      <span class="platform-pill">OpenIntro</span>
+      <span class="platform-pill">Intro.co</span>
+      <span class="platform-pill">MentorCruise</span>
+      <span class="platform-pill coming">+ more coming</span>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section style="background:var(--white);border-top:1px solid var(--border-soft)">
+  <div class="container-narrow">
+    <div class="section-label">Questions</div>
+    <h2 class="section-title">The honest answers</h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q">Is IntroLinq really free?</div>
+        <div class="faq-a">Yes, completely. No subscription, no setup fee, no minimum traffic. IntroLinq only takes a share of commission when a booking is completed — as a founder publisher, you keep 90%. If no one books, it costs you nothing, ever.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Is the 90% rate really locked in for life?</div>
+        <div class="faq-a">Yes. Founder publishers keep 90% of every booking for as long as they use IntroLinq, regardless of how the platform grows or what rate new publishers join at. It's written into your account, not a promotional period.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Will it slow my site down?</div>
+        <div class="faq-a">No. The IntroLinq script loads asynchronously after your page content. It has zero effect on your page speed score or your readers' experience.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Does it work with any WordPress theme?</div>
+        <div class="faq-a">Yes. The widget adapts to your site's existing style and works with any standard WordPress theme, including Elementor and Divi.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What if I already have affiliate links on a post?</div>
+        <div class="faq-a">IntroLinq never interferes with your existing links or monetisation. It only adds expert widgets in content that doesn't already have a relevant link in that context.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">How and when do I get paid?</div>
+        <div class="faq-a">Monthly, via bank transfer or PayPal. You'll receive a clear earnings breakdown with every payment so you know exactly what converted and where.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Can I leave anytime?</div>
+        <div class="faq-a">Yes. Remove the plugin and you're out. No notice period, no penalty. We'd rather earn your loyalty than lock you in.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">Intro<span>Linq</span></div>
+  <p class="footer-note">Connecting readers with the right experts, one post at a time.</p>
+</footer>
+
+<script>
+function handleSubmit(e){
+  e.preventDefault();
+  document.getElementById('signup-form').style.display='none';
+  document.getElementById('success-state').style.display='block';
+}
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',function(e){
+    e.preventDefault();
+    const t=document.querySelector(this.getAttribute('href'));
+    if(t)t.scrollIntoView({behavior:'smooth'});
+  });
+});
+</script>
+</body>
+</html>
