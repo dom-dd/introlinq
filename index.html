@@ -195,6 +195,21 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 .network-card.highlight .network-card-title{color:var(--sage)}
 @media(max-width:700px){.network-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:480px){.network-grid{grid-template-columns:1fr}}
+.network-note{text-align:center;font-size:0.85rem;color:var(--ink-muted);margin-top:1.5rem;max-width:520px;margin-left:auto;margin-right:auto}
+
+/* SNIPPET SECTION */
+.snippet-section{padding:3.5rem 2rem;background:var(--white);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft)}
+.snippet-inner{max-width:680px;margin:0 auto;text-align:center}
+.snippet-title{font-family:'DM Serif Display',serif;font-size:clamp(1.4rem,2.5vw,1.9rem);color:var(--ink);letter-spacing:-0.02em;margin-bottom:0.5rem}
+.snippet-sub{font-size:0.9375rem;color:var(--ink-soft);margin-bottom:1.75rem}
+.code-block{background:var(--ink);border-radius:var(--radius);padding:1.5rem 1.75rem;text-align:left;position:relative}
+.code-line{display:block;font-family:'Spline Sans Mono',ui-monospace,'Courier New',monospace;font-size:0.8125rem;line-height:1.8}
+.code-comment{color:rgba(255,255,255,0.35)}
+.code-tag{color:#79c0ff}
+.code-attr{color:#ffa657}
+.code-val{color:#a5d6ff}
+.copy-btn{position:absolute;top:0.875rem;right:0.875rem;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);font-size:0.75rem;padding:0.3rem 0.75rem;border-radius:6px;cursor:pointer;font-family:'Spline Sans',sans-serif;transition:all 0.15s}
+.copy-btn:hover{background:rgba(255,255,255,0.18);color:#fff}
 
 /* EXPERT STRIP */
 .experts-strip{padding:3.5rem 2rem;background:var(--white);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft)}
@@ -385,7 +400,7 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
           <div class="success-state" id="success-state">
             <div class="success-icon">✓</div>
             <div class="success-title">You're in.</div>
-            <p class="success-sub">Your founder spot is reserved. We'll be in touch shortly with everything you need to get started. Welcome to IntroLinq.</p>
+            <p class="success-sub">Your founder spot is reserved. We'll be in touch as soon as we can. Welcome to IntroLinq.</p>
           </div>
         </div>
 
@@ -569,10 +584,11 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
       </div>
       <div class="network-card">
         <div class="network-card-icon">⚙️</div>
-        <div class="network-card-title">Fully customisable</div>
-        <div class="network-card-desc">Topic, platform, session length, credentials - filter by anything. We surface the options, you decide what fits your readers best.</div>
+        <div class="network-card-title">Filter by anything</div>
+        <div class="network-card-desc">Topic, platform, session length, credentials, industry - set your preferences once and IntroLinq filters the pool automatically.</div>
       </div>
     </div>
+    <p class="network-note">Not feeling a specific expert? Remove them with one click and they won't appear on your blog again. You set the preferences - we do the rest.</p>
   </div>
 </div>
 
@@ -606,6 +622,19 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
     </div>
   </div>
 </section>
+
+<!-- INSTALL SNIPPET -->
+<div class="snippet-section">
+  <div class="snippet-inner">
+    <h2 class="snippet-title">Two lines. That's all it takes.</h2>
+    <p class="snippet-sub">Paste this once into your blog's <code style="background:var(--sage-light);color:var(--sage);padding:0.1em 0.4em;border-radius:4px;font-size:0.875em">&lt;head&gt;</code> and IntroLinq runs on every post - past and future.</p>
+    <div class="code-block">
+      <button class="copy-btn" id="copy-btn" onclick="copySnippet()">Copy</button>
+      <span class="code-line"><span class="code-comment">&lt;!-- Paste once into your blog's &lt;head&gt; --&gt;</span></span>
+      <span class="code-line"><span class="code-tag">&lt;script</span> <span class="code-attr">src</span>=<span class="code-val">"https://cdn.introlinq.com/widget.js"</span> <span class="code-attr">data-blog</span>=<span class="code-val">"YOUR_ID"</span><span class="code-tag">&gt;&lt;/script&gt;</span></span>
+    </div>
+  </div>
+</div>
 
 <!-- COMMISSION TIERS -->
 <div class="commission-band">
@@ -841,6 +870,15 @@ async function handleSubmit(e){
     alert('Something went wrong — please try again.');
   }
 }
+function copySnippet() {
+  const text = `<!-- Paste once into your blog's <head> -->\n<script src="https://cdn.introlinq.com/widget.js" data-blog="YOUR_ID"><\/script>`;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+
 document.querySelectorAll('a[href^="#"]').forEach(a=>{
   a.addEventListener('click',function(e){
     e.preventDefault();
