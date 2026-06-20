@@ -58,6 +58,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 .soft-option label{font-size:0.8125rem;color:var(--ink-soft);cursor:pointer}
 .form-fine{font-size:0.75rem;color:var(--ink-muted);text-align:center;margin-top:0.875rem;line-height:1.5}
 .form-select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238888a8' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center;cursor:pointer}
+.form-select:invalid,.form-select option[value=""]{color:var(--ink-muted)}
 
 /* FOUNDER OFFER CARD */
 .founder-card{max-width:480px;margin:1.25rem auto 0;background:var(--gold-light);border:1px solid var(--gold-mid);border-radius:var(--radius);padding:1.25rem 1.5rem;text-align:left}
@@ -224,7 +225,6 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
           <input class="form-input" type="text" name="name" placeholder="Your name" required>
           <input class="form-input" type="email" name="email" placeholder="Your email" required>
           <input class="form-input" type="text" name="blog" placeholder="Your blog URL (e.g. yourblog.com)" required>
-          <input class="form-input" type="tel" name="phone" placeholder="Phone number (optional)">
           <select class="form-input form-select" name="monthly_visitors" required>
             <option value="" disabled selected>Monthly readers / visitors</option>
             <option value="under_1k">Under 1,000</option>

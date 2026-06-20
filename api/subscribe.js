@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { name, email, blog, phone, monthly_visitors } = req.body;
+  const { name, email, blog, monthly_visitors } = req.body;
   const country = req.headers['x-vercel-ip-country'] || null;
 
   if (!name || !email || !blog || !monthly_visitors) {
@@ -51,8 +51,8 @@ export default async function handler(req, res) {
       )
     `;
     await sql`
-      INSERT INTO subscribers (name, email, blog_url, phone, monthly_visitors, country)
-      VALUES (${name}, ${email}, ${blogUrl}, ${phone || null}, ${monthly_visitors}, ${country || null})
+      INSERT INTO subscribers (name, email, blog_url, monthly_visitors, country)
+      VALUES (${name}, ${email}, ${blogUrl}, ${monthly_visitors}, ${country || null})
       ON CONFLICT (email) DO NOTHING
     `;
 
@@ -78,7 +78,7 @@ export default async function handler(req, res) {
       from: 'IntroLinq <hello@introlinq.com>',
       to: 'dom@open-intro.com',
       subject: `New signup: ${name}`,
-      html: alertEmail({ name, email, blogUrl, phone, monthly_visitors, country }),
+      html: alertEmail({ name, email, blogUrl, monthly_visitors, country }),
     });
 
     return res.status(200).json({ success: true });
@@ -116,7 +116,7 @@ function confirmationEmail(name) {
 </html>`;
 }
 
-function alertEmail({ name, email, blogUrl, phone, monthly_visitors, country }) {
+function alertEmail({ name, email, blogUrl, monthly_visitors, country }) {
   return `
 <!DOCTYPE html>
 <html>
@@ -131,7 +131,6 @@ function alertEmail({ name, email, blogUrl, phone, monthly_visitors, country }) 
             <tr><td style="padding:10px 0;border-bottom:1px solid rgba(26,26,46,0.06);font-size:14px;color:#8888a8;width:140px">Name</td><td style="padding:10px 0;border-bottom:1px solid rgba(26,26,46,0.06);font-size:14px;color:#1a1a2e;font-weight:500">${name}</td></tr>
             <tr><td style="padding:10px 0;border-bottom:1px solid rgba(26,26,46,0.06);font-size:14px;color:#8888a8">Email</td><td style="padding:10px 0;border-bottom:1px solid rgba(26,26,46,0.06);font-size:14px;color:#1a1a2e;font-weight:500">${email}</td></tr>
             <tr><td style="padding:10px 0;border-bottom:1px solid rgba(26,26,46,0.06);font-size:14px;color:#8888a8">Blog</td><td style="padding:10px 0;border-bottom:1px solid rgba(26,26,46,0.06);font-size:14px;color:#1a1a2e;font-weight:500">${blogUrl}</td></tr>
-            <tr><td style="padding:10px 0;border-bottom:1px solid rgba(26,26,46,0.06);font-size:14px;color:#8888a8">Phone</td><td style="padding:10px 0;border-bottom:1px solid rgba(26,26,46,0.06);font-size:14px;color:#1a1a2e;font-weight:500">${phone || '—'}</td></tr>
             <tr><td style="padding:10px 0;border-bottom:1px solid rgba(26,26,46,0.06);font-size:14px;color:#8888a8">Monthly visitors</td><td style="padding:10px 0;border-bottom:1px solid rgba(26,26,46,0.06);font-size:14px;color:#1a1a2e;font-weight:500">${formatVisitors(monthly_visitors)}</td></tr>
             <tr><td style="padding:10px 0;font-size:14px;color:#8888a8">Country</td><td style="padding:10px 0;font-size:14px;color:#1a1a2e;font-weight:500">${country || '—'}</td></tr>
           </table>
