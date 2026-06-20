@@ -128,6 +128,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 .spots-bar{height:100%;background:var(--gold);border-radius:100px;width:58%}
 .spots-text{white-space:nowrap;font-weight:500;color:var(--gold)}
 .spots-live{color:var(--gold);font-weight:500}
+.spots-loading{opacity:0;transition:opacity 0.3s}
 
 /* DEMO */
 .demo-wrap{margin:3rem auto 0;max-width:620px}
@@ -326,7 +327,7 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
 <!-- TOP BANNER -->
 <div class="founder-banner">
   <span class="founder-banner-text"><strong>Founder offer:</strong> First 100 publishers keep 90% of every booking — forever.</span>
-  <span class="spots-pill"><span class="spots-count" id="banner-spots">42 spots</span> remaining</span>
+  <span class="spots-pill spots-loading" id="spots-pill"><span class="spots-count" id="banner-spots">27 spots</span> remaining</span>
 </div>
 
 <nav>
@@ -381,7 +382,7 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
         <div class="early-form" id="signup-form-wrap">
           <form id="signup-form" onsubmit="handleSubmit(event)">
             <label class="early-form-label">
-              Claim your founder spot — <span>keep 90% for life</span> <span class="spots-live" id="form-spots">· 42 spots left</span>
+              Claim your founder spot — <span>keep 90% for life</span> <span class="spots-live spots-loading" id="form-spots">· 27 spots left</span>
             </label>
             <input class="form-input" type="text" name="name" placeholder="Your name" required>
             <input class="form-input" type="email" name="email" placeholder="Your email" required>
@@ -411,9 +412,9 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
             <span class="founder-card-title">First 100 publishers only</span>
           </div>
           <p class="founder-card-desc">Sign up now and you keep <strong>90% of every booking, forever</strong> — locked in for life, no matter how big IntroLinq grows. After the first 100 spots, the split moves to 70/30.</p>
-          <div class="spots-remaining">
+          <div class="spots-remaining spots-loading" id="spots-remaining">
             <div class="spots-bar-wrap"><div class="spots-bar" id="spots-bar"></div></div>
-            <span class="spots-text" id="spots-text">42 of 100 spots left</span>
+            <span class="spots-text" id="spots-text">27 of 100 spots left</span>
           </div>
         </div>
       </div>
@@ -834,6 +835,7 @@ function updateSpotsUI(remaining) {
   if (formEl) formEl.textContent = '· ' + remaining + ' spots left';
   if (textEl) textEl.textContent = remaining + ' of 100 spots left';
   if (barEl) barEl.style.width = Math.min(100, taken) + '%';
+  document.querySelectorAll('.spots-loading').forEach(el => el.classList.remove('spots-loading'));
 }
 
 async function fetchSpots() {
