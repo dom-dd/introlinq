@@ -57,6 +57,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 .soft-option input[type="checkbox"]{accent-color:var(--sage);width:15px;height:15px;cursor:pointer}
 .soft-option label{font-size:0.8125rem;color:var(--ink-soft);cursor:pointer}
 .form-fine{font-size:0.75rem;color:var(--ink-muted);text-align:center;margin-top:0.875rem;line-height:1.5}
+.form-select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238888a8' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center;cursor:pointer}
 
 /* FOUNDER OFFER CARD */
 .founder-card{max-width:480px;margin:1.25rem auto 0;background:var(--gold-light);border:1px solid var(--gold-mid);border-radius:var(--radius);padding:1.25rem 1.5rem;text-align:left}
@@ -222,12 +223,17 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
           </label>
           <input class="form-input" type="text" name="name" placeholder="Your name" required>
           <input class="form-input" type="email" name="email" placeholder="Your email" required>
-          <input class="form-input" type="url" name="blog" placeholder="Your blog URL (e.g. https://yourblog.com)" required>
+          <input class="form-input" type="text" name="blog" placeholder="Your blog URL (e.g. yourblog.com)" required>
+          <input class="form-input" type="tel" name="phone" placeholder="Phone number (optional)">
+          <select class="form-input form-select" name="monthly_visitors" required>
+            <option value="" disabled selected>Monthly readers / visitors</option>
+            <option value="under_1k">Under 1,000</option>
+            <option value="1k_10k">1,000 – 10,000</option>
+            <option value="10k_50k">10,000 – 50,000</option>
+            <option value="50k_100k">50,000 – 100,000</option>
+            <option value="100k_plus">100,000+</option>
+          </select>
           <button class="form-submit" type="submit">Claim my founder spot →</button>
-          <div class="soft-option">
-            <input type="checkbox" id="interest" name="interest">
-            <label for="interest">I'd be interested in adding this to my blog — keep me posted</label>
-          </div>
           <p class="form-fine">Free forever. No card needed. You can leave anytime.</p>
         </form>
         <div class="success-state" id="success-state">
@@ -479,10 +485,29 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
 </footer>
 
 <script>
-function handleSubmit(e){
+async function handleSubmit(e){
   e.preventDefault();
-  document.getElementById('signup-form').style.display='none';
-  document.getElementById('success-state').style.display='block';
+  const form = document.getElementById('signup-form');
+  const btn = form.querySelector('.form-submit');
+  btn.textContent = 'Saving your spot…';
+  btn.disabled = true;
+
+  const data = Object.fromEntries(new FormData(form).entries());
+
+  try {
+    const res = await fetch('/api/subscribe', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error();
+    form.style.display = 'none';
+    document.getElementById('success-state').style.display = 'block';
+  } catch {
+    btn.textContent = 'Claim my founder spot →';
+    btn.disabled = false;
+    alert('Something went wrong — please try again.');
+  }
 }
 document.querySelectorAll('a[href^="#"]').forEach(a=>{
   a.addEventListener('click',function(e){
