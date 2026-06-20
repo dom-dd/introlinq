@@ -37,7 +37,8 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 /* HERO */
 .hero{padding:5rem 2rem 3.5rem}
 .hero-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start;max-width:1100px;margin:0 auto}
-.hero-left{text-align:left}
+.hero-left{text-align:left;order:2}
+.carousel-wrap{order:1}
 .hero-eyebrow{display:inline-flex;align-items:center;gap:0.5rem;background:var(--sage-light);color:var(--sage);font-size:0.8125rem;font-weight:500;padding:0.375rem 0.875rem;border-radius:100px;margin-bottom:1.75rem;letter-spacing:0.02em}
 .eyebrow-dot{width:6px;height:6px;background:var(--sage);border-radius:50%;animation:pulse 2s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
@@ -103,6 +104,41 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 .expert-title{font-size:0.8125rem;color:var(--ink-soft)}
 .expert-cta-btn{background:var(--sage);color:var(--white);border:none;padding:0.5rem 1rem;border-radius:100px;font-size:0.8125rem;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .widget-label{font-size:0.75rem;color:var(--ink-muted);margin-top:0.625rem;text-align:center}
+
+/* FLOW VISUAL */
+.flow-section{padding:4rem 2rem;background:var(--white);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft)}
+.flow-inner{max-width:1000px;margin:0 auto}
+.flow-title{font-family:'DM Serif Display',serif;font-size:clamp(1.5rem,3vw,2rem);color:var(--ink);text-align:center;margin-bottom:0.5rem;letter-spacing:-0.02em}
+.flow-sub{font-size:0.9375rem;color:var(--ink-soft);text-align:center;margin-bottom:2.5rem}
+.flow-panels{display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:center}
+.flow-panel{border-radius:var(--radius);padding:1.5rem;text-align:left}
+.flow-panel-before{background:var(--cream);border:1px solid var(--border)}
+.flow-panel-after{background:var(--sage-light);border:1px solid var(--sage-mid)}
+.flow-panel-label{font-size:0.7rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.75rem}
+.flow-panel-before .flow-panel-label{color:var(--ink-muted)}
+.flow-panel-after .flow-panel-label{color:var(--sage)}
+.flow-blog-title{font-family:'DM Serif Display',serif;font-size:1rem;color:var(--ink);margin-bottom:0.625rem}
+.flow-blog-text{font-size:0.8125rem;color:var(--ink-soft);line-height:1.75}
+.flow-arrow{display:flex;flex-direction:column;align-items:center;gap:0.375rem;padding:0 1.5rem}
+.flow-arrow-line{width:2px;height:32px;background:linear-gradient(to bottom,var(--border),var(--sage-mid));display:none}
+.flow-arrow-icon{font-size:1.5rem;color:var(--sage)}
+.flow-arrow-label{font-size:0.75rem;font-weight:500;color:var(--sage);white-space:nowrap;text-align:center;line-height:1.4}
+.flow-steps{display:flex;justify-content:center;gap:0;margin-top:2rem;flex-wrap:wrap}
+.flow-step{display:flex;align-items:center;gap:0}
+.flow-step-box{background:var(--cream);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.875rem 1.125rem;text-align:center;min-width:140px}
+.flow-step-icon{font-size:1.25rem;margin-bottom:0.25rem}
+.flow-step-label{font-size:0.8rem;font-weight:500;color:var(--ink);line-height:1.3}
+.flow-step-sub{font-size:0.7rem;color:var(--ink-muted);margin-top:0.125rem}
+.flow-step-arrow{color:var(--ink-muted);font-size:1rem;padding:0 0.75rem}
+.flow-step-box.highlight-step{background:var(--sage-light);border-color:var(--sage-mid)}
+.flow-step-box.highlight-step .flow-step-label{color:var(--sage)}
+@media(max-width:640px){
+  .flow-panels{grid-template-columns:1fr;gap:1rem}
+  .flow-arrow{flex-direction:row;padding:0}
+  .flow-arrow-icon{transform:rotate(90deg)}
+  .flow-steps{gap:0.5rem}
+  .flow-step-arrow{padding:0 0.375rem}
+}
 
 /* EXPERT STRIP */
 .experts-strip{padding:3.5rem 2rem;background:var(--white);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft)}
@@ -380,6 +416,88 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
   </div><!-- /hero-inner -->
 </div>
 
+<!-- FLOW VISUAL -->
+<div class="flow-section">
+  <div class="flow-inner">
+    <h2 class="flow-title">Before and after IntroLinq</h2>
+    <p class="flow-sub">One script. Your content stays the same. The right expert just appears.</p>
+
+    <div class="flow-panels">
+      <!-- Before -->
+      <div class="flow-panel flow-panel-before">
+        <div class="flow-panel-label">Before — your blog post</div>
+        <div class="flow-blog-title">How I finally sorted my freelance finances</div>
+        <p class="flow-blog-text">After two years of chaos, I realised I needed to understand my numbers. The biggest lesson? Hiring an accountant who understood creative businesses changed everything. I wish I'd done it sooner.</p>
+        <p class="flow-blog-text" style="margin-top:0.5rem">If you're in the same boat, the first step is just talking to someone who gets it...</p>
+      </div>
+
+      <!-- Arrow -->
+      <div class="flow-arrow">
+        <div class="flow-arrow-icon">→</div>
+        <div class="flow-arrow-label">IntroLinq<br>adds this</div>
+      </div>
+
+      <!-- After -->
+      <div class="flow-panel flow-panel-after">
+        <div class="flow-panel-label">After — same post, expert added</div>
+        <div class="flow-blog-title">How I finally sorted my freelance finances</div>
+        <p class="flow-blog-text">After two years of chaos, I realised I needed to understand my numbers. The biggest lesson? <span class="highlight">Hiring an accountant who understood creative businesses</span> changed everything.</p>
+        <div class="expert-widget" style="margin-top:1rem;animation:none">
+          <img class="expert-avatar-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=,h=,f=auto,dpr=1,fit=contain/f1731497121072x670114122540825600/EI0A8152.jpg" alt="Ahana Banerjee" onerror="this.style.display='none'">
+          <div class="expert-info">
+            <div class="expert-name">Ahana Banerjee</div>
+            <div class="expert-title">YC Founder · Finance strategy</div>
+          </div>
+          <button class="expert-cta-btn">Book a call</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flow steps -->
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="flow-step-box">
+          <div class="flow-step-icon">📝</div>
+          <div class="flow-step-label">You write</div>
+          <div class="flow-step-sub">Any topic, any niche</div>
+        </div>
+        <div class="flow-step-arrow">→</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-box highlight-step">
+          <div class="flow-step-icon">⚡</div>
+          <div class="flow-step-label">IntroLinq detects</div>
+          <div class="flow-step-sub">Matches expert to content</div>
+        </div>
+        <div class="flow-step-arrow">→</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-box">
+          <div class="flow-step-icon">👆</div>
+          <div class="flow-step-label">Reader clicks</div>
+          <div class="flow-step-sub">Widget appears on post</div>
+        </div>
+        <div class="flow-step-arrow">→</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-box">
+          <div class="flow-step-icon">📅</div>
+          <div class="flow-step-label">Call is booked</div>
+          <div class="flow-step-sub">Reader pays upfront</div>
+        </div>
+        <div class="flow-step-arrow">→</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-box highlight-step">
+          <div class="flow-step-icon">💸</div>
+          <div class="flow-step-label">You earn 90%</div>
+          <div class="flow-step-sub">Paid monthly, no effort</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- EXPERT STRIP -->
 <div class="experts-strip">
   <div class="strip-label">A few of the experts your readers could meet</div>
@@ -605,10 +723,10 @@ function nextSlide() {
 
 function resetTimer() {
   clearInterval(autoTimer);
-  autoTimer = setInterval(nextSlide, 4000);
+  autoTimer = setInterval(nextSlide, 7000);
 }
 
-autoTimer = setInterval(nextSlide, 4000);
+autoTimer = setInterval(nextSlide, 7000);
 
 async function handleSubmit(e){
   e.preventDefault();
