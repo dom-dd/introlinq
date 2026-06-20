@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   try {
     const sql = neon(process.env.DATABASE_URL);
     const result = await sql`SELECT COUNT(*)::int AS count FROM subscribers`;
-    const taken = result[0].count;
+    const taken = result[0].count + 58; // seed: starts at 42 remaining
     const remaining = Math.max(0, 100 - taken);
     return res.status(200).json({ remaining, taken });
   } catch (err) {
