@@ -35,14 +35,15 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 .spots-count{color:var(--gold-mid);font-weight:500}
 
 /* HERO */
-.hero{padding:5rem 2rem 3.5rem}
-.hero-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start;max-width:1100px;margin:0 auto}
+.hero{padding:5rem 0 3.5rem}
+.hero-top{text-align:center;max-width:780px;margin:0 auto;padding:0 2rem 2.5rem}
+.hero-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start;max-width:1100px;margin:0 auto;padding:3rem 2rem 0}
 .hero-left{text-align:left;order:2}
 .carousel-wrap{order:1}
 .hero-eyebrow{display:inline-flex;align-items:center;gap:0.5rem;background:var(--sage-light);color:var(--sage);font-size:0.8125rem;font-weight:500;padding:0.375rem 0.875rem;border-radius:100px;margin-bottom:1.75rem;letter-spacing:0.02em}
 .eyebrow-dot{width:6px;height:6px;background:var(--sage);border-radius:50%;animation:pulse 2s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
-.hero h1{font-family:'DM Serif Display',serif;font-size:clamp(2rem,4vw,3.25rem);line-height:1.1;letter-spacing:-0.03em;color:var(--ink);margin:0 0 1.25rem}
+.hero h1{font-family:'DM Serif Display',serif;font-size:clamp(2.25rem,4.5vw,3.75rem);line-height:1.1;letter-spacing:-0.03em;color:var(--ink);margin:0}
 .hero h1 em{font-style:italic;color:var(--sage)}
 .hero-sub{font-size:1.0625rem;color:var(--ink-soft);margin:0 0 2rem;line-height:1.75}
 
@@ -271,12 +272,14 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
 @media(max-width:900px){
   .hero-inner{grid-template-columns:1fr;gap:2.5rem}
   .hero-left{text-align:center}
-  .hero h1{margin-left:auto;margin-right:auto}
+  .hero-top{text-align:center}
 }
 @media(max-width:640px){
   nav{padding:0 1.25rem}
   section{padding:3.5rem 1.25rem}
-  .hero{padding:3.5rem 1.25rem 2.5rem}
+  .hero{padding:3.5rem 0 2.5rem}
+  .hero-top{padding:0 1.25rem 2rem}
+  .hero-inner{padding:0 1.25rem}
   .steps{grid-template-columns:1fr}
   .tiers{flex-direction:column;align-items:center}
   .founder-banner{padding:0.625rem 1.25rem}
@@ -298,16 +301,35 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
 
 <!-- HERO -->
 <div class="hero" id="join">
+
+  <!-- CENTERED HEADLINE -->
+  <div class="hero-top">
+    <div class="hero-eyebrow">
+      <span class="eyebrow-dot"></span>
+      Free for publishers · No setup required
+    </div>
+    <h1>Your words already help people.<br><em>Now let them pay you too.</em></h1>
+  </div>
+
+  <!-- FLOW STRIP -->
+  <div class="mini-flow">
+    <div class="mini-flow-inner">
+      <div class="mini-flow-step"><span class="mini-flow-icon">📝</span><span class="mini-flow-text"><strong>You write</strong> — any topic</span></div>
+      <span class="mini-flow-arrow">→</span>
+      <div class="mini-flow-step"><span class="mini-flow-icon">⚡</span><span class="mini-flow-text"><strong>IntroLinq detects</strong> — matches an expert</span></div>
+      <span class="mini-flow-arrow">→</span>
+      <div class="mini-flow-step"><span class="mini-flow-icon">👆</span><span class="mini-flow-text"><strong>Reader clicks</strong> — a link in your post</span></div>
+      <span class="mini-flow-arrow">→</span>
+      <div class="mini-flow-step"><span class="mini-flow-icon">📅</span><span class="mini-flow-text"><strong>Call is booked</strong> — reader pays upfront</span></div>
+      <span class="mini-flow-arrow">→</span>
+      <div class="mini-flow-step"><span class="mini-flow-icon">💸</span><span class="mini-flow-text"><strong>You earn 90%</strong> — paid monthly</span></div>
+    </div>
+  </div>
+
   <div class="hero-inner">
 
-    <!-- LEFT: headline + form -->
+    <!-- RIGHT: form -->
     <div class="hero-left">
-      <div class="hero-eyebrow">
-        <span class="eyebrow-dot"></span>
-        Free for publishers · No setup required
-      </div>
-
-      <h1>Your words already help people.<br><em>Now let them pay you too.</em></h1>
 
       <!-- EARLY FORM -->
       <div class="early-form-wrap" style="max-width:100%;margin:0 0 1rem">
@@ -408,21 +430,6 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
     </div>
 
   </div><!-- /hero-inner -->
-</div>
-
-<!-- MINI FLOW STRIP -->
-<div class="mini-flow">
-  <div class="mini-flow-inner">
-    <div class="mini-flow-step"><span class="mini-flow-icon">📝</span><span class="mini-flow-text"><strong>You write</strong> — any topic</span></div>
-    <span class="mini-flow-arrow">→</span>
-    <div class="mini-flow-step"><span class="mini-flow-icon">⚡</span><span class="mini-flow-text"><strong>IntroLinq detects</strong> — matches an expert</span></div>
-    <span class="mini-flow-arrow">→</span>
-    <div class="mini-flow-step"><span class="mini-flow-icon">👆</span><span class="mini-flow-text"><strong>Reader clicks</strong> — a link in your post</span></div>
-    <span class="mini-flow-arrow">→</span>
-    <div class="mini-flow-step"><span class="mini-flow-icon">📅</span><span class="mini-flow-text"><strong>Call is booked</strong> — reader pays upfront</span></div>
-    <span class="mini-flow-arrow">→</span>
-    <div class="mini-flow-step"><span class="mini-flow-icon">💸</span><span class="mini-flow-text"><strong>You earn 90%</strong> — paid monthly</span></div>
-  </div>
 </div>
 
 <!-- FLOW VISUAL -->
