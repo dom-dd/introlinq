@@ -54,11 +54,11 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 .hero-sub{font-size:1.0625rem;color:var(--ink-soft);margin:1rem 0 0;line-height:1.75;max-width:1100px;margin-left:auto;margin-right:auto}
 
 /* HERO STATS */
-.hero-stats{display:flex;max-width:900px;margin:0 auto;padding:0 2rem;background:var(--white);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft)}
-.hero-stat{flex:1;text-align:center;padding:1.5rem 0.5rem;position:relative}
-.hero-stat+.hero-stat::before{content:'';position:absolute;left:0;top:15%;height:70%;width:1px;background:var(--border)}
-.hero-stat-num{font-family:'DM Serif Display',serif;font-size:2.5rem;color:var(--ink);letter-spacing:-0.04em;line-height:1;display:block}
-.hero-stat-label{font-size:0.8125rem;color:var(--ink-soft);margin-top:0.5rem;display:block;line-height:1.4}
+.hero-stats{display:flex;width:100%;padding:0 4rem;background:var(--ink);border:none;justify-content:center}
+.hero-stat{flex:1;max-width:240px;text-align:center;padding:2.5rem 1rem;position:relative}
+.hero-stat+.hero-stat::before{content:'';position:absolute;left:0;top:15%;height:70%;width:1px;background:rgba(255,255,255,0.12)}
+.hero-stat-num{font-family:'DM Serif Display',serif;font-size:2.5rem;color:var(--white);letter-spacing:-0.04em;line-height:1;display:block}
+.hero-stat-label{font-size:0.8125rem;color:rgba(255,255,255,0.5);margin-top:0.5rem;display:block;line-height:1.4}
 
 /* HERO PILLARS */
 .hero-pillars-wrap{background:var(--blush);border-top:1px solid var(--border-soft);padding:2.5rem 2rem}
@@ -224,11 +224,11 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 .network-note{text-align:center;font-size:0.85rem;color:var(--ink-muted);margin-top:1.5rem;max-width:520px;margin-left:auto;margin-right:auto}
 
 /* SNIPPET SECTION */
-.snippet-section{padding:3.5rem 2rem;background:var(--white);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft)}
+.snippet-section{padding:3.5rem 2rem;background:var(--ink);border:none}
 .snippet-inner{max-width:680px;margin:0 auto;text-align:center}
-.snippet-title{font-family:'DM Serif Display',serif;font-size:clamp(1.4rem,2.5vw,1.9rem);color:var(--ink);letter-spacing:-0.02em;margin-bottom:0.5rem}
-.snippet-sub{font-size:0.9375rem;color:var(--ink-soft);margin-bottom:1.75rem}
-.code-block{background:var(--ink);border-radius:var(--radius);padding:1.5rem 1.75rem;text-align:left;position:relative}
+.snippet-title{font-family:'DM Serif Display',serif;font-size:clamp(1.4rem,2.5vw,1.9rem);color:var(--white);letter-spacing:-0.02em;margin-bottom:0.5rem}
+.snippet-sub{font-size:0.9375rem;color:rgba(255,255,255,0.6);margin-bottom:1.75rem}
+.code-block{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:1.5rem 1.75rem;text-align:left;position:relative}
 .code-line{display:block;font-family:'Spline Sans Mono',ui-monospace,'Courier New',monospace;font-size:0.8125rem;line-height:1.8}
 .code-comment{color:rgba(255,255,255,0.35)}
 .code-tag{color:#79c0ff}
@@ -411,8 +411,8 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
   .network-grid{grid-template-columns:1fr 1fr}
   .flow-panels{flex-direction:column}
   .hero-pillars{flex-direction:column}
-  .hero-stats{flex-wrap:wrap;margin:1.5rem 1.25rem 0}
-  .hero-stat{min-width:40%;flex:unset}
+  .hero-stats{flex-wrap:wrap;padding:0 1rem}
+  .hero-stat{min-width:40%;flex:unset;max-width:none}
 }
 @media(max-width:640px){
   nav{padding:0 1.25rem}
@@ -605,7 +605,7 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
   <div class="snippet-section">
     <div class="snippet-inner">
       <h2 class="snippet-title">Two lines. That's all it takes.</h2>
-      <p class="snippet-sub">Paste this once into your blog's <code style="background:var(--sage-light);color:var(--sage);padding:0.1em 0.4em;border-radius:4px;font-size:0.875em">&lt;head&gt;</code> and IntroLinq runs on every article - past and future.</p>
+      <p class="snippet-sub">Paste this once into your blog's <code style="background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.9);padding:0.1em 0.4em;border-radius:4px;font-size:0.875em">&lt;head&gt;</code> and IntroLinq runs on every article - past and future.</p>
       <div class="code-block">
         <button class="copy-btn" id="copy-btn" onclick="copySnippet()">Copy</button>
         <span class="code-line"><span class="code-comment">&lt;!-- Paste once into your blog's &lt;head&gt; --&gt;</span></span>
