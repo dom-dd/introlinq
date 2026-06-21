@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IntroLinq - Earn from every expert you'd recommend</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/png" href="/faviron.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,6 +26,7 @@ body{font-family:'Spline Sans',system-ui,sans-serif;background:var(--cream);colo
 nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-soft);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px}
 .logo{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--ink);text-decoration:none;letter-spacing:-0.02em}
 .logo span{color:var(--sage)}
+.logo-img{height:32px;width:auto;display:block}
 .nav-tagline{font-size:0.8125rem;color:var(--ink-muted);margin:0 auto}
 .nav-cta{background:var(--ink);color:var(--white);border:none;padding:0.5rem 1.25rem;border-radius:100px;font-size:0.875rem;font-weight:500;cursor:pointer;text-decoration:none;transition:opacity 0.15s}
 .nav-cta:hover{opacity:0.85}
@@ -385,7 +387,7 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
 </div>
 
 <nav>
-  <a href="#" class="logo">Intro<span>Linq</span></a>
+  <a href="#" class="logo"><img src="/logo.png" alt="IntroLinq" class="logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span class="logo-text" style="display:none">Intro<span>Linq</span></span></a>
   <span class="nav-tagline">Free for publishers · No setup required</span>
   <a href="#join" class="nav-cta">Claim your spot</a>
 </nav>
