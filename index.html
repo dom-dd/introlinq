@@ -969,7 +969,7 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
       <div class="tier-pct">90%</div>
       <div class="tier-sublabel">goes to you</div>
       <div class="tier-detail">The best deal IntroLinq will ever offer. Sign up now and this rate is yours for as long as you use the platform.</div>
-      <div class="tier-spots">77 spots remaining</div>
+      <div class="tier-spots spots-loading" id="tier-spots">27 spots remaining</div>
     </div>
     <div class="tier tier-standard">
       <span class="tier-badge">Standard</span>
@@ -1155,6 +1155,8 @@ function updateSpotsUI(remaining) {
   if (bannerEl) bannerEl.textContent = remaining + ' spots';
   if (formEl) formEl.textContent = '· ' + remaining + ' spots left';
   if (textEl) textEl.textContent = remaining + ' of 100 spots left';
+  const tierEl = document.getElementById('tier-spots');
+  if (tierEl) tierEl.textContent = remaining + ' spots remaining';
   if (barEl) barEl.style.width = Math.min(100, taken) + '%';
   document.querySelectorAll('.spots-loading').forEach(el => el.classList.remove('spots-loading'));
 }
