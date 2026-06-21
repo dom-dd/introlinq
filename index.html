@@ -344,25 +344,63 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
 .footer-note{font-size:0.8125rem;color:var(--ink-muted)}
 
 /* PRODUCT VISUAL */
-.visual-section{padding:4.5rem 2rem;background:var(--ink);overflow:hidden}
-.visual-inner{max-width:1000px;margin:0 auto}
-.visual-header{text-align:center;margin-bottom:2.5rem}
-.visual-header .section-label{color:rgba(255,255,255,0.4)}
-.visual-header h2{font-family:'DM Serif Display',serif;font-size:clamp(1.6rem,3vw,2.25rem);color:var(--white);letter-spacing:-0.02em;margin-bottom:0.75rem}
-.visual-header p{font-size:0.9375rem;color:rgba(255,255,255,0.55);max-width:500px;margin:0 auto;line-height:1.7}
-.visual-frame{position:relative;border-radius:20px;overflow:hidden;height:420px}
-.visual-photo{width:100%;height:100%;object-fit:cover;filter:brightness(0.55)}
-.visual-cards{position:absolute;inset:0;padding:2rem;display:flex;flex-direction:column;justify-content:flex-end;gap:0.875rem}
-.dash-card{background:rgba(255,255,255,0.96);backdrop-filter:blur(12px);border-radius:12px;padding:1rem 1.25rem;display:inline-flex;flex-direction:column;gap:0.2rem;max-width:220px;box-shadow:0 8px 32px rgba(0,0,0,0.25)}
-.dash-card.dash-top{align-self:flex-end;max-width:260px}
-.dash-label{font-size:0.7rem;color:var(--ink-muted);font-weight:500;text-transform:uppercase;letter-spacing:0.06em}
-.dash-value{font-family:'DM Serif Display',serif;font-size:1.75rem;color:var(--ink);line-height:1.1;letter-spacing:-0.02em}
-.dash-change{font-size:0.775rem;color:var(--sage);font-weight:500}
-.dash-sub{font-size:0.775rem;color:var(--ink-muted)}
-.dash-row{display:flex;gap:0.75rem;align-items:stretch}
-.dash-mini{background:rgba(255,255,255,0.96);border-radius:12px;padding:0.875rem 1.125rem;flex:1;box-shadow:0 8px 32px rgba(0,0,0,0.25)}
-.dash-mini .dash-value{font-size:1.25rem}
-@media(max-width:640px){.visual-frame{height:340px}.dash-card{max-width:180px}.dash-value{font-size:1.4rem}}
+/* DASHBOARD PREVIEW */
+.dashprev-section{padding:5rem 2rem;background:var(--white);border-top:1px solid var(--border-soft)}
+.dashprev-inner{max-width:1100px;margin:0 auto}
+.dashprev-header{text-align:center;margin-bottom:2.5rem}
+.dashprev-header h2{font-family:'DM Serif Display',serif;font-size:clamp(1.6rem,3vw,2.25rem);letter-spacing:-0.02em;margin-bottom:0.75rem}
+.dashprev-header p{font-size:0.9375rem;color:var(--ink-soft);max-width:520px;margin:0 auto;line-height:1.7}
+
+.dash-app{background:var(--white);border-radius:16px;border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,0.04),0 20px 72px rgba(26,26,46,0.13);overflow:hidden;display:flex;min-height:460px}
+.dash-sidebar{width:185px;background:var(--ink);flex-shrink:0;padding:1.25rem 0}
+.dash-sidebar-logo{font-family:'DM Serif Display',serif;font-size:1rem;color:var(--white);padding:0 1.25rem 1.25rem;border-bottom:1px solid rgba(255,255,255,0.07);margin-bottom:0.625rem}
+.dash-sidebar-logo span{color:var(--sage)}
+.dash-nav-item{display:flex;align-items:center;gap:0.5rem;padding:0.55rem 1.25rem;font-size:0.8rem;color:rgba(255,255,255,0.4);cursor:default}
+.dash-nav-item.active{color:var(--white);background:rgba(255,255,255,0.07);border-left:2px solid var(--sage);padding-left:calc(1.25rem - 2px)}
+.dash-nav-icon{font-size:0.875rem}
+
+.dash-main{flex:1;display:flex;flex-direction:column;background:#f6f7f9;overflow:hidden}
+.dash-topbar{padding:0.875rem 1.5rem;background:var(--white);border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.dash-page-title{font-weight:600;color:var(--ink);font-size:0.875rem}
+.dash-period{font-size:0.75rem;color:var(--ink-muted);background:var(--cream);padding:0.2rem 0.625rem;border-radius:6px;border:1px solid var(--border)}
+
+.dash-body{padding:1.125rem;flex:1}
+
+.dash-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:0.625rem;margin-bottom:0.75rem}
+.dash-kpi-card{background:var(--white);border:1px solid var(--border-soft);border-radius:10px;padding:0.875rem 1rem}
+.dash-kpi-label{font-size:0.65rem;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:0.375rem}
+.dash-kpi-value{font-family:'DM Serif Display',serif;font-size:1.375rem;color:var(--ink);letter-spacing:-0.02em;display:block;line-height:1}
+.dash-kpi-delta{font-size:0.65rem;font-weight:500;margin-top:0.3rem;display:block}
+.dash-kpi-delta.up{color:var(--sage)}
+.dash-kpi-delta.muted{color:var(--ink-muted)}
+
+.dash-lower{display:grid;grid-template-columns:3fr 2fr;gap:0.625rem}
+.dash-widget{background:var(--white);border:1px solid var(--border-soft);border-radius:10px;padding:1rem 1.125rem}
+.dash-widget-title{font-size:0.65rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:0.875rem}
+
+.earn-chart{display:flex;align-items:flex-end;gap:4px;height:70px}
+.earn-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.earn-bar{width:100%;background:#dde8e3;border-radius:3px 3px 0 0;min-height:4px}
+.earn-bar.peak{background:var(--sage)}
+.earn-week{font-size:0.58rem;color:var(--ink-muted)}
+
+.earn-table{width:100%;border-collapse:collapse;margin-top:0.125rem}
+.earn-table th{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-muted);text-align:left;padding:0 0 0.5rem;border-bottom:1px solid var(--border-soft)}
+.earn-table td{font-size:0.75rem;padding:0.45rem 0;border-bottom:1px solid var(--border-soft);color:var(--ink-soft)}
+.earn-table tr:last-child td{border-bottom:none}
+.earn-table .earn-post-name{color:var(--ink);font-weight:500;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.earn-table .earn-post-val{color:var(--sage);font-weight:500;text-align:right}
+
+.booking-list-dash{display:flex;flex-direction:column}
+.booking-row{display:flex;align-items:center;justify-content:space-between;padding:0.475rem 0;border-bottom:1px solid var(--border-soft)}
+.booking-row:last-child{border-bottom:none}
+.booking-left{display:flex;flex-direction:column}
+.booking-who-name{font-size:0.75rem;font-weight:500;color:var(--ink)}
+.booking-who-detail{font-size:0.65rem;color:var(--ink-muted)}
+.booking-amount{font-size:0.775rem;color:var(--sage);font-weight:600}
+
+@media(max-width:900px){.dash-sidebar{display:none}.dash-kpis{grid-template-columns:1fr 1fr}.dash-lower{grid-template-columns:1fr}}
+@media(max-width:640px){.dash-kpis{grid-template-columns:1fr 1fr}.dashprev-section{padding:3rem 1.25rem}}
 
 @media(max-width:900px){
   .hero-inner{grid-template-columns:1fr;gap:2.5rem}
@@ -417,15 +455,15 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
 
   <!-- CENTERED HEADLINE -->
   <div class="hero-top">
-    <h1>Your Content Helps People.<br><em>Your Earnings Don't.</em></h1>
-    <p class="hero-sub">IntroLinq embeds expert booking links in your posts. Readers get the help they need. You earn 90% of every call they book.</p>
+    <h1>Your readers want expert advice.<br><em>You should be earning from it.</em></h1>
+    <p class="hero-sub">We detect topics in your posts where readers could benefit from expert guidance — then match them with the right professional from 5,000+ vetted experts worldwide, filtered by topic, language, location, and budget. You earn 90% of every booking.</p>
   </div>
 
   <!-- STATS -->
   <div class="hero-stats">
     <div class="hero-stat">
-      <span class="hero-stat-num">500<em>+</em></span>
-      <span class="hero-stat-label">Vetted experts</span>
+      <span class="hero-stat-num">5,000<em>+</em></span>
+      <span class="hero-stat-label">Vetted experts worldwide</span>
     </div>
     <div class="hero-stat">
       <span class="hero-stat-num"><em>90</em>%</span>
@@ -445,18 +483,18 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
   <div class="hero-pillars">
     <div class="hero-pillar">
       <span class="hero-pillar-icon">🔌</span>
-      <div class="hero-pillar-title">Install once</div>
-      <p class="hero-pillar-sub">Paste one script into your blog's &lt;head&gt;. Works on every post, past and future. No plugin, no CMS changes needed.</p>
+      <div class="hero-pillar-title">One script, everywhere</div>
+      <p class="hero-pillar-sub">You paste a single JavaScript snippet into your blog's <code style="font-size:0.75rem;background:var(--sage-light);color:var(--sage);padding:0.1em 0.3em;border-radius:3px">&lt;head&gt;</code> once. IntroLinq then runs silently on every post you've ever published and every one you write in future — with no plugin, no CMS integration, and nothing to maintain.</p>
     </div>
     <div class="hero-pillar highlight">
       <span class="hero-pillar-icon">⚡</span>
-      <div class="hero-pillar-title">We match experts</div>
-      <p class="hero-pillar-sub">IntroLinq reads each post and surfaces the right expert automatically. No tagging, no extra work from you.</p>
+      <div class="hero-pillar-title">AI-powered expert matching</div>
+      <p class="hero-pillar-sub">IntroLinq reads each post, detects the topics your readers are engaging with, and searches 5,000+ vetted professionals worldwide to find the best match — filtered by topic, language, country, price range, and more. You never touch it.</p>
     </div>
     <div class="hero-pillar">
       <span class="hero-pillar-icon">💰</span>
-      <div class="hero-pillar-title">You earn</div>
-      <p class="hero-pillar-sub">90% of every booking your readers make, paid monthly. Readers get expert advice. You get paid. Everyone wins.</p>
+      <div class="hero-pillar-title">90% of every booking, monthly</div>
+      <p class="hero-pillar-sub">When a reader books a call, you keep 90% of the platform fee. Payments are automatic and land in your account every month. No invoicing, no chasing — just passive income from content you've already written.</p>
     </div>
   </div>
 
@@ -622,31 +660,128 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
 </div>
 
 <!-- PRODUCT VISUAL -->
-<div class="visual-section">
-  <div class="visual-inner">
-    <div class="visual-header">
-      <div class="section-label">Your dashboard</div>
-      <h2>See exactly what you earn, post by post</h2>
-      <p>Every booking tracked. Every commission logged. See which posts earn the most and double down.</p>
+<div class="dashprev-section">
+  <div class="dashprev-inner">
+    <div class="dashprev-header">
+      <div class="section-label">Publisher dashboard</div>
+      <h2>Every booking tracked. Every penny logged.</h2>
+      <p>See which posts earn the most, which experts your readers love, and when your next payout lands — all in one place from day one.</p>
     </div>
-    <div class="visual-frame">
-      <img class="visual-photo" src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&w=1200&q=80" alt="Publisher working">
-      <div class="visual-cards">
-        <div class="dash-card dash-top">
-          <span class="dash-label">Total earned this month</span>
-          <span class="dash-value">£4,320</span>
-          <span class="dash-change">+£840 vs last month</span>
+
+    <div class="dash-app">
+      <!-- Sidebar -->
+      <div class="dash-sidebar">
+        <div class="dash-sidebar-logo">Intro<span>Linq</span></div>
+        <div class="dash-nav-item active"><span class="dash-nav-icon">▦</span> Overview</div>
+        <div class="dash-nav-item"><span class="dash-nav-icon">📝</span> Posts</div>
+        <div class="dash-nav-item"><span class="dash-nav-icon">📅</span> Bookings</div>
+        <div class="dash-nav-item"><span class="dash-nav-icon">👥</span> Experts</div>
+        <div class="dash-nav-item"><span class="dash-nav-icon">💷</span> Payouts</div>
+        <div class="dash-nav-item"><span class="dash-nav-icon">⚙️</span> Settings</div>
+      </div>
+
+      <!-- Main -->
+      <div class="dash-main">
+        <div class="dash-topbar">
+          <span class="dash-page-title">Overview</span>
+          <span class="dash-period">June 2026</span>
         </div>
-        <div class="dash-row">
-          <div class="dash-mini">
-            <span class="dash-label">Bookings</span>
-            <span class="dash-value">47</span>
-            <span class="dash-sub">this month</span>
+
+        <div class="dash-body">
+          <!-- KPI row -->
+          <div class="dash-kpis">
+            <div class="dash-kpi-card">
+              <span class="dash-kpi-label">Earned this month</span>
+              <span class="dash-kpi-value">£4,320</span>
+              <span class="dash-kpi-delta up">+£840 vs May</span>
+            </div>
+            <div class="dash-kpi-card">
+              <span class="dash-kpi-label">Bookings</span>
+              <span class="dash-kpi-value">47</span>
+              <span class="dash-kpi-delta up">+12 vs May</span>
+            </div>
+            <div class="dash-kpi-card">
+              <span class="dash-kpi-label">Avg. per booking</span>
+              <span class="dash-kpi-value">£82</span>
+              <span class="dash-kpi-delta muted">after your 90%</span>
+            </div>
+            <div class="dash-kpi-card">
+              <span class="dash-kpi-label">Next payout</span>
+              <span class="dash-kpi-value">1 Jul</span>
+              <span class="dash-kpi-delta muted">£4,320 ready</span>
+            </div>
           </div>
-          <div class="dash-mini">
-            <span class="dash-label">Top post</span>
-            <span class="dash-value" style="font-size:0.9rem;line-height:1.3">How I sorted my freelance finances</span>
-            <span class="dash-sub">12 bookings</span>
+
+          <!-- Lower: chart + bookings -->
+          <div class="dash-lower">
+            <!-- Left: chart + top posts -->
+            <div class="dash-widget">
+              <div class="dash-widget-title">Earnings — last 8 weeks</div>
+              <div class="earn-chart">
+                <div class="earn-col"><div class="earn-bar" style="height:34%"></div><span class="earn-week">W1</span></div>
+                <div class="earn-col"><div class="earn-bar" style="height:52%"></div><span class="earn-week">W2</span></div>
+                <div class="earn-col"><div class="earn-bar" style="height:41%"></div><span class="earn-week">W3</span></div>
+                <div class="earn-col"><div class="earn-bar" style="height:63%"></div><span class="earn-week">W4</span></div>
+                <div class="earn-col"><div class="earn-bar" style="height:50%"></div><span class="earn-week">W5</span></div>
+                <div class="earn-col"><div class="earn-bar" style="height:74%"></div><span class="earn-week">W6</span></div>
+                <div class="earn-col"><div class="earn-bar" style="height:87%"></div><span class="earn-week">W7</span></div>
+                <div class="earn-col"><div class="earn-bar peak" style="height:100%"></div><span class="earn-week">W8</span></div>
+              </div>
+              <div style="margin-top:1rem">
+                <div class="dash-widget-title">Top posts this month</div>
+                <table class="earn-table">
+                  <thead><tr><th>Post</th><th>Bookings</th><th style="text-align:right">Earned</th></tr></thead>
+                  <tbody>
+                    <tr><td class="earn-post-name">How I sorted my freelance finances</td><td>12</td><td class="earn-post-val">£1,170</td></tr>
+                    <tr><td class="earn-post-name">Marathon training after 40</td><td>9</td><td class="earn-post-val">£864</td></tr>
+                    <tr><td class="earn-post-name">Building a capsule wardrobe</td><td>7</td><td class="earn-post-val">£756</td></tr>
+                    <tr><td class="earn-post-name">Changing careers at 35</td><td>5</td><td class="earn-post-val">£630</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Right: recent bookings -->
+            <div class="dash-widget">
+              <div class="dash-widget-title">Recent bookings</div>
+              <div class="booking-list-dash">
+                <div class="booking-row">
+                  <div class="booking-left">
+                    <span class="booking-who-name">Claire D. · Finance coach</span>
+                    <span class="booking-who-detail">Freelance finances · 2h ago</span>
+                  </div>
+                  <span class="booking-amount">£58.50</span>
+                </div>
+                <div class="booking-row">
+                  <div class="booking-left">
+                    <span class="booking-who-name">Tom B. · Running coach</span>
+                    <span class="booking-who-detail">Marathon training · 5h ago</span>
+                  </div>
+                  <span class="booking-amount">£72.00</span>
+                </div>
+                <div class="booking-row">
+                  <div class="booking-left">
+                    <span class="booking-who-name">Daniel P. · Career coach</span>
+                    <span class="booking-who-detail">Career change · Yesterday</span>
+                  </div>
+                  <span class="booking-amount">£108.00</span>
+                </div>
+                <div class="booking-row">
+                  <div class="booking-left">
+                    <span class="booking-who-name">Elise M. · Personal stylist</span>
+                    <span class="booking-who-detail">Capsule wardrobe · Yesterday</span>
+                  </div>
+                  <span class="booking-amount">£81.00</span>
+                </div>
+                <div class="booking-row">
+                  <div class="booking-left">
+                    <span class="booking-who-name">Dr. Nina W. · Health</span>
+                    <span class="booking-who-detail">Burnout recovery · 2 days ago</span>
+                  </div>
+                  <span class="booking-amount">£67.50</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
