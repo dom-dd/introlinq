@@ -105,7 +105,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 
 /* EARLY SIGNUP FORM - high up */
 .early-form-wrap{max-width:480px;margin:0 auto 1rem}
-.early-form{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem}
+.early-form{background:var(--white);border:1px solid var(--border);border-top:3px solid var(--sage);border-radius:var(--radius);padding:1.75rem;box-shadow:0 4px 24px rgba(0,0,0,0.09)}
 .early-form-label{font-size:0.875rem;font-weight:500;color:var(--ink);margin-bottom:1rem;display:block;text-align:left}
 .early-form-label span{color:var(--sage)}
 .form-input{width:100%;padding:0.75rem 1rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.9375rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);outline:none;transition:border-color 0.15s;margin-bottom:0.75rem}
@@ -318,6 +318,7 @@ section{padding:5rem 2rem}
 footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
 .footer-logo{font-family:'DM Serif Display',serif;font-size:1.25rem;color:var(--ink);margin-bottom:0.5rem}
 .footer-logo span{color:var(--sage)}
+.footer-logo-img{height:28px;width:auto;margin:0 auto 0.75rem;display:block}
 .footer-note{font-size:0.8125rem;color:var(--ink-muted)}
 
 /* PRODUCT VISUAL */
@@ -387,7 +388,7 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
 </div>
 
 <nav>
-  <a href="#" class="logo"><img src="/logo.png" alt="IntroLinq" class="logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span class="logo-text" style="display:none">Intro<span>Linq</span></span></a>
+  <a href="#" class="logo"><img src="/IntroLinq-Logo.png" alt="IntroLinq" class="logo-img"></a>
   <span class="nav-tagline">Free for publishers · No setup required</span>
   <a href="#join" class="nav-cta">Claim your spot</a>
 </nav>
@@ -887,7 +888,7 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
 </section>
 
 <footer>
-  <div class="footer-logo">Intro<span>Linq</span></div>
+  <img src="/IntroLinq-Logo.png" alt="IntroLinq" class="footer-logo-img">
   <p class="footer-note">Connecting readers with the right experts, one post at a time.</p>
 </footer>
 
