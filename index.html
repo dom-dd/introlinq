@@ -54,7 +54,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 .hero-sub{font-size:1.0625rem;color:var(--ink-soft);margin:1rem 0 0;line-height:1.75;max-width:640px;margin-left:auto;margin-right:auto}
 
 /* HERO STATS */
-.hero-stats{display:flex;max-width:800px;margin:2.25rem auto 0;padding:0 2rem;background:var(--white);border:1px solid var(--border-soft);border-radius:var(--radius)}
+.hero-stats{display:flex;max-width:900px;margin:0 auto;padding:0 2rem;background:var(--white);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft)}
 .hero-stat{flex:1;text-align:center;padding:1.5rem 0.5rem;position:relative}
 .hero-stat+.hero-stat::before{content:'';position:absolute;left:0;top:15%;height:70%;width:1px;background:var(--border)}
 .hero-stat-num{font-family:'DM Serif Display',serif;font-size:2.5rem;color:var(--ink);letter-spacing:-0.04em;line-height:1;display:block}
@@ -456,48 +456,7 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
   <!-- CENTERED HEADLINE -->
   <div class="hero-top">
     <h1>Every article you write creates demand for expert advice.<br><em>You should be earning from it.</em></h1>
-    <p class="hero-sub">We detect topics in your articles where readers could benefit from expert guidance  - then look for the best fit in our database of 5,000+ vetted experts worldwide, filtered by topic, language, location, and budget. You earn 90% of our commission on every booking.</p>
-  </div>
-
-  <!-- STATS -->
-  <div class="hero-stats">
-    <div class="hero-stat">
-      <span class="hero-stat-num">5,000+</span>
-      <span class="hero-stat-label">Vetted experts worldwide</span>
-    </div>
-    <div class="hero-stat">
-      <span class="hero-stat-num">90%</span>
-      <span class="hero-stat-label">Of our commission goes to you</span>
-    </div>
-    <div class="hero-stat">
-      <span class="hero-stat-num">2 min</span>
-      <span class="hero-stat-label">Setup time</span>
-    </div>
-    <div class="hero-stat">
-      <span class="hero-stat-num">Zero</span>
-      <span class="hero-stat-label">Ongoing work required</span>
-    </div>
-  </div>
-
-  <!-- 3 PILLARS -->
-  <div class="hero-pillars-wrap">
-    <div class="hero-pillars">
-      <div class="hero-pillar">
-        <span class="hero-pillar-num">01</span>
-        <div class="hero-pillar-title">One script, everywhere</div>
-        <p class="hero-pillar-sub">Paste a single snippet into your blog's <code style="font-size:0.8rem;background:var(--sage-light);color:var(--sage);padding:0.1em 0.3em;border-radius:3px">&lt;head&gt;</code> once. IntroLinq runs silently on every article you've ever published and every one you write in future - no plugin, no CMS changes, nothing to maintain.</p>
-      </div>
-      <div class="hero-pillar">
-        <span class="hero-pillar-num">02</span>
-        <div class="hero-pillar-title">We find the right expert for each article</div>
-        <p class="hero-pillar-sub">IntroLinq reads each article and detects where readers could benefit from expert guidance. It then searches 5,000+ vetted professionals worldwide to find the best fit - filtered by topic, language, country, and price range. You never touch it.</p>
-      </div>
-      <div class="hero-pillar">
-        <span class="hero-pillar-num">03</span>
-        <div class="hero-pillar-title">You earn 90% of our commission</div>
-        <p class="hero-pillar-sub">When a reader books a call, we take a small platform commission - and 90% of it goes straight to you. Paid automatically every month, no invoicing, no chasing - just passive income from articles you've already written.</p>
-      </div>
-    </div>
+    <p class="hero-sub">We detect topics in your articles where readers could benefit from expert guidance - then look for the best fit in our database of 5,000+ vetted experts worldwide, filtered by topic, language, location, and budget. You earn a commission on every booking.</p>
   </div>
 
   <div class="hero-inner">
@@ -616,6 +575,47 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
       <span class="platform-tag">Webflow</span>
       <span class="platform-tag">Medium</span>
       <span class="platform-tag">Any site with a &lt;head&gt; tag</span>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="hero-stat-num">5,000+</span>
+      <span class="hero-stat-label">Vetted experts worldwide</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-num">Up to 90%</span>
+      <span class="hero-stat-label">Of our commission goes to you</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-num">2 min</span>
+      <span class="hero-stat-label">Setup time</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-num">Zero</span>
+      <span class="hero-stat-label">Ongoing work required</span>
+    </div>
+  </div>
+
+  <!-- 3 PILLARS -->
+  <div class="hero-pillars-wrap">
+    <div class="hero-pillars">
+      <div class="hero-pillar">
+        <span class="hero-pillar-num">01</span>
+        <div class="hero-pillar-title">One script, everywhere</div>
+        <p class="hero-pillar-sub">Paste a single snippet into your blog's <code style="font-size:0.8rem;background:var(--sage-light);color:var(--sage);padding:0.1em 0.3em;border-radius:3px">&lt;head&gt;</code> once. IntroLinq runs silently on every article you've ever published and every one you write in future - no plugin, no CMS changes, nothing to maintain.</p>
+      </div>
+      <div class="hero-pillar">
+        <span class="hero-pillar-num">02</span>
+        <div class="hero-pillar-title">We find the right expert for each article</div>
+        <p class="hero-pillar-sub">IntroLinq reads each article and detects where readers could benefit from expert guidance. It then searches 5,000+ vetted professionals worldwide to find the best fit - filtered by topic, language, country, and price range. You never touch it.</p>
+      </div>
+      <div class="hero-pillar">
+        <span class="hero-pillar-num">03</span>
+        <div class="hero-pillar-title">You earn a commission on every booking</div>
+        <p class="hero-pillar-sub">When a reader books a call, we take a small platform commission - and your share goes straight to you. Paid automatically every month, no invoicing, no chasing - just passive income from articles you've already written.</p>
+      </div>
     </div>
   </div>
 
