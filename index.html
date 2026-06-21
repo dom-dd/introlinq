@@ -51,7 +51,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
 .hero h1{font-family:'DM Serif Display',serif;font-size:clamp(1.6rem,2.8vw,2.5rem);line-height:1.15;letter-spacing:-0.03em;color:var(--ink);margin:0}
 .hero h1 em{font-style:italic;color:var(--sage)}
-.hero-sub{font-size:1.0625rem;color:var(--ink-soft);margin:1rem 0 0;line-height:1.75;max-width:640px;margin-left:auto;margin-right:auto}
+.hero-sub{font-size:1.0625rem;color:var(--ink-soft);margin:1rem 0 0;line-height:1.75;max-width:1100px;margin-left:auto;margin-right:auto}
 
 /* HERO STATS */
 .hero-stats{display:flex;max-width:900px;margin:0 auto;padding:0 2rem;background:var(--white);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft)}
@@ -567,19 +567,6 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
 
   </div><!-- /hero-inner -->
 
-  <!-- INSTALL SNIPPET (moved here - right after demo) -->
-  <div class="snippet-section">
-    <div class="snippet-inner">
-      <h2 class="snippet-title">Two lines. That's all it takes.</h2>
-      <p class="snippet-sub">Paste this once into your blog's <code style="background:var(--sage-light);color:var(--sage);padding:0.1em 0.4em;border-radius:4px;font-size:0.875em">&lt;head&gt;</code> and IntroLinq runs on every article - past and future.</p>
-      <div class="code-block">
-        <button class="copy-btn" id="copy-btn" onclick="copySnippet()">Copy</button>
-        <span class="code-line"><span class="code-comment">&lt;!-- Paste once into your blog's &lt;head&gt; --&gt;</span></span>
-        <span class="code-line"><span class="code-tag">&lt;script</span> <span class="code-attr">src</span>=<span class="code-val">"https://cdn.introlinq.com/widget.js"</span> <span class="code-attr">data-blog</span>=<span class="code-val">"YOUR_ID"</span><span class="code-tag">&gt;&lt;/script&gt;</span></span>
-      </div>
-    </div>
-  </div>
-
   <!-- PLATFORMS STRIP -->
   <div class="platforms-strip">
     <p class="platforms-strip-label">Works with every major platform</p>
@@ -611,6 +598,19 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
     <div class="hero-stat">
       <span class="hero-stat-num">Zero</span>
       <span class="hero-stat-label">Ongoing work required</span>
+    </div>
+  </div>
+
+  <!-- INSTALL SNIPPET -->
+  <div class="snippet-section">
+    <div class="snippet-inner">
+      <h2 class="snippet-title">Two lines. That's all it takes.</h2>
+      <p class="snippet-sub">Paste this once into your blog's <code style="background:var(--sage-light);color:var(--sage);padding:0.1em 0.4em;border-radius:4px;font-size:0.875em">&lt;head&gt;</code> and IntroLinq runs on every article - past and future.</p>
+      <div class="code-block">
+        <button class="copy-btn" id="copy-btn" onclick="copySnippet()">Copy</button>
+        <span class="code-line"><span class="code-comment">&lt;!-- Paste once into your blog's &lt;head&gt; --&gt;</span></span>
+        <span class="code-line"><span class="code-tag">&lt;script</span> <span class="code-attr">src</span>=<span class="code-val">"https://cdn.introlinq.com/widget.js"</span> <span class="code-attr">data-blog</span>=<span class="code-val">"YOUR_ID"</span><span class="code-tag">&gt;&lt;/script&gt;</span></span>
+      </div>
     </div>
   </div>
 
