@@ -51,7 +51,29 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
 .hero h1{font-family:'DM Serif Display',serif;font-size:clamp(1.9rem,3.5vw,3rem);line-height:1.1;letter-spacing:-0.03em;color:var(--ink);margin:0}
 .hero h1 em{font-style:italic;color:var(--sage)}
-.hero-sub{font-size:1.0625rem;color:var(--ink-soft);margin:0 0 2rem;line-height:1.75}
+.hero-sub{font-size:1.0625rem;color:var(--ink-soft);margin:1rem 0 0;line-height:1.75;max-width:640px;margin-left:auto;margin-right:auto}
+
+/* HERO STATS */
+.hero-stats{display:flex;justify-content:center;gap:2.5rem;padding:2rem 2rem 0;flex-wrap:wrap}
+.hero-stat{text-align:center}
+.hero-stat-num{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--ink);letter-spacing:-0.03em;line-height:1;display:block}
+.hero-stat-num em{color:var(--sage);font-style:normal}
+.hero-stat-label{font-size:0.8rem;color:var(--ink-muted);margin-top:0.25rem;display:block}
+
+/* HERO PILLARS */
+.hero-pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;padding:1.75rem 2rem;max-width:1100px;margin:0 auto}
+.hero-pillar{background:var(--white);border:1px solid var(--border-soft);border-radius:var(--radius);padding:1.25rem 1.5rem}
+.hero-pillar-icon{font-size:1.5rem;margin-bottom:0.625rem;display:block}
+.hero-pillar-title{font-weight:600;color:var(--ink);margin-bottom:0.375rem;font-size:0.9375rem}
+.hero-pillar-sub{font-size:0.8125rem;color:var(--ink-soft);line-height:1.6}
+.hero-pillar.highlight{border-color:var(--sage-mid);background:var(--sage-light)}
+.hero-pillar.highlight .hero-pillar-title{color:var(--sage)}
+
+/* PLATFORMS STRIP */
+.platforms-strip{border-top:1px solid var(--border-soft);margin-top:2.5rem;padding:1.5rem 2rem 0;text-align:center;max-width:1100px;margin-left:auto;margin-right:auto}
+.platforms-strip-label{font-size:0.75rem;color:var(--ink-muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.875rem}
+.platforms-strip-list{display:flex;flex-wrap:wrap;gap:0.5rem;justify-content:center}
+.platform-tag{font-size:0.8125rem;color:var(--ink-soft);background:var(--white);border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.75rem;font-weight:500}
 
 /* MINI FLOW STRIP */
 .mini-flow{background:var(--ink);padding:1.25rem 2rem;border-bottom:1px solid rgba(255,255,255,0.06)}
@@ -348,6 +370,8 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
   .hero-top{text-align:center}
   .network-grid{grid-template-columns:1fr 1fr}
   .flow-panels{flex-direction:column}
+  .hero-pillars{grid-template-columns:1fr}
+  .hero-stats{gap:1.5rem}
 }
 @media(max-width:640px){
   nav{padding:0 1.25rem}
@@ -382,11 +406,6 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
 <body>
 
 <!-- TOP BANNER -->
-<div class="founder-banner">
-  <span class="founder-banner-text"><strong>Founder offer:</strong> First 100 publishers keep 90% of every booking - forever.</span>
-  <span class="spots-pill spots-loading" id="spots-pill"><span class="spots-count" id="banner-spots">27 spots</span> remaining</span>
-</div>
-
 <nav>
   <a href="#" class="logo">Intro<span>Linq</span></a>
   <span class="nav-tagline">Free for publishers · No setup required</span>
@@ -398,31 +417,46 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
 
   <!-- CENTERED HEADLINE -->
   <div class="hero-top">
-    <h1>Your blog already sends readers to experts.<br><em>Now earn every time they go.</em></h1>
+    <h1>Your Content Helps People.<br><em>Your Earnings Don't.</em></h1>
+    <p class="hero-sub">IntroLinq embeds expert booking links in your posts. Readers get the help they need. You earn 90% of every call they book.</p>
   </div>
 
-  <!-- STEP CARDS -->
-  <div class="hero-steps">
-    <div class="flow-steps">
-      <div class="flow-step">
-        <div class="flow-step-box"><div class="flow-step-icon">🔌</div><div class="flow-step-label">You install once</div><div class="flow-step-sub">One script, all posts covered</div></div>
-        <div class="flow-step-arrow">→</div>
-      </div>
-      <div class="flow-step">
-        <div class="flow-step-box highlight-step"><div class="flow-step-icon">⚡</div><div class="flow-step-label">IntroLinq detects</div><div class="flow-step-sub">Matches expert to content</div></div>
-        <div class="flow-step-arrow">→</div>
-      </div>
-      <div class="flow-step">
-        <div class="flow-step-box"><div class="flow-step-icon">👆</div><div class="flow-step-label">Reader clicks</div><div class="flow-step-sub">Widget appears on post</div></div>
-        <div class="flow-step-arrow">→</div>
-      </div>
-      <div class="flow-step">
-        <div class="flow-step-box"><div class="flow-step-icon">📅</div><div class="flow-step-label">Call is booked</div><div class="flow-step-sub">Reader pays upfront</div></div>
-        <div class="flow-step-arrow">→</div>
-      </div>
-      <div class="flow-step">
-        <div class="flow-step-box highlight-step"><div class="flow-step-icon">💸</div><div class="flow-step-label">You earn 90%</div><div class="flow-step-sub">Paid monthly, no effort</div></div>
-      </div>
+  <!-- STATS -->
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="hero-stat-num">500<em>+</em></span>
+      <span class="hero-stat-label">Vetted experts</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-num"><em>90</em>%</span>
+      <span class="hero-stat-label">Goes to you</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-num">2<em>min</em></span>
+      <span class="hero-stat-label">Setup time</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-num"><em>0</em></span>
+      <span class="hero-stat-label">Ongoing work</span>
+    </div>
+  </div>
+
+  <!-- 3 PILLARS -->
+  <div class="hero-pillars">
+    <div class="hero-pillar">
+      <span class="hero-pillar-icon">🔌</span>
+      <div class="hero-pillar-title">Install once</div>
+      <p class="hero-pillar-sub">Paste one script into your blog's &lt;head&gt;. Works on every post, past and future. No plugin, no CMS changes needed.</p>
+    </div>
+    <div class="hero-pillar highlight">
+      <span class="hero-pillar-icon">⚡</span>
+      <div class="hero-pillar-title">We match experts</div>
+      <p class="hero-pillar-sub">IntroLinq reads each post and surfaces the right expert automatically. No tagging, no extra work from you.</p>
+    </div>
+    <div class="hero-pillar">
+      <span class="hero-pillar-icon">💰</span>
+      <div class="hero-pillar-title">You earn</div>
+      <p class="hero-pillar-sub">90% of every booking your readers make, paid monthly. Readers get expert advice. You get paid. Everyone wins.</p>
     </div>
   </div>
 
@@ -530,6 +564,21 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
     </div>
 
   </div><!-- /hero-inner -->
+
+  <!-- PLATFORMS STRIP -->
+  <div class="platforms-strip">
+    <p class="platforms-strip-label">Works with every major platform</p>
+    <div class="platforms-strip-list">
+      <span class="platform-tag">WordPress</span>
+      <span class="platform-tag">Ghost</span>
+      <span class="platform-tag">Substack</span>
+      <span class="platform-tag">Squarespace</span>
+      <span class="platform-tag">Webflow</span>
+      <span class="platform-tag">Medium</span>
+      <span class="platform-tag">Any site with a &lt;head&gt; tag</span>
+    </div>
+  </div>
+
 </div>
 
 <!-- INSTALL SNIPPET -->
