@@ -250,14 +250,17 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 @media(max-width:700px){.testimonials-grid{grid-template-columns:1fr}}
 
 /* EXPERT STRIP */
-.experts-strip{padding:3.5rem 2rem;background:var(--white);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft)}
-.strip-label{font-size:0.8125rem;font-weight:500;color:var(--ink-muted);text-align:center;margin-bottom:2rem;letter-spacing:0.06em;text-transform:uppercase}
+.experts-strip{padding:3.5rem 0;background:var(--white);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft);overflow:hidden}
+.strip-label{font-size:0.7rem;font-weight:600;color:var(--ink-muted);text-align:center;margin-bottom:2rem;letter-spacing:0.1em;text-transform:uppercase}
+.marquee-track{display:flex;gap:2rem;animation:marqueeScroll 70s linear infinite;width:max-content;padding:0.5rem 0}
+.marquee-track:hover{animation-play-state:paused}
+@keyframes marqueeScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .experts-grid{display:flex;justify-content:center;flex-wrap:wrap;gap:1.5rem}
-.expert-card{display:flex;flex-direction:column;align-items:center;gap:0.625rem;width:130px;text-align:center}
-.expert-card-img{width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--border)}
-.expert-card-name{font-weight:500;font-size:0.875rem;color:var(--ink);line-height:1.3}
-.expert-card-role{font-size:0.75rem;color:var(--ink-soft);line-height:1.4}
-.expert-card-rate{font-size:0.75rem;color:var(--sage);font-weight:500}
+.expert-card{display:flex;flex-direction:column;align-items:center;gap:0.5rem;width:140px;text-align:center;flex-shrink:0}
+.expert-card-img{width:96px;height:96px;border-radius:50%;object-fit:cover;border:2px solid var(--border-soft);display:block}
+.expert-card-name{font-weight:600;font-size:0.8125rem;color:var(--ink);line-height:1.3}
+.expert-card-role{font-size:0.7rem;color:var(--ink-soft);line-height:1.4}
+.expert-card-rate{font-size:0.7rem;color:var(--sage);font-weight:500}
 
 /* SECTIONS */
 section{padding:5rem 2rem}
@@ -564,6 +567,19 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
 
   </div><!-- /hero-inner -->
 
+  <!-- INSTALL SNIPPET (moved here - right after demo) -->
+  <div class="snippet-section">
+    <div class="snippet-inner">
+      <h2 class="snippet-title">Two lines. That's all it takes.</h2>
+      <p class="snippet-sub">Paste this once into your blog's <code style="background:var(--sage-light);color:var(--sage);padding:0.1em 0.4em;border-radius:4px;font-size:0.875em">&lt;head&gt;</code> and IntroLinq runs on every article - past and future.</p>
+      <div class="code-block">
+        <button class="copy-btn" id="copy-btn" onclick="copySnippet()">Copy</button>
+        <span class="code-line"><span class="code-comment">&lt;!-- Paste once into your blog's &lt;head&gt; --&gt;</span></span>
+        <span class="code-line"><span class="code-tag">&lt;script</span> <span class="code-attr">src</span>=<span class="code-val">"https://cdn.introlinq.com/widget.js"</span> <span class="code-attr">data-blog</span>=<span class="code-val">"YOUR_ID"</span><span class="code-tag">&gt;&lt;/script&gt;</span></span>
+      </div>
+    </div>
+  </div>
+
   <!-- PLATFORMS STRIP -->
   <div class="platforms-strip">
     <p class="platforms-strip-label">Works with every major platform</p>
@@ -622,18 +638,6 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
 </div>
 
 <!-- INSTALL SNIPPET -->
-<div class="snippet-section">
-  <div class="snippet-inner">
-    <h2 class="snippet-title">Two lines. That's all it takes.</h2>
-    <p class="snippet-sub">Paste this once into your blog's <code style="background:var(--sage-light);color:var(--sage);padding:0.1em 0.4em;border-radius:4px;font-size:0.875em">&lt;head&gt;</code> and IntroLinq runs on every post - past and future.</p>
-    <div class="code-block">
-      <button class="copy-btn" id="copy-btn" onclick="copySnippet()">Copy</button>
-      <span class="code-line"><span class="code-comment">&lt;!-- Paste once into your blog's &lt;head&gt; --&gt;</span></span>
-      <span class="code-line"><span class="code-tag">&lt;script</span> <span class="code-attr">src</span>=<span class="code-val">"https://cdn.introlinq.com/widget.js"</span> <span class="code-attr">data-blog</span>=<span class="code-val">"YOUR_ID"</span><span class="code-tag">&gt;&lt;/script&gt;</span></span>
-    </div>
-  </div>
-</div>
-
 <!-- PUBLISHER TESTIMONIALS -->
 <div class="testimonials-section">
   <div class="testimonials-inner">
@@ -831,34 +835,51 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
   </div>
 </div>
 
-<!-- EXPERT STRIP -->
+<!-- EXPERT MARQUEE -->
 <div class="experts-strip">
   <div class="strip-label">A few of the experts your readers could meet</div>
-  <div class="experts-grid">
-    <div class="expert-card">
-      <img class="expert-card-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=,h=,f=auto,dpr=1,fit=contain/f1731497121072x670114122540825600/EI0A8152.jpg" alt="Ahana Banerjee">
-      <div class="expert-card-name">Ahana Banerjee</div>
-      <div class="expert-card-role">YC Founder · Forbes 30u30</div>
-      <div class="expert-card-rate">from £80/session</div>
-    </div>
-    <div class="expert-card">
-      <img class="expert-card-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=,h=,f=auto,dpr=1,fit=contain/f1769693896955x679353291899212000/Kenneth%20OpenIntro.jpg" alt="Kenneth Kashif Thomas">
-      <div class="expert-card-name">Kenneth Kashif Thomas</div>
-      <div class="expert-card-role">Investor · Startup growth</div>
-      <div class="expert-card-rate">from £120/session</div>
-    </div>
-    <div class="expert-card">
-      <img class="expert-card-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=,h=,f=auto,dpr=1,fit=contain/f1723380298837x390393189267480600/ChrisChaney.jpg" alt="Chris Chaney">
-      <div class="expert-card-name">Chris Chaney</div>
-      <div class="expert-card-role">Serial entrepreneur · $100M exit</div>
-      <div class="expert-card-rate">from £150/session</div>
-    </div>
-    <div class="expert-card">
-      <div style="width:72px;height:72px;border-radius:50%;background:var(--sage-light);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--sage)">+</div>
-      <div class="expert-card-name">500+ experts</div>
-      <div class="expert-card-role">Finance · Career · Health · Legal · Tech</div>
-      <div class="expert-card-rate">across all niches</div>
-    </div>
+  <div class="marquee-track" id="marquee-track">
+    <div class="expert-card"><img class="expert-card-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=200,h=200,f=auto,dpr=1,fit=cover/f1731497121072x670114122540825600/EI0A8152.jpg" alt="Ahana Banerjee"><div class="expert-card-name">Ahana Banerjee</div><div class="expert-card-role">YC Founder · Forbes 30u30</div><div class="expert-card-rate">from £80/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=200,h=200,f=auto,dpr=1,fit=cover/f1769693896955x679353291899212000/Kenneth%20OpenIntro.jpg" alt="Kenneth Kashif Thomas"><div class="expert-card-name">Kenneth Kashif Thomas</div><div class="expert-card-role">Investor · Startup growth</div><div class="expert-card-rate">from £120/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=200,h=200,f=auto,dpr=1,fit=cover/f1723380298837x390393189267480600/ChrisChaney.jpg" alt="Chris Chaney"><div class="expert-card-name">Chris Chaney</div><div class="expert-card-role">Serial entrepreneur · $100M exit</div><div class="expert-card-rate">from £150/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=1" alt="Sarah Chen"><div class="expert-card-name">Sarah Chen</div><div class="expert-card-role">Career coach · Leadership</div><div class="expert-card-rate">from £65/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=2" alt="Marcus Williams"><div class="expert-card-name">Marcus Williams</div><div class="expert-card-role">Wealth advisor · Retirement</div><div class="expert-card-rate">from £90/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=44" alt="Priya Sharma"><div class="expert-card-name">Priya Sharma</div><div class="expert-card-role">Health & nutrition coach</div><div class="expert-card-rate">from £55/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=7" alt="James Okafor"><div class="expert-card-name">James Okafor</div><div class="expert-card-role">Legal advisor · Contracts</div><div class="expert-card-rate">from £95/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=9" alt="Emma Laurent"><div class="expert-card-name">Emma Laurent</div><div class="expert-card-role">Marketing strategist · Growth</div><div class="expert-card-rate">from £80/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=11" alt="Nina Patel"><div class="expert-card-name">Nina Patel</div><div class="expert-card-role">Mindfulness & wellbeing</div><div class="expert-card-rate">from £60/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=10" alt="Alex Torres"><div class="expert-card-name">Alex Torres</div><div class="expert-card-role">E-commerce · DTC brands</div><div class="expert-card-rate">from £110/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=12" alt="Tom Reynolds"><div class="expert-card-name">Tom Reynolds</div><div class="expert-card-role">Executive coach · C-suite</div><div class="expert-card-rate">from £130/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=20" alt="Sophie Martin"><div class="expert-card-name">Sophie Martin</div><div class="expert-card-role">Product design · UX</div><div class="expert-card-rate">from £85/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=16" alt="Rachel Kim"><div class="expert-card-name">Rachel Kim</div><div class="expert-card-role">Mental health · Burnout</div><div class="expert-card-rate">from £70/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=18" alt="Oliver Schmidt"><div class="expert-card-name">Oliver Schmidt</div><div class="expert-card-role">B2B sales · SaaS growth</div><div class="expert-card-rate">from £95/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=26" alt="Amara Diallo"><div class="expert-card-name">Amara Diallo</div><div class="expert-card-role">Brand strategy · Positioning</div><div class="expert-card-rate">from £80/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=28" alt="Ben Nakamura"><div class="expert-card-name">Ben Nakamura</div><div class="expert-card-role">Engineering · Tech hiring</div><div class="expert-card-rate">from £100/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=29" alt="Layla Hassan"><div class="expert-card-name">Layla Hassan</div><div class="expert-card-role">Content strategy · SEO</div><div class="expert-card-rate">from £65/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=32" alt="Carlos Mendez"><div class="expert-card-name">Carlos Mendez</div><div class="expert-card-role">Real estate · Property invest.</div><div class="expert-card-rate">from £85/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=47" alt="Dr. Isabella Ross"><div class="expert-card-name">Dr. Isabella Ross</div><div class="expert-card-role">Clinical nutrition · Gut health</div><div class="expert-card-rate">from £90/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=35" alt="Yusuf Ibrahim"><div class="expert-card-name">Yusuf Ibrahim</div><div class="expert-card-role">Business development · M&A</div><div class="expert-card-rate">from £110/session</div></div>
+    <!-- duplicate for seamless loop -->
+    <div class="expert-card"><img class="expert-card-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=200,h=200,f=auto,dpr=1,fit=cover/f1731497121072x670114122540825600/EI0A8152.jpg" alt="Ahana Banerjee"><div class="expert-card-name">Ahana Banerjee</div><div class="expert-card-role">YC Founder · Forbes 30u30</div><div class="expert-card-rate">from £80/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=200,h=200,f=auto,dpr=1,fit=cover/f1769693896955x679353291899212000/Kenneth%20OpenIntro.jpg" alt="Kenneth Kashif Thomas"><div class="expert-card-name">Kenneth Kashif Thomas</div><div class="expert-card-role">Investor · Startup growth</div><div class="expert-card-rate">from £120/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=200,h=200,f=auto,dpr=1,fit=cover/f1723380298837x390393189267480600/ChrisChaney.jpg" alt="Chris Chaney"><div class="expert-card-name">Chris Chaney</div><div class="expert-card-role">Serial entrepreneur · $100M exit</div><div class="expert-card-rate">from £150/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=1" alt="Sarah Chen"><div class="expert-card-name">Sarah Chen</div><div class="expert-card-role">Career coach · Leadership</div><div class="expert-card-rate">from £65/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=2" alt="Marcus Williams"><div class="expert-card-name">Marcus Williams</div><div class="expert-card-role">Wealth advisor · Retirement</div><div class="expert-card-rate">from £90/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=44" alt="Priya Sharma"><div class="expert-card-name">Priya Sharma</div><div class="expert-card-role">Health & nutrition coach</div><div class="expert-card-rate">from £55/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=7" alt="James Okafor"><div class="expert-card-name">James Okafor</div><div class="expert-card-role">Legal advisor · Contracts</div><div class="expert-card-rate">from £95/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=9" alt="Emma Laurent"><div class="expert-card-name">Emma Laurent</div><div class="expert-card-role">Marketing strategist · Growth</div><div class="expert-card-rate">from £80/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=11" alt="Nina Patel"><div class="expert-card-name">Nina Patel</div><div class="expert-card-role">Mindfulness & wellbeing</div><div class="expert-card-rate">from £60/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=10" alt="Alex Torres"><div class="expert-card-name">Alex Torres</div><div class="expert-card-role">E-commerce · DTC brands</div><div class="expert-card-rate">from £110/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=12" alt="Tom Reynolds"><div class="expert-card-name">Tom Reynolds</div><div class="expert-card-role">Executive coach · C-suite</div><div class="expert-card-rate">from £130/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=20" alt="Sophie Martin"><div class="expert-card-name">Sophie Martin</div><div class="expert-card-role">Product design · UX</div><div class="expert-card-rate">from £85/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=16" alt="Rachel Kim"><div class="expert-card-name">Rachel Kim</div><div class="expert-card-role">Mental health · Burnout</div><div class="expert-card-rate">from £70/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=18" alt="Oliver Schmidt"><div class="expert-card-name">Oliver Schmidt</div><div class="expert-card-role">B2B sales · SaaS growth</div><div class="expert-card-rate">from £95/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=26" alt="Amara Diallo"><div class="expert-card-name">Amara Diallo</div><div class="expert-card-role">Brand strategy · Positioning</div><div class="expert-card-rate">from £80/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=28" alt="Ben Nakamura"><div class="expert-card-name">Ben Nakamura</div><div class="expert-card-role">Engineering · Tech hiring</div><div class="expert-card-rate">from £100/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=29" alt="Layla Hassan"><div class="expert-card-name">Layla Hassan</div><div class="expert-card-role">Content strategy · SEO</div><div class="expert-card-rate">from £65/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=32" alt="Carlos Mendez"><div class="expert-card-name">Carlos Mendez</div><div class="expert-card-role">Real estate · Property invest.</div><div class="expert-card-rate">from £85/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=47" alt="Dr. Isabella Ross"><div class="expert-card-name">Dr. Isabella Ross</div><div class="expert-card-role">Clinical nutrition · Gut health</div><div class="expert-card-rate">from £90/session</div></div>
+    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=35" alt="Yusuf Ibrahim"><div class="expert-card-name">Yusuf Ibrahim</div><div class="expert-card-role">Business development · M&A</div><div class="expert-card-rate">from £110/session</div></div>
   </div>
 </div>
 
