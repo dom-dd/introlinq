@@ -43,7 +43,6 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 .hero-steps .flow-steps{margin-top:0;justify-content:center}
 .hero-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start;max-width:1100px;margin:0 auto;padding:2.5rem 2rem 0}
 .hero-left{text-align:left;order:2}
-.carousel-wrap{order:1}
 .hero-eyebrow{display:inline-flex;align-items:center;gap:0.5rem;background:var(--sage-light);color:var(--sage);font-size:0.8125rem;font-weight:500;padding:0.375rem 0.875rem;border-radius:100px;margin-bottom:1.75rem;letter-spacing:0.02em}
 .eyebrow-dot{width:6px;height:6px;background:var(--sage);border-radius:50%;animation:pulse 2s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
@@ -62,8 +61,8 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 @media(max-width:640px){.mini-flow-step:nth-child(n+6){display:none}}
 
 /* CAROUSEL */
-.carousel-wrap{position:relative;order:1}
-.carousel-label{font-size:0.75rem;font-weight:500;color:var(--ink-muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:1rem}
+.carousel-wrap{position:relative;order:1;background:var(--ink);border-radius:20px;padding:1.75rem}
+.carousel-label{font-size:0.7rem;font-weight:500;color:rgba(255,255,255,0.4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:1rem}
 .carousel-track{position:relative;overflow:visible;border-radius:var(--radius)}
 .carousel-slide{display:none;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem 1.75rem 1.25rem;text-align:left;animation:slideIn 0.4s ease}
 .carousel-slide.active{display:block}
@@ -73,7 +72,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 .carousel-text{font-size:0.9rem;color:var(--ink-soft);line-height:1.85}
 .carousel-text-2{font-size:0.9rem;color:var(--ink-soft);line-height:1.85;margin-top:0.5rem}
 .carousel-dots{display:flex;gap:0.5rem;justify-content:center;margin-top:1rem}
-.carousel-dot{width:6px;height:6px;border-radius:50%;background:var(--border);border:none;cursor:pointer;padding:0;transition:background 0.2s}
+.carousel-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.2);border:none;cursor:pointer;padding:0;transition:background 0.2s}
 .carousel-dot.active{background:var(--sage)}
 
 /* EXPERT TRIGGER POPUP */
