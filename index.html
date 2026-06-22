@@ -140,6 +140,13 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 .form-fine{font-size:0.75rem;color:var(--ink-muted);text-align:center;margin-top:0.875rem;line-height:1.5}
 .form-select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238888a8' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center;cursor:pointer}
 .form-select:invalid,.form-select option[value=""]{color:var(--ink-muted)}
+.exit-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1000;align-items:center;justify-content:center;padding:1.5rem;backdrop-filter:blur(2px)}
+.exit-overlay.active{display:flex}
+.exit-modal{background:var(--cream);border-radius:16px;padding:2.5rem 2rem;max-width:460px;width:100%;position:relative;animation:slideIn 0.3s ease;box-shadow:0 24px 64px rgba(0,0,0,0.18)}
+.exit-close{position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.25rem;cursor:pointer;color:var(--ink-muted);line-height:1;padding:0.25rem}
+.exit-badge{display:inline-block;font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;background:var(--gold);color:var(--white);padding:0.2rem 0.6rem;border-radius:100px;margin-bottom:1rem}
+.exit-title{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--ink);margin:0 0 0.5rem;letter-spacing:-0.02em;line-height:1.2}
+.exit-sub{color:var(--ink-soft);margin:0 0 1.5rem;line-height:1.65;font-size:0.9375rem}
 
 /* FOUNDER OFFER CARD */
 .founder-card{max-width:480px;margin:1.25rem auto 0;background:var(--gold-light);border:1px solid var(--gold-mid);border-radius:var(--radius);padding:1.25rem 1.5rem;text-align:left}
@@ -1220,6 +1227,7 @@ async function handleSubmit(e){
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error();
+    _formSubmitted = true;
     form.style.display = 'none';
     document.getElementById('success-state').style.display = 'block';
     fetchSpots();
@@ -1252,6 +1260,83 @@ document.querySelectorAll('a[href^="#"]').forEach(a=>{
     if(t)t.scrollIntoView({behavior:'smooth'});
   });
 });
+
+// Exit intent
+let _exitShown = false;
+let _formSubmitted = false;
+function closeExitPopup() {
+  document.getElementById('exit-popup').classList.remove('active');
+}
+if (window.matchMedia('(pointer:fine)').matches) {
+  document.addEventListener('mouseleave', function(e) {
+    if (e.clientY <= 0 && !_exitShown && !_formSubmitted) {
+      _exitShown = true;
+      document.getElementById('exit-popup').classList.add('active');
+    }
+  });
+}
+document.getElementById('exit-popup').addEventListener('click', function(e) {
+  if (e.target === this) closeExitPopup();
+});
+async function handleExitSubmit(e) {
+  e.preventDefault();
+  const form = e.target;
+  const btn = form.querySelector('[type="submit"]');
+  btn.textContent = 'Saving…';
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: form.name.value,
+        email: form.email.value,
+        blog: form.blog.value,
+        monthly_visitors: form.monthly_visitors.value
+      })
+    });
+    if (!res.ok) throw new Error();
+    _formSubmitted = true;
+    form.style.display = 'none';
+    document.getElementById('exit-success').style.display = 'block';
+    if (window._ilViewId) fetch('/api/track-convert', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ viewId: window._ilViewId }) }).catch(()=>{});
+    fetchSpots();
+    setTimeout(closeExitPopup, 3000);
+  } catch {
+    btn.textContent = 'Lock in my 90% →';
+    btn.disabled = false;
+    alert('Something went wrong - please try again.');
+  }
+}
 </script>
+
+<!-- EXIT INTENT POPUP -->
+<div id="exit-popup" class="exit-overlay">
+  <div class="exit-modal">
+    <button class="exit-close" onclick="closeExitPopup()" aria-label="Close">✕</button>
+    <div class="exit-badge">Founder offer</div>
+    <h2 class="exit-title">Before you go...</h2>
+    <p class="exit-sub">Lock in your 90% commission now - just enter your details below. No commitment, free forever.</p>
+    <form id="exit-form" onsubmit="handleExitSubmit(event)">
+      <input class="form-input" type="text" name="name" placeholder="Your name" required>
+      <input class="form-input" type="email" name="email" placeholder="Your email" required>
+      <input class="form-input" type="text" name="blog" placeholder="Your blog URL (e.g. yourblog.com)" required>
+      <select class="form-input form-select" name="monthly_visitors" required>
+        <option value="" disabled selected>Monthly readers / visitors</option>
+        <option value="under_1k">Under 1,000</option>
+        <option value="1k_10k">1,000 – 10,000</option>
+        <option value="10k_50k">10,000 – 50,000</option>
+        <option value="50k_100k">50,000 – 100,000</option>
+        <option value="100k_plus">100,000+</option>
+      </select>
+      <button class="form-submit" type="submit">Lock in my 90% →</button>
+    </form>
+    <div id="exit-success" style="display:none;text-align:center;padding:1.5rem 0 0.5rem">
+      <div style="font-size:2rem;margin-bottom:0.5rem">✓</div>
+      <p style="font-weight:600;color:var(--ink);margin:0 0 0.25rem">You're in!</p>
+      <p style="color:var(--ink-soft);font-size:0.875rem;margin:0">We'll be in touch when we're ready to launch.</p>
+    </div>
+  </div>
+</div>
 </body>
 </html>
