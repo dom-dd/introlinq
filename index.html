@@ -1174,6 +1174,10 @@ function updateSpotsUI(remaining) {
   const tierEl = document.getElementById('tier-spots');
   if (tierEl) tierEl.textContent = remaining + ' spots remaining';
   if (barEl) barEl.style.width = Math.min(100, taken) + '%';
+  const exitBarEl = document.getElementById('exit-spots-bar');
+  const exitTextEl = document.getElementById('exit-spots-text');
+  if (exitBarEl) exitBarEl.style.width = Math.min(100, taken) + '%';
+  if (exitTextEl) exitTextEl.textContent = remaining + ' of 100 spots left';
   document.querySelectorAll('.spots-loading').forEach(el => el.classList.remove('spots-loading'));
 }
 
@@ -1314,9 +1318,13 @@ async function handleExitSubmit(e) {
 <div id="exit-popup" class="exit-overlay">
   <div class="exit-modal">
     <button class="exit-close" onclick="closeExitPopup()" aria-label="Close">✕</button>
-    <div class="exit-badge">Founder offer</div>
+    <div class="exit-badge">Launch offer</div>
     <h2 class="exit-title">Before you go...</h2>
     <p class="exit-sub">Lock in your 90% commission now - just enter your details below. No commitment, free forever.</p>
+    <div class="spots-remaining spots-loading" style="margin-bottom:1.25rem;margin-top:-0.25rem">
+      <div class="spots-bar-wrap"><div class="spots-bar" id="exit-spots-bar"></div></div>
+      <span class="spots-text" id="exit-spots-text">27 of 100 spots left</span>
+    </div>
     <form id="exit-form" onsubmit="handleExitSubmit(event)">
       <input class="form-input" type="text" name="name" placeholder="Your name" required>
       <input class="form-input" type="email" name="email" placeholder="Your email" required>
@@ -1329,7 +1337,7 @@ async function handleExitSubmit(e) {
         <option value="50k_100k">50,000 – 100,000</option>
         <option value="100k_plus">100,000+</option>
       </select>
-      <button class="form-submit" type="submit">Lock in my 90% →</button>
+      <button class="form-submit" type="submit">Lock in my 90% commission →</button>
     </form>
     <div id="exit-success" style="display:none;text-align:center;padding:1.5rem 0 0.5rem">
       <div style="font-size:2rem;margin-bottom:0.5rem">✓</div>
