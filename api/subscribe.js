@@ -88,7 +88,7 @@ export default async function handler(req, res) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: `🎉 *New signup: ${name}*${flag}\n• Email: ${email}\n• Blog: ${blogUrl}\n• Monthly visitors: ${formatVisitors(monthly_visitors)}\n• Country: ${country || 'Unknown'}`
+          text: `🎉 *New signup: ${name}*${flag}\n• Email: ${email}\n• Blog: ${blogUrl}\n• Monthly visitors: ${formatVisitors(monthly_visitors)}`
         })
       });
     }

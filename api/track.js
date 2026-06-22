@@ -35,7 +35,7 @@ export default async function handler(req, res) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: `${emoji} *${label}*${flag}\n• Country: ${country || 'Unknown'}`
+          text: `${emoji} *${label}*${flag}`
         })
       });
     }
