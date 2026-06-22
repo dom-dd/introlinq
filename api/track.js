@@ -15,9 +15,11 @@ export default async function handler(req, res) {
         country TEXT,
         referrer TEXT,
         time_spent_seconds INT,
+        converted BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `;
+    await sql`ALTER TABLE page_views ADD COLUMN IF NOT EXISTS converted BOOLEAN DEFAULT FALSE`;
     const result = await sql`
       INSERT INTO page_views (visitor_type, country, referrer)
       VALUES (${visitor_type}, ${country}, ${referrer || null})
