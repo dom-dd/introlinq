@@ -69,7 +69,7 @@ export default async function handler(req, res) {
     await resend.emails.send({
       from: 'IntroLinq <hello@introlinq.com>',
       to: email,
-      subject: 'Your founder spot is saved — welcome to IntroLinq',
+      subject: 'Your spot is saved - welcome to IntroLinq',
       html: confirmationEmail(name),
     });
 
@@ -101,9 +101,10 @@ function confirmationEmail(name) {
         <tr><td style="padding:40px 48px 32px">
           <p style="font-family:Georgia,serif;font-size:24px;color:#1a1a2e;margin:0 0 24px;letter-spacing:-0.02em">Intro<span style="color:#3d7a5f">Linq</span></p>
           <h1 style="font-family:Georgia,serif;font-size:28px;color:#1a1a2e;margin:0 0 16px;line-height:1.2">You're in, ${firstName}.</h1>
-          <p style="font-size:16px;color:#4a4a6a;line-height:1.75;margin:0 0 16px">Your founder spot is saved. You've locked in the <strong style="color:#1a1a2e">90/10 commission split — for life</strong>, no matter how big IntroLinq grows.</p>
-          <p style="font-size:16px;color:#4a4a6a;line-height:1.75;margin:0 0 16px">One thing to keep in mind: the founder rate applies as long as you install IntroLinq <strong style="color:#1a1a2e">within 10 days of us launching</strong>. We'll make sure you have everything you need to do that quickly and easily.</p>
-          <p style="font-size:16px;color:#4a4a6a;line-height:1.75;margin:0 0 32px">We'll be in touch shortly with next steps. In the meantime, if you have any questions just reply to this email.</p>
+          <p style="font-size:16px;color:#4a4a6a;line-height:1.75;margin:0 0 16px">Your spot is saved. You've locked in the <strong style="color:#1a1a2e">90% commission split!</strong></p>
+          <p style="font-size:16px;color:#4a4a6a;line-height:1.75;margin:0 0 16px">One thing to keep in mind: the 90% rate applies as long as you install IntroLinq <strong style="color:#1a1a2e">within 10 days of us launching</strong>. We'll make sure you have everything you need to do that quickly and easily.</p>
+          <p style="font-size:16px;color:#4a4a6a;line-height:1.75;margin:0 0 16px">We'll be in touch with the next steps as soon as we are ready to launch! In the meantime, if you have any questions just reply to this email and it will be our pleasure to assist.</p>
+          <p style="font-size:16px;color:#4a4a6a;line-height:1.75;margin:0 0 32px">Feel free to share the deal with other bloggers you might know!</p>
           <p style="font-size:15px;color:#1a1a2e;margin:0">Welcome aboard,<br><strong>The IntroLinq team</strong></p>
         </td></tr>
         <tr><td style="background:#faf8f4;padding:24px 48px;border-top:1px solid rgba(26,26,46,0.06)">
