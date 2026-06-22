@@ -1190,8 +1190,7 @@ fetchSpots();
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      visitor_type: isNew ? 'new' : 'returning',
-      referrer: document.referrer || null
+      visitor_type: isNew ? 'new' : 'returning'
     })
   }).then(r => r.json()).then(d => { viewId = d.viewId; window._ilViewId = d.viewId; }).catch(() => {});
 
