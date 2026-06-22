@@ -5,7 +5,6 @@ export default async function handler(req, res) {
 
   const { visitor_type } = req.body;
   const country = req.headers['x-vercel-ip-country'] || null;
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.headers['x-real-ip'] || null;
 
   try {
     const sql = neon(process.env.DATABASE_URL);
@@ -14,18 +13,16 @@ export default async function handler(req, res) {
         id SERIAL PRIMARY KEY,
         visitor_type TEXT,
         country TEXT,
-        ip TEXT,
         time_spent_seconds INT,
         converted BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `;
     await sql`ALTER TABLE page_views ADD COLUMN IF NOT EXISTS converted BOOLEAN DEFAULT FALSE`;
-    await sql`ALTER TABLE page_views ADD COLUMN IF NOT EXISTS ip TEXT`;
 
     const result = await sql`
-      INSERT INTO page_views (visitor_type, country, ip)
-      VALUES (${visitor_type}, ${country}, ${ip})
+      INSERT INTO page_views (visitor_type, country)
+      VALUES (${visitor_type}, ${country})
       RETURNING id
     `;
     const viewId = result[0].id;
@@ -38,7 +35,7 @@ export default async function handler(req, res) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: `${emoji} *${label}*${flag}\n• Country: ${country || 'Unknown'}\n• IP: ${ip || 'Unknown'}`
+          text: `${emoji} *${label}*${flag}\n• Country: ${country || 'Unknown'}`
         })
       });
     }
