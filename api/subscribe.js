@@ -81,6 +81,18 @@ export default async function handler(req, res) {
       html: alertEmail({ name, email, blogUrl, monthly_visitors, country }),
     });
 
+    // 5. Slack notification
+    if (process.env.SLACK_WEBHOOK_URL) {
+      const flag = country ? ` :flag-${country.toLowerCase()}:` : '';
+      await fetch(process.env.SLACK_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: `🎉 *New signup: ${name}*${flag}\n• Email: ${email}\n• Blog: ${blogUrl}\n• Monthly visitors: ${formatVisitors(monthly_visitors)}\n• Country: ${country || 'Unknown'}`
+        })
+      });
+    }
+
     return res.status(200).json({ success: true });
   } catch (err) {
     console.error(err);

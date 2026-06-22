@@ -1179,6 +1179,32 @@ async function fetchSpots() {
 }
 fetchSpots();
 
+// Page tracking
+(function() {
+  const isNew = !localStorage.getItem('il_visitor');
+  if (isNew) localStorage.setItem('il_visitor', '1');
+  const startTime = Date.now();
+  let viewId = null;
+
+  fetch('/api/track', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      visitor_type: isNew ? 'new' : 'returning',
+      referrer: document.referrer || null
+    })
+  }).then(r => r.json()).then(d => { viewId = d.viewId; }).catch(() => {});
+
+  function sendExit() {
+    if (!viewId) return;
+    const timeSpent = Math.round((Date.now() - startTime) / 1000);
+    navigator.sendBeacon('/api/track-exit', new Blob([JSON.stringify({ viewId, timeSpent })], { type: 'application/json' }));
+  }
+
+  window.addEventListener('beforeunload', sendExit);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sendExit(); });
+})();
+
 async function handleSubmit(e){
   e.preventDefault();
   const form = document.getElementById('signup-form');
