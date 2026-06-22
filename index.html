@@ -416,10 +416,14 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
   .hero-left{text-align:center}
   .hero-top{text-align:center}
   .network-grid{grid-template-columns:1fr 1fr}
-  .flow-panels{flex-direction:column}
+  .flow-panels{flex-direction:column;justify-items:center}
+  .flow-arrow{justify-content:center;width:100%}
   .hero-pillars{flex-direction:column}
   .hero-stats{flex-wrap:wrap;padding:0 1rem}
-  .hero-stat{min-width:40%;flex:unset;max-width:none}
+  .hero-stat{width:50%;flex:unset;max-width:none;box-sizing:border-box;padding:1.75rem 0.75rem}
+  .hero-stat+.hero-stat::before{display:none}
+  .hero-stat:nth-child(1),.hero-stat:nth-child(2){border-bottom:1px solid rgba(255,255,255,0.1)}
+  .hero-stat:nth-child(1),.hero-stat:nth-child(3){border-right:1px solid rgba(255,255,255,0.1)}
 }
 @media(max-width:640px){
   nav{padding:0 1.25rem}
