@@ -83,7 +83,7 @@ export default async function handler(req, res) {
 
     // 5. Slack notification
     if (process.env.SLACK_WEBHOOK_URL) {
-      const flag = country ? ` :flag-${country.toLowerCase()}:` : '';
+      const flag = country ? ` → :flag-${country.toLowerCase()}:` : '';
       await fetch(process.env.SLACK_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

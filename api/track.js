@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     if (process.env.SLACK_WEBHOOK_URL) {
       const emoji = visitor_type === 'new' ? '👋' : '🔁';
       const label = visitor_type === 'new' ? 'New visitor' : 'Returning visitor';
-      const flag = country ? ` :flag-${country.toLowerCase()}:` : '';
+      const flag = country ? ` → :flag-${country.toLowerCase()}:` : '';
       await fetch(process.env.SLACK_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
