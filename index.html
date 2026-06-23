@@ -3,99 +3,46 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IntroLinq - Earn from every expert you'd recommend</title>
+<title>IntroLinq - See it in action</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="icon" type="image/png" href="/faviron.png">
-<meta name="description" content="Add a widget to your blog in 2 minutes and earn 90% commission every time a reader books an expert call.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://www.introlinq.com/">
 <meta property="og:title" content="IntroLinq - Earn from every expert you'd recommend">
-<meta property="og:description" content="Add a widget to your blog in 2 minutes and earn 90% commission every time a reader books an expert call.">
 <meta property="og:image" content="https://www.introlinq.com/api/og">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://www.introlinq.com/api/og">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Spline+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --ink:#1a1a2e;--ink-soft:#4a4a6a;--ink-muted:#8888a8;
   --cream:#faf8f4;--white:#ffffff;
   --sage:#3d7a5f;--sage-light:#edf5f0;--sage-mid:#c8e4d8;
-  --gold:#b8860b;--gold-light:#fdf8e8;--gold-mid:#f0d060;
-  --blush:#f5f0ea;
+  --gold:#b8860b;--gold-light:#fdf8e8;
   --border:rgba(26,26,46,0.10);--border-soft:rgba(26,26,46,0.06);
   --radius:12px;--radius-sm:8px;
 }
-html{font-size:16px}
-body{font-family:'Spline Sans',system-ui,sans-serif;background:var(--cream);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh}
 
-nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-soft);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px}
-.logo{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--ink);text-decoration:none;letter-spacing:-0.02em}
-.logo span{color:var(--sage)}
-.logo-img{height:32px;width:auto;display:block}
-.nav-tagline{font-size:0.8125rem;color:var(--ink-muted);margin:0 auto}
-.nav-cta{background:var(--ink);color:var(--white);border:none;padding:0.5rem 1.25rem;border-radius:100px;font-size:0.875rem;font-weight:500;cursor:pointer;text-decoration:none;transition:opacity 0.15s}
+/* Nav */
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 2rem;border-bottom:1px solid var(--border);background:var(--cream);position:sticky;top:0;z-index:100;backdrop-filter:blur(8px)}
+.nav-logo{font-family:'DM Serif Display',serif;font-size:1.375rem;color:var(--ink);text-decoration:none}
+.nav-logo span{color:var(--sage)}
+.nav-cta{background:var(--ink);color:var(--white);border:none;padding:0.625rem 1.25rem;border-radius:100px;font-size:0.875rem;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity 0.15s}
 .nav-cta:hover{opacity:0.85}
-@media(max-width:600px){.nav-tagline{display:none}}
 
-/* FOUNDER OFFER BANNER */
-.founder-banner{background:var(--ink);padding:0.625rem 2rem;text-align:center;display:flex;align-items:center;justify-content:center;gap:0.75rem;flex-wrap:wrap}
-.founder-banner-text{font-size:0.875rem;color:rgba(255,255,255,0.85);line-height:1.5}
-.founder-banner-text strong{color:var(--gold-mid)}
-.spots-pill{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.9);font-size:0.75rem;font-weight:500;padding:0.25rem 0.75rem;border-radius:100px;white-space:nowrap}
-.spots-count{color:var(--gold-mid);font-weight:500}
+/* Page */
+.page-wrap{max-width:1100px;margin:0 auto;padding:4rem 2rem 5rem}
 
-/* HERO */
-.hero{padding:3rem 0 2.5rem}
-.hero-top{text-align:center;max-width:1100px;margin:0 auto;padding:0 2rem 1.75rem}
-.hero-steps{background:var(--white);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft);padding:1.25rem 2rem}
-.hero-steps .flow-steps{margin-top:0;justify-content:center}
-.hero-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start;max-width:1100px;margin:0 auto;padding:2.5rem 2rem 0}
-.hero-left{text-align:left;order:2}
-.hero-eyebrow{display:inline-flex;align-items:center;gap:0.5rem;background:var(--sage-light);color:var(--sage);font-size:0.8125rem;font-weight:500;padding:0.375rem 0.875rem;border-radius:100px;margin-bottom:1.75rem;letter-spacing:0.02em}
-.eyebrow-dot{width:6px;height:6px;background:var(--sage);border-radius:50%;animation:pulse 2s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
-.hero h1{font-family:'DM Serif Display',serif;font-size:clamp(1.6rem,2.8vw,2.5rem);line-height:1.15;letter-spacing:-0.03em;color:var(--ink);margin:0}
-.hero h1 em{font-style:italic;color:var(--sage)}
-.hero-sub{font-size:1.0625rem;color:var(--ink-soft);margin:1rem 0 0;line-height:1.75;max-width:1100px;margin-left:auto;margin-right:auto}
+/* Hero */
+.hero-eyebrow{font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--sage);margin-bottom:0.75rem}
+.hero-title{font-family:'DM Serif Display',serif;font-size:2.75rem;color:var(--ink);line-height:1.15;letter-spacing:-0.03em;max-width:580px;margin-bottom:0.875rem}
+.hero-sub{font-size:1rem;color:var(--ink-soft);line-height:1.7;max-width:520px;margin-bottom:2.75rem}
 
-/* HERO STATS */
-.hero-stats{display:flex;width:100%;padding:0 4rem;background:var(--ink);border:none;justify-content:center}
-.hero-stat{flex:1;max-width:240px;text-align:center;padding:2.5rem 1rem;position:relative}
-.hero-stat+.hero-stat::before{content:'';position:absolute;left:0;top:15%;height:70%;width:1px;background:rgba(255,255,255,0.12)}
-.hero-stat-num{font-family:'DM Serif Display',serif;font-size:2.5rem;color:var(--white);letter-spacing:-0.04em;line-height:1;display:block}
-.hero-stat-label{font-size:0.8125rem;color:rgba(255,255,255,0.5);margin-top:0.5rem;display:block;line-height:1.4}
+.two-col{display:grid;grid-template-columns:1fr 400px;gap:4rem;align-items:stretch}
+.left-col{display:flex;flex-direction:column;gap:1rem}
+.carousel-wrap{flex:1}
 
-/* HERO PILLARS */
-.hero-pillars-wrap{background:var(--blush);border-top:1px solid var(--border-soft);padding:2.5rem 2rem}
-.hero-pillars{display:flex;max-width:1100px;margin:0 auto;gap:1.25rem}
-.hero-pillar{flex:1;padding:2rem;background:var(--white);border:1px solid var(--border-soft);border-radius:var(--radius)}
-.hero-pillar-num{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--gold);line-height:1;margin-bottom:1.25rem;display:block}
-.hero-pillar-title{font-weight:600;color:var(--ink);margin-bottom:0.75rem;font-size:1rem;line-height:1.3}
-.hero-pillar-sub{font-size:0.875rem;color:var(--ink-soft);line-height:1.75}
-
-/* PLATFORMS STRIP */
-.platforms-strip{background:var(--ink);margin-top:2.5rem;padding:1.75rem 2rem 1.5rem;text-align:center;border:none}
-.platforms-strip-label{font-size:0.75rem;color:rgba(255,255,255,0.4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.875rem}
-.platforms-strip-list{display:flex;flex-wrap:wrap;gap:0.5rem;justify-content:center}
-.platform-tag{font-size:0.8125rem;color:rgba(255,255,255,0.75);background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:0.3rem 0.75rem;font-weight:500}
-
-/* MINI FLOW STRIP */
-.mini-flow{background:var(--ink);padding:1.25rem 2rem;border-bottom:1px solid rgba(255,255,255,0.06)}
-.mini-flow-inner{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:0}
-.mini-flow-step{display:flex;align-items:center;gap:0.5rem;padding:0.375rem 0.75rem}
-.mini-flow-icon{font-size:1rem}
-.mini-flow-text{font-size:0.8125rem;color:rgba(255,255,255,0.65);white-space:nowrap}
-.mini-flow-text strong{color:var(--gold-mid);font-weight:500}
-.mini-flow-arrow{color:rgba(255,255,255,0.2);font-size:0.875rem;padding:0 0.25rem}
-@media(max-width:640px){.mini-flow-step:nth-child(n+6){display:none}}
-
-/* CAROUSEL */
-.carousel-wrap{position:relative;order:1;background:var(--ink);border-radius:20px;padding:1.75rem}
+/* Carousel */
+.carousel-wrap{background:var(--ink);border-radius:20px;padding:1.75rem}
 .carousel-label{font-size:0.7rem;font-weight:500;color:rgba(255,255,255,0.4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:1rem}
 .carousel-track{position:relative;overflow:visible;border-radius:var(--radius)}
 .carousel-slide{display:none;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem 1.75rem 1.25rem;text-align:left;animation:slideIn 0.4s ease}
@@ -108,10 +55,13 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 .carousel-dots{display:flex;gap:0.5rem;justify-content:center;margin-top:1rem}
 .carousel-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.2);border:none;cursor:pointer;padding:0;transition:background 0.2s}
 .carousel-dot.active{background:var(--sage)}
+.carousel-footer{font-size:0.75rem;color:var(--ink-muted);margin-top:1rem;display:flex;align-items:center;gap:0.375rem}
+.carousel-footer-dot{width:5px;height:5px;background:var(--sage);border-radius:50%;flex-shrink:0}
 
-/* EXPERT TRIGGER POPUP */
+/* Expert popup */
 .expert-trigger{position:relative;color:var(--sage);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;cursor:pointer;display:inline-block}
 .expert-trigger-dot{display:inline-block;width:6px;height:6px;background:var(--sage);border-radius:50%;vertical-align:middle;margin-left:3px;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.85)}}
 .expert-popup{display:block;position:absolute;bottom:calc(100% + 10px);left:0;background:var(--white);border:1px solid var(--sage-mid);border-radius:var(--radius);padding:1rem 1.125rem;width:300px;z-index:30;box-shadow:0 2px 8px rgba(0,0,0,0.08),0 16px 48px rgba(0,0,0,0.18),0 0 0 1px rgba(61,122,95,0.15),0 8px 32px rgba(61,122,95,0.12);text-align:left;pointer-events:none;opacity:0;transition:opacity 0.25s}
 .expert-popup::after{content:'';position:absolute;top:100%;left:24px;border:7px solid transparent;border-top-color:var(--sage-mid)}
 .expert-popup::before{content:'';position:absolute;top:100%;left:25px;border:6px solid transparent;border-top-color:var(--white);z-index:1}
@@ -121,423 +71,100 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,244,0.94);backdrop
 .popup-info{flex:1}
 .popup-name{display:block;font-weight:600;font-size:0.875rem;color:var(--ink);line-height:1.2}
 .popup-role{display:block;font-size:0.75rem;color:var(--ink-soft);line-height:1.4;margin-top:0.25rem}
-.popup-company{display:block;font-size:0.72rem;font-weight:500;color:var(--sage);margin-top:0.2rem}
 .popup-rec{display:block;font-size:0.8rem;color:var(--ink-soft);border-top:1px solid var(--border-soft);padding-top:0.5rem;line-height:1.5;margin-bottom:0.5rem}
 .popup-footer-row{display:flex;align-items:center;justify-content:space-between;gap:0.5rem}
 .popup-price{font-size:0.75rem;font-weight:500;color:var(--ink-muted)}
 .popup-book{background:var(--sage);color:var(--white);border:none;padding:0.4rem 0.875rem;border-radius:100px;font-size:0.75rem;font-weight:500;cursor:pointer;white-space:nowrap}
-.carousel-footer{font-size:0.75rem;color:var(--ink-muted);margin-top:1rem;display:flex;align-items:center;gap:0.375rem}
-.carousel-footer-dot{width:5px;height:5px;background:var(--sage);border-radius:50%;flex-shrink:0}
-
-/* DEMO CURSOR ANIMATION */
 .demo-cursor{position:absolute;left:0;bottom:-28px;pointer-events:none;opacity:0;font-size:1.125rem;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2))}
 .carousel-slide.active .demo-cursor{animation:cursorRise 0.7s cubic-bezier(0.4,0,0.2,1) 1.1s forwards}
-@keyframes cursorRise{0%{opacity:0;transform:translateY(4px)}25%{opacity:1}80%{opacity:1;transform:translateY(-22px)}100%{opacity:0;transform:translateY(-22px)}}
+@keyframes cursorRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
-/* EARLY SIGNUP FORM - high up */
-.early-form-wrap{max-width:480px;margin:0 auto 1rem}
-.early-form{background:var(--white);border:1px solid var(--border);border-top:3px solid var(--sage);border-radius:var(--radius);padding:1.75rem;box-shadow:0 4px 24px rgba(0,0,0,0.09)}
-.early-form-label{font-size:0.875rem;font-weight:500;color:var(--ink);margin-bottom:1rem;display:block;text-align:left}
-.early-form-label span{color:var(--sage)}
+/* Form card */
+.form-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;box-shadow:0 4px 24px rgba(26,26,46,0.07);height:100%}
+.form-select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238888a8' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center;cursor:pointer}
+.form-select:invalid,.form-select option[value=""]{color:var(--ink-muted)}
+.form-badge{display:inline-block;font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;background:var(--gold);color:var(--white);padding:0.2rem 0.6rem;border-radius:100px;margin-bottom:1rem}
+.form-title{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--ink);line-height:1.2;margin-bottom:0.375rem}
+.form-sub{font-size:0.875rem;color:var(--ink-soft);line-height:1.6;margin-bottom:1.25rem}
+.spots-row{display:flex;align-items:center;gap:0.5rem;margin-bottom:1.375rem}
+.spots-bar-wrap{flex:1;height:5px;background:rgba(184,134,11,0.15);border-radius:100px;overflow:hidden}
+.spots-bar{height:100%;background:var(--gold);border-radius:100px;width:73%}
+.spots-text{white-space:nowrap;font-size:0.75rem;font-weight:500;color:var(--gold)}
 .form-input{width:100%;padding:0.75rem 1rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.9375rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);outline:none;transition:border-color 0.15s;margin-bottom:0.75rem}
 .form-input:focus{border-color:var(--sage);background:var(--white)}
 .form-input::placeholder{color:var(--ink-muted)}
 .form-submit{width:100%;background:var(--ink);color:var(--white);border:none;padding:0.875rem;border-radius:100px;font-size:0.9375rem;font-weight:500;cursor:pointer;transition:opacity 0.15s;font-family:'Inter',sans-serif;margin-bottom:0.75rem}
 .form-submit:hover{opacity:0.85}
-.soft-option{display:flex;align-items:center;gap:0.5rem;justify-content:center;margin-top:0.25rem}
-.soft-option input[type="checkbox"]{accent-color:var(--sage);width:15px;height:15px;cursor:pointer}
-.soft-option label{font-size:0.8125rem;color:var(--ink-soft);cursor:pointer}
-.form-fine{font-size:0.75rem;color:var(--ink-muted);text-align:center;margin-top:0.875rem;line-height:1.5}
-.form-select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238888a8' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center;cursor:pointer}
-.form-select:invalid,.form-select option[value=""]{color:var(--ink-muted)}
-.exit-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1000;align-items:center;justify-content:center;padding:1.5rem;backdrop-filter:blur(2px)}
-.exit-overlay.active{display:flex}
-.exit-modal{background:var(--cream);border-radius:16px;padding:2.5rem 2rem;max-width:460px;width:100%;position:relative;animation:slideIn 0.3s ease;box-shadow:0 24px 64px rgba(0,0,0,0.18)}
-.exit-close{position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.25rem;cursor:pointer;color:var(--ink-muted);line-height:1;padding:0.25rem}
-.exit-badge{display:inline-block;font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;background:var(--gold);color:var(--white);padding:0.2rem 0.6rem;border-radius:100px;margin-bottom:1rem}
-.exit-title{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--ink);margin:0 0 0.5rem;letter-spacing:-0.02em;line-height:1.2}
-.exit-sub{color:var(--ink-soft);margin:0 0 1.5rem;line-height:1.65;font-size:0.9375rem}
-
-/* FOUNDER OFFER CARD */
-.founder-card{max-width:480px;margin:1.25rem auto 0;background:var(--gold-light);border:1px solid var(--gold-mid);border-radius:var(--radius);padding:1.25rem 1.5rem;text-align:left}
-.founder-card-header{display:flex;align-items:center;gap:0.625rem;margin-bottom:0.625rem}
-.founder-card-badge{background:var(--gold);color:var(--white);font-size:0.6875rem;font-weight:500;padding:0.2rem 0.625rem;border-radius:100px;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap}
-.founder-card-title{font-weight:500;font-size:0.9375rem;color:var(--ink)}
-.founder-card-desc{font-size:0.875rem;color:var(--ink-soft);line-height:1.6}
-.founder-card-desc strong{color:var(--ink)}
-.spots-remaining{display:flex;align-items:center;gap:0.5rem;margin-top:0.75rem;font-size:0.8125rem;color:var(--ink-soft)}
-.spots-bar-wrap{flex:1;height:6px;background:rgba(184,134,11,0.15);border-radius:100px;overflow:hidden}
-.spots-bar{height:100%;background:var(--gold);border-radius:100px;width:58%}
-.spots-text{white-space:nowrap;font-weight:500;color:var(--gold)}
-.spots-live{color:var(--gold);font-weight:500}
-.spots-loading{opacity:0;transition:opacity 0.3s}
-
-/* DEMO */
-.demo-wrap{margin:3rem auto 0;max-width:620px}
-.demo-blog{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;text-align:left}
-.demo-blog-label{font-size:0.75rem;font-weight:500;color:var(--ink-muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.875rem}
-.demo-blog-title{font-family:'DM Serif Display',serif;font-size:1.2rem;margin-bottom:0.75rem;color:var(--ink)}
-.demo-blog-text{font-size:0.9375rem;color:var(--ink-soft);line-height:1.75;margin-bottom:0.75rem}
-.highlight{background:var(--sage-light);color:var(--sage);padding:0 3px;border-radius:3px;font-weight:500}
-.expert-widget{margin-top:1.25rem;border:1px solid var(--sage-mid);border-radius:var(--radius-sm);padding:1rem 1.25rem;background:var(--sage-light);display:flex;align-items:center;gap:1rem;animation:fadeUp 0.6s ease 0.4s both}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.expert-avatar-img{width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--white)}
-.expert-info{flex:1;min-width:0}
-.expert-name{font-weight:500;font-size:0.9375rem;color:var(--ink)}
-.expert-title{font-size:0.8125rem;color:var(--ink-soft)}
-.expert-cta-btn{background:var(--sage);color:var(--white);border:none;padding:0.5rem 1rem;border-radius:100px;font-size:0.8125rem;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0}
-.widget-label{font-size:0.75rem;color:var(--ink-muted);margin-top:0.625rem;text-align:center}
-
-/* FLOW VISUAL */
-.flow-section{padding:4rem 2rem;background:var(--white);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft)}
-.flow-inner{max-width:1100px;margin:0 auto}
-.flow-title{font-family:'DM Serif Display',serif;font-size:clamp(1.5rem,3vw,2rem);color:var(--ink);text-align:center;margin-bottom:0.5rem;letter-spacing:-0.02em}
-.flow-sub{font-size:0.9375rem;color:var(--ink-soft);text-align:center;margin-bottom:2.5rem}
-.flow-panels{display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:center}
-.flow-panel{border-radius:var(--radius);padding:1.5rem;text-align:left}
-.flow-panel-before{background:var(--cream);border:1px solid var(--border)}
-.flow-panel-after{background:var(--sage-light);border:1px solid var(--sage-mid)}
-.flow-panel-label{font-size:0.7rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.75rem}
-.flow-panel-before .flow-panel-label{color:var(--ink-muted)}
-.flow-panel-after .flow-panel-label{color:var(--sage)}
-.flow-blog-title{font-family:'DM Serif Display',serif;font-size:1rem;color:var(--ink);margin-bottom:0.625rem}
-.flow-blog-text{font-size:0.8125rem;color:var(--ink-soft);line-height:1.75}
-.flow-arrow{display:flex;flex-direction:column;align-items:center;gap:0.375rem;padding:0 1.5rem}
-.flow-arrow-line{width:2px;height:32px;background:linear-gradient(to bottom,var(--border),var(--sage-mid));display:none}
-.flow-arrow-icon{font-size:1.5rem;color:var(--sage)}
-.flow-arrow-label{font-size:0.75rem;font-weight:500;color:var(--sage);white-space:nowrap;text-align:center;line-height:1.4}
-.flow-steps{display:flex;justify-content:center;gap:0;margin-top:2rem;flex-wrap:wrap}
-.flow-step{display:flex;align-items:center;gap:0}
-.flow-step-box{background:var(--cream);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.875rem 1.125rem;text-align:center;min-width:140px}
-.flow-step-icon{font-size:1.25rem;margin-bottom:0.25rem}
-.flow-step-label{font-size:0.8rem;font-weight:500;color:var(--ink);line-height:1.3}
-.flow-step-sub{font-size:0.7rem;color:var(--ink-muted);margin-top:0.125rem}
-.flow-step-arrow{color:var(--ink-muted);font-size:1rem;padding:0 0.75rem}
-.flow-step-box.highlight-step{background:var(--sage-light);border-color:var(--sage-mid)}
-.flow-step-box.highlight-step .flow-step-label{color:var(--sage)}
-@media(max-width:640px){
-  .flow-panels{grid-template-columns:1fr;gap:1rem}
-  .flow-arrow{flex-direction:row;padding:0}
-  .flow-arrow-icon{transform:rotate(90deg)}
-  .flow-steps{gap:0.5rem}
-  .flow-step-arrow{padding:0 0.375rem}
-}
-
-/* NETWORK SECTION */
-.network-section{padding:4rem 2rem;background:var(--cream)}
-.network-inner{max-width:1100px;margin:0 auto}
-.network-header{text-align:center;margin-bottom:2.5rem}
-.network-title{font-family:'DM Serif Display',serif;font-size:clamp(1.6rem,3vw,2.25rem);color:var(--ink);letter-spacing:-0.02em;margin-bottom:0.75rem}
-.network-sub{font-size:1rem;color:var(--ink-soft);max-width:560px;margin:0 auto;line-height:1.7}
-.network-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem}
-.network-card{background:var(--white);border:1px solid var(--border-soft);border-radius:var(--radius);padding:1.5rem}
-.network-card-icon{font-size:1.5rem;margin-bottom:0.75rem}
-.network-card-title{font-size:0.9375rem;font-weight:600;color:var(--ink);margin-bottom:0.375rem}
-.network-card-desc{font-size:0.8125rem;color:var(--ink-soft);line-height:1.6}
-.network-card.highlight{border-color:var(--sage-mid);background:var(--sage-light)}
-.network-card.highlight .network-card-title{color:var(--sage)}
-@media(max-width:700px){.network-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:480px){.network-grid{grid-template-columns:1fr}}
-.network-note{text-align:center;font-size:0.85rem;color:var(--ink-muted);margin-top:1.5rem;max-width:520px;margin-left:auto;margin-right:auto}
-
-/* SNIPPET SECTION */
-.snippet-section{padding:3.5rem 2rem;background:var(--ink);border:none}
-.snippet-inner{max-width:680px;margin:0 auto;text-align:center}
-.snippet-title{font-family:'DM Serif Display',serif;font-size:clamp(1.4rem,2.5vw,1.9rem);color:var(--white);letter-spacing:-0.02em;margin-bottom:0.5rem}
-.snippet-sub{font-size:0.9375rem;color:rgba(255,255,255,0.6);margin-bottom:1.75rem}
-.code-block{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:1.5rem 1.75rem;text-align:left;position:relative}
-.code-line{display:block;font-family:'Spline Sans Mono',ui-monospace,'Courier New',monospace;font-size:0.8125rem;line-height:1.8}
+.form-trust{text-align:center;font-size:0.75rem;color:var(--ink-muted);line-height:1.6}
+.form-divider{border:none;border-top:1px solid var(--border);margin:1.5rem 0}
+.snippet-label{font-size:0.7rem;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--ink-muted);margin-bottom:0.5rem}
+.snippet-heading{font-family:'DM Serif Display',serif;font-size:1.1rem;color:var(--ink);margin-bottom:0.375rem}
+.snippet-note{font-size:0.8rem;color:var(--ink-soft);margin-bottom:1rem;line-height:1.5}
+.code-block-light{background:var(--ink);border-radius:var(--radius-sm);padding:1rem 1.25rem;position:relative;overflow-x:auto}
+.code-line{display:block;font-family:ui-monospace,'Courier New',monospace;font-size:0.775rem;line-height:1.8}
 .code-comment{color:rgba(255,255,255,0.35)}
 .code-tag{color:#79c0ff}
 .code-attr{color:#ffa657}
 .code-val{color:#a5d6ff}
-.copy-btn{position:absolute;top:0.875rem;right:0.875rem;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);font-size:0.75rem;padding:0.3rem 0.75rem;border-radius:6px;cursor:pointer;font-family:'Spline Sans',sans-serif;transition:all 0.15s}
-.copy-btn:hover{background:rgba(255,255,255,0.18);color:#fff}
+.copy-btn-light{position:absolute;top:0.625rem;right:0.625rem;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);font-size:0.7rem;padding:0.25rem 0.625rem;border-radius:5px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.15s}
+.copy-btn-light:hover{background:rgba(255,255,255,0.2);color:#fff}
+.success-wrap{display:none;text-align:center;padding:1.5rem 0}
+.success-check{font-size:2.5rem;margin-bottom:0.75rem}
+.success-title{font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--ink);margin-bottom:0.5rem}
+.success-sub{font-size:0.9rem;color:var(--ink-soft);line-height:1.65}
 
-/* TESTIMONIALS */
-.testimonials-section{padding:4rem 2rem;background:var(--cream)}
-.testimonials-inner{max-width:1100px;margin:0 auto}
-.testimonials-inner .section-label{text-align:center;margin-bottom:2rem}
-.testimonials-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
-.testimonial-card{background:var(--white);border:1px solid var(--border-soft);border-radius:var(--radius);padding:1.75rem;display:flex;flex-direction:column;gap:1rem}
-.testimonial-avatar{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--sage-light)}
-.testimonial-quote{font-size:0.9rem;color:var(--ink-soft);line-height:1.75;flex:1;font-style:italic}
-.testimonial-name{font-size:0.875rem;font-weight:600;color:var(--ink)}
-.testimonial-blog{font-size:0.775rem;color:var(--ink-muted)}
-@media(max-width:700px){.testimonials-grid{grid-template-columns:1fr}}
+/* Stats */
+.stats-strip{display:flex;gap:0;margin-top:4rem;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);overflow:hidden}
+.stat-item{flex:1;text-align:center;padding:1.75rem 1rem;position:relative}
+.stat-item+.stat-item::before{content:'';position:absolute;left:0;top:15%;height:70%;width:1px;background:var(--border)}
+.stat-num{font-family:'DM Serif Display',serif;font-size:1.875rem;color:var(--ink);display:block;letter-spacing:-0.03em}
+.stat-label{font-size:0.775rem;color:var(--ink-muted);margin-top:0.3rem;line-height:1.4}
 
-/* EXPERT STRIP */
-.experts-strip{padding:3.5rem 0;background:var(--white);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft);overflow:hidden}
-.strip-label{font-size:0.7rem;font-weight:600;color:var(--ink-muted);text-align:center;margin-bottom:2rem;letter-spacing:0.1em;text-transform:uppercase}
-.marquee-track{display:flex;gap:2rem;animation:marqueeScroll 70s linear infinite;width:max-content;padding:0.5rem 0}
-.marquee-track:hover{animation-play-state:paused}
-@keyframes marqueeScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.experts-grid{display:flex;justify-content:center;flex-wrap:wrap;gap:1.5rem}
-.expert-card{display:flex;flex-direction:column;align-items:center;gap:0.5rem;width:140px;text-align:center;flex-shrink:0}
-.expert-card-img{width:96px;height:96px;border-radius:50%;object-fit:cover;border:2px solid var(--border-soft);display:block}
-.expert-card-name{font-weight:600;font-size:0.8125rem;color:var(--ink);line-height:1.3}
-.expert-card-role{font-size:0.7rem;color:var(--ink-soft);line-height:1.4}
-.expert-card-rate{font-size:0.7rem;color:var(--sage);font-weight:500}
-
-/* SECTIONS */
-section{padding:5rem 2rem}
-.container{max-width:1100px;margin:0 auto}
-.container-narrow{max-width:1100px;margin:0 auto}
-.section-label{font-size:0.75rem;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:0.875rem}
-.section-title{font-family:'DM Serif Display',serif;font-size:clamp(1.75rem,3.5vw,2.4rem);letter-spacing:-0.02em;line-height:1.2;margin-bottom:1rem;color:var(--ink)}
-.section-sub{font-size:1rem;color:var(--ink-soft);line-height:1.75;margin-bottom:2.5rem}
-
-/* HOW IT WORKS */
-.how-bg{background:var(--white);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft)}
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.25rem}
-.step{background:var(--cream);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem}
-.step-num{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--sage);line-height:1;margin-bottom:0.875rem}
-.step-title{font-weight:500;font-size:0.9375rem;margin-bottom:0.5rem;color:var(--ink)}
-.step-desc{font-size:0.875rem;color:var(--ink-soft);line-height:1.65}
-
-/* COMMISSION BAND */
-.commission-band{background:var(--ink);padding:4rem 2rem;text-align:center}
-.commission-band .section-label{color:rgba(255,255,255,0.35)}
-.tiers{display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap;margin-top:2.5rem}
-.tier{border-radius:var(--radius);padding:2rem 2.5rem;text-align:center;flex:1;min-width:220px;max-width:280px}
-.tier-founder{background:var(--gold-light);border:2px solid var(--gold-mid)}
-.tier-standard{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12)}
-.tier-badge{font-size:0.6875rem;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;padding:0.25rem 0.75rem;border-radius:100px;display:inline-block;margin-bottom:1rem}
-.tier-founder .tier-badge{background:var(--gold);color:var(--white)}
-.tier-standard .tier-badge{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.6)}
-.tier-pct{font-family:'DM Serif Display',serif;font-size:4rem;line-height:1;margin-bottom:0.25rem}
-.tier-founder .tier-pct{color:var(--gold)}
-.tier-standard .tier-pct{color:var(--white)}
-.tier-sublabel{font-size:0.875rem;margin-bottom:1rem}
-.tier-founder .tier-sublabel{color:var(--ink-soft)}
-.tier-standard .tier-sublabel{color:rgba(255,255,255,0.5)}
-.tier-detail{font-size:0.8125rem;line-height:1.6}
-.tier-founder .tier-detail{color:var(--ink-soft)}
-.tier-standard .tier-detail{color:rgba(255,255,255,0.45)}
-.tier-spots{font-size:0.8125rem;font-weight:500;color:var(--gold);margin-top:0.75rem}
-.commission-note{margin-top:2rem;font-size:0.875rem;color:rgba(255,255,255,0.4);max-width:420px;margin-left:auto;margin-right:auto;line-height:1.6}
-
-/* EARNINGS */
-.earnings-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center}
-@media(max-width:640px){.earnings-grid{grid-template-columns:1fr}}
-.earnings-calc{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:2rem}
-.calc-title{font-weight:500;font-size:0.9375rem;margin-bottom:1.5rem;color:var(--ink)}
-.calc-row{display:flex;justify-content:space-between;align-items:center;padding:0.625rem 0;border-bottom:1px solid var(--border-soft);font-size:0.9rem}
-.calc-row:last-child{border-bottom:none}
-.calc-label{color:var(--ink-soft)}
-.calc-value{font-weight:500;color:var(--ink)}
-.calc-total{margin-top:1rem;padding:1rem;background:var(--sage-light);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center}
-.calc-total-label{font-weight:500;font-size:0.9375rem;color:var(--sage)}
-.calc-total-value{font-family:'DM Serif Display',serif;font-size:1.75rem;color:var(--sage)}
-.calc-note{font-size:0.75rem;color:var(--ink-muted);margin-top:0.75rem;line-height:1.5}
-
-/* FOR READERS */
-.readers-bg{background:var(--blush);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft)}
-.readers-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1.125rem;margin-top:2.5rem}
-.reader-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem}
-.reader-icon{font-size:1.375rem;margin-bottom:0.75rem}
-.reader-card-title{font-weight:500;font-size:0.9375rem;margin-bottom:0.375rem;color:var(--ink)}
-.reader-card-desc{font-size:0.875rem;color:var(--ink-soft);line-height:1.6}
-
-/* PLATFORMS */
-.platforms-list{display:flex;flex-wrap:wrap;gap:0.75rem;margin-top:2rem}
-.platform-pill{background:var(--white);border:1px solid var(--border);border-radius:100px;padding:0.5rem 1.125rem;font-size:0.875rem;color:var(--ink-soft);font-weight:500}
-.platform-pill.coming{color:var(--ink-muted);border-style:dashed}
-
-/* FAQ */
-.faq-list{margin-top:2.5rem}
-.faq-item{border-bottom:1px solid var(--border);padding:1.25rem 0}
-.faq-q{font-weight:500;font-size:1rem;color:var(--ink);margin-bottom:0.5rem}
-.faq-a{font-size:0.9375rem;color:var(--ink-soft);line-height:1.7}
-
-/* SUCCESS */
-.success-state{display:none;text-align:center;padding:1.5rem}
-.success-icon{width:52px;height:52px;background:var(--sage-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.375rem}
-.success-title{font-family:'DM Serif Display',serif;font-size:1.375rem;color:var(--ink);margin-bottom:0.5rem}
-.success-sub{font-size:0.9rem;color:var(--ink-soft);line-height:1.6}
-
-footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
-.footer-logo{font-family:'DM Serif Display',serif;font-size:1.25rem;color:var(--ink);margin-bottom:0.5rem}
-.footer-logo span{color:var(--sage)}
-.footer-logo-img{height:28px;width:auto;margin:0 auto 0.75rem;display:block}
-.footer-note{font-size:0.8125rem;color:var(--ink-muted)}
-
-/* PRODUCT VISUAL */
-/* DASHBOARD PREVIEW */
-.dashprev-section{padding:5rem 2rem;background:var(--white);border-top:1px solid var(--border-soft)}
-.dashprev-inner{max-width:1100px;margin:0 auto}
-.dashprev-header{text-align:center;margin-bottom:2.5rem}
-.dashprev-header h2{font-family:'DM Serif Display',serif;font-size:clamp(1.6rem,3vw,2.25rem);letter-spacing:-0.02em;margin-bottom:0.75rem}
-.dashprev-header p{font-size:0.9375rem;color:var(--ink-soft);max-width:520px;margin:0 auto;line-height:1.7}
-
-.dash-app{background:var(--white);border-radius:16px;border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,0.04),0 20px 72px rgba(26,26,46,0.13);overflow:hidden;display:flex;min-height:460px}
-.dash-sidebar{width:185px;background:var(--ink);flex-shrink:0;padding:1.25rem 0}
-.dash-sidebar-logo{font-family:'DM Serif Display',serif;font-size:1rem;color:var(--white);padding:0 1.25rem 1.25rem;border-bottom:1px solid rgba(255,255,255,0.07);margin-bottom:0.625rem}
-.dash-sidebar-logo span{color:var(--sage)}
-.dash-nav-item{display:flex;align-items:center;gap:0.5rem;padding:0.55rem 1.25rem;font-size:0.8rem;color:rgba(255,255,255,0.4);cursor:default}
-.dash-nav-item.active{color:var(--white);background:rgba(255,255,255,0.07);border-left:2px solid var(--sage);padding-left:calc(1.25rem - 2px)}
-.dash-nav-icon{font-size:0.875rem}
-
-.dash-main{flex:1;display:flex;flex-direction:column;background:#f6f7f9;overflow:hidden}
-.dash-topbar{padding:0.875rem 1.5rem;background:var(--white);border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.dash-page-title{font-weight:600;color:var(--ink);font-size:0.875rem}
-.dash-period{font-size:0.75rem;color:var(--ink-muted);background:var(--cream);padding:0.2rem 0.625rem;border-radius:6px;border:1px solid var(--border)}
-
-.dash-body{padding:1.125rem;flex:1}
-
-.dash-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:0.625rem;margin-bottom:0.75rem}
-.dash-kpi-card{background:var(--white);border:1px solid var(--border-soft);border-radius:10px;padding:0.875rem 1rem}
-.dash-kpi-label{font-size:0.65rem;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:0.375rem}
-.dash-kpi-value{font-family:'DM Serif Display',serif;font-size:1.375rem;color:var(--ink);letter-spacing:-0.02em;display:block;line-height:1}
-.dash-kpi-delta{font-size:0.65rem;font-weight:500;margin-top:0.3rem;display:block}
-.dash-kpi-delta.up{color:var(--sage)}
-.dash-kpi-delta.muted{color:var(--ink-muted)}
-
-.dash-lower{display:grid;grid-template-columns:3fr 2fr;gap:0.625rem}
-.dash-widget{background:var(--white);border:1px solid var(--border-soft);border-radius:10px;padding:1rem 1.125rem}
-.dash-widget-title{font-size:0.65rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:0.875rem}
-
-.earn-chart{display:flex;align-items:flex-end;gap:4px;height:70px}
-.earn-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
-.earn-bar{width:100%;background:#dde8e3;border-radius:3px 3px 0 0;min-height:4px}
-.earn-bar.peak{background:var(--sage)}
-.earn-week{font-size:0.58rem;color:var(--ink-muted)}
-
-.earn-table{width:100%;border-collapse:collapse;margin-top:0.125rem}
-.earn-table th{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-muted);text-align:left;padding:0 0 0.5rem;border-bottom:1px solid var(--border-soft)}
-.earn-table td{font-size:0.75rem;padding:0.45rem 0;border-bottom:1px solid var(--border-soft);color:var(--ink-soft)}
-.earn-table tr:last-child td{border-bottom:none}
-.earn-table .earn-post-name{color:var(--ink);font-weight:500;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.earn-table .earn-post-val{color:var(--sage);font-weight:500;text-align:right}
-
-.booking-list-dash{display:flex;flex-direction:column}
-.booking-row{display:flex;align-items:center;justify-content:space-between;padding:0.475rem 0;border-bottom:1px solid var(--border-soft)}
-.booking-row:last-child{border-bottom:none}
-.booking-left{display:flex;flex-direction:column}
-.booking-who-name{font-size:0.75rem;font-weight:500;color:var(--ink)}
-.booking-who-detail{font-size:0.65rem;color:var(--ink-muted)}
-.booking-amount{font-size:0.775rem;color:var(--sage);font-weight:600}
-
-@media(max-width:900px){.dash-sidebar{display:none}.dash-kpis{grid-template-columns:1fr 1fr}.dash-lower{grid-template-columns:1fr}}
-@media(max-width:640px){.dash-kpis{grid-template-columns:1fr 1fr}.dashprev-section{padding:3rem 1.25rem}}
+/* Footer */
+.page-footer{text-align:center;margin-top:3rem;font-size:0.8125rem;color:var(--ink-muted)}
+.page-footer a{color:var(--ink-soft);text-decoration:none}
 
 @media(max-width:900px){
-  .hero-inner{grid-template-columns:1fr;gap:2.5rem}
-  .hero-left{text-align:center}
-  .hero-top{text-align:center}
-  .network-grid{grid-template-columns:1fr 1fr}
-  .flow-panels{flex-direction:column;justify-items:center}
-  .flow-arrow{justify-content:center;width:100%}
-  .hero-pillars{flex-direction:column}
-  .hero-stats{flex-wrap:wrap;padding:0 1rem}
-  .hero-stat{width:50%;flex:unset;max-width:none;box-sizing:border-box;padding:1.75rem 0.75rem}
-  .hero-stat+.hero-stat::before{display:none}
-  .hero-stat:nth-child(1),.hero-stat:nth-child(2){border-bottom:1px solid rgba(255,255,255,0.1)}
-  .hero-stat:nth-child(1),.hero-stat:nth-child(3){border-right:1px solid rgba(255,255,255,0.1)}
-  .stat-prefix{display:none}
+  .two-col{grid-template-columns:1fr;gap:2rem}
+  .left-col{gap:1.5rem}
+  .form-card{height:auto}
+  .hero-title{font-size:2.1rem}
 }
 @media(max-width:640px){
-  nav{padding:0 1.25rem}
-  section{padding:3.5rem 1.25rem}
-  .hero{padding:2.5rem 0 2rem}
-  .hero-top{padding:0 1.25rem 1.5rem}
-  .hero-inner{padding:2rem 1.25rem 0}
-  .hero-steps{padding:1rem 1.25rem}
-  .steps{grid-template-columns:1fr}
-  .tiers{flex-direction:column;align-items:center}
-  .founder-banner{padding:0.625rem 1.25rem}
-  /* Flow step cards: hide sideways arrows, stack cleanly */
-  .flow-step-arrow{display:none}
-  .flow-step-box{min-width:unset;width:100%}
-  .flow-steps{flex-direction:column;gap:0.625rem;align-items:stretch}
-  /* Code block: scroll horizontally instead of wrapping */
-  .code-block{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .code-line{white-space:nowrap}
-  /* Carousel: cap height on mobile */
+  .page-wrap{padding:2rem 1.25rem 4rem}
+  nav{padding:1rem 1.25rem}
+  .hero-title{font-size:1.875rem}
   .carousel-wrap{padding:1.25rem}
   .carousel-slide{padding:1.25rem}
-  /* Snippet */
-  .snippet-section{padding:2.5rem 1.25rem}
-  /* Testimonials */
-  .testimonials-section{padding:2.5rem 1.25rem}
-  /* Network */
-  .network-section{padding:2.5rem 1.25rem}
-  .network-grid{grid-template-columns:1fr}
+  .stats-strip{flex-wrap:wrap}
+  .stat-item{min-width:50%;border-top:1px solid var(--border)}
+  .stat-item+.stat-item::before{display:none}
+  .stat-item:nth-child(odd){border-right:1px solid var(--border)}
 }
 </style>
 </head>
 <body>
 
-<!-- TOP BANNER -->
 <nav>
-  <a href="#" class="logo">Intro<span>Linq</span></a>
-  <span class="nav-tagline">Free for publishers · No setup required</span>
-  <a href="#join" class="nav-cta">Claim your spot</a>
+  <a class="nav-logo" href="/">Intro<span>Linq</span></a>
+  <button class="nav-cta" onclick="document.getElementById('signup-form').scrollIntoView({behavior:'smooth'})">Claim your spot</button>
 </nav>
 
-<!-- HERO -->
-<div class="hero" id="join">
+<div class="page-wrap">
 
-  <!-- CENTERED HEADLINE -->
-  <div class="hero-top">
-    <h1>Every article you write creates demand for expert advice.<br><em>You should be earning from it.</em></h1>
-    <p class="hero-sub">We detect topics in your articles where readers could benefit from expert guidance - then look for the best fit in our database of 5,000+ vetted experts worldwide, filtered by topic, language, location, and budget. You earn a commission on every booking.</p>
-  </div>
+  <div class="two-col">
 
-  <div class="hero-inner">
-
-    <!-- RIGHT: form -->
-    <div class="hero-left">
-
-      <!-- EARLY FORM -->
-      <div class="early-form-wrap" style="max-width:100%;margin:0 0 1rem">
-        <div class="early-form" id="signup-form-wrap">
-          <form id="signup-form" onsubmit="handleSubmit(event)">
-            <label class="early-form-label">
-              Claim your founder spot - <span>keep 90% for life</span> <span class="spots-live spots-loading" id="form-spots">· 27 spots left</span>
-            </label>
-            <input class="form-input" type="text" name="name" placeholder="Your name" required>
-            <input class="form-input" type="email" name="email" placeholder="Your email" required>
-            <input class="form-input" type="text" name="blog" placeholder="Your blog URL (e.g. yourblog.com)" required>
-            <select class="form-input form-select" name="monthly_visitors" required>
-              <option value="" disabled selected>Monthly readers / visitors</option>
-              <option value="under_1k">Under 1,000</option>
-              <option value="1k_10k">1,000 – 10,000</option>
-              <option value="10k_50k">10,000 – 50,000</option>
-              <option value="50k_100k">50,000 – 100,000</option>
-              <option value="100k_plus">100,000+</option>
-            </select>
-            <button class="form-submit" type="submit">Claim my founder spot →</button>
-            <p class="form-fine">Free forever. No card needed. You can leave anytime.</p>
-          </form>
-          <div class="success-state" id="success-state">
-            <div class="success-icon">✓</div>
-            <div class="success-title">You're in.</div>
-            <p class="success-sub">Your spot is reserved! We'll be in touch once we are ready to launch.<br><br>Thanks for registering on IntroLinq!</p>
-          </div>
-        </div>
-
-        <!-- FOUNDER OFFER CARD -->
-        <div class="founder-card">
-          <div class="founder-card-header">
-            <span class="founder-card-badge">Pre-launch offer</span>
-            <span class="founder-card-title">First 100 publishers only</span>
-          </div>
-          <p class="founder-card-desc">Sign up now and you keep <strong>90% of our commission on every booking, forever</strong> - locked in for life, no matter how big IntroLinq grows. After the first 100 spots, the split moves to 70/30.</p>
-          <div class="spots-remaining spots-loading" id="spots-remaining">
-            <div class="spots-bar-wrap"><div class="spots-bar" id="spots-bar"></div></div>
-            <span class="spots-text" id="spots-text">27 of 100 spots left</span>
-          </div>
-        </div>
+    <!-- Left: headline + carousel -->
+    <div class="left-col">
+      <div>
+        <p class="hero-eyebrow">See it in action</p>
+        <h1 class="hero-title">Earn passive income from expert recommendations on your site</h1>
+        <p class="hero-sub">We detect topics in your articles where readers could benefit from expert guidance - then find the best fit in our database of 5,000+ vetted experts worldwide, filtered by topic, language, location, and budget. You earn a commission on every booking.</p>
       </div>
-    </div>
-
-    <!-- LEFT: carousel -->
-    <div class="carousel-wrap">
+      <div class="carousel-wrap">
       <div class="carousel-label">IntroLinq detected the topic and matched an expert automatically - hover the underlined link to see what your readers see</div>
       <div class="carousel-track">
 
-        <!-- Slide 1: Finance -->
         <div class="carousel-slide active">
           <div class="carousel-niche">Finance</div>
           <div class="carousel-title">Year two of freelancing and I still had no idea what I was doing financially</div>
@@ -545,7 +172,6 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
           <p class="carousel-text-2">I waited too long. The stuff I thought would sort itself out, didn't.</p>
         </div>
 
-        <!-- Slide 2: Food -->
         <div class="carousel-slide">
           <div class="carousel-niche">Food & Nutrition</div>
           <div class="carousel-title">I switched to fermented foods for gut health and had no idea where to actually start</div>
@@ -553,7 +179,6 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
           <p class="carousel-text-2">What works for one gut doesn't work for another. That's not a caveat - it's the whole point.</p>
         </div>
 
-        <!-- Slide 3: Sport -->
         <div class="carousel-slide">
           <div class="carousel-niche">Sport & Fitness</div>
           <div class="carousel-title">I signed up for a marathon mostly as a joke. Then had to actually train for it.</div>
@@ -561,7 +186,6 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
           <p class="carousel-text-2">The generic plans work until they don't. Then you need someone who can actually adapt.</p>
         </div>
 
-        <!-- Slide 4: Fashion -->
         <div class="carousel-slide">
           <div class="carousel-niche">Fashion & Style</div>
           <div class="carousel-title">My wardrobe was full and I still had nothing to wear</div>
@@ -569,7 +193,6 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
           <p class="carousel-text-2">You don't need more things. You need the right things, and someone who can spot the difference.</p>
         </div>
 
-        <!-- Slide 5: Career -->
         <div class="carousel-slide">
           <div class="carousel-niche">Career & Tech</div>
           <div class="carousel-title">I applied for sixty jobs in a year. Then I stopped applying entirely.</div>
@@ -577,7 +200,6 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
           <p class="carousel-text-2">Most people optimise the wrong thing. The CV is rarely what's holding you back.</p>
         </div>
 
-        <!-- Slide 6: Health -->
         <div class="carousel-slide">
           <div class="carousel-niche">Health & Wellness</div>
           <div class="carousel-title">I tracked my sleep for three months and it made everything worse</div>
@@ -594,560 +216,126 @@ footer{padding:2rem;text-align:center;border-top:1px solid var(--border-soft)}
         <button class="carousel-dot" onclick="goToSlide(4)"></button>
         <button class="carousel-dot" onclick="goToSlide(5)"></button>
       </div>
-    </div>
+    </div><!-- /carousel-wrap -->
+    </div><!-- /left-col -->
 
-  </div><!-- /hero-inner -->
-
-  <!-- PLATFORMS STRIP -->
-  <div class="platforms-strip">
-    <p class="platforms-strip-label">Works with any platform</p>
-    <div class="platforms-strip-list">
-      <span class="platform-tag">WordPress</span>
-      <span class="platform-tag">Ghost</span>
-      <span class="platform-tag">Substack</span>
-      <span class="platform-tag">Squarespace</span>
-      <span class="platform-tag">Webflow</span>
-      <span class="platform-tag">Medium</span>
-      <span class="platform-tag">Any site with a &lt;head&gt; tag</span>
-    </div>
-  </div>
-
-  <!-- STATS -->
-  <div class="hero-stats">
-    <div class="hero-stat">
-      <span class="hero-stat-num">5,000+</span>
-      <span class="hero-stat-label">Vetted experts worldwide</span>
-    </div>
-    <div class="hero-stat">
-      <span class="hero-stat-num"><span class="stat-prefix">Up to </span>90%</span>
-      <span class="hero-stat-label">Of our commission goes to you</span>
-    </div>
-    <div class="hero-stat">
-      <span class="hero-stat-num">2 min</span>
-      <span class="hero-stat-label">Setup time</span>
-    </div>
-    <div class="hero-stat">
-      <span class="hero-stat-num">Zero</span>
-      <span class="hero-stat-label">Ongoing work required</span>
-    </div>
-  </div>
-
-  <!-- INSTALL SNIPPET -->
-  <div class="snippet-section">
-    <div class="snippet-inner">
-      <h2 class="snippet-title">Two lines. That's all it takes.</h2>
-      <p class="snippet-sub">Paste this once into your blog's <code style="background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.9);padding:0.1em 0.4em;border-radius:4px;font-size:0.875em">&lt;head&gt;</code> and IntroLinq runs on every article - past and future.</p>
-      <div class="code-block">
-        <button class="copy-btn" id="copy-btn" onclick="copySnippet()">Copy</button>
-        <span class="code-line"><span class="code-comment">&lt;!-- Paste once into your blog's &lt;head&gt; --&gt;</span></span>
-        <span class="code-line"><span class="code-tag">&lt;script</span> <span class="code-attr">src</span>=<span class="code-val">"https://cdn.introlinq.com/widget.js"</span> <span class="code-attr">data-blog</span>=<span class="code-val">"YOUR_ID"</span><span class="code-tag">&gt;&lt;/script&gt;</span></span>
-      </div>
-    </div>
-  </div>
-
-  <!-- 3 PILLARS -->
-  <div class="hero-pillars-wrap">
-    <div class="hero-pillars">
-      <div class="hero-pillar">
-        <span class="hero-pillar-num">01</span>
-        <div class="hero-pillar-title">One script, everywhere</div>
-        <p class="hero-pillar-sub">Paste a single snippet into your blog's <code style="font-size:0.8rem;background:var(--sage-light);color:var(--sage);padding:0.1em 0.3em;border-radius:3px">&lt;head&gt;</code> once. IntroLinq runs silently on every article you've ever published and every one you write in future - no plugin, no CMS changes, nothing to maintain.</p>
-      </div>
-      <div class="hero-pillar">
-        <span class="hero-pillar-num">02</span>
-        <div class="hero-pillar-title">We find the right expert for each article</div>
-        <p class="hero-pillar-sub">IntroLinq reads each article and detects where readers could benefit from expert guidance. It then searches 5,000+ vetted professionals worldwide to find the best fit - filtered by topic, language, country, and price range. You never touch it.</p>
-      </div>
-      <div class="hero-pillar">
-        <span class="hero-pillar-num">03</span>
-        <div class="hero-pillar-title">You earn a commission on every booking</div>
-        <p class="hero-pillar-sub">When a reader books a call, we take a small platform commission - and your share goes straight to you. Paid automatically every month, no invoicing, no chasing - just passive income from articles you've already written.</p>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<!-- INSTALL SNIPPET -->
-<!-- PUBLISHER TESTIMONIALS -->
-<div class="testimonials-section">
-  <div class="testimonials-inner">
-    <div class="section-label">Early access publishers</div>
-    <div class="testimonials-grid">
-      <div class="testimonial-card">
-        <img class="testimonial-avatar" src="https://i.pravatar.cc/150?img=26" alt="Marcus">
-        <p class="testimonial-quote">"I've been monetising with affiliate links for years. IntroLinq is the first thing that actually feels like a natural extension of what I already write."</p>
-        <div class="testimonial-name">Marcus O.</div>
-        <div class="testimonial-blog">Personal finance blog - 28k readers/month</div>
-      </div>
-      <div class="testimonial-card">
-        <img class="testimonial-avatar" src="https://i.pravatar.cc/150?img=44" alt="Priya">
-        <p class="testimonial-quote">"The widget matched a career coach to a post I wrote two years ago. I hadn't touched that post since. It booked its first call within a week."</p>
-        <div class="testimonial-name">Priya S.</div>
-        <div class="testimonial-blog">Career & productivity blog - 41k readers/month</div>
-      </div>
-      <div class="testimonial-card">
-        <img class="testimonial-avatar" src="https://i.pravatar.cc/150?img=7" alt="James">
-        <p class="testimonial-quote">"Setup took literally three minutes. I was expecting something complicated. It just works - quietly, in the background, on every post."</p>
-        <div class="testimonial-name">James K.</div>
-        <div class="testimonial-blog">Health & wellness blog - 19k readers/month</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- PRODUCT VISUAL -->
-<div class="dashprev-section">
-  <div class="dashprev-inner">
-    <div class="dashprev-header">
-      <div class="section-label">Publisher dashboard</div>
-      <h2>Every booking tracked. Every penny logged.</h2>
-      <p>See which posts earn the most, which experts your readers love, and when your next payout lands  - all in one place from day one.</p>
-    </div>
-
-    <div class="dash-app">
-      <!-- Sidebar -->
-      <div class="dash-sidebar">
-        <div class="dash-sidebar-logo">Intro<span>Linq</span></div>
-        <div class="dash-nav-item active"><span class="dash-nav-icon">▦</span> Overview</div>
-        <div class="dash-nav-item"><span class="dash-nav-icon">📝</span> Posts</div>
-        <div class="dash-nav-item"><span class="dash-nav-icon">📅</span> Bookings</div>
-        <div class="dash-nav-item"><span class="dash-nav-icon">👥</span> Experts</div>
-        <div class="dash-nav-item"><span class="dash-nav-icon">💷</span> Payouts</div>
-        <div class="dash-nav-item"><span class="dash-nav-icon">⚙️</span> Settings</div>
-      </div>
-
-      <!-- Main -->
-      <div class="dash-main">
-        <div class="dash-topbar">
-          <span class="dash-page-title">Overview</span>
-          <span class="dash-period">June 2026</span>
-        </div>
-
-        <div class="dash-body">
-          <!-- KPI row -->
-          <div class="dash-kpis">
-            <div class="dash-kpi-card">
-              <span class="dash-kpi-label">Earned this month</span>
-              <span class="dash-kpi-value">£4,320</span>
-              <span class="dash-kpi-delta up">+£840 vs May</span>
-            </div>
-            <div class="dash-kpi-card">
-              <span class="dash-kpi-label">Bookings</span>
-              <span class="dash-kpi-value">47</span>
-              <span class="dash-kpi-delta up">+12 vs May</span>
-            </div>
-            <div class="dash-kpi-card">
-              <span class="dash-kpi-label">Avg. per booking</span>
-              <span class="dash-kpi-value">£82</span>
-              <span class="dash-kpi-delta muted">after your 90%</span>
-            </div>
-            <div class="dash-kpi-card">
-              <span class="dash-kpi-label">Next payout</span>
-              <span class="dash-kpi-value">1 Jul</span>
-              <span class="dash-kpi-delta muted">£4,320 ready</span>
-            </div>
+    <!-- Right: form -->
+    <div id="signup-form">
+      <div class="form-card">
+        <div id="lp-form-inner">
+          <div class="form-badge">Pre-launch offer</div>
+          <h2 class="form-title">Claim your 90% commission</h2>
+          <p class="form-sub">First 100 publishers lock this in forever. After that the split drops to 70/30.</p>
+          <div class="spots-row">
+            <div class="spots-bar-wrap"><div class="spots-bar" id="lp-spots-bar"></div></div>
+            <span class="spots-text" id="lp-spots-text">27 of 100 spots left</span>
           </div>
-
-          <!-- Lower: chart + bookings -->
-          <div class="dash-lower">
-            <!-- Left: chart + top posts -->
-            <div class="dash-widget">
-              <div class="dash-widget-title">Earnings  - last 8 weeks</div>
-              <div class="earn-chart">
-                <div class="earn-col"><div class="earn-bar" style="height:34%"></div><span class="earn-week">W1</span></div>
-                <div class="earn-col"><div class="earn-bar" style="height:52%"></div><span class="earn-week">W2</span></div>
-                <div class="earn-col"><div class="earn-bar" style="height:41%"></div><span class="earn-week">W3</span></div>
-                <div class="earn-col"><div class="earn-bar" style="height:63%"></div><span class="earn-week">W4</span></div>
-                <div class="earn-col"><div class="earn-bar" style="height:50%"></div><span class="earn-week">W5</span></div>
-                <div class="earn-col"><div class="earn-bar" style="height:74%"></div><span class="earn-week">W6</span></div>
-                <div class="earn-col"><div class="earn-bar" style="height:87%"></div><span class="earn-week">W7</span></div>
-                <div class="earn-col"><div class="earn-bar peak" style="height:100%"></div><span class="earn-week">W8</span></div>
-              </div>
-              <div style="margin-top:1rem">
-                <div class="dash-widget-title">Top posts this month</div>
-                <table class="earn-table">
-                  <thead><tr><th>Post</th><th>Bookings</th><th style="text-align:right">Earned</th></tr></thead>
-                  <tbody>
-                    <tr><td class="earn-post-name">How I sorted my freelance finances</td><td>12</td><td class="earn-post-val">£1,170</td></tr>
-                    <tr><td class="earn-post-name">Marathon training after 40</td><td>9</td><td class="earn-post-val">£864</td></tr>
-                    <tr><td class="earn-post-name">Building a capsule wardrobe</td><td>7</td><td class="earn-post-val">£756</td></tr>
-                    <tr><td class="earn-post-name">Changing careers at 35</td><td>5</td><td class="earn-post-val">£630</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- Right: recent bookings -->
-            <div class="dash-widget">
-              <div class="dash-widget-title">Recent bookings</div>
-              <div class="booking-list-dash">
-                <div class="booking-row">
-                  <div class="booking-left">
-                    <span class="booking-who-name">Claire D. · Finance coach</span>
-                    <span class="booking-who-detail">Freelance finances · 2h ago</span>
-                  </div>
-                  <span class="booking-amount">£58.50</span>
-                </div>
-                <div class="booking-row">
-                  <div class="booking-left">
-                    <span class="booking-who-name">Tom B. · Running coach</span>
-                    <span class="booking-who-detail">Marathon training · 5h ago</span>
-                  </div>
-                  <span class="booking-amount">£72.00</span>
-                </div>
-                <div class="booking-row">
-                  <div class="booking-left">
-                    <span class="booking-who-name">Daniel P. · Career coach</span>
-                    <span class="booking-who-detail">Career change · Yesterday</span>
-                  </div>
-                  <span class="booking-amount">£108.00</span>
-                </div>
-                <div class="booking-row">
-                  <div class="booking-left">
-                    <span class="booking-who-name">Elise M. · Personal stylist</span>
-                    <span class="booking-who-detail">Capsule wardrobe · Yesterday</span>
-                  </div>
-                  <span class="booking-amount">£81.00</span>
-                </div>
-                <div class="booking-row">
-                  <div class="booking-left">
-                    <span class="booking-who-name">Dr. Nina W. · Health</span>
-                    <span class="booking-who-detail">Burnout recovery · 2 days ago</span>
-                  </div>
-                  <span class="booking-amount">£67.50</span>
-                </div>
-              </div>
-            </div>
+          <form onsubmit="handleLpSubmit(event)">
+            <input class="form-input" type="text" name="name" placeholder="Your name" required>
+            <input class="form-input" type="email" name="email" placeholder="Your email" required>
+            <input class="form-input" type="text" name="blog" placeholder="Your blog URL" required>
+            <select class="form-input form-select" name="monthly_visitors" required>
+              <option value="" disabled selected>Monthly readers / visitors</option>
+              <option value="under_1k">Under 1,000</option>
+              <option value="1k_10k">1,000 – 10,000</option>
+              <option value="10k_50k">10,000 – 50,000</option>
+              <option value="50k_100k">50,000 – 100,000</option>
+              <option value="100k_plus">100,000+</option>
+            </select>
+            <button class="form-submit" type="submit">Claim my 90% commission →</button>
+          </form>
+          <p class="form-trust">Free forever · No card needed · 2 min setup</p>
+          <hr class="form-divider">
+          <p class="snippet-label">Setup</p>
+          <p class="snippet-heading">One line of code. That's it.</p>
+          <p class="snippet-note">Paste this once into your blog's <code style="background:var(--sage-light);color:var(--sage);padding:0.1em 0.3em;border-radius:3px;font-size:0.8em">&lt;head&gt;</code> and IntroLinq runs on every article - past and future.</p>
+          <div class="code-block-light">
+            <button class="copy-btn-light" onclick="this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000);navigator.clipboard.writeText('<script src=\'https://cdn.introlinq.com/widget.js\' data-blog=\'YOUR_ID\'><\/script>')">Copy</button>
+            <span class="code-line"><span class="code-comment">&lt;!-- Paste once into your &lt;head&gt; --&gt;</span></span>
+            <span class="code-line"><span class="code-tag">&lt;script</span> <span class="code-attr">src</span>=<span class="code-val">"https://cdn.introlinq.com/widget.js"</span></span>
+            <span class="code-line" style="padding-left:1.5rem"><span class="code-attr">data-blog</span>=<span class="code-val">"YOUR_ID"</span><span class="code-tag">&gt;&lt;/script&gt;</span></span>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- FLOW VISUAL -->
-<div class="flow-section">
-  <div class="flow-inner">
-    <h2 class="flow-title">Before and after IntroLinq</h2>
-    <p class="flow-sub">One script. Your content stays the same. The right expert just appears.</p>
-
-    <div class="flow-panels">
-      <!-- Before -->
-      <div class="flow-panel flow-panel-before">
-        <div class="flow-panel-label">Before - your blog post</div>
-        <div class="flow-blog-title">How I finally sorted my freelance finances</div>
-        <p class="flow-blog-text">After two years of chaos, I realised I needed to understand my numbers. The biggest lesson? Hiring an accountant who understood creative businesses changed everything. I wish I'd done it sooner.</p>
-        <p class="flow-blog-text" style="margin-top:0.5rem">If you're in the same boat, the first step is just talking to someone who gets it...</p>
-      </div>
-
-      <!-- Arrow -->
-      <div class="flow-arrow">
-        <div class="flow-arrow-icon">→</div>
-        <div class="flow-arrow-label">IntroLinq<br>adds this</div>
-      </div>
-
-      <!-- After -->
-      <div class="flow-panel flow-panel-after">
-        <div class="flow-panel-label">After - same post, expert added</div>
-        <div class="flow-blog-title">How I finally sorted my freelance finances</div>
-        <p class="flow-blog-text">After two years of chaos, I realised I needed to understand my numbers. The biggest lesson? <span class="highlight">Hiring an accountant who understood creative businesses</span> changed everything.</p>
-        <div class="expert-widget" style="margin-top:1rem;animation:none">
-          <img class="expert-avatar-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=,h=,f=auto,dpr=1,fit=contain/f1731497121072x670114122540825600/EI0A8152.jpg" alt="Ahana Banerjee" onerror="this.style.display='none'">
-          <div class="expert-info">
-            <div class="expert-name">Ahana Banerjee</div>
-            <div class="expert-title">YC Founder · Finance strategy</div>
-          </div>
-          <button class="expert-cta-btn">Book a call</button>
+        <div class="success-wrap" id="lp-success">
+          <div class="success-check">✓</div>
+          <div class="success-title">You're in!</div>
+          <p class="success-sub">Your spot is reserved. We'll be in touch as soon as we're ready to launch.</p>
         </div>
       </div>
     </div>
 
   </div>
+
+  <!-- Stats -->
+  <div class="stats-strip">
+    <div class="stat-item">
+      <span class="stat-num">90%</span>
+      <div class="stat-label">Commission goes to you</div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">2 min</span>
+      <div class="stat-label">Setup time</div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">Zero</span>
+      <div class="stat-label">Ongoing work required</div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">5,000+</span>
+      <div class="stat-label">Vetted experts ready</div>
+    </div>
+  </div>
+
+  <p class="page-footer">Questions? Reply to the email or write to <a href="mailto:hello@introlinq.com">hello@introlinq.com</a></p>
+
 </div>
-
-<!-- EXPERT MARQUEE -->
-<div class="experts-strip">
-  <div class="strip-label">A few of the experts your readers could meet</div>
-  <div class="marquee-track" id="marquee-track">
-    <div class="expert-card"><img class="expert-card-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=200,h=200,f=auto,dpr=1,fit=cover/f1731497121072x670114122540825600/EI0A8152.jpg" alt="Ahana Banerjee"><div class="expert-card-name">Ahana Banerjee</div><div class="expert-card-role">YC Founder · Forbes 30u30</div><div class="expert-card-rate">from £80/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=200,h=200,f=auto,dpr=1,fit=cover/f1769693896955x679353291899212000/Kenneth%20OpenIntro.jpg" alt="Kenneth Kashif Thomas"><div class="expert-card-name">Kenneth Kashif Thomas</div><div class="expert-card-role">Investor · Startup growth</div><div class="expert-card-rate">from £120/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=200,h=200,f=auto,dpr=1,fit=cover/f1723380298837x390393189267480600/ChrisChaney.jpg" alt="Chris Chaney"><div class="expert-card-name">Chris Chaney</div><div class="expert-card-role">Serial entrepreneur · $100M exit</div><div class="expert-card-rate">from £150/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=1" alt="Sarah Chen"><div class="expert-card-name">Sarah Chen</div><div class="expert-card-role">Career coach · Leadership</div><div class="expert-card-rate">from £65/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=2" alt="Marcus Williams"><div class="expert-card-name">Marcus Williams</div><div class="expert-card-role">Wealth advisor · Retirement</div><div class="expert-card-rate">from £90/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=44" alt="Priya Sharma"><div class="expert-card-name">Priya Sharma</div><div class="expert-card-role">Health & nutrition coach</div><div class="expert-card-rate">from £55/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=7" alt="James Okafor"><div class="expert-card-name">James Okafor</div><div class="expert-card-role">Legal advisor · Contracts</div><div class="expert-card-rate">from £95/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=9" alt="Emma Laurent"><div class="expert-card-name">Emma Laurent</div><div class="expert-card-role">Marketing strategist · Growth</div><div class="expert-card-rate">from £80/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=11" alt="Nina Patel"><div class="expert-card-name">Nina Patel</div><div class="expert-card-role">Mindfulness & wellbeing</div><div class="expert-card-rate">from £60/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=10" alt="Alex Torres"><div class="expert-card-name">Alex Torres</div><div class="expert-card-role">E-commerce · DTC brands</div><div class="expert-card-rate">from £110/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=12" alt="Tom Reynolds"><div class="expert-card-name">Tom Reynolds</div><div class="expert-card-role">Executive coach · C-suite</div><div class="expert-card-rate">from £130/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=20" alt="Sophie Martin"><div class="expert-card-name">Sophie Martin</div><div class="expert-card-role">Product design · UX</div><div class="expert-card-rate">from £85/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=16" alt="Rachel Kim"><div class="expert-card-name">Rachel Kim</div><div class="expert-card-role">Mental health · Burnout</div><div class="expert-card-rate">from £70/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=18" alt="Oliver Schmidt"><div class="expert-card-name">Oliver Schmidt</div><div class="expert-card-role">B2B sales · SaaS growth</div><div class="expert-card-rate">from £95/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=26" alt="Amara Diallo"><div class="expert-card-name">Amara Diallo</div><div class="expert-card-role">Brand strategy · Positioning</div><div class="expert-card-rate">from £80/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=28" alt="Ben Nakamura"><div class="expert-card-name">Ben Nakamura</div><div class="expert-card-role">Engineering · Tech hiring</div><div class="expert-card-rate">from £100/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=29" alt="Layla Hassan"><div class="expert-card-name">Layla Hassan</div><div class="expert-card-role">Content strategy · SEO</div><div class="expert-card-rate">from £65/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=32" alt="Carlos Mendez"><div class="expert-card-name">Carlos Mendez</div><div class="expert-card-role">Real estate · Property invest.</div><div class="expert-card-rate">from £85/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=47" alt="Dr. Isabella Ross"><div class="expert-card-name">Dr. Isabella Ross</div><div class="expert-card-role">Clinical nutrition · Gut health</div><div class="expert-card-rate">from £90/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=35" alt="Yusuf Ibrahim"><div class="expert-card-name">Yusuf Ibrahim</div><div class="expert-card-role">Business development · M&A</div><div class="expert-card-rate">from £110/session</div></div>
-    <!-- duplicate for seamless loop -->
-    <div class="expert-card"><img class="expert-card-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=200,h=200,f=auto,dpr=1,fit=cover/f1731497121072x670114122540825600/EI0A8152.jpg" alt="Ahana Banerjee"><div class="expert-card-name">Ahana Banerjee</div><div class="expert-card-role">YC Founder · Forbes 30u30</div><div class="expert-card-rate">from £80/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=200,h=200,f=auto,dpr=1,fit=cover/f1769693896955x679353291899212000/Kenneth%20OpenIntro.jpg" alt="Kenneth Kashif Thomas"><div class="expert-card-name">Kenneth Kashif Thomas</div><div class="expert-card-role">Investor · Startup growth</div><div class="expert-card-rate">from £120/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/cdn-cgi/image/w=200,h=200,f=auto,dpr=1,fit=cover/f1723380298837x390393189267480600/ChrisChaney.jpg" alt="Chris Chaney"><div class="expert-card-name">Chris Chaney</div><div class="expert-card-role">Serial entrepreneur · $100M exit</div><div class="expert-card-rate">from £150/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=1" alt="Sarah Chen"><div class="expert-card-name">Sarah Chen</div><div class="expert-card-role">Career coach · Leadership</div><div class="expert-card-rate">from £65/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=2" alt="Marcus Williams"><div class="expert-card-name">Marcus Williams</div><div class="expert-card-role">Wealth advisor · Retirement</div><div class="expert-card-rate">from £90/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=44" alt="Priya Sharma"><div class="expert-card-name">Priya Sharma</div><div class="expert-card-role">Health & nutrition coach</div><div class="expert-card-rate">from £55/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=7" alt="James Okafor"><div class="expert-card-name">James Okafor</div><div class="expert-card-role">Legal advisor · Contracts</div><div class="expert-card-rate">from £95/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=9" alt="Emma Laurent"><div class="expert-card-name">Emma Laurent</div><div class="expert-card-role">Marketing strategist · Growth</div><div class="expert-card-rate">from £80/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=11" alt="Nina Patel"><div class="expert-card-name">Nina Patel</div><div class="expert-card-role">Mindfulness & wellbeing</div><div class="expert-card-rate">from £60/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=10" alt="Alex Torres"><div class="expert-card-name">Alex Torres</div><div class="expert-card-role">E-commerce · DTC brands</div><div class="expert-card-rate">from £110/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=12" alt="Tom Reynolds"><div class="expert-card-name">Tom Reynolds</div><div class="expert-card-role">Executive coach · C-suite</div><div class="expert-card-rate">from £130/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=20" alt="Sophie Martin"><div class="expert-card-name">Sophie Martin</div><div class="expert-card-role">Product design · UX</div><div class="expert-card-rate">from £85/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=16" alt="Rachel Kim"><div class="expert-card-name">Rachel Kim</div><div class="expert-card-role">Mental health · Burnout</div><div class="expert-card-rate">from £70/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=18" alt="Oliver Schmidt"><div class="expert-card-name">Oliver Schmidt</div><div class="expert-card-role">B2B sales · SaaS growth</div><div class="expert-card-rate">from £95/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=26" alt="Amara Diallo"><div class="expert-card-name">Amara Diallo</div><div class="expert-card-role">Brand strategy · Positioning</div><div class="expert-card-rate">from £80/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=28" alt="Ben Nakamura"><div class="expert-card-name">Ben Nakamura</div><div class="expert-card-role">Engineering · Tech hiring</div><div class="expert-card-rate">from £100/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=29" alt="Layla Hassan"><div class="expert-card-name">Layla Hassan</div><div class="expert-card-role">Content strategy · SEO</div><div class="expert-card-rate">from £65/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=32" alt="Carlos Mendez"><div class="expert-card-name">Carlos Mendez</div><div class="expert-card-role">Real estate · Property invest.</div><div class="expert-card-rate">from £85/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=47" alt="Dr. Isabella Ross"><div class="expert-card-name">Dr. Isabella Ross</div><div class="expert-card-role">Clinical nutrition · Gut health</div><div class="expert-card-rate">from £90/session</div></div>
-    <div class="expert-card"><img class="expert-card-img" src="https://i.pravatar.cc/200?img=35" alt="Yusuf Ibrahim"><div class="expert-card-name">Yusuf Ibrahim</div><div class="expert-card-role">Business development · M&A</div><div class="expert-card-rate">from £110/session</div></div>
-  </div>
-</div>
-
-<!-- NETWORK & CUSTOMISATION -->
-<div class="network-section">
-  <div class="network-inner">
-    <div class="network-header">
-      <div class="section-label">Expert network</div>
-      <h2 class="network-title">Partnered with the world's best expert platforms.<br>Your readers always find the right person.</h2>
-      <p class="network-sub">IntroLinq connects to leading platforms globally so your readers have access to thousands of vetted experts - whatever their topic, budget, location or language.</p>
-    </div>
-    <div class="network-grid">
-      <div class="network-card highlight">
-        <div class="network-card-icon">🤖</div>
-        <div class="network-card-title">Auto-matched by default</div>
-        <div class="network-card-desc">IntroLinq reads your content and selects the most relevant expert automatically. Zero effort on your end - it just works.</div>
-      </div>
-      <div class="network-card">
-        <div class="network-card-icon">📌</div>
-        <div class="network-card-title">Pin specific experts</div>
-        <div class="network-card-desc">Found someone you personally trust? Recommend them directly on any post or across your entire blog.</div>
-      </div>
-      <div class="network-card">
-        <div class="network-card-icon">🌍</div>
-        <div class="network-card-title">Filter by country</div>
-        <div class="network-card-desc">Match readers with local experts - useful when proximity or in-person meetings matter to your audience.</div>
-      </div>
-      <div class="network-card">
-        <div class="network-card-icon">🗣️</div>
-        <div class="network-card-title">Filter by language</div>
-        <div class="network-card-desc">Serve a multilingual audience? Set experts by language so every reader gets advice they can actually follow.</div>
-      </div>
-      <div class="network-card">
-        <div class="network-card-icon">💰</div>
-        <div class="network-card-title">Filter by price range</div>
-        <div class="network-card-desc">Set a budget range that fits your readership - from affordable first sessions to premium specialists.</div>
-      </div>
-      <div class="network-card">
-        <div class="network-card-icon">⚙️</div>
-        <div class="network-card-title">Filter by anything</div>
-        <div class="network-card-desc">Topic, platform, session length, credentials, industry - set your preferences once and IntroLinq filters the pool automatically.</div>
-      </div>
-    </div>
-    <p class="network-note">Not feeling a specific expert? Remove them with one click and they won't appear on your blog again. You set the preferences - we do the rest.</p>
-  </div>
-</div>
-
-<!-- HOW IT WORKS -->
-<section class="how-bg">
-  <div class="container">
-    <div class="section-label">How it works</div>
-    <h2 class="section-title">Install once. Earn forever.</h2>
-    <p class="section-sub">No link-building, no manual tagging, no ongoing work. IntroLinq runs quietly in the background on every post you've ever written.</p>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">01</div>
-        <div class="step-title">Sign up and connect your blog</div>
-        <div class="step-desc">Add one small snippet to your WordPress site. Takes about three minutes, no developer needed.</div>
-      </div>
-      <div class="step">
-        <div class="step-num">02</div>
-        <div class="step-title">We read your content</div>
-        <div class="step-desc">IntroLinq scans your articles and detects topics where readers might genuinely benefit from speaking to an expert.</div>
-      </div>
-      <div class="step">
-        <div class="step-num">03</div>
-        <div class="step-title">The right expert appears</div>
-        <div class="step-desc">A tasteful widget surfaces on relevant posts, matched to exactly what you're writing about. Never intrusive.</div>
-      </div>
-      <div class="step">
-        <div class="step-num">04</div>
-        <div class="step-title">You earn when they book</div>
-        <div class="step-desc">Every completed booking earns you a commission. As a founder publisher, that's 90% of our commission on every booking - paid monthly.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- COMMISSION TIERS -->
-<div class="commission-band">
-  <div class="section-label">The deal</div>
-  <h2 class="section-title" style="color:var(--white);margin-bottom:0.5rem">The earlier you join,<br>the more you keep.</h2>
-  <p style="font-size:1rem;color:rgba(255,255,255,0.5);max-width:440px;margin:0 auto">Forever. Not a trial, not a promo. Locked in for life.</p>
-  <div class="tiers">
-    <div class="tier tier-founder">
-      <span class="tier-badge">Founder - first 100</span>
-      <div class="tier-pct">90%</div>
-      <div class="tier-sublabel">goes to you</div>
-      <div class="tier-detail">The best deal IntroLinq will ever offer. Sign up now and this rate is yours for as long as you use the platform.</div>
-      <div class="tier-spots spots-loading" id="tier-spots">27 spots remaining</div>
-    </div>
-    <div class="tier tier-standard">
-      <span class="tier-badge">Standard</span>
-      <div class="tier-pct">70%</div>
-      <div class="tier-sublabel">goes to you</div>
-      <div class="tier-detail">Still well above the industry norm. Available to everyone who joins after the first 100 spots are gone.</div>
-    </div>
-  </div>
-  <p class="commission-note">Both tiers are completely free. IntroLinq only makes money when you do - no subscriptions, no minimums, no hidden fees.</p>
-</div>
-
-<!-- EARNINGS -->
-<section>
-  <div class="container">
-    <div class="earnings-grid">
-      <div>
-        <div class="section-label">The numbers</div>
-        <h2 class="section-title">Real income from content you've already written</h2>
-        <p class="section-sub" style="margin-bottom:1.5rem">Expert calls are worth far more than ad clicks or product commissions. A single booking generates more revenue than a thousand display ad impressions - and your readers get something genuinely useful.</p>
-        <p style="font-size:0.875rem;color:var(--ink-muted);line-height:1.7">Most publishers see their first booking within two weeks of going live. The more specific your content, the better the match and the higher your conversion.</p>
-      </div>
-      <div class="earnings-calc">
-        <div class="calc-title">Estimated monthly earnings (founder rate)</div>
-        <div class="calc-row"><span class="calc-label">Monthly visitors</span><span class="calc-value">20,000</span></div>
-        <div class="calc-row"><span class="calc-label">Posts with expert matches</span><span class="calc-value">~40%</span></div>
-        <div class="calc-row"><span class="calc-label">Readers who click</span><span class="calc-value">~1.5%</span></div>
-        <div class="calc-row"><span class="calc-label">Calls booked per month</span><span class="calc-value">~12</span></div>
-        <div class="calc-row"><span class="calc-label">Average call value</span><span class="calc-value">£150</span></div>
-        <div class="calc-row"><span class="calc-label">Your share (90%)</span><span class="calc-value">£13.50 per call</span></div>
-        <div class="calc-total">
-          <span class="calc-total-label">Your monthly earnings</span>
-          <span class="calc-total-value">~£270</span>
-        </div>
-        <p class="calc-note">Illustrative estimate. Actual earnings depend on niche, traffic quality, and content relevance. Completely passive - no extra work required.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- FOR READERS -->
-<section class="readers-bg">
-  <div class="container">
-    <div class="section-label">For your readers</div>
-    <h2 class="section-title">Your readers get something genuinely useful</h2>
-    <p class="section-sub">IntroLinq only surfaces experts relevant to what you're actually writing about. It's not an ad. It's a natural next step for a reader who wants to go deeper.</p>
-    <div class="readers-grid">
-      <div class="reader-card">
-        <div class="reader-icon">🎯</div>
-        <div class="reader-card-title">Matched to the topic</div>
-        <div class="reader-card-desc">A finance expert on money posts, a nutritionist on wellness posts. Never generic, always relevant.</div>
-      </div>
-      <div class="reader-card">
-        <div class="reader-icon">✅</div>
-        <div class="reader-card-title">Vetted experts only</div>
-        <div class="reader-card-desc">Verified profiles, real reviews, and transparent pricing shown upfront. No surprises.</div>
-      </div>
-      <div class="reader-card">
-        <div class="reader-icon">💬</div>
-        <div class="reader-card-title">A real conversation</div>
-        <div class="reader-card-desc">Not a lead form. Not a sales funnel. A genuine 1:1 paid call, booked in seconds.</div>
-      </div>
-      <div class="reader-card">
-        <div class="reader-icon">🔒</div>
-        <div class="reader-card-title">Never intrusive</div>
-        <div class="reader-card-desc">The widget sits quietly beneath relevant content. No pop-ups, no auto-play, no interruptions.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- PLATFORMS -->
-<section>
-  <div class="container-narrow">
-    <div class="section-label">The network</div>
-    <h2 class="section-title">A global network of vetted experts, ready to go</h2>
-    <p class="section-sub">IntroLinq partners with the best expert platforms worldwide so your readers always find the right person - whatever topic, budget or location.</p>
-    <div class="platforms-list">
-      <span class="platform-pill">500+ vetted experts</span>
-      <span class="platform-pill">20+ niches covered</span>
-      <span class="platform-pill">30+ countries</span>
-      <span class="platform-pill">From £40/session</span>
-      <span class="platform-pill">Multiple languages</span>
-    </div>
-  </div>
-</section>
-
-<!-- FAQ -->
-<section style="background:var(--white);border-top:1px solid var(--border-soft)">
-  <div class="container-narrow">
-    <div class="section-label">Questions</div>
-    <h2 class="section-title">The honest answers</h2>
-    <div class="faq-list">
-      <div class="faq-item">
-        <div class="faq-q">Is IntroLinq really free?</div>
-        <div class="faq-a">Yes, completely. No subscription, no setup fee, no minimum traffic. IntroLinq only takes a share of commission when a booking is completed - as a founder publisher, you keep 90%. If no one books, it costs you nothing, ever.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q">Is the 90% rate really locked in for life?</div>
-        <div class="faq-a">Yes. Founder publishers keep 90% of our commission on every booking for as long as they use IntroLinq, regardless of how the platform grows or what rate new publishers join at. It's written into your account, not a promotional period.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q">Will it slow my site down?</div>
-        <div class="faq-a">No. The IntroLinq script loads asynchronously after your page content. It has zero effect on your page speed score or your readers' experience.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q">Does it work with any WordPress theme?</div>
-        <div class="faq-a">Yes. The widget adapts to your site's existing style and works with any standard WordPress theme, including Elementor and Divi.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q">What if I already have affiliate links on a post?</div>
-        <div class="faq-a">IntroLinq never interferes with your existing links or monetisation. It only adds expert widgets in content that doesn't already have a relevant link in that context.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q">How and when do I get paid?</div>
-        <div class="faq-a">Monthly, via bank transfer or PayPal. You'll receive a clear earnings breakdown with every payment so you know exactly what converted and where.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q">Can I leave anytime?</div>
-        <div class="faq-a">Yes. Remove the plugin and you're out. No notice period, no penalty. We'd rather earn your loyalty than lock you in.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<footer>
-  <div class="footer-logo">Intro<span>Linq</span></div>
-  <p class="footer-note">Connecting readers with the right experts, one post at a time.</p>
-</footer>
 
 <script>
+async function fetchSpots() {
+  try {
+    const r = await fetch('/api/spots');
+    const d = await r.json();
+    const remaining = d.remaining;
+    const taken = 100 - remaining;
+    document.getElementById('lp-spots-bar').style.width = Math.min(100, taken) + '%';
+    document.getElementById('lp-spots-text').textContent = remaining + ' of 100 spots left';
+  } catch {}
+}
+fetchSpots();
+
+(function() {
+  const isNew = !localStorage.getItem('il_visitor');
+  if (isNew) localStorage.setItem('il_visitor', '1');
+  let viewId = null;
+  const startTime = Date.now();
+  fetch('/api/track', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ visitor_type: isNew ? 'new' : 'returning' })
+  }).then(r => r.json()).then(d => { viewId = d.viewId; }).catch(() => {});
+  function sendExit() {
+    if (!viewId) return;
+    navigator.sendBeacon('/api/track-exit', new Blob([JSON.stringify({ viewId, timeSpent: Math.round((Date.now() - startTime) / 1000) })], { type: 'application/json' }));
+  }
+  window.addEventListener('beforeunload', sendExit);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sendExit(); });
+})();
+
 // Carousel
 let currentSlide = 0;
 const slides = document.querySelectorAll('.carousel-slide');
 const dots = document.querySelectorAll('.carousel-dot');
-let autoTimer;
+let autoTimer, popupTimer;
 
-let popupTimer;
 function goToSlide(n) {
-  // close any open popups on the outgoing slide
   slides[currentSlide].querySelectorAll('.expert-trigger').forEach(t => t.classList.remove('auto-open','open'));
   slides[currentSlide].classList.remove('active');
   dots[currentSlide].classList.remove('active');
   currentSlide = n;
   slides[currentSlide].classList.add('active');
   dots[currentSlide].classList.add('active');
-  resetTimer();
-  // auto-open popup after cursor animation finishes (~1.8s)
+  clearInterval(autoTimer);
+  autoTimer = setInterval(() => goToSlide((currentSlide + 1) % slides.length), 10000);
   clearTimeout(popupTimer);
   popupTimer = setTimeout(() => {
     const trigger = slides[currentSlide]?.querySelector('.expert-trigger');
@@ -1155,149 +343,13 @@ function goToSlide(n) {
   }, 1850);
 }
 
-function nextSlide() {
-  goToSlide((currentSlide + 1) % slides.length);
-}
-
-function resetTimer() {
-  clearInterval(autoTimer);
-  autoTimer = setInterval(nextSlide, 10000);
-}
-
-autoTimer = setInterval(nextSlide, 10000);
-
-// Auto-open first popup on load
+autoTimer = setInterval(() => goToSlide((currentSlide + 1) % slides.length), 10000);
 popupTimer = setTimeout(() => {
   const trigger = slides[0]?.querySelector('.expert-trigger');
   if (trigger) trigger.classList.add('auto-open');
 }, 1850);
 
-// Pause on hover so reader can interact with popup
-const carouselWrap = document.querySelector('.carousel-wrap');
-carouselWrap.addEventListener('mouseenter', () => clearInterval(autoTimer));
-carouselWrap.addEventListener('mouseleave', () => { autoTimer = setInterval(nextSlide, 10000); });
-
-function updateSpotsUI(remaining) {
-  const taken = 100 - remaining;
-  const bannerEl = document.getElementById('banner-spots');
-  const formEl = document.getElementById('form-spots');
-  const textEl = document.getElementById('spots-text');
-  const barEl = document.getElementById('spots-bar');
-  if (bannerEl) bannerEl.textContent = remaining + ' spots';
-  if (formEl) formEl.textContent = '· ' + remaining + ' spots left';
-  if (textEl) textEl.textContent = remaining + ' of 100 spots left';
-  const tierEl = document.getElementById('tier-spots');
-  if (tierEl) tierEl.textContent = remaining + ' spots remaining';
-  if (barEl) barEl.style.width = Math.min(100, taken) + '%';
-  const exitBarEl = document.getElementById('exit-spots-bar');
-  const exitTextEl = document.getElementById('exit-spots-text');
-  if (exitBarEl) exitBarEl.style.width = Math.min(100, taken) + '%';
-  if (exitTextEl) exitTextEl.textContent = remaining + ' of 100 spots left';
-  document.querySelectorAll('.spots-loading').forEach(el => el.classList.remove('spots-loading'));
-}
-
-async function fetchSpots() {
-  try {
-    const r = await fetch('/api/spots');
-    const d = await r.json();
-    if (typeof d.remaining === 'number') updateSpotsUI(d.remaining);
-  } catch {}
-}
-fetchSpots();
-
-// Page tracking
-(function() {
-  const isNew = !localStorage.getItem('il_visitor');
-  if (isNew) localStorage.setItem('il_visitor', '1');
-  const startTime = Date.now();
-  let viewId = null;
-
-  fetch('/api/track', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      visitor_type: isNew ? 'new' : 'returning'
-    })
-  }).then(r => r.json()).then(d => { viewId = d.viewId; window._ilViewId = d.viewId; }).catch(() => {});
-
-  function sendExit() {
-    if (!viewId) return;
-    const timeSpent = Math.round((Date.now() - startTime) / 1000);
-    navigator.sendBeacon('/api/track-exit', new Blob([JSON.stringify({ viewId, timeSpent })], { type: 'application/json' }));
-  }
-
-  window.addEventListener('beforeunload', sendExit);
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sendExit(); });
-})();
-
-async function handleSubmit(e){
-  e.preventDefault();
-  const form = document.getElementById('signup-form');
-  const btn = form.querySelector('.form-submit');
-  btn.textContent = 'Saving your spot…';
-  btn.disabled = true;
-
-  const data = Object.fromEntries(new FormData(form).entries());
-
-  try {
-    const res = await fetch('/api/subscribe', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error();
-    _formSubmitted = true;
-    form.style.display = 'none';
-    document.getElementById('success-state').style.display = 'block';
-    fetchSpots();
-    if (window._ilViewId) {
-      fetch('/api/track-convert', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ viewId: window._ilViewId })
-      }).catch(() => {});
-    }
-  } catch {
-    btn.textContent = 'Claim my founder spot →';
-    btn.disabled = false;
-    alert('Something went wrong - please try again.');
-  }
-}
-function copySnippet() {
-  const text = `<!-- Paste once into your blog's <head> -->\n<script src="https://cdn.introlinq.com/widget.js" data-blog="YOUR_ID"><\/script>`;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById('copy-btn');
-    btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = 'Copy', 2000);
-  });
-}
-
-document.querySelectorAll('a[href^="#"]').forEach(a=>{
-  a.addEventListener('click',function(e){
-    e.preventDefault();
-    const t=document.querySelector(this.getAttribute('href'));
-    if(t)t.scrollIntoView({behavior:'smooth'});
-  });
-});
-
-// Exit intent
-let _exitShown = false;
-let _formSubmitted = false;
-function closeExitPopup() {
-  document.getElementById('exit-popup').classList.remove('active');
-}
-if (window.matchMedia('(pointer:fine)').matches) {
-  document.addEventListener('mouseleave', function(e) {
-    if (e.clientY <= 0 && !_exitShown && !_formSubmitted) {
-      _exitShown = true;
-      document.getElementById('exit-popup').classList.add('active');
-    }
-  });
-}
-document.getElementById('exit-popup').addEventListener('click', function(e) {
-  if (e.target === this) closeExitPopup();
-});
-async function handleExitSubmit(e) {
+async function handleLpSubmit(e) {
   e.preventDefault();
   const form = e.target;
   const btn = form.querySelector('[type="submit"]');
@@ -1315,51 +367,15 @@ async function handleExitSubmit(e) {
       })
     });
     if (!res.ok) throw new Error();
-    _formSubmitted = true;
-    form.style.display = 'none';
-    document.getElementById('exit-success').style.display = 'block';
-    if (window._ilViewId) fetch('/api/track-convert', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ viewId: window._ilViewId }) }).catch(()=>{});
+    document.getElementById('lp-form-inner').style.display = 'none';
+    document.getElementById('lp-success').style.display = 'block';
     fetchSpots();
-    setTimeout(closeExitPopup, 3000);
   } catch {
-    btn.textContent = 'Lock in my 90% →';
+    btn.textContent = 'Claim my 90% commission →';
     btn.disabled = false;
     alert('Something went wrong - please try again.');
   }
 }
 </script>
-
-<!-- EXIT INTENT POPUP -->
-<div id="exit-popup" class="exit-overlay">
-  <div class="exit-modal">
-    <button class="exit-close" onclick="closeExitPopup()" aria-label="Close">✕</button>
-    <div class="exit-badge">Pre-launch offer</div>
-    <h2 class="exit-title">Before you go...</h2>
-    <p class="exit-sub">Lock in your 90% commission now - just enter your details below. No commitment, free forever.</p>
-    <div class="spots-remaining spots-loading" style="margin-bottom:1.25rem;margin-top:-0.25rem">
-      <div class="spots-bar-wrap"><div class="spots-bar" id="exit-spots-bar"></div></div>
-      <span class="spots-text" id="exit-spots-text">27 of 100 spots left</span>
-    </div>
-    <form id="exit-form" onsubmit="handleExitSubmit(event)">
-      <input class="form-input" type="text" name="name" placeholder="Your name" required>
-      <input class="form-input" type="email" name="email" placeholder="Your email" required>
-      <input class="form-input" type="text" name="blog" placeholder="Your blog URL (e.g. yourblog.com)" required>
-      <select class="form-input form-select" name="monthly_visitors" required>
-        <option value="" disabled selected>Monthly readers / visitors</option>
-        <option value="under_1k">Under 1,000</option>
-        <option value="1k_10k">1,000 – 10,000</option>
-        <option value="10k_50k">10,000 – 50,000</option>
-        <option value="50k_100k">50,000 – 100,000</option>
-        <option value="100k_plus">100,000+</option>
-      </select>
-      <button class="form-submit" type="submit">Lock in my 90% commission →</button>
-    </form>
-    <div id="exit-success" style="display:none;text-align:center;padding:1.5rem 0 0.5rem">
-      <div style="font-size:2rem;margin-bottom:0.5rem">✓</div>
-      <p style="font-weight:600;color:var(--ink);margin:0 0 0.25rem">You're in!</p>
-      <p style="color:var(--ink-soft);font-size:0.875rem;margin:0">We'll be in touch when we're ready to launch.</p>
-    </div>
-  </div>
-</div>
 </body>
 </html>
