@@ -29,7 +29,7 @@ export default async function handler(req, res) {
   const { name, email, blog, monthly_visitors } = req.body;
   const country = req.headers['x-vercel-ip-country'] || null;
 
-  if (!name || !email || !blog || !monthly_visitors) {
+  if (!name || !email || !blog) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
