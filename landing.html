@@ -37,8 +37,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .hero-title{font-family:'DM Serif Display',serif;font-size:2.75rem;color:var(--ink);line-height:1.15;letter-spacing:-0.03em;max-width:580px;margin-bottom:0.875rem}
 .hero-sub{font-size:1rem;color:var(--ink-soft);line-height:1.7;max-width:520px;margin-bottom:2.75rem}
 
-/* Two column */
+/* Top row: headline + form */
 .two-col{display:grid;grid-template-columns:1fr 400px;gap:4rem;align-items:start}
+/* Carousel full width */
+.carousel-section{margin-top:3rem}
 
 /* Carousel */
 .carousel-wrap{background:var(--ink);border-radius:20px;padding:1.75rem}
@@ -110,9 +112,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .page-footer a{color:var(--ink-soft);text-decoration:none}
 
 @media(max-width:900px){
-  .two-col{grid-template-columns:1fr;gap:2.5rem}
+  .two-col{grid-template-columns:1fr;gap:2rem}
   .form-card{position:static}
   .hero-title{font-size:2.1rem}
+  .carousel-section{margin-top:2rem}
 }
 @media(max-width:640px){
   .page-wrap{padding:2rem 1.25rem 4rem}
@@ -136,13 +139,46 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 
 <div class="page-wrap">
 
-  <p class="hero-eyebrow">See it in action</p>
-  <h1 class="hero-title">This is exactly what IntroLinq adds to your blog</h1>
-  <p class="hero-sub">One line of code. IntroLinq reads your content, finds the right expert, and earns you commission every time a reader books — automatically.</p>
-
   <div class="two-col">
 
-    <!-- Left: carousel -->
+    <!-- Left: headline -->
+    <div>
+      <p class="hero-eyebrow">See it in action</p>
+      <h1 class="hero-title">This is exactly what IntroLinq adds to your blog</h1>
+      <p class="hero-sub">One line of code. IntroLinq reads your content, finds the right expert, and earns you commission every time a reader books — automatically.</p>
+    </div>
+
+    <!-- Right: form -->
+    <div id="signup-form">
+      <div class="form-card">
+        <div id="lp-form-inner">
+          <div class="form-badge">Pre-launch offer</div>
+          <h2 class="form-title">Claim your 90% commission</h2>
+          <p class="form-sub">First 100 publishers lock this in forever. After that the split drops to 70/30.</p>
+          <div class="spots-row">
+            <div class="spots-bar-wrap"><div class="spots-bar" id="lp-spots-bar"></div></div>
+            <span class="spots-text" id="lp-spots-text">27 of 100 spots left</span>
+          </div>
+          <form onsubmit="handleLpSubmit(event)">
+            <input class="form-input" type="text" name="name" placeholder="Your name" required>
+            <input class="form-input" type="email" name="email" placeholder="Your email" required>
+            <input class="form-input" type="text" name="blog" placeholder="Your blog URL" required>
+            <button class="form-submit" type="submit">Claim my 90% commission →</button>
+          </form>
+          <p class="form-trust">Free forever · No card needed · 2 min setup</p>
+        </div>
+        <div class="success-wrap" id="lp-success">
+          <div class="success-check">✓</div>
+          <div class="success-title">You're in!</div>
+          <p class="success-sub">Your spot is reserved. We'll be in touch as soon as we're ready to launch.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Carousel: full width -->
+  <div class="carousel-section">
     <div class="carousel-wrap">
       <div class="carousel-label">IntroLinq detected the topic and matched an expert automatically — hover the underlined link to see what your readers see</div>
       <div class="carousel-track">
@@ -199,34 +235,6 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
         <button class="carousel-dot" onclick="goToSlide(5)"></button>
       </div>
     </div>
-
-    <!-- Right: form -->
-    <div id="signup-form">
-      <div class="form-card">
-        <div id="lp-form-inner">
-          <div class="form-badge">Pre-launch offer</div>
-          <h2 class="form-title">Claim your 90% commission</h2>
-          <p class="form-sub">First 100 publishers lock this in forever. After that the split drops to 70/30.</p>
-          <div class="spots-row">
-            <div class="spots-bar-wrap"><div class="spots-bar" id="lp-spots-bar"></div></div>
-            <span class="spots-text" id="lp-spots-text">27 of 100 spots left</span>
-          </div>
-          <form onsubmit="handleLpSubmit(event)">
-            <input class="form-input" type="text" name="name" placeholder="Your name" required>
-            <input class="form-input" type="email" name="email" placeholder="Your email" required>
-            <input class="form-input" type="text" name="blog" placeholder="Your blog URL" required>
-            <button class="form-submit" type="submit">Claim my 90% commission →</button>
-          </form>
-          <p class="form-trust">Free forever · No card needed · 2 min setup</p>
-        </div>
-        <div class="success-wrap" id="lp-success">
-          <div class="success-check">✓</div>
-          <div class="success-title">You're in!</div>
-          <p class="success-sub">Your spot is reserved. We'll be in touch as soon as we're ready to launch.</p>
-        </div>
-      </div>
-    </div>
-
   </div>
 
   <!-- Stats -->
