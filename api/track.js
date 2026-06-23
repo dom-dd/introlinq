@@ -5,6 +5,11 @@ export default async function handler(req, res) {
 
   const { visitor_type } = req.body;
   const country = req.headers['x-vercel-ip-country'] || null;
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim();
+
+  if (process.env.OWNER_IP && ip === process.env.OWNER_IP) {
+    return res.status(200).json({ ok: true, viewId: null });
+  }
 
   try {
     const sql = neon(process.env.DATABASE_URL);
