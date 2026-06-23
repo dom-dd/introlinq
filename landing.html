@@ -37,10 +37,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .hero-title{font-family:'DM Serif Display',serif;font-size:2.75rem;color:var(--ink);line-height:1.15;letter-spacing:-0.03em;max-width:580px;margin-bottom:0.875rem}
 .hero-sub{font-size:1rem;color:var(--ink-soft);line-height:1.7;max-width:520px;margin-bottom:2.75rem}
 
-/* Top row: headline + form */
-.two-col{display:grid;grid-template-columns:1fr 400px;gap:4rem;align-items:start}
-/* Carousel full width */
-.carousel-section{margin-top:3rem}
+.two-col{display:grid;grid-template-columns:1fr 400px;gap:4rem;align-items:stretch}
+.left-col{display:flex;flex-direction:column;gap:2rem}
+.carousel-wrap{flex:1}
 
 /* Carousel */
 .carousel-wrap{background:var(--ink);border-radius:20px;padding:1.75rem}
@@ -81,7 +80,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 @keyframes cursorRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
 /* Form card */
-.form-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;box-shadow:0 4px 24px rgba(26,26,46,0.07);position:sticky;top:88px}
+.form-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;box-shadow:0 4px 24px rgba(26,26,46,0.07);height:100%}
+.form-select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238888a8' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center;cursor:pointer}
+.form-select:invalid,.form-select option[value=""]{color:var(--ink-muted)}
 .form-badge{display:inline-block;font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;background:var(--gold);color:var(--white);padding:0.2rem 0.6rem;border-radius:100px;margin-bottom:1rem}
 .form-title{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--ink);line-height:1.2;margin-bottom:0.375rem}
 .form-sub{font-size:0.875rem;color:var(--ink-soft);line-height:1.6;margin-bottom:1.25rem}
@@ -113,9 +114,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 
 @media(max-width:900px){
   .two-col{grid-template-columns:1fr;gap:2rem}
-  .form-card{position:static}
+  .left-col{gap:1.5rem}
+  .form-card{height:auto}
   .hero-title{font-size:2.1rem}
-  .carousel-section{margin-top:2rem}
 }
 @media(max-width:640px){
   .page-wrap{padding:2rem 1.25rem 4rem}
@@ -141,45 +142,14 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 
   <div class="two-col">
 
-    <!-- Left: headline -->
-    <div>
-      <p class="hero-eyebrow">See it in action</p>
-      <h1 class="hero-title">This is exactly what IntroLinq adds to your blog</h1>
-      <p class="hero-sub">One line of code. IntroLinq reads your content, finds the right expert, and earns you commission every time a reader books — automatically.</p>
-    </div>
-
-    <!-- Right: form -->
-    <div id="signup-form">
-      <div class="form-card">
-        <div id="lp-form-inner">
-          <div class="form-badge">Pre-launch offer</div>
-          <h2 class="form-title">Claim your 90% commission</h2>
-          <p class="form-sub">First 100 publishers lock this in forever. After that the split drops to 70/30.</p>
-          <div class="spots-row">
-            <div class="spots-bar-wrap"><div class="spots-bar" id="lp-spots-bar"></div></div>
-            <span class="spots-text" id="lp-spots-text">27 of 100 spots left</span>
-          </div>
-          <form onsubmit="handleLpSubmit(event)">
-            <input class="form-input" type="text" name="name" placeholder="Your name" required>
-            <input class="form-input" type="email" name="email" placeholder="Your email" required>
-            <input class="form-input" type="text" name="blog" placeholder="Your blog URL" required>
-            <button class="form-submit" type="submit">Claim my 90% commission →</button>
-          </form>
-          <p class="form-trust">Free forever · No card needed · 2 min setup</p>
-        </div>
-        <div class="success-wrap" id="lp-success">
-          <div class="success-check">✓</div>
-          <div class="success-title">You're in!</div>
-          <p class="success-sub">Your spot is reserved. We'll be in touch as soon as we're ready to launch.</p>
-        </div>
+    <!-- Left: headline + carousel -->
+    <div class="left-col">
+      <div>
+        <p class="hero-eyebrow">See it in action</p>
+        <h1 class="hero-title">This is exactly what IntroLinq adds to your blog</h1>
+        <p class="hero-sub">One line of code. IntroLinq reads your content, finds the right expert, and earns you commission every time a reader books — automatically.</p>
       </div>
-    </div>
-
-  </div>
-
-  <!-- Carousel: full width -->
-  <div class="carousel-section">
-    <div class="carousel-wrap">
+      <div class="carousel-wrap">
       <div class="carousel-label">IntroLinq detected the topic and matched an expert automatically — hover the underlined link to see what your readers see</div>
       <div class="carousel-track">
 
@@ -234,7 +204,44 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
         <button class="carousel-dot" onclick="goToSlide(4)"></button>
         <button class="carousel-dot" onclick="goToSlide(5)"></button>
       </div>
+    </div><!-- /carousel-wrap -->
+    </div><!-- /left-col -->
+
+    <!-- Right: form -->
+    <div id="signup-form">
+      <div class="form-card">
+        <div id="lp-form-inner">
+          <div class="form-badge">Pre-launch offer</div>
+          <h2 class="form-title">Claim your 90% commission</h2>
+          <p class="form-sub">First 100 publishers lock this in forever. After that the split drops to 70/30.</p>
+          <div class="spots-row">
+            <div class="spots-bar-wrap"><div class="spots-bar" id="lp-spots-bar"></div></div>
+            <span class="spots-text" id="lp-spots-text">27 of 100 spots left</span>
+          </div>
+          <form onsubmit="handleLpSubmit(event)">
+            <input class="form-input" type="text" name="name" placeholder="Your name" required>
+            <input class="form-input" type="email" name="email" placeholder="Your email" required>
+            <input class="form-input" type="text" name="blog" placeholder="Your blog URL" required>
+            <select class="form-input form-select" name="monthly_visitors" required>
+              <option value="" disabled selected>Monthly readers / visitors</option>
+              <option value="under_1k">Under 1,000</option>
+              <option value="1k_10k">1,000 – 10,000</option>
+              <option value="10k_50k">10,000 – 50,000</option>
+              <option value="50k_100k">50,000 – 100,000</option>
+              <option value="100k_plus">100,000+</option>
+            </select>
+            <button class="form-submit" type="submit">Claim my 90% commission →</button>
+          </form>
+          <p class="form-trust">Free forever · No card needed · 2 min setup</p>
+        </div>
+        <div class="success-wrap" id="lp-success">
+          <div class="success-check">✓</div>
+          <div class="success-title">You're in!</div>
+          <p class="success-sub">Your spot is reserved. We'll be in touch as soon as we're ready to launch.</p>
+        </div>
+      </div>
     </div>
+
   </div>
 
   <!-- Stats -->
@@ -333,7 +340,8 @@ async function handleLpSubmit(e) {
       body: JSON.stringify({
         name: form.name.value,
         email: form.email.value,
-        blog: form.blog.value
+        blog: form.blog.value,
+        monthly_visitors: form.monthly_visitors.value
       })
     });
     if (!res.ok) throw new Error();
