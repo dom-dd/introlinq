@@ -90,8 +90,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .form-sub{font-size:0.875rem;color:var(--ink-soft);line-height:1.6;margin-bottom:1.25rem}
 .spots-row{display:flex;align-items:center;gap:0.5rem;margin-bottom:1.375rem}
 .spots-bar-wrap{flex:1;height:5px;background:rgba(184,134,11,0.15);border-radius:100px;overflow:hidden}
-.spots-bar{height:100%;background:var(--gold);border-radius:100px;width:73%}
-.spots-text{white-space:nowrap;font-size:0.75rem;font-weight:500;color:var(--gold)}
+.spots-bar{height:100%;background:var(--gold);border-radius:100px;width:0;transition:width 0.4s ease}
+.spots-text{white-space:nowrap;font-size:0.75rem;font-weight:500;color:var(--gold);opacity:0;transition:opacity 0.3s ease}
 .form-input{width:100%;padding:0.75rem 1rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.9375rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);outline:none;transition:border-color 0.15s;margin-bottom:0.75rem}
 .form-input:focus{border-color:var(--sage);background:var(--white)}
 .form-input::placeholder{color:var(--ink-muted)}
@@ -261,7 +261,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
           <p class="form-sub">First 100 publishers lock this in forever. After that the split drops to 70/30.</p>
           <div class="spots-row">
             <div class="spots-bar-wrap"><div class="spots-bar" id="lp-spots-bar"></div></div>
-            <span class="spots-text" id="lp-spots-text">27 of 100 spots left</span>
+            <span class="spots-text" id="lp-spots-text"></span>
           </div>
           <form onsubmit="handleLpSubmit(event)">
             <input class="form-input" type="text" name="name" placeholder="Your name" required>
@@ -458,8 +458,10 @@ async function fetchSpots() {
     const d = await r.json();
     const remaining = d.remaining;
     const taken = 100 - remaining;
-    document.getElementById('lp-spots-bar').style.width = Math.min(100, taken) + '%';
-    document.getElementById('lp-spots-text').textContent = remaining + ' of 100 spots left';
+    const pct = Math.min(100, taken) + '%';
+    const label = remaining + ' of 100 spots left';
+    ['lp-spots-bar','exit-spots-bar'].forEach(id => { const el = document.getElementById(id); if (el) el.style.width = pct; });
+    ['lp-spots-text','exit-spots-text'].forEach(id => { const el = document.getElementById(id); if (el) { el.textContent = label; el.style.opacity = '1'; } });
   } catch {}
 }
 fetchSpots();
@@ -596,7 +598,7 @@ async function handleExitSubmit(e) {
     <p class="exit-sub">Lock in your 90% commission now — just enter your details below. No commitment, free forever.</p>
     <div class="spots-remaining" style="margin-bottom:1.25rem;margin-top:-0.25rem">
       <div class="spots-bar-wrap"><div class="spots-bar" id="exit-spots-bar"></div></div>
-      <span class="spots-text" id="exit-spots-text">27 of 100 spots left</span>
+      <span class="spots-text" id="exit-spots-text"></span>
     </div>
     <form id="exit-form" onsubmit="handleExitSubmit(event)">
       <input class="form-input" type="text" name="name" placeholder="Your name" required>
