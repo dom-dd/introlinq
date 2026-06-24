@@ -41,9 +41,9 @@ export default async function handler(req, res) {
     await sql`
       CREATE TABLE IF NOT EXISTS subscribers (
         id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
+        name TEXT,
         email TEXT NOT NULL UNIQUE,
-        blog_url TEXT NOT NULL,
+        blog_url TEXT,
         phone TEXT,
         monthly_visitors TEXT,
         country TEXT,
