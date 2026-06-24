@@ -17,6 +17,8 @@ export default async function handler(req, res) {
 
   try {
     const sql = neon(process.env.DATABASE_URL);
+    await sql`ALTER TABLE subscribers ALTER COLUMN name DROP NOT NULL`.catch(() => {});
+    await sql`ALTER TABLE subscribers ALTER COLUMN blog_url DROP NOT NULL`.catch(() => {});
     await sql`
       INSERT INTO subscribers (name, email, blog_url, monthly_visitors, country)
       VALUES (null, ${email}, null, null, ${country || null})
