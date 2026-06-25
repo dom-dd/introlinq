@@ -16,7 +16,7 @@
   --ink:#1a1a2e;--ink-soft:#4a4a6a;--ink-muted:#8888a8;
   --cream:#faf8f4;--white:#ffffff;
   --sage:#3d7a5f;--sage-light:#edf5f0;--sage-mid:#c8e4d8;
-  --gold:#e6a820;--gold-light:#fef3c7;
+  --gold:#b8860b;--gold-light:#fdf8e8;
   --border:rgba(26,26,46,0.10);--border-soft:rgba(26,26,46,0.06);
   --radius:12px;--radius-sm:8px;
 }
@@ -89,7 +89,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .form-title{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--ink);line-height:1.2;margin-bottom:0.375rem}
 .form-sub{font-size:0.875rem;color:var(--ink-soft);line-height:1.6;margin-bottom:1.25rem}
 .spots-row{display:flex;align-items:center;gap:0.5rem;margin-bottom:1.375rem}
-.spots-bar-wrap{flex:1;height:5px;background:rgba(230,168,32,0.15);border-radius:100px;overflow:hidden}
+.spots-bar-wrap{flex:1;height:5px;background:rgba(184,134,11,0.15);border-radius:100px;overflow:hidden}
 .spots-bar{height:100%;background:var(--gold);border-radius:100px;width:0;transition:width 0.4s ease}
 .spots-text{white-space:nowrap;font-size:0.75rem;font-weight:500;color:var(--gold);opacity:0;transition:opacity 0.3s ease}
 .form-input{width:100%;padding:0.75rem 1rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.9375rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);outline:none;transition:border-color 0.15s;margin-bottom:0.75rem}
@@ -153,49 +153,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .exit-badge{display:inline-block;font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;background:var(--gold);color:var(--white);padding:0.2rem 0.6rem;border-radius:100px;margin-bottom:1rem}
 .exit-title{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--ink);margin:0 0 0.5rem;letter-spacing:-0.02em;line-height:1.2}
 .exit-sub{color:var(--ink-soft);margin:0 0 1.5rem;line-height:1.65;font-size:0.9375rem}
-/* Blogs we work with */
-.blogs-strip{margin-top:3.5rem;text-align:center}
-.blogs-strip-label{font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-muted);margin-bottom:1.5rem}
-.blogs-logos{display:flex;flex-wrap:wrap;gap:1rem 2.5rem;justify-content:center;align-items:center}
-.blog-logo-name{font-size:1.0625rem;font-weight:800;color:var(--ink);opacity:0.18;letter-spacing:-0.03em;font-family:'DM Serif Display',serif}
-
-/* Works with platforms */
-.platforms-strip{margin-top:3.5rem;text-align:center}
-.platforms-strip-label{font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-muted);margin-bottom:1.5rem}
-.platform-logos{display:flex;flex-wrap:wrap;gap:1.5rem 2rem;justify-content:center;align-items:center}
-.platform-logo-item{display:flex;flex-direction:column;align-items:center;gap:0.4rem;opacity:0.45;transition:opacity 0.2s}
-.platform-logo-item:hover{opacity:0.8}
-.platform-logo-item img{width:26px;height:26px;object-fit:contain}
-.platform-logo-name{font-size:0.625rem;color:var(--ink-muted);font-weight:500;letter-spacing:0.03em}
-
-/* FAQ */
-.faq-section{margin-top:3.5rem}
-.faq-heading{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--ink);margin-bottom:1.5rem;letter-spacing:-0.02em}
-.faq-list{border-top:1px solid var(--border)}
-.faq-item{border-bottom:1px solid var(--border)}
-.faq-question{width:100%;background:none;border:none;text-align:left;padding:1.125rem 0;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:0.9375rem;font-weight:600;color:var(--ink);font-family:'Inter',sans-serif;gap:1rem}
-.faq-question::after{content:'+';font-size:1.25rem;font-weight:300;color:var(--ink-muted);flex-shrink:0;transition:transform 0.2s}
-.faq-item.open .faq-question::after{transform:rotate(45deg)}
-.faq-answer{font-size:0.9rem;color:var(--ink-soft);line-height:1.75;padding-bottom:1.125rem;display:none}
-.faq-item.open .faq-answer{display:block}
-
-/* Site footer */
-.site-footer{border-top:1px solid var(--border);margin-top:3.5rem;padding:2rem 0 1.5rem;text-align:center}
-.footer-links{display:flex;gap:1.75rem;justify-content:center;flex-wrap:wrap;margin-bottom:0.875rem}
-.footer-link{font-size:0.8125rem;color:var(--ink-muted);text-decoration:none;transition:color 0.15s}
-.footer-link:hover{color:var(--ink)}
-.footer-copy{font-size:0.75rem;color:var(--ink-muted)}
-
-/* Cookie banner */
-.cookie-banner{position:fixed;bottom:0;left:0;right:0;background:var(--ink);color:var(--white);padding:1.125rem 2rem;z-index:998;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;box-shadow:0 -4px 24px rgba(0,0,0,0.15)}
-.cookie-banner.hidden{display:none}
-.cookie-text{flex:1;font-size:0.8125rem;line-height:1.55;min-width:220px;color:rgba(255,255,255,0.75)}
-.cookie-text a{color:var(--sage-mid);text-decoration:underline;text-underline-offset:2px}
-.cookie-buttons{display:flex;gap:0.625rem;flex-shrink:0;flex-wrap:wrap}
-.cookie-btn{padding:0.45rem 1.1rem;border-radius:100px;font-size:0.8125rem;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;border:none;transition:opacity 0.15s}
-.cookie-btn-accept{background:var(--sage);color:var(--white)}
-.cookie-btn-reject{background:rgba(255,255,255,0.1);color:var(--white);border:1px solid rgba(255,255,255,0.2)!important}
-.cookie-btn-settings{background:none;color:rgba(255,255,255,0.5);text-decoration:underline;text-underline-offset:2px;padding:0.45rem 0.5rem}
+.page-footer{text-align:center;margin-top:3rem;font-size:0.8125rem;color:var(--ink-muted)}
+.page-footer a{color:var(--ink-soft);text-decoration:none}
 
 @media(max-width:900px){
   .two-col{grid-template-columns:1fr;gap:2rem}
@@ -221,7 +180,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 <nav>
   <a class="nav-logo" href="/">Intro<span>Linq</span></a>
   <span class="nav-tagline">Free for publishers · No setup required</span>
-  <button class="nav-cta" onclick="document.getElementById('signup-form').scrollIntoView({behavior:'smooth'})">Lock in my 90% rate</button>
+  <button class="nav-cta" onclick="document.getElementById('signup-form').scrollIntoView({behavior:'smooth'})">Claim your spot</button>
 </nav>
 
 <div class="page-wrap">
@@ -232,8 +191,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
     <div class="left-col">
       <div>
         <p class="hero-eyebrow">See it in action</p>
-        <h1 class="hero-title">Turn your readers into revenue. 90% commission, forever.</h1>
-        <p class="hero-sub">Every article has readers who need expert guidance. IntroLinq finds them, matches the right expert from our database of 5,000+ specialists — filtered by topic, language, location, and budget — and you earn commission on every booking. No ongoing work. It runs on every article you've published and every one you write.</p>
+        <h1 class="hero-title">Earn passive income from expert recommendations on your site</h1>
+        <p class="hero-sub">We detect topics in your articles where readers could benefit from expert guidance - then find the best fit in our database of 5,000+ vetted experts worldwide, filtered by topic, language, location, and budget. You earn a commission on every booking.</p>
       </div>
       <div class="carousel-wrap">
       <div class="carousel-label">IntroLinq detected the topic and matched an expert automatically - hover the underlined link to see what your readers see</div>
@@ -297,9 +256,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
     <div id="signup-form">
       <div class="form-card">
         <div id="lp-form-inner">
-          <p style="font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);margin-bottom:0.375rem">Founding rate</p>
-          <h2 class="form-title">Lock in 90%. Keep it forever.</h2>
-          <p class="form-sub">Only 100 founding spots. After launch, all new publishers get 70/30. Lock yours now before that rate disappears.</p>
+          <div class="form-badge">Pre-launch offer</div>
+          <h2 class="form-title">Lock in your introductory 90% commission</h2>
+          <p class="form-sub">First 100 publishers lock this in forever. After that the split drops to 70/30.</p>
           <div class="spots-row">
             <div class="spots-bar-wrap"><div class="spots-bar" id="lp-spots-bar"></div></div>
             <span class="spots-text" id="lp-spots-text"></span>
@@ -316,7 +275,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
               <option value="50k_100k">50,000 – 100,000</option>
               <option value="100k_plus">100,000+</option>
             </select>
-            <button class="form-submit" type="submit">Lock in 90%, start earning</button>
+            <button class="form-submit" type="submit">Save my spot →</button>
           </form>
           <p class="form-trust">Free forever · No card needed · 2 min setup</p>
           <div class="form-platforms">
@@ -359,21 +318,6 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
     <div class="stat-item">
       <span class="stat-num">5,000+</span>
       <div class="stat-label">Vetted experts ready</div>
-    </div>
-  </div>
-
-  <!-- Blogs we work with -->
-  <div class="blogs-strip">
-    <p class="blogs-strip-label">Trusted by independent publishers</p>
-    <div class="blogs-logos">
-      <span class="blog-logo-name">The Financial Lens</span>
-      <span class="blog-logo-name">Nourish &amp; Thrive</span>
-      <span class="blog-logo-name">The SaaS Founder</span>
-      <span class="blog-logo-name">Mindful Money</span>
-      <span class="blog-logo-name">Creative Brief</span>
-      <span class="blog-logo-name">The Tech Desk</span>
-      <span class="blog-logo-name">Scale &amp; Grow</span>
-      <span class="blog-logo-name">Wanderlust Diaries</span>
     </div>
   </div>
 
@@ -503,68 +447,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
     </div>
   </div>
 
-  <!-- Works with platforms -->
-  <div class="platforms-strip">
-    <p class="platforms-strip-label">Works with any publishing platform</p>
-    <div class="platform-logos">
-      <div class="platform-logo-item"><img src="https://cdn.simpleicons.org/wordpress/1a1a2e" alt="WordPress"><span class="platform-logo-name">WordPress</span></div>
-      <div class="platform-logo-item"><img src="https://cdn.simpleicons.org/ghost/1a1a2e" alt="Ghost"><span class="platform-logo-name">Ghost</span></div>
-      <div class="platform-logo-item"><img src="https://cdn.simpleicons.org/substack/1a1a2e" alt="Substack"><span class="platform-logo-name">Substack</span></div>
-      <div class="platform-logo-item"><img src="https://cdn.simpleicons.org/squarespace/1a1a2e" alt="Squarespace"><span class="platform-logo-name">Squarespace</span></div>
-      <div class="platform-logo-item"><img src="https://cdn.simpleicons.org/webflow/1a1a2e" alt="Webflow"><span class="platform-logo-name">Webflow</span></div>
-      <div class="platform-logo-item"><img src="https://cdn.simpleicons.org/medium/1a1a2e" alt="Medium"><span class="platform-logo-name">Medium</span></div>
-      <div class="platform-logo-item"><img src="https://cdn.simpleicons.org/mailchimp/1a1a2e" alt="Mailchimp"><span class="platform-logo-name">Mailchimp</span></div>
-      <div class="platform-logo-item"><img src="https://cdn.simpleicons.org/wix/1a1a2e" alt="Wix"><span class="platform-logo-name">Wix</span></div>
-      <div class="platform-logo-item"><img src="https://cdn.simpleicons.org/notion/1a1a2e" alt="Notion"><span class="platform-logo-name">Notion</span></div>
-      <div class="platform-logo-item"><img src="https://cdn.simpleicons.org/hubspot/1a1a2e" alt="HubSpot"><span class="platform-logo-name">HubSpot</span></div>
-    </div>
-  </div>
-
-  <!-- FAQ -->
-  <div class="faq-section">
-    <h2 class="faq-heading">Frequently asked questions</h2>
-    <div class="faq-list">
-      <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)">How does the commission work?</button>
-        <div class="faq-answer">When a reader books a session with an expert through your blog, you earn 90% of the booking fee. The first 100 publishers to sign up lock this rate in permanently — after that it drops to 70/30.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)">Is it really free?</button>
-        <div class="faq-answer">Yes, completely free. No setup fee, no monthly cost, no hidden charges. You only earn when a booking happens — if nothing books, you pay nothing.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)">What types of experts are in the network?</button>
-        <div class="faq-answer">Over 5,000 vetted specialists covering finance, health, business, legal, technology, coaching, and more. Each expert is matched by topic, language, location, and budget — so recommendations always feel relevant to your readers.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)">How does IntroLinq know which expert to show?</button>
-        <div class="faq-answer">The widget reads your article content, detects the topic automatically, and surfaces the most relevant expert. No manual tagging or configuration required on your end.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)">Will it slow down my site?</button>
-        <div class="faq-answer">No. It loads as a single lightweight asynchronous script — your page renders first, and the widget loads after. Most publishers see zero measurable impact on page speed.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)">When and how do I get paid?</button>
-        <div class="faq-answer">Payouts are processed monthly via bank transfer or PayPal once you reach a minimum threshold of £25. You'll have a dashboard to track bookings and earnings in real time.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)">Does it work with my platform?</button>
-        <div class="faq-answer">Yes. IntroLinq works with any platform that lets you add a line of code to your site — WordPress, Ghost, Substack, Squarespace, Webflow, Medium, and more. If you can paste into a &lt;head&gt; tag, you're good to go.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Footer -->
-  <footer class="site-footer">
-    <div class="footer-links">
-      <a href="/privacy" class="footer-link">Privacy Policy</a>
-      <a href="/terms" class="footer-link">Terms of Service</a>
-      <a href="/cookies" class="footer-link">Cookie Policy</a>
-      <a href="mailto:hello@introlinq.com" class="footer-link">Contact</a>
-    </div>
-    <p class="footer-copy">Copyright &copy; 2026 IntroLinq. All rights reserved.</p>
-  </footer>
+  <p class="page-footer">Questions? Reply to the email or write to <a href="mailto:hello@introlinq.com">hello@introlinq.com</a></p>
 
 </div>
 
@@ -657,23 +540,6 @@ async function handleLpSubmit(e) {
   }
 }
 
-// FAQ accordion
-function toggleFaq(btn) {
-  const item = btn.closest('.faq-item');
-  const isOpen = item.classList.contains('open');
-  document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
-  if (!isOpen) item.classList.add('open');
-}
-
-// Cookie consent
-function setCookieConsent(val) {
-  localStorage.setItem('cookie_consent', val);
-  document.getElementById('cookie-banner').classList.add('hidden');
-}
-if (localStorage.getItem('cookie_consent')) {
-  document.getElementById('cookie-banner').classList.add('hidden');
-}
-
 // Exit intent
 let _exitShown = false;
 let _exitSubmitted = false;
@@ -717,16 +583,6 @@ async function handleExitSubmit(e) {
   }
 }
 </script>
-
-<!-- COOKIE BANNER -->
-<div id="cookie-banner" class="cookie-banner">
-  <p class="cookie-text">We use cookies to enhance your browsing experience and analyse our traffic. See our <a href="/cookies">Cookie Policy</a>.</p>
-  <div class="cookie-buttons">
-    <button class="cookie-btn cookie-btn-accept" onclick="setCookieConsent('accepted')">Accept All</button>
-    <button class="cookie-btn cookie-btn-reject" onclick="setCookieConsent('rejected')">Reject All</button>
-    <button class="cookie-btn cookie-btn-settings" onclick="window.location='/cookies'">Cookie Settings</button>
-  </div>
-</div>
 
 <!-- EXIT INTENT POPUP -->
 <div id="exit-popup" class="exit-overlay">

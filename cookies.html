@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cookie Policy - IntroLinq</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--ink:#1a1a2e;--ink-soft:#4a4a6a;--ink-muted:#8888a8;--cream:#faf8f4;--white:#ffffff;--sage:#3d7a5f;--sage-light:#edf5f0;--border:rgba(26,26,46,0.10)}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 2rem;border-bottom:1px solid var(--border);background:var(--cream)}
+.nav-logo{font-family:'DM Serif Display',serif;font-size:1.375rem;color:var(--ink);text-decoration:none}
+.nav-logo span{color:var(--sage)}
+.page-wrap{max-width:720px;margin:0 auto;padding:4rem 2rem 5rem}
+h1{font-family:'DM Serif Display',serif;font-size:2.25rem;color:var(--ink);margin-bottom:0.5rem;letter-spacing:-0.02em}
+.updated{font-size:0.8125rem;color:var(--ink-muted);margin-bottom:3rem}
+h2{font-size:1rem;font-weight:600;color:var(--ink);margin:2rem 0 0.5rem}
+p{font-size:0.9375rem;color:var(--ink-soft);line-height:1.8;margin-bottom:0.75rem}
+table{width:100%;border-collapse:collapse;margin:1rem 0 1.5rem;font-size:0.875rem}
+th{text-align:left;padding:0.625rem 1rem;background:var(--sage-light);color:var(--ink);font-weight:600;border:1px solid var(--border)}
+td{padding:0.625rem 1rem;color:var(--ink-soft);border:1px solid var(--border);line-height:1.6;vertical-align:top}
+.pref-section{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-top:2rem}
+.pref-title{font-weight:600;font-size:0.9375rem;margin-bottom:1rem}
+.pref-buttons{display:flex;gap:0.75rem;flex-wrap:wrap}
+.pref-btn{padding:0.5rem 1.25rem;border-radius:100px;font-size:0.875rem;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;border:none}
+.pref-btn-accept{background:var(--sage);color:#fff}
+.pref-btn-reject{background:var(--cream);color:var(--ink);border:1px solid var(--border)!important}
+.site-footer{border-top:1px solid var(--border);margin-top:4rem;padding:2rem 0 1.5rem;text-align:center}
+.footer-links{display:flex;gap:1.75rem;justify-content:center;flex-wrap:wrap;margin-bottom:0.875rem}
+.footer-link{font-size:0.8125rem;color:var(--ink-muted);text-decoration:none}
+.footer-link:hover{color:var(--ink)}
+.footer-copy{font-size:0.75rem;color:var(--ink-muted)}
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-logo" href="/">Intro<span>Linq</span></a>
+</nav>
+<div class="page-wrap">
+  <h1>Cookie Policy</h1>
+  <p class="updated">Last updated: June 2026</p>
+
+  <p>This Cookie Policy explains how IntroLinq uses cookies and similar technologies when you visit introlinq.com. By continuing to use our site, you agree to our use of cookies as described below.</p>
+
+  <h2>What are cookies?</h2>
+  <p>Cookies are small text files stored on your device when you visit a website. They help the site remember your preferences and understand how you use it, so we can improve your experience over time.</p>
+
+  <h2>What cookies do we use?</h2>
+  <table>
+    <thead>
+      <tr><th>Cookie</th><th>Type</th><th>Purpose</th><th>Duration</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>cookie_consent</td><td>Essential</td><td>Stores your cookie preference so we don't ask again</td><td>1 year</td></tr>
+      <tr><td>il_visitor</td><td>Functional</td><td>Identifies whether you are a new or returning visitor for analytics</td><td>1 year</td></tr>
+      <tr><td>_ga, _gid</td><td>Analytics</td><td>Google Analytics — used to understand aggregate site traffic and user behaviour</td><td>Up to 2 years</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Essential cookies</h2>
+  <p>These cookies are necessary for the site to function properly. They cannot be disabled without affecting core functionality.</p>
+
+  <h2>Analytics cookies</h2>
+  <p>These cookies help us understand how visitors interact with our site — which pages are visited, how long people stay, and where they come from. All data is aggregated and anonymous. You can opt out below.</p>
+
+  <h2>Third-party cookies</h2>
+  <p>We may use trusted third-party services (such as Google Analytics) that set their own cookies. These services have their own privacy policies and we encourage you to review them.</p>
+
+  <h2>Managing your preferences</h2>
+  <p>You can update your cookie preferences at any time:</p>
+  <div class="pref-section">
+    <p class="pref-title">Your current cookie preferences</p>
+    <div class="pref-buttons">
+      <button class="pref-btn pref-btn-accept" onclick="setCookiePref('accepted')">Accept all cookies</button>
+      <button class="pref-btn pref-btn-reject" onclick="setCookiePref('rejected')">Essential cookies only</button>
+    </div>
+    <p id="pref-status" style="margin-top:0.75rem;font-size:0.8125rem;color:var(--sage);display:none">Preference saved.</p>
+  </div>
+
+  <h2>Contact</h2>
+  <p>Questions about our use of cookies? Contact us at <a href="mailto:hello@introlinq.com" style="color:var(--sage)">hello@introlinq.com</a>.</p>
+
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="/privacy" class="footer-link">Privacy Policy</a>
+      <a href="/terms" class="footer-link">Terms of Service</a>
+      <a href="/cookies" class="footer-link">Cookie Policy</a>
+      <a href="mailto:hello@introlinq.com" class="footer-link">Contact</a>
+    </div>
+    <p class="footer-copy">Copyright &copy; 2026 IntroLinq. All rights reserved.</p>
+  </footer>
+</div>
+<script>
+function setCookiePref(val) {
+  localStorage.setItem('cookie_consent', val);
+  document.getElementById('pref-status').style.display = 'block';
+}
+</script>
+</body>
+</html>
