@@ -704,7 +704,7 @@ async function handleExitSubmit(e) {
     fetchSpots();
     setTimeout(closeExitPopup, 3000);
   } catch {
-    btn.textContent = 'Lock in my 90% →';
+    btn.textContent = 'Save my spot';
     btn.disabled = false;
     alert('Something went wrong - please try again.');
   }
@@ -725,16 +725,16 @@ async function handleExitSubmit(e) {
 <div id="exit-popup" class="exit-overlay">
   <div class="exit-modal">
     <button class="exit-close" onclick="closeExitPopup()" aria-label="Close">✕</button>
-    <div class="exit-badge">Pre-launch offer</div>
-    <h2 class="exit-title">Before you go...</h2>
-    <p class="exit-sub">Only 100 bloggers get access before launch. Once these spots are gone, the 90% rate is gone too. Enter your email to hold your place.</p>
+    <div class="exit-badge">100 founding spots only</div>
+    <h2 class="exit-title">Don't lose your spot.</h2>
+    <p class="exit-sub">Only 100 bloggers get access before launch. Once these spots are gone, the 90% commission rate is gone too. Save your place now - it takes 10 seconds.</p>
     <div class="spots-remaining" style="margin-bottom:1.25rem;margin-top:-0.25rem">
       <div class="spots-bar-wrap"><div class="spots-bar" id="exit-spots-bar"></div></div>
       <span class="spots-text" id="exit-spots-text"></span>
     </div>
     <form id="exit-form" onsubmit="handleExitSubmit(event)">
       <input class="form-input" type="email" name="email" placeholder="Your email address" required>
-      <button class="form-submit" type="submit">Lock in my 90% commission →</button>
+      <button class="form-submit" type="submit">Save my spot</button>
     </form>
     <div id="exit-success" style="display:none;text-align:center;padding:1.5rem 0 0.5rem">
       <div style="font-size:2rem;margin-bottom:0.5rem">✓</div>
