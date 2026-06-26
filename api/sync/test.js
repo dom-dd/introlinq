@@ -3,10 +3,24 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const response = await fetch('https://open-intro.com/api/1.1/obj/Expert?limit=2', {
-    headers: { 'Authorization': `Bearer ${process.env.BUBBLE_API_KEY}` }
-  });
+  const candidates = [
+    'Expert', 'expert', 'Experts', 'experts',
+    'Expert profile', 'Expert_profile', 'ExpertProfile',
+    'OpenIntro Expert', 'Profile', 'profile', 'User'
+  ];
 
-  const data = await response.json();
-  return res.status(response.status).json(data);
+  const results = {};
+  for (const name of candidates) {
+    const res2 = await fetch(
+      `https://open-intro.com/api/1.1/obj/${encodeURIComponent(name)}?limit=1`,
+      { headers: { 'Authorization': `Bearer ${process.env.BUBBLE_API_KEY}` } }
+    );
+    const data = await res2.json();
+    if (res2.ok) {
+      return res.status(200).json({ found: name, data });
+    }
+    results[name] = data?.body?.message || data?.message || res2.status;
+  }
+
+  return res.status(404).json({ error: 'No matching type found', tried: results });
 }
