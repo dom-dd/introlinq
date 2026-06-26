@@ -226,7 +226,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 
 <script>
 async function login() {
-  const res = await fetch('/api/admin/auth');
+  const res = await fetch('/api/admin?resource=auth');
   const data = await res.json();
   if (data.ok) {
     showAdmin();
@@ -245,7 +245,7 @@ function showAdmin() {
 }
 
 async function loadStats() {
-  const res = await fetch('/api/admin/stats', {});
+  const res = await fetch('/api/admin?resource=stats', {});
   const d = await res.json();
   document.getElementById('stat-publishers').textContent = d.publishers ?? '-';
   document.getElementById('stat-experts').textContent = d.experts ?? '-';
@@ -257,7 +257,7 @@ async function loadStats() {
 }
 
 async function loadPublishers() {
-  const res = await fetch('/api/admin/publishers', {});
+  const res = await fetch('/api/admin?resource=publishers', {});
   const list = await res.json();
   const tbody = document.getElementById('publishers-tbody');
 
@@ -316,7 +316,7 @@ async function addPublisher() {
     return;
   }
 
-  const res = await fetch('/api/admin/publishers', {
+  const res = await fetch('/api/admin?resource=publishers', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest'},
     body: JSON.stringify({ name, email, slug, domain, notes })
@@ -337,7 +337,7 @@ async function addPublisher() {
 }
 
 async function togglePublisher(id, active) {
-  await fetch('/api/admin/publishers', {
+  await fetch('/api/admin?resource=publishers', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest'},
     body: JSON.stringify({ id, active })
