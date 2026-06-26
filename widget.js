@@ -16,7 +16,7 @@
     var el = findArticle();
     if (!el) return;
 
-    var text = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
+    var text = extractParagraphText(el);
     if (text.length < 150) return;
 
     fetch(API, {
@@ -59,6 +59,15 @@
       if (el && (el.innerText || '').length > 200) return el;
     }
     return null;
+  }
+
+  function extractParagraphText(el) {
+    var parts = [];
+    el.querySelectorAll('p, li').forEach(function (node) {
+      var t = (node.innerText || node.textContent || '').replace(/\s+/g, ' ').trim();
+      if (t.length > 20) parts.push(t);
+    });
+    return parts.join(' ');
   }
 
   function preloadPhotos(matches) {
