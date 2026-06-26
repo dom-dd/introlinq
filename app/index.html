@@ -97,7 +97,7 @@ textarea::placeholder{color:var(--ink-muted)}
   <div class="input-card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
       <label style="margin-bottom:0">Paste your article</label>
-      <button onclick="useSample()" style="background:none;border:1px solid var(--border);border-radius:100px;font-size:0.75rem;font-weight:500;color:var(--ink-muted);padding:0.25rem 0.75rem;cursor:pointer;font-family:'Inter',sans-serif;transition:border-color 0.15s,color 0.15s" onmouseover="this.style.color='var(--ink)';this.style.borderColor='rgba(26,26,46,0.3)'" onmouseout="this.style.color='var(--ink-muted)';this.style.borderColor='var(--border)'">Try sample article</button>
+      <button onclick="useSample()" style="background:var(--sage-light);border:1.5px solid var(--sage);border-radius:100px;font-size:0.8rem;font-weight:600;color:var(--sage);padding:0.35rem 1rem;cursor:pointer;font-family:'Inter',sans-serif;transition:background 0.15s" onmouseover="this.style.background='#d4eddf'" onmouseout="this.style.background='var(--sage-light)'">Try sample article →</button>
     </div>
     <textarea id="article-input" placeholder="Paste any blog post or article here - the longer the better. Or click 'Try sample article' to see an example."></textarea>
     <div class="error-box" id="error-box"></div>
