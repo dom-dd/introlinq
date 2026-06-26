@@ -134,6 +134,15 @@ textarea::placeholder{color:var(--ink-muted)}
 </div>
 
 <script>
+function preloadPhotos(matches) {
+  matches.forEach(m => {
+    if (m.expert?.photo_url) {
+      const img = new Image();
+      img.src = m.expert.photo_url;
+    }
+  });
+}
+
 const SAMPLE = `How to start a company:
 
 Starting a company begins with a clear idea - not necessarily original, but one that solves a real problem for a specific group of people. The sharper you can define who your customer is and what pain you're removing, the better your foundation.
@@ -173,6 +182,7 @@ async function findMatches() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Something went wrong');
     matchData = data.matches || [];
+    preloadPhotos(matchData);
     renderOutput(article, matchData);
   } catch (err) {
     showError(err.message || 'Something went wrong. Please try again.');
