@@ -1,3 +1,9 @@
 {
-  "cleanUrls": true
+  "cleanUrls": true,
+  "crons": [
+    {
+      "path": "/api/sync/openintro?key=il2026",
+      "schedule": "0 3 * * *"
+    }
+  ]
 }

@@ -13,7 +13,9 @@ export default async function handler(req, res) {
   try {
     const sql = neon(process.env.DATABASE_URL);
     const experts = await sql`
-      SELECT id, name, bio, photo_url, topics, price_from, price_currency, booking_url, location_country
+      SELECT id, name, bio, description_long, photo_url, position, company,
+             topics, services, languages, price_from, price_currency,
+             booking_url, location_country
       FROM experts
       WHERE active = true
       ORDER BY id
@@ -23,9 +25,13 @@ export default async function handler(req, res) {
       return res.status(200).json({ matches: [] });
     }
 
-    const expertsList = experts.map(e =>
-      `ID:${e.id} | ${e.name} | Specialises in: ${e.topics.join(', ')} | From £${e.price_from}/session`
-    ).join('\n');
+    const expertsList = experts.map(e => {
+      const role = [e.position, e.company].filter(Boolean).join(' at ');
+      const langs = (e.languages || []).join(', ');
+      const desc = e.description_long || e.bio || '';
+      const services = (e.services || []).slice(0, 3).join('; ');
+      return `ID:${e.id} | ${e.name}${role ? ` (${role})` : ''} | Languages: ${langs} | From £${e.price_from}/session | About: ${desc.slice(0, 150)} | Services: ${services}`;
+    }).join('\n\n');
 
     const prompt = `You are the matching engine for IntroLinq, a platform that matches blog readers with relevant experts they can book a call with.
 
@@ -36,6 +42,7 @@ Rules:
 - Phrases should be 2-6 words, targeting moments of uncertainty, complexity, or decision-making in the text
 - Only match when there is a clear, specific fit - do not force matches
 - Each expert can only be used once
+- Detect the article language. If not English, strongly prioritise experts who speak that language
 - Return only valid JSON, no other text
 
 Available experts:
