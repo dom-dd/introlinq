@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>IntroLinq Admin</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#e6a820;--gold-light:#fef3c7;
+  --sage:#3d7a5f;--sage-light:#edf5f0;
+  --ink:#1a1a2e;--ink-soft:#4a4a6a;--ink-muted:#8888a8;
+  --cream:#faf8f4;--white:#fff;
+  --border:rgba(26,26,46,0.10);--radius:10px;
+  --red:#dc2626;--red-light:#fff1f1;
+  --green:#16a34a;--green-light:#f0fdf4;
+}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh}
+
+/* Login */
+#login-view{display:flex;align-items:center;justify-content:center;min-height:100vh}
+.login-card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:2.5rem;width:360px;box-shadow:0 4px 24px rgba(0,0,0,0.06)}
+.login-logo{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--ink);margin-bottom:0.25rem}
+.login-logo span{color:var(--sage)}
+.login-sub{font-size:0.8125rem;color:var(--ink-muted);margin-bottom:2rem}
+.login-input{width:100%;padding:0.75rem 1rem;border:1.5px solid var(--border);border-radius:var(--radius);font-size:0.9375rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);outline:none;margin-bottom:0.75rem;transition:border-color 0.15s}
+.login-input:focus{border-color:var(--sage);background:var(--white)}
+.login-btn{width:100%;background:var(--ink);color:var(--white);border:none;padding:0.875rem;border-radius:100px;font-size:0.9375rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity 0.15s}
+.login-btn:hover{opacity:0.85}
+.login-error{font-size:0.8125rem;color:var(--red);margin-top:0.5rem;display:none}
+
+/* Admin layout */
+#admin-view{display:none;min-height:100vh}
+.admin-header{background:var(--ink);padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between}
+.admin-logo{font-family:'DM Serif Display',serif;font-size:1.125rem;color:var(--white)}
+.admin-logo span{color:var(--gold)}
+.admin-logo em{font-style:normal;font-size:0.75rem;color:rgba(255,255,255,0.4);margin-left:0.5rem;font-family:'Inter',sans-serif}
+.logout-btn{background:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);font-size:0.75rem;padding:0.25rem 0.75rem;border-radius:100px;cursor:pointer;font-family:'Inter',sans-serif;transition:border-color 0.15s}
+.logout-btn:hover{border-color:rgba(255,255,255,0.5);color:var(--white)}
+
+.admin-body{max-width:1100px;margin:0 auto;padding:2.5rem 2rem 5rem}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2.5rem}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem}
+.stat-label{font-size:0.75rem;color:var(--ink-muted);font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.375rem}
+.stat-value{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--ink);line-height:1}
+.stat-sub{font-size:0.7rem;color:var(--ink-muted);margin-top:0.375rem}
+
+/* Section */
+.section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1.5rem}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border)}
+.section-title{font-weight:600;font-size:0.9375rem;color:var(--ink)}
+.section-body{padding:0}
+
+/* Buttons */
+.btn{border:none;padding:0.5rem 1.125rem;border-radius:100px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity 0.15s}
+.btn:hover{opacity:0.85}
+.btn-primary{background:var(--sage);color:var(--white)}
+.btn-gold{background:var(--gold);color:var(--ink)}
+.btn-ghost{background:var(--cream);color:var(--ink-soft);border:1px solid var(--border)}
+.btn-danger{background:var(--red-light);color:var(--red);border:1px solid rgba(220,38,38,0.2)}
+.btn-sm{padding:0.3rem 0.75rem;font-size:0.75rem}
+
+/* Add publisher form */
+#add-form{display:none;padding:1.5rem;border-bottom:1px solid var(--border);background:var(--cream)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem}
+.form-group{display:flex;flex-direction:column;gap:0.375rem}
+.form-label{font-size:0.75rem;font-weight:500;color:var(--ink-muted)}
+.form-input{padding:0.625rem 0.875rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.875rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--white);outline:none;transition:border-color 0.15s}
+.form-input:focus{border-color:var(--sage)}
+.form-actions{display:flex;gap:0.5rem;margin-top:0.25rem}
+
+/* Table */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:0.75rem 1.5rem;font-size:0.7rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border)}
+td{padding:0.875rem 1.5rem;font-size:0.875rem;color:var(--ink-soft);border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(0,0,0,0.01)}
+.td-name{font-weight:500;color:var(--ink)}
+.badge{display:inline-block;font-size:0.65rem;font-weight:600;padding:0.15rem 0.5rem;border-radius:100px;text-transform:uppercase;letter-spacing:0.04em}
+.badge-active{background:var(--green-light);color:var(--green)}
+.badge-inactive{background:var(--red-light);color:var(--red)}
+
+/* Embed code */
+.embed-code{font-family:monospace;font-size:0.75rem;color:var(--sage);background:var(--sage-light);padding:0.375rem 0.625rem;border-radius:6px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:320px;display:block;border:none;text-align:left;transition:background 0.15s}
+.embed-code:hover{background:#d4eddf}
+
+/* Sync */
+.sync-row{display:flex;align-items:center;gap:1rem;padding:1.25rem 1.5rem}
+.sync-info{font-size:0.8125rem;color:var(--ink-muted)}
+
+/* Toast */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--ink);color:var(--white);padding:0.75rem 1.25rem;border-radius:100px;font-size:0.875rem;opacity:0;transform:translateY(8px);transition:opacity 0.2s,transform 0.2s;pointer-events:none;z-index:9999}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* Empty */
+.empty{padding:3rem;text-align:center;color:var(--ink-muted);font-size:0.875rem}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-view">
+  <div class="login-card">
+    <div class="login-logo">Intro<span>Linq</span></div>
+    <div class="login-sub">Admin dashboard</div>
+    <input class="login-input" type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
+    <button class="login-btn" onclick="login()">Sign in</button>
+    <div class="login-error" id="login-error">Incorrect password</div>
+  </div>
+</div>
+
+<!-- Admin -->
+<div id="admin-view">
+  <div class="admin-header">
+    <div class="admin-logo">Intro<span>Linq</span><em>Admin</em></div>
+    <button class="logout-btn" onclick="logout()">Sign out</button>
+  </div>
+
+  <div class="admin-body">
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Publishers</div>
+        <div class="stat-value" id="stat-publishers">-</div>
+        <div class="stat-sub">active sites</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Experts</div>
+        <div class="stat-value" id="stat-experts">-</div>
+        <div class="stat-sub">from OpenIntro</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Waitlist</div>
+        <div class="stat-value" id="stat-subscribers">-</div>
+        <div class="stat-sub">total signups</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Last sync</div>
+        <div class="stat-value" id="stat-sync" style="font-size:1rem;padding-top:0.5rem">-</div>
+        <div class="stat-sub">OpenIntro experts</div>
+      </div>
+    </div>
+
+    <!-- Publishers -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Publishers</div>
+        <button class="btn btn-primary" onclick="toggleAddForm()">+ Add publisher</button>
+      </div>
+
+      <!-- Add form -->
+      <div id="add-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Full name *</label>
+            <input class="form-input" id="f-name" placeholder="Jane Smith" oninput="autoSlug()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email *</label>
+            <input class="form-input" id="f-email" placeholder="jane@example.com" type="email">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Slug * (used in embed code)</label>
+            <input class="form-input" id="f-slug" placeholder="jane-smith-blog">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Blog domain</label>
+            <input class="form-input" id="f-domain" placeholder="janesmith.com">
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0.75rem">
+          <label class="form-label">Notes (optional)</label>
+          <input class="form-input" id="f-notes" placeholder="Intro, how they found us, etc.">
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="addPublisher()">Create publisher</button>
+          <button class="btn btn-ghost" onclick="toggleAddForm()">Cancel</button>
+        </div>
+        <div id="form-error" style="font-size:0.8125rem;color:var(--red);margin-top:0.5rem;display:none"></div>
+      </div>
+
+      <!-- Table -->
+      <div class="section-body">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Domain</th>
+              <th>Embed code</th>
+              <th>Status</th>
+              <th>Added</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="publishers-tbody">
+            <tr><td colspan="6" class="empty">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Sync -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">OpenIntro sync</div>
+      </div>
+      <div class="sync-row">
+        <button class="btn btn-gold" onclick="runSync()">Run sync now</button>
+        <span class="sync-info" id="sync-status">Pulls all public experts from OpenIntro and updates the database.</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const pw = () => sessionStorage.getItem('il_admin_pw');
+
+async function login() {
+  const password = document.getElementById('pw-input').value;
+  const res = await fetch('/api/admin/auth', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password })
+  });
+  const data = await res.json();
+  if (data.ok) {
+    sessionStorage.setItem('il_admin_pw', password);
+    showAdmin();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('il_admin_pw');
+  document.getElementById('admin-view').style.display = 'none';
+  document.getElementById('login-view').style.display = 'flex';
+}
+
+function showAdmin() {
+  document.getElementById('login-view').style.display = 'none';
+  document.getElementById('admin-view').style.display = 'block';
+  loadStats();
+  loadPublishers();
+}
+
+async function loadStats() {
+  const res = await fetch('/api/admin/stats', { headers: { 'x-admin-password': pw() } });
+  const d = await res.json();
+  document.getElementById('stat-publishers').textContent = d.publishers ?? '-';
+  document.getElementById('stat-experts').textContent = d.experts ?? '-';
+  document.getElementById('stat-subscribers').textContent = d.subscribers ?? '-';
+  if (d.last_synced_at) {
+    const dt = new Date(d.last_synced_at);
+    document.getElementById('stat-sync').textContent = dt.toLocaleDateString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+  }
+}
+
+async function loadPublishers() {
+  const res = await fetch('/api/admin/publishers', { headers: { 'x-admin-password': pw() } });
+  const list = await res.json();
+  const tbody = document.getElementById('publishers-tbody');
+
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">No publishers yet. Add your first one above.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(p => `
+    <tr>
+      <td>
+        <div class="td-name">${esc(p.name)}</div>
+        <div style="font-size:0.75rem;color:var(--ink-muted)">${esc(p.email)}</div>
+        ${p.notes ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px;font-style:italic">${esc(p.notes)}</div>` : ''}
+      </td>
+      <td>${p.domain ? esc(p.domain) : '<span style="color:var(--ink-muted)">-</span>'}</td>
+      <td>
+        <button class="embed-code" onclick="copyEmbed('${esc(p.slug)}')" title="Click to copy">
+          data-publisher="${esc(p.slug)}"
+        </button>
+      </td>
+      <td><span class="badge ${p.active ? 'badge-active' : 'badge-inactive'}">${p.active ? 'Active' : 'Inactive'}</span></td>
+      <td>${new Date(p.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</td>
+      <td>
+        <button class="btn btn-sm ${p.active ? 'btn-danger' : 'btn-ghost'}" onclick="togglePublisher(${p.id}, ${!p.active})">
+          ${p.active ? 'Deactivate' : 'Activate'}
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function toggleAddForm() {
+  const f = document.getElementById('add-form');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  if (f.style.display === 'block') document.getElementById('f-name').focus();
+}
+
+function autoSlug() {
+  const name = document.getElementById('f-name').value;
+  document.getElementById('f-slug').value = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+async function addPublisher() {
+  const name = document.getElementById('f-name').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const slug = document.getElementById('f-slug').value.trim();
+  const domain = document.getElementById('f-domain').value.trim();
+  const notes = document.getElementById('f-notes').value.trim();
+  const errEl = document.getElementById('form-error');
+  errEl.style.display = 'none';
+
+  if (!name || !email || !slug) {
+    errEl.textContent = 'Name, email and slug are required.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const res = await fetch('/api/admin/publishers', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-admin-password': pw() },
+    body: JSON.stringify({ name, email, slug, domain, notes })
+  });
+  const data = await res.json();
+
+  if (!res.ok) {
+    errEl.textContent = data.error || 'Something went wrong.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  ['f-name','f-email','f-slug','f-domain','f-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('add-form').style.display = 'none';
+  toast('Publisher added');
+  loadPublishers();
+  loadStats();
+}
+
+async function togglePublisher(id, active) {
+  await fetch('/api/admin/publishers', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'x-admin-password': pw() },
+    body: JSON.stringify({ id, active })
+  });
+  loadPublishers();
+  loadStats();
+}
+
+function copyEmbed(slug) {
+  const code = `<script src="https://introlinq.com/widget.js" data-publisher="${slug}"><\/script>`;
+  navigator.clipboard.writeText(code);
+  toast('Embed code copied');
+}
+
+async function runSync() {
+  document.getElementById('sync-status').textContent = 'Syncing...';
+  const res = await fetch('/api/sync/openintro?key=il2026');
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById('sync-status').textContent = `Done — ${data.upserted} experts synced (${data.public_only} public of ${data.total_fetched} total)`;
+    loadStats();
+  } else {
+    document.getElementById('sync-status').textContent = 'Sync failed: ' + (data.error || 'unknown error');
+  }
+}
+
+function copyEmbed(slug) {
+  const code = `<script src="https://introlinq.com/widget.js" data-publisher="${slug}"><\/script>`;
+  navigator.clipboard.writeText(code);
+  toast('Embed code copied');
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Auto-login if session exists
+if (pw()) showAdmin();
+</script>
+</body>
+</html>
