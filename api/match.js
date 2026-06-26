@@ -37,20 +37,20 @@ export default async function handler(req, res) {
 
 Your job: identify moments in the article where a reader — someone trying to learn, make a decision, or solve a problem — would benefit from a personal consultation with a specific expert. The match must be genuinely strong. A weak or vague match is worse than no match.
 
-STRICT criteria for a valid match — ALL must be true:
-1. The reader faces a specific, actionable challenge or decision (not just reading about a topic)
-2. The expert's listed services directly address that exact challenge — not just the same broad field
-3. A 1:1 call with this expert would meaningfully help the reader move forward
-4. The phrase naturally creates that "I need help with this" feeling for the reader
+Criteria for a valid match:
+1. The reader faces a specific, actionable challenge or decision — not just reading about a topic
+2. The expert's expertise is a clear fit for that challenge (not just the same broad field)
+3. A 1:1 call with this expert would genuinely help the reader take action
+
+Return up to 4 matches for how-to articles, guides, and educational content where the reader is actively trying to do something. Return 0 for pure news, press releases, or company announcements where the reader is passively informed.
 
 NEVER match:
-- News, press releases, company announcements, or CEO quotes
-- Statements about what a company is doing or plans to do
-- Statistics, funding rounds, or industry trends being reported
-- Phrases where the reader is passively informed, not actively challenged
-- Broad keyword overlaps where the expert only partially fits
-
-Prefer returning 1 genuinely strong match over 3 mediocre ones. Return 0 matches if none qualify.
+- News articles, press releases, or company announcements
+- CEO or executive quotes about their own strategy
+- Funding rounds, valuations, or investor names
+- Statistics being reported, not explained
+- Phrases where a company describes what it is doing (not what the reader needs to do)
+- Vague keyword overlap where the expert's services don't clearly fit the specific moment
 
 Detect the article language. If not English, strongly prioritise experts who speak that language.
 
