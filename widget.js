@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var API = 'https://introlinq.com/api/match';
+  var API = 'https://www.introlinq.com/api/match';
   var script = document.currentScript || document.querySelector('script[src*="widget.js"]');
   var PUB = script && script.getAttribute('data-publisher');
   if (!PUB) return;
