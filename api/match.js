@@ -1,5 +1,7 @@
 import { neon } from '@neondatabase/serverless';
 
+let tableReady = false;
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -108,25 +110,32 @@ Return only valid JSON, no other text:
         expert: expertMap[m.expert_id]
       }));
 
-    const phrases = enriched.map(m => m.phrase);
-    const expertNames = enriched.map(m => m.expert.name);
+    // Send response immediately — don't make user wait for logging
+    res.status(200).json({ matches: enriched });
+
+    // Log in background after response is sent
     const publisher = req.body.publisher || null;
     const preview = article.slice(0, 120).replace(/\s+/g, ' ');
+    const phrases = enriched.map(m => m.phrase);
+    const expertNames = enriched.map(m => m.expert.name);
 
     await Promise.allSettled([
       // Log to DB
       (async () => {
-        await sql`
-          CREATE TABLE IF NOT EXISTS match_logs (
-            id SERIAL PRIMARY KEY,
-            publisher TEXT,
-            article_preview TEXT,
-            phrases TEXT[],
-            expert_names TEXT[],
-            match_count INT,
-            created_at TIMESTAMPTZ DEFAULT NOW()
-          )
-        `;
+        if (!tableReady) {
+          await sql`
+            CREATE TABLE IF NOT EXISTS match_logs (
+              id SERIAL PRIMARY KEY,
+              publisher TEXT,
+              article_preview TEXT,
+              phrases TEXT[],
+              expert_names TEXT[],
+              match_count INT,
+              created_at TIMESTAMPTZ DEFAULT NOW()
+            )
+          `;
+          tableReady = true;
+        }
         await sql`
           INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, match_count)
           VALUES (${publisher}, ${preview}, ${phrases}, ${expertNames}, ${enriched.length})
@@ -137,23 +146,20 @@ Return only valid JSON, no other text:
       (async () => {
         if (!process.env.SLACK_WEBHOOK_URL) return;
         const src = publisher ? `*${publisher}*` : '`/app`';
-        let text;
+        let msg;
         if (enriched.length === 0) {
-          text = `🔍 Match on ${src} — *no experts found*\n> ${preview}`;
+          msg = `🔍 Match on ${src} — *no experts found*\n> ${preview}`;
         } else {
-          const phraseList = phrases.map(p => `"${p}"`).join(', ');
-          const expertList = expertNames.join(', ');
-          text = `🔍 Match on ${src} — *${enriched.length} expert${enriched.length > 1 ? 's' : ''} suggested*\n• Phrases: ${phraseList}\n• Experts: ${expertList}`;
+          const pairs = enriched.map(m => `"${m.phrase}"\n    → ${m.expert.name}`).join('\n\n');
+          msg = `🔍 Match on ${src} — *${enriched.length} result${enriched.length > 1 ? 's' : ''}*\n\n${pairs}`;
         }
         await fetch(process.env.SLACK_WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text })
+          body: JSON.stringify({ text: msg })
         });
       })()
     ]);
-
-    return res.status(200).json({ matches: enriched });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Something went wrong' });
