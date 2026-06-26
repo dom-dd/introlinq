@@ -108,6 +108,51 @@ Return only valid JSON, no other text:
         expert: expertMap[m.expert_id]
       }));
 
+    const phrases = enriched.map(m => m.phrase);
+    const expertNames = enriched.map(m => m.expert.name);
+    const publisher = req.body.publisher || null;
+    const preview = article.slice(0, 120).replace(/\s+/g, ' ');
+
+    await Promise.allSettled([
+      // Log to DB
+      (async () => {
+        await sql`
+          CREATE TABLE IF NOT EXISTS match_logs (
+            id SERIAL PRIMARY KEY,
+            publisher TEXT,
+            article_preview TEXT,
+            phrases TEXT[],
+            expert_names TEXT[],
+            match_count INT,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          )
+        `;
+        await sql`
+          INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, match_count)
+          VALUES (${publisher}, ${preview}, ${phrases}, ${expertNames}, ${enriched.length})
+        `;
+      })(),
+
+      // Slack notification
+      (async () => {
+        if (!process.env.SLACK_WEBHOOK_URL) return;
+        const src = publisher ? `*${publisher}*` : '`/app`';
+        let text;
+        if (enriched.length === 0) {
+          text = `🔍 Match on ${src} — *no experts found*\n> ${preview}`;
+        } else {
+          const phraseList = phrases.map(p => `"${p}"`).join(', ');
+          const expertList = expertNames.join(', ');
+          text = `🔍 Match on ${src} — *${enriched.length} expert${enriched.length > 1 ? 's' : ''} suggested*\n• Phrases: ${phraseList}\n• Experts: ${expertList}`;
+        }
+        await fetch(process.env.SLACK_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+      })()
+    ]);
+
     return res.status(200).json({ matches: enriched });
   } catch (err) {
     console.error(err);
