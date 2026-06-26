@@ -116,9 +116,12 @@
       NodeFilter.SHOW_TEXT,
       {
         acceptNode: function (node) {
-          var tag = node.parentElement ? node.parentElement.tagName : '';
-          if (/^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA|INPUT|CODE|PRE)$/.test(tag)) {
-            return NodeFilter.FILTER_REJECT;
+          var el = node.parentElement;
+          while (el && el !== container) {
+            if (/^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA|INPUT|CODE|PRE|A|H1|H2|H3|H4|H5|H6)$/.test(el.tagName)) {
+              return NodeFilter.FILTER_REJECT;
+            }
+            el = el.parentElement;
           }
           return NodeFilter.FILTER_ACCEPT;
         }
