@@ -74,6 +74,7 @@ textarea::placeholder{color:var(--ink-muted)}
 .il-popup-top{display:flex;gap:0.75rem;align-items:center;margin-bottom:0.75rem}
 .il-avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--cream);border:2px solid var(--cream)}
 .il-name{font-weight:600;font-size:0.875rem;color:var(--ink);line-height:1.25}
+.il-role{font-size:0.72rem;color:var(--ink-soft);margin-top:2px;line-height:1.3}
 .il-price{font-size:0.7rem;color:var(--ink-muted);margin-top:3px}
 .il-reason{font-size:0.8rem;color:var(--ink-soft);line-height:1.6;margin-bottom:0.75rem;font-style:italic;border-left:2px solid var(--gold-light);padding-left:0.625rem}
 .il-book{display:block;background:var(--gold);color:var(--ink);text-align:center;padding:0.5625rem;border-radius:100px;font-size:0.8125rem;font-weight:700;text-decoration:none;transition:opacity 0.15s}
@@ -123,6 +124,7 @@ textarea::placeholder{color:var(--ink-muted)}
     <img class="il-avatar" id="popup-photo" src="" alt="">
     <div>
       <div class="il-name" id="popup-name"></div>
+      <div class="il-role" id="popup-role"></div>
       <div class="il-price" id="popup-price"></div>
     </div>
   </div>
@@ -257,6 +259,8 @@ function fillPopup(match) {
   }
 
   document.getElementById('popup-name').textContent = e.name;
+  const role = [e.position, e.company].filter(Boolean).join(' · ');
+  document.getElementById('popup-role').textContent = role;
   document.getElementById('popup-price').textContent = e.price_from ? `From £${e.price_from} / session` : '';
   document.getElementById('popup-reason').textContent = match.reason;
   document.getElementById('popup-book').href = e.booking_url || '#';
