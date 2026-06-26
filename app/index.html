@@ -95,16 +95,11 @@ textarea::placeholder{color:var(--ink-muted)}
   </div>
 
   <div class="input-card">
-    <label>Paste your article</label>
-    <textarea id="article-input">How to start a company:
-
-Starting a company begins with a clear idea — not necessarily original, but one that solves a real problem for a specific group of people. The sharper you can define who your customer is and what pain you're removing, the better your foundation.
-Before building anything, validate your idea. Talk to potential customers. The goal isn't to pitch them; it's to understand their world. Most early-stage companies fail not because they built badly, but because they built the wrong thing.
-Once you have enough signal, start lean. Choose a legal structure (a limited company in the UK, an LLC or C-Corp in the US), open a business bank account, and register with the relevant tax authority. You don't need a perfect brand or a polished website on day one — you need your first paying customer.
-Focus obsessively on that. Your first few customers will teach you more than any market research. They'll tell you how to price, what features matter, and how to talk about what you do.
-As traction builds, document what's working — your sales process, your onboarding, your messaging. That documentation becomes the foundation for hiring and delegation later.
-Fundraising is optional, not a milestone. Many great businesses are built without external capital. Only raise money if it genuinely accelerates something you can't do otherwise, and only when you have enough evidence to negotiate from a position of strength.
-The honest summary: talk to customers early, stay lean, get to revenue as fast as possible, and treat every piece of feedback as a gift.</textarea>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
+      <label style="margin-bottom:0">Paste your article</label>
+      <button onclick="useSample()" style="background:none;border:1px solid var(--border);border-radius:100px;font-size:0.75rem;font-weight:500;color:var(--ink-muted);padding:0.25rem 0.75rem;cursor:pointer;font-family:'Inter',sans-serif;transition:border-color 0.15s,color 0.15s" onmouseover="this.style.color='var(--ink)';this.style.borderColor='rgba(26,26,46,0.3)'" onmouseout="this.style.color='var(--ink-muted)';this.style.borderColor='var(--border)'">Try sample article</button>
+    </div>
+    <textarea id="article-input" placeholder="Paste any blog post or article here - the longer the better. Or click 'Try sample article' to see an example."></textarea>
     <div class="error-box" id="error-box"></div>
     <button class="match-btn" id="match-btn" onclick="findMatches()">Find matching experts</button>
   </div>
@@ -137,6 +132,21 @@ The honest summary: talk to customers early, stay lean, get to revenue as fast a
 </div>
 
 <script>
+const SAMPLE = `How to start a company:
+
+Starting a company begins with a clear idea - not necessarily original, but one that solves a real problem for a specific group of people. The sharper you can define who your customer is and what pain you're removing, the better your foundation.
+Before building anything, validate your idea. Talk to potential customers. The goal isn't to pitch them; it's to understand their world. Most early-stage companies fail not because they built badly, but because they built the wrong thing.
+Once you have enough signal, start lean. Choose a legal structure (a limited company in the UK, an LLC or C-Corp in the US), open a business bank account, and register with the relevant tax authority. You don't need a perfect brand or a polished website on day one - you need your first paying customer.
+Focus obsessively on that. Your first few customers will teach you more than any market research. They'll tell you how to price, what features matter, and how to talk about what you do.
+As traction builds, document what's working - your sales process, your onboarding, your messaging. That documentation becomes the foundation for hiring and delegation later.
+Fundraising is optional, not a milestone. Many great businesses are built without external capital. Only raise money if it genuinely accelerates something you can't do otherwise, and only when you have enough evidence to negotiate from a position of strength.
+The honest summary: talk to customers early, stay lean, get to revenue as fast as possible, and treat every piece of feedback as a gift.`;
+
+function useSample() {
+  document.getElementById('article-input').value = SAMPLE;
+  document.getElementById('article-input').focus();
+}
+
 let matchData = [];
 let hideTimer = null;
 const popup = document.getElementById('il-popup');
