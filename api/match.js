@@ -64,7 +64,7 @@ Article:
 ${article.slice(0, 4000)}
 
 Return exactly this JSON structure:
-{"matches":[{"phrase":"exact phrase from article","expert_id":1,"reason":"One sentence explaining the READER's need and why this expert helps them"}]}`;
+{"matches":[{"phrase":"exact phrase from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person — e.g. 'If you are looking to implement AI in your business, Pascal can help you navigate the strategy and pitfalls.'"}]}`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
