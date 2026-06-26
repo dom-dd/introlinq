@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const response = await fetch('https://open-intro.com/api/1.1/obj/expert?limit=2', {
+  const response = await fetch('https://open-intro.com/api/1.1/obj/Expert?limit=2', {
     headers: { 'Authorization': `Bearer ${process.env.BUBBLE_API_KEY}` }
   });
 

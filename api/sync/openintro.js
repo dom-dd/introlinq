@@ -1,6 +1,6 @@
 import { neon } from '@neondatabase/serverless';
 
-const BUBBLE_API = 'https://open-intro.com/api/1.1/obj/expert';
+const BUBBLE_API = 'https://open-intro.com/api/1.1/obj/Expert';
 
 const COUNTRY_LANGUAGES = {
   'France': ['French', 'English'],
