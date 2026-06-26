@@ -33,29 +33,26 @@ export default async function handler(req, res) {
       return `ID:${e.id} | ${e.name}${role ? ` (${role})` : ''} | Languages: ${langs} | From £${e.price_from}/session | About: ${desc.slice(0, 150)} | Services: ${services}`;
     }).join('\n\n');
 
-    const prompt = `You are the matching engine for IntroLinq, a platform that connects blog READERS with experts they can book a call with.
+    const prompt = `You are the matching engine for IntroLinq, a platform that connects blog READERS with experts they can book a 1:1 call with.
 
-Your job: find moments in the article where a READER — someone trying to learn, decide, or act — would genuinely benefit from a personal consultation with one of the available experts.
+Your job: identify moments in the article where a reader — someone trying to learn, make a decision, or solve a problem — would benefit from a personal consultation with a specific expert. The match must be genuinely strong. A weak or vague match is worse than no match.
 
-Rules:
-- The match must be about the READER's need, not the article subject's actions. Do NOT highlight company announcements, press releases, quoted plans, statistics, or things a company says it will do.
-- Only match phrases where a reader is facing a real decision, challenge, or knowledge gap that an expert could help with in a 1:1 call.
-- Each "phrase" must be an exact substring from the article (copy it character-for-character)
-- Phrases should be 2-6 words
-- Maximum 3 matches. Return 0 if the article has no genuine reader need moments (e.g. pure news/press releases)
-- Each expert can only be used once
-- Detect the article language. If not English, strongly prioritise experts who speak that language
-- Return only valid JSON, no other text
+STRICT criteria for a valid match — ALL must be true:
+1. The reader faces a specific, actionable challenge or decision (not just reading about a topic)
+2. The expert's listed services directly address that exact challenge — not just the same broad field
+3. A 1:1 call with this expert would meaningfully help the reader move forward
+4. The phrase naturally creates that "I need help with this" feeling for the reader
 
-Bad match examples (DO NOT do this):
-- Highlighting "investir massivement dans l'intelligence artificielle" from a company's plan
-- Highlighting a CEO quote about their own strategy
-- Highlighting funding round amounts or investor names
+NEVER match:
+- News, press releases, company announcements, or CEO quotes
+- Statements about what a company is doing or plans to do
+- Statistics, funding rounds, or industry trends being reported
+- Phrases where the reader is passively informed, not actively challenged
+- Broad keyword overlaps where the expert only partially fits
 
-Good match examples:
-- A reader learning about retirement who wonders how to start investing
-- A founder reading about fundraising who doesn't know how to approach VCs
-- A blogger reading about AI who needs help implementing it in their business
+Prefer returning 1 genuinely strong match over 3 mediocre ones. Return 0 matches if none qualify.
+
+Detect the article language. If not English, strongly prioritise experts who speak that language.
 
 Available experts:
 ${expertsList}
@@ -63,8 +60,8 @@ ${expertsList}
 Article:
 ${article.slice(0, 4000)}
 
-Return exactly this JSON structure:
-{"matches":[{"phrase":"exact phrase from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person — e.g. 'If you are looking to implement AI in your business, Pascal can help you navigate the strategy and pitfalls.'"}]}`;
+Return only valid JSON, no other text:
+{"matches":[{"phrase":"exact substring from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person — e.g. 'If you want to raise your first round without giving away too much equity, Phil has backed 200+ startups and can walk you through the process.'"}]}`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -74,7 +71,7 @@ Return exactly this JSON structure:
         'content-type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1024,
         messages: [{ role: 'user', content: prompt }]
       })
