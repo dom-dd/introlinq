@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Expert Matcher - IntroLinq</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#e6a820;--gold-light:#fef3c7;
+  --sage:#3d7a5f;--sage-light:#edf5f0;
+  --ink:#1a1a2e;--ink-soft:#4a4a6a;--ink-muted:#8888a8;
+  --cream:#faf8f4;--white:#ffffff;
+  --border:rgba(26,26,46,0.10);--radius:12px;
+}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh}
+
+nav{display:flex;align-items:center;gap:0.75rem;padding:1rem 2rem;border-bottom:1px solid var(--border);background:var(--white)}
+.nav-logo{font-family:'DM Serif Display',serif;font-size:1.25rem;color:var(--ink);text-decoration:none}
+.nav-logo span{color:var(--sage)}
+.nav-badge{font-size:0.65rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;background:var(--gold-light);color:var(--gold);padding:0.2rem 0.6rem;border-radius:100px}
+
+.main{max-width:760px;margin:0 auto;padding:3rem 1.5rem 6rem}
+
+.hero{text-align:center;margin-bottom:2.5rem}
+.hero h1{font-family:'DM Serif Display',serif;font-size:1.875rem;color:var(--ink);letter-spacing:-0.02em;margin-bottom:0.5rem;line-height:1.25}
+.hero p{font-size:0.9rem;color:var(--ink-muted);line-height:1.65;max-width:460px;margin:0 auto}
+
+.input-card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:1.75rem;margin-bottom:1rem;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+label{display:block;font-size:0.8125rem;font-weight:500;color:var(--ink-muted);margin-bottom:0.5rem;letter-spacing:0.01em}
+textarea{width:100%;height:260px;padding:0.875rem 1rem;border:2px solid rgba(26,26,46,0.18);border-radius:var(--radius);font-size:0.9rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);resize:vertical;outline:none;transition:border-color 0.15s;line-height:1.75}
+textarea:focus{border-color:var(--sage);background:var(--white)}
+textarea::placeholder{color:var(--ink-muted)}
+.match-btn{display:block;width:100%;margin-top:1rem;background:var(--gold);color:var(--ink);border:none;padding:0.9375rem;border-radius:100px;font-size:0.9375rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 4px 16px rgba(230,168,32,0.4);transition:transform 0.15s,box-shadow 0.15s;letter-spacing:0.01em}
+.match-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 24px rgba(230,168,32,0.5)}
+.match-btn:disabled{opacity:0.6;cursor:not-allowed}
+
+.loading{text-align:center;padding:2rem;color:var(--ink-muted);font-size:0.875rem;display:none}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;margin-right:0.5rem;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.error-box{background:#fff1f1;border:1px solid #fca5a5;border-radius:var(--radius);padding:0.875rem 1.125rem;font-size:0.875rem;color:#dc2626;margin-top:0.875rem;display:none}
+
+#output{display:none;margin-top:2rem}
+.output-header{display:flex;align-items:center;gap:0.75rem;margin-bottom:1.25rem}
+.match-badge{font-size:0.75rem;font-weight:600;background:var(--sage-light);color:var(--sage);padding:0.25rem 0.75rem;border-radius:100px}
+.output-hint{font-size:0.8rem;color:var(--ink-muted)}
+
+.article-preview{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:2.25rem 2.5rem;font-size:0.9375rem;line-height:1.9;color:var(--ink-soft);box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.article-preview p{margin-bottom:1.25rem}
+.article-preview p:last-child{margin-bottom:0}
+
+/* The highlight - this is what appears on the reader's blog */
+.il-highlight{background:rgba(230,168,32,0.15);border-bottom:2px solid var(--gold);cursor:pointer;border-radius:2px;padding:0 2px;transition:background 0.15s}
+.il-highlight:hover,.il-highlight.active{background:rgba(230,168,32,0.3)}
+
+/* The popup widget - this is what readers see on hover */
+.il-popup{
+  position:fixed;z-index:9999;width:300px;
+  background:var(--white);border-radius:16px;
+  box-shadow:0 16px 48px rgba(0,0,0,0.14),0 2px 8px rgba(0,0,0,0.06);
+  padding:1.125rem;
+  opacity:0;transform:translateY(6px);
+  transition:opacity 0.18s ease,transform 0.18s ease;
+  pointer-events:none;
+  border:1px solid var(--border);
+}
+.il-popup.visible{opacity:1;transform:translateY(0);pointer-events:all}
+.il-popup-top{display:flex;gap:0.75rem;align-items:center;margin-bottom:0.75rem}
+.il-avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--cream);border:2px solid var(--cream)}
+.il-name{font-weight:600;font-size:0.875rem;color:var(--ink);line-height:1.25}
+.il-price{font-size:0.7rem;color:var(--ink-muted);margin-top:3px}
+.il-reason{font-size:0.8rem;color:var(--ink-soft);line-height:1.6;margin-bottom:0.75rem;font-style:italic;border-left:2px solid var(--gold-light);padding-left:0.625rem}
+.il-book{display:block;background:var(--gold);color:var(--ink);text-align:center;padding:0.5625rem;border-radius:100px;font-size:0.8125rem;font-weight:700;text-decoration:none;transition:opacity 0.15s}
+.il-book:hover{opacity:0.85}
+.il-powered{font-size:0.6rem;color:var(--ink-muted);text-align:center;margin-top:0.5rem;letter-spacing:0.04em;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">Intro<span>Linq</span></a>
+  <span class="nav-badge">Beta tester</span>
+</nav>
+
+<div class="main">
+  <div class="hero">
+    <h1>See how your blog looks with IntroLinq.</h1>
+    <p>Paste any article below. We'll find the moments where your readers need an expert - hover the highlighted text to see who appears.</p>
+  </div>
+
+  <div class="input-card">
+    <label>Paste your article</label>
+    <textarea id="article-input" placeholder="Paste any blog post or article here - the longer the better. Try a finance piece, a startup story, a health article..."></textarea>
+    <div class="error-box" id="error-box"></div>
+    <button class="match-btn" id="match-btn" onclick="findMatches()">Find matching experts</button>
+  </div>
+
+  <div class="loading" id="loading">
+    <span class="spinner"></span>Reading your article and matching experts...
+  </div>
+
+  <div id="output">
+    <div class="output-header">
+      <span class="match-badge" id="match-badge"></span>
+      <span class="output-hint">Hover the highlighted phrases to see the expert your reader sees</span>
+    </div>
+    <div class="article-preview" id="article-rendered"></div>
+  </div>
+</div>
+
+<!-- The popup widget (single instance, repositioned on hover) -->
+<div class="il-popup" id="il-popup">
+  <div class="il-popup-top">
+    <img class="il-avatar" id="popup-photo" src="" alt="">
+    <div>
+      <div class="il-name" id="popup-name"></div>
+      <div class="il-price" id="popup-price"></div>
+    </div>
+  </div>
+  <div class="il-reason" id="popup-reason"></div>
+  <a class="il-book" id="popup-book" href="#" target="_blank">Book a call →</a>
+  <div class="il-powered">Powered by IntroLinq</div>
+</div>
+
+<script>
+let matchData = [];
+let hideTimer = null;
+const popup = document.getElementById('il-popup');
+
+async function findMatches() {
+  const article = document.getElementById('article-input').value.trim();
+  if (article.length < 50) {
+    showError('Please paste a full article first.');
+    return;
+  }
+  clearError();
+  setLoading(true);
+  document.getElementById('output').style.display = 'none';
+  popup.classList.remove('visible');
+
+  try {
+    const res = await fetch('/api/match', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ article })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Something went wrong');
+    matchData = data.matches || [];
+    renderOutput(article, matchData);
+  } catch (err) {
+    showError(err.message || 'Something went wrong. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+}
+
+function renderOutput(article, matches) {
+  const n = matches.length;
+  document.getElementById('match-badge').textContent =
+    n === 0 ? 'No matches found' : `${n} expert ${n === 1 ? 'match' : 'matches'} found`;
+
+  document.getElementById('article-rendered').innerHTML = buildHtml(article, matches);
+  document.getElementById('output').style.display = 'block';
+
+  document.querySelectorAll('.il-highlight').forEach(span => {
+    span.addEventListener('mouseenter', () => {
+      clearTimeout(hideTimer);
+      const m = matchData[parseInt(span.dataset.idx)];
+      fillPopup(m);
+      positionPopup(span);
+      popup.classList.add('visible');
+    });
+    span.addEventListener('mouseleave', () => {
+      hideTimer = setTimeout(maybeHide, 130);
+    });
+  });
+
+  popup.addEventListener('mouseenter', () => clearTimeout(hideTimer));
+  popup.addEventListener('mouseleave', () => {
+    hideTimer = setTimeout(() => popup.classList.remove('visible'), 130);
+  });
+
+  document.getElementById('output').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function buildHtml(article, matches) {
+  // Find positions, deduplicate overlaps
+  const ranges = [];
+  matches.forEach((m, idx) => {
+    const pos = article.indexOf(m.phrase);
+    if (pos !== -1) ranges.push({ start: pos, end: pos + m.phrase.length, idx });
+  });
+  ranges.sort((a, b) => a.start - b.start);
+
+  const clean = [];
+  let lastEnd = 0;
+  for (const r of ranges) {
+    if (r.start >= lastEnd) { clean.push(r); lastEnd = r.end; }
+  }
+
+  let html = '';
+  let pos = 0;
+  for (const r of clean) {
+    html += esc(article.slice(pos, r.start));
+    html += `<span class="il-highlight" data-idx="${r.idx}">${esc(article.slice(r.start, r.end))}</span>`;
+    pos = r.end;
+  }
+  html += esc(article.slice(pos));
+
+  return '<p>' + html.replace(/\n\n+/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
+}
+
+function esc(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fillPopup(match) {
+  const e = match.expert;
+  document.getElementById('popup-photo').src = e.photo_url || '';
+  document.getElementById('popup-name').textContent = e.name;
+  document.getElementById('popup-price').textContent = `From £${e.price_from} / session`;
+  document.getElementById('popup-reason').textContent = match.reason;
+  document.getElementById('popup-book').href = e.booking_url || '#';
+}
+
+function positionPopup(span) {
+  const rect = span.getBoundingClientRect();
+  const W = 300, H = 210;
+  let top = rect.bottom + 10;
+  let left = rect.left;
+
+  if (rect.bottom + H + 10 > window.innerHeight) top = rect.top - H - 10;
+  if (left + W > window.innerWidth - 12) left = window.innerWidth - W - 12;
+  if (left < 8) left = 8;
+
+  popup.style.top = top + 'px';
+  popup.style.left = left + 'px';
+}
+
+function maybeHide() {
+  if (!popup.matches(':hover')) popup.classList.remove('visible');
+}
+
+function setLoading(on) {
+  document.getElementById('loading').style.display = on ? 'block' : 'none';
+  const btn = document.getElementById('match-btn');
+  btn.disabled = on;
+  btn.textContent = on ? 'Analysing...' : 'Find matching experts';
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-box');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function clearError() {
+  document.getElementById('error-box').style.display = 'none';
+}
+</script>
+</body>
+</html>
