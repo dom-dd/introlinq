@@ -84,7 +84,7 @@ async function fetchAllExperts() {
 
 function mapExpert(raw, providerId) {
   const slug = raw['Slug'] || '';
-  const country = raw['Country'] || '';
+  const country = raw['n-Country'] || '';
   const languages = COUNTRY_LANGUAGES[country] || ['English'];
 
   const services = [
@@ -92,9 +92,13 @@ function mapExpert(raw, providerId) {
     raw['Service 4'], raw['Service 5']
   ].filter(Boolean);
 
-  const categories = [raw['Not_categories']].flat().filter(Boolean);
-  const tags = [raw['Tags']].flat().filter(Boolean);
-  const topics = [...new Set([...services, ...categories, ...tags])].filter(Boolean);
+  const vertical = raw['Vertical group'] ? [raw['Vertical group']] : [];
+  // Tags and Not_categories are Bubble internal IDs - skip them
+  const topics = [...new Set([...services, ...vertical])].filter(Boolean);
+
+  // Picture URL starts with // - prepend https:
+  const rawPhoto = raw['Picture'] || '';
+  const photo_url = rawPhoto.startsWith('//') ? `https:${rawPhoto}` : rawPhoto;
 
   const gbp = parseFloat(raw['GBP15Fee']) || null;
   const eur = parseFloat(raw['EUR15Fee']) || null;
@@ -104,10 +108,10 @@ function mapExpert(raw, providerId) {
   return {
     provider_id: providerId,
     external_id: raw['_id'],
-    name: raw['Fullname'] || raw['Full name'] || '',
-    bio: raw['Short description (index)'] || raw['Short_description_index'] || '',
+    name: raw['Full Name'] || raw['Fullname'] || '',
+    bio: raw['Short description (index)'] || '',
     description_long: raw['Description'] || '',
-    photo_url: raw['Photo'] || '',
+    photo_url,
     position: raw['Position'] || '',
     company: raw['Company'] || '',
     topics,
