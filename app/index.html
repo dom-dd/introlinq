@@ -241,9 +241,17 @@ function esc(t) {
 
 function fillPopup(match) {
   const e = match.expert;
-  document.getElementById('popup-photo').src = e.photo_url || '';
+  const img = document.getElementById('popup-photo');
+  const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(e.name)}&background=edf5f0&color=3d7a5f&size=88&bold=true&font-size=0.4`;
+  img.onerror = null;
+  if (e.photo_url) {
+    img.src = e.photo_url;
+    img.onerror = () => { img.src = fallback; };
+  } else {
+    img.src = fallback;
+  }
   document.getElementById('popup-name').textContent = e.name;
-  document.getElementById('popup-price').textContent = `From £${e.price_from} / session`;
+  document.getElementById('popup-price').textContent = e.price_from ? `From £${e.price_from} / session` : '';
   document.getElementById('popup-reason').textContent = match.reason;
   document.getElementById('popup-book').href = e.booking_url || '#';
 }
