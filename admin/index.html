@@ -105,14 +105,13 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 </head>
 <body>
 
-<!-- Login -->
+<!-- Access denied -->
 <div id="login-view">
-  <div class="login-card">
+  <div class="login-card" style="text-align:center">
     <div class="login-logo">Intro<span>Linq</span></div>
     <div class="login-sub">Admin dashboard</div>
-    <input class="login-input" type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
-    <button class="login-btn" onclick="login()">Sign in</button>
-    <div class="login-error" id="login-error">Incorrect password</div>
+    <div style="margin-top:1.5rem;font-size:0.875rem;color:var(--red)">Access restricted.</div>
+    <div style="margin-top:0.5rem;font-size:0.8125rem;color:var(--ink-muted)">This page is only accessible from an authorised network.</div>
   </div>
 </div>
 
@@ -226,29 +225,17 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 <div class="toast" id="toast"></div>
 
 <script>
-const pw = () => sessionStorage.getItem('il_admin_pw');
-
 async function login() {
-  const password = document.getElementById('pw-input').value;
-  const res = await fetch('/api/admin/auth', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password })
-  });
+  const res = await fetch('/api/admin/auth');
   const data = await res.json();
   if (data.ok) {
-    sessionStorage.setItem('il_admin_pw', password);
     showAdmin();
   } else {
-    document.getElementById('login-error').style.display = 'block';
+    document.getElementById('login-view').style.display = 'flex';
   }
 }
 
-function logout() {
-  sessionStorage.removeItem('il_admin_pw');
-  document.getElementById('admin-view').style.display = 'none';
-  document.getElementById('login-view').style.display = 'flex';
-}
+function logout() {}
 
 function showAdmin() {
   document.getElementById('login-view').style.display = 'none';
@@ -258,7 +245,7 @@ function showAdmin() {
 }
 
 async function loadStats() {
-  const res = await fetch('/api/admin/stats', { headers: { 'x-admin-password': pw() } });
+  const res = await fetch('/api/admin/stats', {});
   const d = await res.json();
   document.getElementById('stat-publishers').textContent = d.publishers ?? '-';
   document.getElementById('stat-experts').textContent = d.experts ?? '-';
@@ -270,7 +257,7 @@ async function loadStats() {
 }
 
 async function loadPublishers() {
-  const res = await fetch('/api/admin/publishers', { headers: { 'x-admin-password': pw() } });
+  const res = await fetch('/api/admin/publishers', {});
   const list = await res.json();
   const tbody = document.getElementById('publishers-tbody');
 
@@ -331,7 +318,7 @@ async function addPublisher() {
 
   const res = await fetch('/api/admin/publishers', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-admin-password': pw() },
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest'},
     body: JSON.stringify({ name, email, slug, domain, notes })
   });
   const data = await res.json();
@@ -352,7 +339,7 @@ async function addPublisher() {
 async function togglePublisher(id, active) {
   await fetch('/api/admin/publishers', {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', 'x-admin-password': pw() },
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest'},
     body: JSON.stringify({ id, active })
   });
   loadPublishers();
@@ -394,8 +381,8 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// Auto-login if session exists
-if (pw()) showAdmin();
+// Check IP access on load
+login();
 </script>
 </body>
 </html>

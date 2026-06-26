@@ -1,7 +1,9 @@
 import { neon } from '@neondatabase/serverless';
 
 function auth(req) {
-  return req.headers['x-admin-password'] === process.env.ADMIN_PASSWORD;
+  const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress;
+  const allowed = process.env.OWNER_IP?.split(',').map(s => s.trim());
+  return allowed && allowed.includes(ip);
 }
 
 export default async function handler(req, res) {
