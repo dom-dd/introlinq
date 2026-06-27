@@ -232,7 +232,8 @@
         + '&lang=' + encodeURIComponent(navigator.language || '')
         + '&tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || '')
         + '&device=' + (window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop')
-        + '&source=' + encodeURIComponent(getTrafficSource());
+        + '&source=' + encodeURIComponent(getTrafficSource())
+        + '&title=' + encodeURIComponent(document.title.slice(0, 150));
     } else {
       bk.href = '#';
     }

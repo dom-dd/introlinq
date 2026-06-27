@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -98,6 +99,25 @@ tr:last-child td{border-bottom:none}
 .td-phrase-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:320px}
 .expert-pill{display:inline-block;background:var(--sage-light);color:var(--sage);font-size:0.7rem;font-weight:500;padding:0.2rem 0.6rem;border-radius:100px;margin:1px}
 
+/* Charts */
+.period-btns{display:flex;gap:4px}
+.period-btn{padding:0.3rem 0.7rem;border-radius:100px;font-size:0.75rem;font-weight:500;border:1.5px solid var(--border);background:var(--white);color:var(--ink-soft);cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+.period-btn:hover{border-color:var(--ink-soft)}
+.period-btn.active{background:var(--ink);color:var(--white);border-color:var(--ink)}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem;padding:1.5rem}
+.chart-label{font-size:0.7rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.75rem}
+.chart-wrap{position:relative;height:180px}
+/* Insights */
+.insights-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;padding:0}
+.insight-col{padding:1.5rem;border-right:1px solid var(--border)}
+.insight-col:last-child{border-right:none}
+.insight-title{font-size:0.7rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:1rem}
+.bar-row{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.6rem}
+.bar-label{font-size:0.78rem;color:var(--ink-soft);width:90px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:6px;background:var(--cream);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;background:var(--sage);transition:width .6s ease}
+.bar-count{font-size:0.72rem;color:var(--ink-muted);width:24px;text-align:right;flex-shrink:0}
+.no-data{font-size:0.8rem;color:var(--ink-muted);font-style:italic}
 .empty{padding:3rem;text-align:center;color:var(--ink-muted);font-size:0.875rem}
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--ink);color:var(--white);padding:0.75rem 1.25rem;border-radius:100px;font-size:0.875rem;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;z-index:9999}
 .toast.show{opacity:1;transform:translateY(0)}
@@ -145,6 +165,51 @@ tr:last-child td{border-bottom:none}
       <div class="stat-label">Top expert</div>
       <div class="stat-value" id="stat-top" style="font-size:1rem;padding-top:0.4rem;line-height:1.3">-</div>
       <div class="stat-sub">most suggested on your site</div>
+    </div>
+  </div>
+
+  <div class="section" id="perf-section">
+    <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div class="section-title">Performance</div>
+        <div class="section-sub">Clicks and impressions over time</div>
+      </div>
+      <div class="period-btns">
+        <button class="period-btn active" onclick="setPeriod('7d',this)">7D</button>
+        <button class="period-btn" onclick="setPeriod('30d',this)">30D</button>
+        <button class="period-btn" onclick="setPeriod('12m',this)">12M</button>
+      </div>
+    </div>
+    <div class="chart-grid">
+      <div>
+        <div class="chart-label">Clicks</div>
+        <div class="chart-wrap"><canvas id="chart-clicks"></canvas></div>
+      </div>
+      <div>
+        <div class="chart-label">Impressions</div>
+        <div class="chart-wrap"><canvas id="chart-impr"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Audience insights</div>
+      <div class="section-sub">Based on all-time click data</div>
+    </div>
+    <div class="insights-grid">
+      <div class="insight-col">
+        <div class="insight-title">Top phrases</div>
+        <div id="insight-phrases"><span class="no-data">No clicks yet</span></div>
+      </div>
+      <div class="insight-col">
+        <div class="insight-title">Traffic source</div>
+        <div id="insight-sources"><span class="no-data">No clicks yet</span></div>
+      </div>
+      <div class="insight-col">
+        <div class="insight-title">Device</div>
+        <div id="insight-devices"><span class="no-data">No clicks yet</span></div>
+      </div>
     </div>
   </div>
 
@@ -271,16 +336,24 @@ async function loadDashboard() {
   document.getElementById('main').style.display = 'block';
 
   // Stats
-  const impressions = d.logs.length;
+  const impressions = d.total_impressions || 0;
   const clicks = d.clicks || 0;
-  const ctr = impressions > 0 ? Math.round((clicks / impressions) * 100) : 0;
-  document.getElementById('stat-articles').textContent = impressions;
-  document.getElementById('stat-clicks').textContent = clicks;
+  const ctr = impressions > 0 ? (clicks / impressions * 100).toFixed(1) : '0.0';
+  document.getElementById('stat-articles').textContent = impressions.toLocaleString();
+  document.getElementById('stat-clicks').textContent = clicks.toLocaleString();
   document.getElementById('stat-ctr').textContent = ctr + '%';
   const expertCount = {};
   d.logs.forEach(l => (l.expert_names || []).forEach(n => { expertCount[n] = (expertCount[n] || 0) + 1; }));
   const top = Object.entries(expertCount).sort((a,b) => b[1]-a[1])[0];
   document.getElementById('stat-top').textContent = top ? top[0] : '—';
+
+  // Charts
+  window._chartData = d;
+  initCharts(d);
+  setPeriod('7d', document.querySelector('.period-btn.active'));
+
+  // Insights
+  renderInsights(d);
 
   // Embed code
   document.getElementById('embed-display').textContent = `<script src="https://www.introlinq.com/widget.js" data-publisher="${esc(d.publisher.slug)}"><\/script>`;
@@ -469,6 +542,96 @@ async function toggleExperts(slug, btn) {
   }).join('') : '<div style="padding:1rem;color:var(--ink-muted);font-size:0.85rem">No experts found.</div>';
   grid.style.display = 'grid';
   btn.textContent = 'Hide experts';
+}
+
+// ── Charts ──────────────────────────────────────────────────────────────────
+let clicksChart, imprChart;
+
+function fillDays(raw, n) {
+  const map = {};
+  raw.forEach(r => { map[String(r.date).slice(0,10)] = r.count; });
+  const out = { labels: [], data: [] };
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    out.labels.push(i === 0 ? 'Today' : d.toLocaleDateString('en-GB', { day:'numeric', month:'short' }));
+    out.data.push(map[key] || 0);
+  }
+  return out;
+}
+
+function fillMonths(raw) {
+  const map = {};
+  raw.forEach(r => { map[r.month] = r.count; });
+  const out = { labels: [], data: [] };
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i);
+    const key = d.toLocaleString('en-US', { month: 'short', year: '2-digit' });
+    out.labels.push(key);
+    out.data.push(map[key] || 0);
+  }
+  return out;
+}
+
+function initCharts(d) {
+  window._cd = d;
+  const baseOpts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { title: t => t[0].label } } },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#8888a8', maxRotation: 0 } },
+      y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 }, color: '#8888a8', precision: 0 } }
+    }
+  };
+  clicksChart = new Chart(document.getElementById('chart-clicks'), {
+    type: 'bar',
+    data: { labels: [], datasets: [{ data: [], backgroundColor: '#3d7a5f', borderRadius: 4 }] },
+    options: { ...baseOpts }
+  });
+  imprChart = new Chart(document.getElementById('chart-impr'), {
+    type: 'line',
+    data: { labels: [], datasets: [{ data: [], borderColor: '#1a1a2e', backgroundColor: 'rgba(26,26,46,0.06)', fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 4 }] },
+    options: { ...baseOpts }
+  });
+}
+
+function setPeriod(period, btn) {
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const d = window._cd;
+  if (!d || !clicksChart) return;
+  let c, m;
+  if (period === '12m') {
+    c = fillMonths(d.clicks_by_month || []);
+    m = fillMonths(d.impressions_by_month || []);
+  } else {
+    const days = period === '7d' ? 7 : 30;
+    c = fillDays(d.clicks_by_day || [], days);
+    m = fillDays(d.impressions_by_day || [], days);
+  }
+  clicksChart.data.labels = c.labels;
+  clicksChart.data.datasets[0].data = c.data;
+  clicksChart.update();
+  imprChart.data.labels = m.labels;
+  imprChart.data.datasets[0].data = m.data;
+  imprChart.update();
+}
+
+function renderInsights(d) {
+  function bars(containerId, rows, labelKey, countKey) {
+    const el = document.getElementById(containerId);
+    if (!rows || !rows.length) { el.innerHTML = '<span class="no-data">No data yet</span>'; return; }
+    const max = Math.max(...rows.map(r => r[countKey]));
+    el.innerHTML = rows.map(r => `
+      <div class="bar-row">
+        <div class="bar-label" title="${esc(r[labelKey])}">${esc(r[labelKey])}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${max ? Math.round(r[countKey]/max*100) : 0}%"></div></div>
+        <div class="bar-count">${r[countKey]}</div>
+      </div>`).join('');
+  }
+  bars('insight-phrases', d.top_phrases, 'phrase', 'clicks');
+  bars('insight-sources', d.traffic_sources, 'source', 'count');
+  bars('insight-devices', d.devices, 'device', 'count');
 }
 
 async function logout() {

@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 
   // Public redirect — routes Book button through IntroLinq before sending to partner
   if (req.method === 'GET' && action === 'out') {
-    const { expert_id, expert_name, expert_url, article, phrase, lang, tz, device, source } = req.query;
+    const { expert_id, expert_name, expert_url, article, phrase, lang, tz, device, source, title } = req.query;
     if (!expert_url) return res.status(400).json({ error: 'Missing expert_url' });
 
     const click_id = crypto.randomUUID();
@@ -34,11 +34,12 @@ export default async function handler(req, res) {
       sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS timezone TEXT`.catch(() => {}),
       sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS device TEXT`.catch(() => {}),
       sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS traffic_source TEXT`.catch(() => {}),
+      sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS article_title TEXT`.catch(() => {}),
     ]);
 
-    await sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, phrase, lang, timezone, device, traffic_source)
+    await sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, article_title, phrase, lang, timezone, device, traffic_source)
       VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${click_id}, ${article || null},
-              ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null})
+              ${title || null}, ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null})
     `.catch(() => {});
 
     // Build partner URL with full attribution params
@@ -136,11 +137,21 @@ export default async function handler(req, res) {
 
     if (!publisher) return res.status(404).json({ error: 'Publisher not found' });
 
-    const [logs, clickData, providers, expertCounts] = await Promise.all([
+    const [logs, clickData, providers, expertCounts, totalImpressions,
+           clicksByDay, impressionsByDay, clicksByMonth, impressionsByMonth,
+           topPhrases, topSources, topDevices] = await Promise.all([
       sql`SELECT phrases, expert_names, match_count, created_at FROM match_logs WHERE publisher = ${pub} ORDER BY created_at DESC LIMIT 20`,
       sql`SELECT COUNT(*)::int AS total FROM click_logs WHERE publisher = ${pub}`.catch(() => [{ total: 0 }]),
       sql`SELECT slug, COALESCE(name, slug) AS name FROM providers ORDER BY slug`,
       sql`SELECT COUNT(*)::int AS count FROM experts WHERE active = true`,
+      sql`SELECT COUNT(*)::int AS total FROM match_logs WHERE publisher = ${pub}`.catch(() => [{ total: 0 }]),
+      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
+      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
+      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
+      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
+      sql`SELECT phrase, COUNT(*)::int AS clicks FROM click_logs WHERE publisher = ${pub} AND phrase IS NOT NULL AND phrase != '' GROUP BY phrase ORDER BY clicks DESC LIMIT 5`.catch(() => []),
+      sql`SELECT traffic_source AS source, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND traffic_source IS NOT NULL GROUP BY traffic_source ORDER BY count DESC`.catch(() => []),
+      sql`SELECT device, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND device IS NOT NULL GROUP BY device ORDER BY count DESC`.catch(() => []),
     ]);
 
     const partnersWithStatus = providers.map(p => ({
@@ -154,7 +165,15 @@ export default async function handler(req, res) {
       publisher,
       logs,
       clicks: clickData[0]?.total || 0,
+      total_impressions: totalImpressions[0]?.total || 0,
       partners: partnersWithStatus,
+      clicks_by_day: clicksByDay,
+      impressions_by_day: impressionsByDay,
+      clicks_by_month: clicksByMonth,
+      impressions_by_month: impressionsByMonth,
+      top_phrases: topPhrases,
+      traffic_sources: topSources,
+      devices: topDevices,
     });
   }
 
