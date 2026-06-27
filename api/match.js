@@ -19,6 +19,26 @@ export default async function handler(req, res) {
 
   try {
     const sql = neon(process.env.DATABASE_URL);
+
+    // Look up publisher settings if a publisher slug was provided
+    const { publisher } = req.body;
+    let maxMatches = 4;
+    let sensitivityInstruction = 'The match must be genuinely strong. A weak or vague match is worse than no match.';
+
+    if (publisher) {
+      const [pub] = await sql`SELECT match_power, match_sensitivity FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`;
+      if (pub) {
+        const powerMap = { light: 2, moderate: 4, heavy: 10, unlimited: 15 };
+        maxMatches = powerMap[pub.match_power] ?? 4;
+        const sensitivityMap = {
+          strict: 'The match must be very specific and actionable. Only match if the expert\'s expertise directly addresses the exact challenge described. A weak match is worse than no match.',
+          balanced: 'Match when there is clear value to the reader. The connection should be meaningful but does not need to be hyper-specific.',
+          open: 'Match on broader topic overlap. If the expert\'s field is relevant to the section, include them. Prefer more matches over fewer.',
+        };
+        sensitivityInstruction = sensitivityMap[pub.match_sensitivity] ?? sensitivityMap.balanced;
+      }
+    }
+
     const experts = await sql`
       SELECT id, name, bio, description_long, photo_url, position, company,
              topics, services, languages, price_from, price_currency,
@@ -42,14 +62,14 @@ export default async function handler(req, res) {
 
     const prompt = `You are the matching engine for IntroLinq, a platform that connects blog READERS with experts they can book a 1:1 call with.
 
-Your job: identify moments in the article where a reader — someone trying to learn, make a decision, or solve a problem — would benefit from a personal consultation with a specific expert. The match must be genuinely strong. A weak or vague match is worse than no match.
+Your job: identify moments in the article where a reader — someone trying to learn, make a decision, or solve a problem — would benefit from a personal consultation with a specific expert. ${sensitivityInstruction}
 
 Criteria for a valid match:
 1. The reader faces a specific, actionable challenge or decision — not just reading about a topic
 2. The expert's expertise is a clear fit for that challenge (not just the same broad field)
 3. A 1:1 call with this expert would genuinely help the reader take action
 
-Return up to 4 matches for how-to articles, guides, and educational content where the reader is actively trying to do something. Return 0 for pure news, press releases, or company announcements where the reader is passively informed.
+Return up to ${maxMatches} matches for how-to articles, guides, and educational content where the reader is actively trying to do something. Return 0 for pure news, press releases, or company announcements where the reader is passively informed.
 
 NEVER match:
 - News articles, press releases, or company announcements

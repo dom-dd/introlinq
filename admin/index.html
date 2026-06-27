@@ -88,6 +88,12 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 .badge-active{background:var(--green-light);color:var(--green)}
 .badge-inactive{background:var(--red-light);color:var(--red)}
 
+/* Settings selects */
+.setting-select{font-size:0.7rem;font-family:'Inter',sans-serif;color:var(--ink);border:1px solid var(--border);border-radius:6px;padding:0.2rem 0.4rem;background:var(--cream);cursor:pointer;width:100%}
+.setting-select:focus{outline:none;border-color:var(--sage)}
+.setting-group{display:flex;flex-direction:column;gap:4px;min-width:110px}
+.setting-label{font-size:0.65rem;color:var(--ink-muted);font-weight:500;text-transform:uppercase;letter-spacing:0.04em}
+
 /* Embed code */
 .embed-code{font-family:monospace;font-size:0.75rem;color:var(--sage);background:var(--sage-light);padding:0.375rem 0.625rem;border-radius:6px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:320px;display:block;border:none;text-align:left;transition:background 0.15s}
 .embed-code:hover{background:#d4eddf}
@@ -197,6 +203,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
               <th>Name</th>
               <th>Domain</th>
               <th>Embed code</th>
+              <th>Settings</th>
               <th>Status</th>
               <th>Added</th>
               <th></th>
@@ -280,6 +287,27 @@ async function loadPublishers() {
           data-publisher="${esc(p.slug)}"
         </button>
       </td>
+      <td>
+        <div class="setting-group">
+          <div>
+            <div class="setting-label">Power</div>
+            <select class="setting-select" onchange="updateSetting(${p.id}, 'match_power', this.value)">
+              <option value="light" ${p.match_power==='light'?'selected':''}>Light (1-2)</option>
+              <option value="moderate" ${p.match_power==='moderate'||!p.match_power?'selected':''}>Moderate (3-4)</option>
+              <option value="heavy" ${p.match_power==='heavy'?'selected':''}>Heavy (5-10)</option>
+              <option value="unlimited" ${p.match_power==='unlimited'?'selected':''}>Unlimited</option>
+            </select>
+          </div>
+          <div>
+            <div class="setting-label">Sensitivity</div>
+            <select class="setting-select" onchange="updateSetting(${p.id}, 'match_sensitivity', this.value)">
+              <option value="strict" ${p.match_sensitivity==='strict'?'selected':''}>Strict</option>
+              <option value="balanced" ${p.match_sensitivity==='balanced'||!p.match_sensitivity?'selected':''}>Balanced</option>
+              <option value="open" ${p.match_sensitivity==='open'?'selected':''}>Open</option>
+            </select>
+          </div>
+        </div>
+      </td>
       <td><span class="badge ${p.active ? 'badge-active' : 'badge-inactive'}">${p.active ? 'Active' : 'Inactive'}</span></td>
       <td>${new Date(p.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</td>
       <td>
@@ -335,6 +363,15 @@ async function addPublisher() {
   toast('Publisher added');
   loadPublishers();
   loadStats();
+}
+
+async function updateSetting(id, field, value) {
+  await fetch('/api/admin?resource=publishers', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify({ id, [field]: value })
+  });
+  toast('Saved');
 }
 
 async function togglePublisher(id, active) {

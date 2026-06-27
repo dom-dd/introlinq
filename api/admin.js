@@ -45,9 +45,13 @@ export default async function handler(req, res) {
         domain TEXT,
         notes TEXT,
         active BOOLEAN DEFAULT true,
+        match_power TEXT DEFAULT 'moderate',
+        match_sensitivity TEXT DEFAULT 'balanced',
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `;
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS match_power TEXT DEFAULT 'moderate'`;
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS match_sensitivity TEXT DEFAULT 'balanced'`;
 
     if (req.method === 'GET') {
       const publishers = await sql`SELECT * FROM publishers ORDER BY created_at DESC`;
@@ -76,9 +80,13 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PATCH') {
-      const { id, active } = req.body;
+      const { id, active, match_power, match_sensitivity } = req.body;
       const [pub] = await sql`
-        UPDATE publishers SET active = ${active} WHERE id = ${id} RETURNING *
+        UPDATE publishers SET
+          active = COALESCE(${active ?? null}, active),
+          match_power = COALESCE(${match_power ?? null}, match_power),
+          match_sensitivity = COALESCE(${match_sensitivity ?? null}, match_sensitivity)
+        WHERE id = ${id} RETURNING *
       `;
       return res.status(200).json(pub);
     }
