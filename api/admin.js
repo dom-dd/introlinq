@@ -56,6 +56,8 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS widget_color TEXT DEFAULT '#e6a820'`;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS accent_color TEXT DEFAULT '#e6a820'`;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS widget_size TEXT DEFAULT 'medium'`;
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS contact_first_name TEXT`;
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS contact_last_name TEXT`;
 
     if (req.method === 'GET') {
       const publishers = await sql`SELECT * FROM publishers ORDER BY created_at DESC`;
@@ -63,19 +65,20 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { name, email, slug, domain, notes } = req.body;
+      const { name, email, slug, domain, notes, contact_first_name, contact_last_name } = req.body;
       if (!name || !email || !slug) {
         return res.status(400).json({ error: 'name, email and slug are required' });
       }
       const clean = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
       try {
         const [pub] = await sql`
-          INSERT INTO publishers (name, email, slug, domain, notes)
-          VALUES (${name}, ${email}, ${clean}, ${domain || null}, ${notes || null})
+          INSERT INTO publishers (name, email, slug, domain, notes, contact_first_name, contact_last_name)
+          VALUES (${name}, ${email}, ${clean}, ${domain || null}, ${notes || null}, ${contact_first_name || null}, ${contact_last_name || null})
           RETURNING *
         `;
 
         // Send welcome email with magic link (7-day expiry)
+        const firstName = contact_first_name || name;
         createMagicToken(sql, email.toLowerCase(), 7 * 24 * 60 * 60 * 1000).then(token => {
           const link = `https://www.introlinq.com/api/auth?token=${token}`;
           fetch('https://api.resend.com/emails', {
@@ -84,8 +87,8 @@ export default async function handler(req, res) {
             body: JSON.stringify({
               from: 'IntroLinq <hello@introlinq.com>',
               to: email,
-              subject: `Welcome to IntroLinq, ${name} — your dashboard is ready`,
-              html: welcomeEmail(name, link),
+              subject: `Welcome to IntroLinq, ${firstName} — your dashboard is ready`,
+              html: welcomeEmail(firstName, link),
             })
           });
         }).catch(err => console.error('Welcome email failed:', err));

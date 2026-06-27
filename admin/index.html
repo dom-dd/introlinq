@@ -76,6 +76,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .form-input{padding:0.625rem 0.875rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.875rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--white);outline:none;transition:border-color 0.15s}
 .form-input:focus{border-color:var(--sage)}
 .form-actions{display:flex;gap:0.5rem;margin-top:0.25rem}
+.form-section{font-size:0.7rem;font-weight:600;color:var(--ink);text-transform:uppercase;letter-spacing:0.06em;margin:1rem 0 0.5rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border)}
+.form-section:first-child{margin-top:0}
 
 /* Table */
 table{width:100%;border-collapse:collapse}
@@ -164,29 +166,47 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 
       <!-- Add form -->
       <div id="add-form">
+        <div class="form-section">Contact</div>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Blog / Site name *</label>
+            <label class="form-label">First name *</label>
+            <input class="form-input" id="f-first-name" placeholder="Dan">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last name *</label>
+            <input class="form-input" id="f-last-name" placeholder="George">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Email *</label>
+            <input class="form-input" id="f-email" placeholder="dan@littlegreenagency.co.uk" type="email">
+          </div>
+          <div class="form-group"></div>
+        </div>
+
+        <div class="form-section">Website</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Website name *</label>
             <input class="form-input" id="f-name" placeholder="Little Green Agency" oninput="autoSlug()">
           </div>
           <div class="form-group">
-            <label class="form-label">Email *</label>
-            <input class="form-input" id="f-email" placeholder="hello@example.com" type="email">
+            <label class="form-label">Website URL</label>
+            <input class="form-input" id="f-domain" placeholder="littlegreenagency.co.uk">
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Blog domain</label>
-            <input class="form-input" id="f-domain" placeholder="littlegreenagency.co.uk">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Slug * (used in embed code)</label>
+            <label class="form-label">IntroLinq slug *</label>
             <input class="form-input" id="f-slug" placeholder="little-green-agency">
           </div>
+          <div class="form-group"></div>
         </div>
+
         <div class="form-group" style="margin-bottom:0.75rem">
-          <label class="form-label">Contact name (optional)</label>
-          <input class="form-input" id="f-notes" placeholder="Dan George">
+          <label class="form-label">Notes (optional)</label>
+          <input class="form-input" id="f-notes" placeholder="How they found us, anything relevant…">
         </div>
         <div class="form-actions">
           <button class="btn btn-primary" onclick="addPublisher()">Create publisher</button>
@@ -279,7 +299,7 @@ async function loadPublishers() {
       <td>
         <div class="td-name">${esc(p.name)}</div>
         <div style="font-size:0.75rem;color:var(--ink-muted)">${esc(p.email)}</div>
-        ${p.notes ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px;font-style:italic">${esc(p.notes)}</div>` : ''}
+        ${(p.contact_first_name || p.contact_last_name) ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px;font-style:italic">${esc([p.contact_first_name, p.contact_last_name].filter(Boolean).join(' '))}</div>` : ''}
       </td>
       <td>${p.domain ? esc(p.domain) : '<span style="color:var(--ink-muted)">-</span>'}</td>
       <td>
@@ -313,7 +333,7 @@ async function loadPublishers() {
 function toggleAddForm() {
   const f = document.getElementById('add-form');
   f.style.display = f.style.display === 'none' ? 'block' : 'none';
-  if (f.style.display === 'block') document.getElementById('f-name').focus();
+  if (f.style.display === 'block') document.getElementById('f-first-name').focus();
 }
 
 function autoSlug() {
@@ -322,6 +342,8 @@ function autoSlug() {
 }
 
 async function addPublisher() {
+  const firstName = document.getElementById('f-first-name').value.trim();
+  const lastName = document.getElementById('f-last-name').value.trim();
   const name = document.getElementById('f-name').value.trim();
   const email = document.getElementById('f-email').value.trim();
   const slug = document.getElementById('f-slug').value.trim();
@@ -330,8 +352,8 @@ async function addPublisher() {
   const errEl = document.getElementById('form-error');
   errEl.style.display = 'none';
 
-  if (!name || !email || !slug) {
-    errEl.textContent = 'Name, email and slug are required.';
+  if (!firstName || !lastName || !name || !email || !slug) {
+    errEl.textContent = 'First name, last name, website name, email and slug are required.';
     errEl.style.display = 'block';
     return;
   }
@@ -339,7 +361,7 @@ async function addPublisher() {
   const res = await fetch('/api/admin?resource=publishers', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest'},
-    body: JSON.stringify({ name, email, slug, domain, notes })
+    body: JSON.stringify({ name, email, slug, domain, notes, contact_first_name: firstName, contact_last_name: lastName })
   });
   const data = await res.json();
 
@@ -349,7 +371,7 @@ async function addPublisher() {
     return;
   }
 
-  ['f-name','f-email','f-slug','f-domain','f-notes'].forEach(id => document.getElementById(id).value = '');
+  ['f-first-name','f-last-name','f-name','f-email','f-slug','f-domain','f-notes'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('add-form').style.display = 'none';
   toast('Publisher added');
   loadPublishers();
