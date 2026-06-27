@@ -217,19 +217,20 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 
       <!-- Table -->
       <div class="section-body" style="overflow-x:auto">
-        <table style="min-width:800px">
+        <table style="min-width:900px">
           <thead>
             <tr>
               <th>Name</th>
-              <th>Domain</th>
-              <th>Embed code</th>
+              <th>Links</th>
+              <th>Stats</th>
+              <th>Networks</th>
               <th>Status</th>
               <th>Added</th>
               <th></th>
             </tr>
           </thead>
           <tbody id="publishers-tbody">
-            <tr><td colspan="6" class="empty">Loading...</td></tr>
+            <tr><td colspan="7" class="empty">Loading...</td></tr>
           </tbody>
         </table>
       </div>
@@ -289,7 +290,7 @@ async function loadPublishers() {
   const tbody = document.getElementById('publishers-tbody');
 
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty">No publishers yet. Add your first one above.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">No publishers yet. Add your first one above.</td></tr>';
     return;
   }
 
@@ -300,11 +301,28 @@ async function loadPublishers() {
         <div style="font-size:0.75rem;color:var(--ink-muted)">${esc(p.email)}</div>
         ${(p.contact_first_name || p.contact_last_name) ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px;font-style:italic">${esc([p.contact_first_name, p.contact_last_name].filter(Boolean).join(' '))}</div>` : ''}
       </td>
-      <td>${p.domain ? esc(p.domain) : '<span style="color:var(--ink-muted)">-</span>'}</td>
       <td>
-        <button class="embed-code" onclick="copyEmbed('${esc(p.slug)}')" title="Click to copy">
-          data-publisher="${esc(p.slug)}"
-        </button>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${p.domain ? `<a href="https://${esc(p.domain)}" target="_blank" title="${esc(p.domain)}" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;background:#f4f4f8;color:var(--ink-muted);text-decoration:none" onmouseover="this.style.background='#e8e8f0'" onmouseout="this.style.background='#f4f4f8'"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></a>` : `<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;background:#f4f4f8;opacity:.35"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ink-muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>`}
+          <button onclick="copyEmbed('${esc(p.slug)}')" title="Copy embed code" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;background:#f4f4f8;border:none;cursor:pointer;color:var(--ink-muted)" onmouseover="this.style.background='#e8e8f0'" onmouseout="this.style.background='#f4f4f8'"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></button>
+        </div>
+      </td>
+      <td>
+        ${(()=>{
+          const imp = p.impressions || 0;
+          const clk = p.clicks || 0;
+          const ctr = imp > 0 ? (clk / imp * 100).toFixed(1) : '0.0';
+          return `<div style="font-size:0.75rem;color:var(--ink-soft);line-height:1.9;white-space:nowrap">
+            <span style="font-weight:500;color:var(--ink)">${imp.toLocaleString()}</span> imp &nbsp;
+            <span style="font-weight:500;color:var(--ink)">${clk.toLocaleString()}</span> clk &nbsp;
+            <span style="font-weight:500;color:var(--ink)">${ctr}%</span>
+          </div>`;
+        })()}
+      </td>
+      <td>
+        <div style="display:flex;gap:5px;align-items:center">
+          <img src="/networks%20logos/OpenIntro-icon.png" alt="OpenIntro" title="OpenIntro" style="width:20px;height:20px;object-fit:contain;border-radius:4px;${(p.enabled_partners||['openintro']).includes('openintro') ? '' : 'filter:grayscale(1) opacity(0.3)'}">
+        </div>
       </td>
       <td><span class="badge ${p.active ? 'badge-active' : 'badge-inactive'}">${p.active ? 'Active' : 'Inactive'}</span></td>
       <td>${new Date(p.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</td>

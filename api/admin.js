@@ -61,7 +61,18 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
       const publishers = await sql`SELECT * FROM publishers ORDER BY created_at DESC`;
-      return res.status(200).json(publishers);
+      const [matchStats, clickStats] = await Promise.all([
+        sql`SELECT publisher, COUNT(*)::int AS impressions FROM match_logs GROUP BY publisher`.catch(() => []),
+        sql`SELECT publisher, COUNT(*)::int AS clicks FROM click_logs GROUP BY publisher`.catch(() => []),
+      ]);
+      const matchMap = Object.fromEntries(matchStats.map(r => [r.publisher, r.impressions]));
+      const clickMap = Object.fromEntries(clickStats.map(r => [r.publisher, r.clicks]));
+      const result = publishers.map(p => ({
+        ...p,
+        impressions: matchMap[p.slug] || 0,
+        clicks: clickMap[p.slug] || 0,
+      }));
+      return res.status(200).json(result);
     }
 
     if (req.method === 'POST') {
