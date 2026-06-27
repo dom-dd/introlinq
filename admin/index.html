@@ -246,12 +246,17 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 
     <!-- Bookings -->
     <div class="section">
-      <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+      <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
         <div>
           <div class="section-title">Bookings</div>
           <div class="section-sub" id="bookings-totals">Loading...</div>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="toggleBookingForm()">+ Log booking</button>
+        <div style="display:flex;gap:0.5rem;align-items:center">
+          <select id="bookings-filter" class="form-input" style="width:200px;padding:0.4rem 0.75rem;font-size:0.8125rem" onchange="filterBookings()">
+            <option value="">All publishers</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="toggleBookingForm()">+ Log booking</button>
+        </div>
       </div>
       <div id="booking-form" style="display:none;padding:1.5rem;border-bottom:1px solid var(--border);background:var(--white)">
         <div class="form-row">
@@ -379,7 +384,7 @@ async function loadPublishers() {
         <div class="td-name">${esc(p.name)}</div>
         <div style="font-size:0.75rem;color:var(--ink-muted)">${esc(p.email)}</div>
         ${(p.contact_first_name || p.contact_last_name) ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px;font-style:italic">${esc([p.contact_first_name, p.contact_last_name].filter(Boolean).join(' '))}</div>` : ''}
-        <div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px">${Math.round((p.revenue_share||0.70)*100)}% rev share</div>
+        <div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px">${Math.round((p.revenue_share||0.70)*100)}% rev share${p.payment_email ? ` · <span title="Payment: ${esc(p.payment_email)}">💳 ${esc(p.payment_email)}</span>` : ' · <span style="color:#dc2626">no payment email</span>'}</div>
       </td>
       <td>
         <div style="display:flex;gap:6px;align-items:center">
@@ -408,6 +413,9 @@ async function loadPublishers() {
       <td>${new Date(p.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</td>
       <td>
         <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end">
+          <button onclick="viewPublisherBookings('${esc(p.slug)}')" title="View bookings" style="background:#f4f0ff;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </button>
           <button onclick="loginAsPublisher('${esc(p.email)}')" title="Log in as this publisher" style="background:#f0f4ff;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4f6ef7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
           </button>
@@ -483,6 +491,12 @@ async function deletePublisher(id, name) {
   loadStats();
 }
 
+function viewPublisherBookings(slug) {
+  document.getElementById('bookings-filter').value = slug;
+  filterBookings();
+  document.getElementById('bookings-filter').closest('.section').scrollIntoView({ behavior: 'smooth' });
+}
+
 async function loginAsPublisher(email) {
   const res = await fetch('/api/admin?resource=login_as', {
     method: 'POST',
@@ -507,19 +521,37 @@ async function togglePublisher(id, active) {
   loadStats();
 }
 
+let _allBookings = [];
+
 async function loadBookings() {
   const res = await fetch('/api/admin?resource=bookings', { headers: { 'x-requested-with': 'xmlhttprequest' } });
   const d = await res.json();
+  _allBookings = d.bookings || [];
+
   const t = d.totals || {};
-  const fmt = (n, c='GBP') => n ? new Intl.NumberFormat('en-GB', { style:'currency', currency: c }).format(n) : '—';
+  const fmt = (n, c='GBP') => n ? new Intl.NumberFormat('en-GB', { style:'currency', currency:c }).format(n) : '—';
   document.getElementById('bookings-totals').textContent =
-    `${t.count || 0} bookings · ${fmt(t.total_commission)} commission received · ${fmt(t.total_payouts)} owed to publishers · ${fmt(t.total_margin)} margin`;
+    `${t.count || 0} bookings · ${fmt(t.total_commission)} commission · ${fmt(t.total_payouts)} owed to publishers · ${fmt(t.total_margin)} margin`;
+
+  // Populate publisher filter
+  const filter = document.getElementById('bookings-filter');
+  const current = filter.value;
+  const pubs = [...new Set(_allBookings.map(b => b.publisher).filter(Boolean))];
+  filter.innerHTML = '<option value="">All publishers</option>' +
+    pubs.map(p => `<option value="${esc(p)}" ${p === current ? 'selected' : ''}>${esc(p)}</option>`).join('');
+
+  filterBookings();
+}
+
+function filterBookings() {
+  const pub = document.getElementById('bookings-filter').value;
+  const rows = pub ? _allBookings.filter(b => b.publisher === pub) : _allBookings;
   const tbody = document.getElementById('bookings-tbody');
-  if (!d.bookings?.length) {
+  if (!rows.length) {
     tbody.innerHTML = '<tr><td colspan="8" class="empty">No bookings yet.</td></tr>';
     return;
   }
-  tbody.innerHTML = d.bookings.map(b => `
+  tbody.innerHTML = rows.map(b => `
     <tr>
       <td style="white-space:nowrap">${new Date(b.booked_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</td>
       <td><div style="font-weight:500">${esc(b.publisher_name || b.publisher || '—')}</div><div style="font-size:0.72rem;color:var(--ink-muted)">${esc(b.publisher || '')}</div></td>

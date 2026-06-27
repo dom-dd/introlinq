@@ -265,6 +265,16 @@ tr:last-child td{border-bottom:none}
           </div>
         </div>
       </div>
+      <div class="settings-col">
+        <div class="setting-block">
+          <div class="setting-title">Payment email</div>
+          <div class="setting-desc">Wise or PayPal email for your payouts</div>
+          <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
+            <input type="email" class="form-input" id="payment-email-input" placeholder="your@wise.com" style="flex:1;padding:0.625rem 0.875rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.875rem;font-family:'Inter',sans-serif;outline:none">
+            <button onclick="savePaymentEmail()" style="background:var(--sage);color:#fff;border:none;padding:0.625rem 1rem;border-radius:8px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Save</button>
+          </div>
+        </div>
+      </div>
       <div class="settings-col settings-col-colors">
         <div class="setting-block">
           <div class="setting-title">Link colour</div>
@@ -378,6 +388,11 @@ async function loadDashboard() {
   settings.sensitivity = p.match_sensitivity || 'balanced';
   renderSettings();
 
+  // Payment email
+  if (d.publisher.payment_email) {
+    document.getElementById('payment-email-input').value = d.publisher.payment_email;
+  }
+
   // Partners
   if (d.partners && d.partners.length) {
     document.getElementById('partners-section').style.display = 'block';
@@ -457,6 +472,19 @@ async function saveSetting(field, value) {
   });
   if (res.status === 401) { window.location.href = '/login'; return; }
   if (res.ok) toast('Saved');
+}
+
+async function savePaymentEmail() {
+  const email = document.getElementById('payment-email-input').value.trim();
+  if (!email) return;
+  const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ payment_email: email })
+  });
+  if (res.status === 401) { window.location.href = '/login'; return; }
+  if (res.ok) toast('Payment email saved');
 }
 
 function copyEmbed() {
