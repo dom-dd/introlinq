@@ -221,7 +221,16 @@
     if (rs) rs.textContent = match.reason;
     var url = e.booking_url || '#';
     if (url !== '#') url += (url.indexOf('?') !== -1 ? '&' : '?') + 'ref=' + encodeURIComponent(PUB);
-    document.getElementById('il-bk').href = url;
+    var bk = document.getElementById('il-bk');
+    bk.href = url;
+    bk.onclick = function () {
+      fetch('https://www.introlinq.com/api/dashboard?pub=' + encodeURIComponent(PUB), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({ expert_id: e.id, expert_name: e.name })
+      }).catch(function () {});
+    };
   }
 
   function positionPopup(popup, span, cfg) {
