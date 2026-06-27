@@ -59,6 +59,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .color-picker{width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);cursor:pointer;padding:2px;background:var(--white)}
 .color-hex{flex:1;padding:0.5rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.875rem;font-family:monospace;color:var(--ink);background:var(--white);outline:none;transition:border-color .15s}
 .color-hex:focus{border-color:var(--sage)}
+.color-reset{background:none;border:none;cursor:pointer;padding:4px;color:var(--ink-muted);border-radius:6px;display:flex;align-items:center;transition:color .15s}
+.color-reset:hover{color:var(--ink)}
 
 /* Partners */
 .partner-card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:1.25rem 1.5rem}
@@ -197,6 +199,7 @@ tr:last-child td{border-bottom:none}
           <div class="color-row">
             <input type="color" class="color-picker" id="color-picker" oninput="onColorInput('color','widget_color',this.value)">
             <input type="text" class="color-hex" id="color-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('color','widget_color','color-picker',this.value)">
+            <button class="color-reset" title="Reset to default" onclick="resetColor('color','widget_color')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
           </div>
         </div>
         <div class="setting-block">
@@ -205,6 +208,7 @@ tr:last-child td{border-bottom:none}
           <div class="color-row">
             <input type="color" class="color-picker" id="accent-picker" oninput="onColorInput('accent','accent_color',this.value)">
             <input type="text" class="color-hex" id="accent-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('accent','accent_color','accent-picker',this.value)">
+            <button class="color-reset" title="Reset to default" onclick="resetColor('accent','accent_color')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
           </div>
         </div>
       </div>
@@ -329,6 +333,17 @@ function pick(type, el) {
   el.closest('.option-group').querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   saveSetting(type === 'power' ? 'match_power' : type === 'sensitivity' ? 'match_sensitivity' : 'widget_' + type, el.dataset.val);
+}
+
+const DEFAULT_COLOR = '#e6a820';
+
+function resetColor(settingKey, field) {
+  const pickerId = settingKey === 'color' ? 'color-picker' : 'accent-picker';
+  const hexId = settingKey === 'color' ? 'color-hex' : 'accent-hex';
+  settings[settingKey] = DEFAULT_COLOR;
+  document.getElementById(pickerId).value = DEFAULT_COLOR;
+  document.getElementById(hexId).value = DEFAULT_COLOR;
+  saveSetting(field, DEFAULT_COLOR);
 }
 
 function onColorInput(settingKey, field, value) {
