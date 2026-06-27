@@ -152,6 +152,17 @@ export default async function handler(req, res) {
 
     const allExperts = await fetchAllExperts();
 
+    // Debug: log filter field values from first expert
+    if (allExperts.length > 0) {
+      const sample = allExperts[0];
+      console.log('SYNC DEBUG - sample expert fields:', JSON.stringify({
+        'Profile status': sample['Profile status'],
+        'Visible on OpenIntro': sample['Visible on OpenIntro'],
+        'n-adminCheck': sample['n-adminCheck'],
+        'Add to Chatbot': sample['Add to Chatbot'],
+      }));
+    }
+
     const publicExperts = allExperts.filter(e => {
       const status = e['Profile status'] || e['Profile_status'] || '';
       return status.includes('Public')
@@ -159,6 +170,8 @@ export default async function handler(req, res) {
         && e['n-adminCheck'] === 'approved'
         && e['Add to Chatbot'] === true;
     });
+
+    console.log(`SYNC DEBUG - total: ${allExperts.length}, after filters: ${publicExperts.length}`);
 
     const activeIds = [];
     let upserted = 0;
