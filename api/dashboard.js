@@ -14,13 +14,13 @@ export default async function handler(req, res) {
 
   const sql = neon(process.env.DATABASE_URL);
 
-  // POST: click tracking from widget (cross-origin, no session needed)
-  if (req.method === 'POST') {
+  // CORS for widget click tracking (cross-origin POST)
+  if (req.method === 'POST' || req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') return res.status(200).end();
   }
-  if (req.method === 'OPTIONS') return res.status(200).end();
 
   // GET and PATCH: require valid session cookie
   if (req.method === 'GET' || req.method === 'PATCH') {

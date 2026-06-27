@@ -110,7 +110,10 @@ tr:last-child td{border-bottom:none}
 
 <div class="header">
   <div class="logo">Intro<span>Linq</span></div>
-  <div class="pub-name" id="header-name"></div>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="pub-name" id="header-name"></div>
+    <button onclick="logout()" style="background:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);font-size:0.75rem;font-family:'Inter',sans-serif;padding:0.35rem 0.75rem;border-radius:100px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='rgba(255,255,255,0.5)';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(255,255,255,0.2)';this.style.color='rgba(255,255,255,0.6)'">Log out</button>
+  </div>
 </div>
 
 <div id="not-found">
@@ -425,6 +428,7 @@ async function togglePartner(slug, enabled) {
   await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify({ enabled_partners: partners })
   });
   toast(enabled ? 'Partner enabled' : 'Partner disabled');
@@ -440,7 +444,7 @@ async function toggleExperts(slug, btn) {
   }
   btn.textContent = 'Loading...';
   if (!expertCache[slug]) {
-    const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB) + '&provider=' + encodeURIComponent(slug));
+    const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB) + '&provider=' + encodeURIComponent(slug), { credentials: 'include' });
     const data = await res.json();
     expertCache[slug] = data.experts || [];
   }
@@ -465,6 +469,11 @@ async function toggleExperts(slug, btn) {
   }).join('') : '<div style="padding:1rem;color:var(--ink-muted);font-size:0.85rem">No experts found.</div>';
   grid.style.display = 'grid';
   btn.textContent = 'Hide experts';
+}
+
+async function logout() {
+  await fetch('/api/auth', { method: 'DELETE', credentials: 'include' });
+  window.location.href = '/login';
 }
 
 function esc(s) {
