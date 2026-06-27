@@ -60,6 +60,34 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .color-hex{flex:1;padding:0.5rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.875rem;font-family:monospace;color:var(--ink);background:var(--white);outline:none;transition:border-color .15s}
 .color-hex:focus{border-color:var(--sage)}
 
+/* Partners */
+.partner-card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:1.25rem 1.5rem}
+.partner-card:last-child{margin-bottom:1.25rem}
+.partner-header{display:flex;align-items:center;gap:1rem;padding:1rem 1.25rem;background:var(--white)}
+.partner-logo{width:38px;height:38px;border-radius:8px;background:var(--ink);display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:0.8rem;color:var(--gold);flex-shrink:0}
+.partner-info{flex:1}
+.partner-name{font-weight:600;font-size:0.9rem;color:var(--ink)}
+.partner-meta{font-size:0.75rem;color:var(--ink-muted);margin-top:1px}
+.partner-actions{display:flex;align-items:center;gap:0.75rem}
+.toggle{position:relative;width:40px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;background:var(--border);border-radius:100px;cursor:pointer;transition:background .2s}
+.toggle input:checked+.toggle-track{background:var(--sage)}
+.toggle-track::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle input:checked+.toggle-track::after{transform:translateX(18px)}
+.see-experts-btn{font-size:0.75rem;font-weight:500;color:var(--sage);background:var(--sage-light);border:none;border-radius:100px;padding:0.3rem 0.75rem;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:opacity .15s}
+.see-experts-btn:hover{opacity:0.8}
+.expert-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.75rem;padding:1rem 1.25rem;background:var(--cream);border-top:1px solid var(--border);max-height:400px;overflow-y:auto}
+.expert-tile{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:0.75rem;display:flex;flex-direction:column;gap:0.4rem}
+.expert-tile-top{display:flex;align-items:center;gap:0.6rem}
+.expert-tile-photo{width:34px;height:34px;border-radius:50%;object-fit:cover;background:var(--sage-light);flex-shrink:0}
+.expert-tile-name{font-weight:600;font-size:0.8rem;color:var(--ink);line-height:1.25}
+.expert-tile-role{font-size:0.7rem;color:var(--ink-muted);line-height:1.3}
+.expert-tile-topics{display:flex;flex-wrap:wrap;gap:3px}
+.expert-tile-topic{font-size:0.65rem;background:var(--gold-light);color:#92600a;padding:1px 6px;border-radius:100px}
+.expert-tile-link{display:block;text-align:center;font-size:0.72rem;font-weight:600;color:var(--sage);text-decoration:none;margin-top:0.25rem;padding:0.3rem;background:var(--sage-light);border-radius:6px}
+.expert-tile-link:hover{opacity:0.8}
+
 table{width:100%;border-collapse:collapse}
 th{text-align:left;padding:0.75rem 1.5rem;font-size:0.7rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border)}
 td{padding:0.875rem 1.5rem;font-size:0.875rem;color:var(--ink-soft);border-bottom:1px solid var(--border)}
@@ -182,6 +210,14 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
+  <div class="section" id="partners-section" style="display:none">
+    <div class="section-header">
+      <div class="section-title">Expert networks</div>
+      <div class="section-sub">Choose which partner networks appear on your site</div>
+    </div>
+    <div id="partners-list"></div>
+  </div>
+
   <div class="section">
     <div class="section-header">
       <div class="section-title">Recent matches</div>
@@ -248,6 +284,12 @@ async function loadDashboard() {
   settings.power = p.match_power || 'moderate';
   settings.sensitivity = p.match_sensitivity || 'balanced';
   renderSettings();
+
+  // Partners
+  if (d.partners && d.partners.length) {
+    document.getElementById('partners-section').style.display = 'block';
+    renderPartners(d.partners);
+  }
 
   // Logs
   const tbody = document.getElementById('logs-tbody');
@@ -329,6 +371,81 @@ function toast(msg) {
   el.textContent = msg;
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function renderPartners(partners) {
+  const list = document.getElementById('partners-list');
+  list.innerHTML = partners.map(p => `
+    <div class="partner-card" id="pc-${p.slug}">
+      <div class="partner-header">
+        <div class="partner-logo">IL</div>
+        <div class="partner-info">
+          <div class="partner-name">${esc(p.name)}</div>
+          <div class="partner-meta">${p.expert_count} experts available</div>
+        </div>
+        <div class="partner-actions">
+          <button class="see-experts-btn" onclick="toggleExperts('${p.slug}', this)">See experts</button>
+          <label class="toggle" title="${p.enabled ? 'Enabled' : 'Disabled'}">
+            <input type="checkbox" ${p.enabled ? 'checked' : ''} onchange="togglePartner('${p.slug}', this.checked)">
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+      <div class="expert-grid" id="eg-${p.slug}" style="display:none"></div>
+    </div>
+  `).join('');
+}
+
+async function togglePartner(slug, enabled) {
+  const partners = Array.from(document.querySelectorAll('.partner-card')).map(card => {
+    const id = card.id.replace('pc-', '');
+    const cb = card.querySelector('input[type=checkbox]');
+    return { slug: id, enabled: id === slug ? enabled : cb.checked };
+  }).filter(p => p.enabled).map(p => p.slug);
+
+  await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled_partners: partners })
+  });
+  toast(enabled ? 'Partner enabled' : 'Partner disabled');
+}
+
+const expertCache = {};
+async function toggleExperts(slug, btn) {
+  const grid = document.getElementById('eg-' + slug);
+  if (grid.style.display !== 'none') {
+    grid.style.display = 'none';
+    btn.textContent = 'See experts';
+    return;
+  }
+  btn.textContent = 'Loading...';
+  if (!expertCache[slug]) {
+    const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB) + '&provider=' + encodeURIComponent(slug));
+    const data = await res.json();
+    expertCache[slug] = data.experts || [];
+  }
+  const experts = expertCache[slug];
+  grid.innerHTML = experts.length ? experts.map(e => {
+    const role = [e.position, e.company].filter(Boolean).join(' · ');
+    const topics = (e.topics || []).slice(0, 3);
+    const fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=68&name=' + encodeURIComponent(e.name);
+    return `
+      <div class="expert-tile">
+        <div class="expert-tile-top">
+          <img class="expert-tile-photo" src="${e.photo_url || fallback}" onerror="this.src='${fallback}'" alt="${esc(e.name)}">
+          <div>
+            <div class="expert-tile-name">${esc(e.name)}</div>
+            <div class="expert-tile-role">${esc(role)}</div>
+          </div>
+        </div>
+        ${topics.length ? `<div class="expert-tile-topics">${topics.map(t => `<span class="expert-tile-topic">${esc(t)}</span>`).join('')}</div>` : ''}
+        ${e.booking_url ? `<a class="expert-tile-link" href="${esc(e.booking_url)}" target="_blank" rel="noopener">View profile →</a>` : ''}
+      </div>
+    `;
+  }).join('') : '<div style="padding:1rem;color:var(--ink-muted);font-size:0.85rem">No experts found.</div>';
+  grid.style.display = 'grid';
+  btn.textContent = 'Hide experts';
 }
 
 function esc(s) {
