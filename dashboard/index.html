@@ -57,8 +57,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .swatch{width:26px;height:26px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:transform .1s;outline:2px solid transparent;outline-offset:2px}
 .swatch:hover{transform:scale(1.15)}
 .swatch.active{outline-color:var(--ink)}
-.save-btn{background:var(--sage);color:var(--white);border:none;padding:0.625rem 1.5rem;border-radius:100px;font-size:0.875rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .15s;margin:0 1.5rem 1.5rem;align-self:flex-start}
-.save-btn:hover{opacity:0.85}
 
 table{width:100%;border-collapse:collapse}
 th{text-align:left;padding:0.75rem 1.5rem;font-size:0.7rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border)}
@@ -123,7 +121,7 @@ tr:last-child td{border-bottom:none}
   <div class="section">
     <div class="section-header">
       <div class="section-title">Widget settings</div>
-      <div class="section-sub">Customise how the widget looks and behaves on your site</div>
+      <div class="section-sub">Customise how the widget looks and behaves on your site — changes save instantly</div>
     </div>
     <div class="settings-grid">
       <div class="setting-block">
@@ -162,7 +160,6 @@ tr:last-child td{border-bottom:none}
         </div>
       </div>
     </div>
-    <button class="save-btn" onclick="saveSettings()">Save settings</button>
   </div>
 
   <div class="section">
@@ -266,27 +263,23 @@ function pick(type, el) {
   settings[type] = el.dataset.val;
   el.closest('.option-group').querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
+  saveSetting(type === 'power' ? 'match_power' : type === 'sensitivity' ? 'match_sensitivity' : 'widget_' + type, el.dataset.val);
 }
 
 function pickColor(color, el) {
   settings.color = color;
   document.getElementById('color-swatches').querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
   el.classList.add('active');
+  saveSetting('widget_color', color);
 }
 
-async function saveSettings() {
+async function saveSetting(field, value) {
   const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      widget_color: settings.color,
-      widget_size: settings.size,
-      match_power: settings.power,
-      match_sensitivity: settings.sensitivity
-    })
+    body: JSON.stringify({ [field]: value })
   });
-  if (res.ok) toast('Settings saved!');
-  else toast('Something went wrong');
+  if (res.ok) toast('Saved');
 }
 
 function copyEmbed() {
