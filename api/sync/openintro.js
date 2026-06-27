@@ -154,8 +154,10 @@ export default async function handler(req, res) {
 
     const publicExperts = allExperts.filter(e => {
       const status = e['Profile status'] || e['Profile_status'] || '';
-      const visibleOnOpenIntro = e['Visible on OpenIntro'];
-      return status.includes('Public') && visibleOnOpenIntro === true;
+      return status.includes('Public')
+        && e['Visible on OpenIntro'] === true
+        && e['n-adminCheck'] === 'approve'
+        && e['Add to Chatbot'] === true;
     });
 
     const activeIds = [];
