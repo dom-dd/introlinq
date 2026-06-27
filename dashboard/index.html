@@ -532,7 +532,7 @@ function pick(type, el) {
   settings[type] = el.dataset.val;
   el.closest('.option-group').querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
-  saveSetting(type === 'power' ? 'match_power' : type === 'sensitivity' ? 'match_sensitivity' : 'widget_' + type, el.dataset.val);
+  saveSetting(type === 'power' ? 'match_power' : type === 'sensitivity' ? 'match_sensitivity' : 'widget_' + type, el.dataset.val, el);
 }
 
 const DEFAULT_COLOR = '#e6a820';
@@ -543,7 +543,7 @@ function resetColor(settingKey, field) {
   settings[settingKey] = DEFAULT_COLOR;
   document.getElementById(pickerId).value = DEFAULT_COLOR;
   document.getElementById(hexId).value = DEFAULT_COLOR;
-  saveSetting(field, DEFAULT_COLOR);
+  saveSetting(field, DEFAULT_COLOR, null);
 }
 
 function onColorInput(settingKey, field, value) {
@@ -560,15 +560,31 @@ function onHexInput(settingKey, field, pickerId, value) {
   saveSetting(field, value);
 }
 
-async function saveSetting(field, value) {
-  const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ [field]: value })
-  });
-  if (res.status === 401) { window.location.href = '/login'; return; }
-  if (res.ok) toast('Saved');
+async function saveSetting(field, value, activeEl) {
+  if (activeEl) {
+    const orig = activeEl.textContent;
+    activeEl.textContent = 'Saving…';
+    activeEl.style.opacity = '0.7';
+    const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ [field]: value })
+    });
+    if (res.status === 401) { window.location.href = '/login'; return; }
+    activeEl.textContent = res.ok ? 'Saved ✓' : 'Error';
+    activeEl.style.opacity = '1';
+    setTimeout(() => { activeEl.textContent = orig; }, 1500);
+  } else {
+    const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ [field]: value })
+    });
+    if (res.status === 401) { window.location.href = '/login'; return; }
+    if (res.ok) toast('Saved');
+  }
 }
 
 async function savePaymentEmail() {
