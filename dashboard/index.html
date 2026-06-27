@@ -53,10 +53,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .opt-btn{padding:0.375rem 0.875rem;border-radius:100px;font-size:0.8rem;font-weight:500;border:1.5px solid var(--border);background:var(--white);color:var(--ink-soft);cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
 .opt-btn:hover{border-color:var(--ink-soft)}
 .opt-btn.active{background:var(--ink);color:var(--white);border-color:var(--ink)}
-.color-swatches{display:flex;gap:8px;flex-wrap:wrap;margin-top:0.25rem}
-.swatch{width:26px;height:26px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:transform .1s;outline:2px solid transparent;outline-offset:2px}
-.swatch:hover{transform:scale(1.15)}
-.swatch.active{outline-color:var(--ink)}
+.color-row{display:flex;align-items:center;gap:0.5rem;margin-top:0.25rem}
+.color-picker{width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);cursor:pointer;padding:2px;background:var(--white)}
+.color-hex{flex:1;padding:0.5rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.875rem;font-family:monospace;color:var(--ink);background:var(--white);outline:none;transition:border-color .15s}
+.color-hex:focus{border-color:var(--sage)}
 
 table{width:100%;border-collapse:collapse}
 th{text-align:left;padding:0.75rem 1.5rem;font-size:0.7rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border)}
@@ -132,12 +132,18 @@ tr:last-child td{border-bottom:none}
       <div class="setting-block">
         <div class="setting-title">Link colour</div>
         <div class="setting-desc">Underline on highlighted phrases in your article</div>
-        <div class="color-swatches" id="color-swatches"></div>
+        <div class="color-row">
+          <input type="color" class="color-picker" id="color-picker" oninput="onColorInput('color','widget_color',this.value)">
+          <input type="text" class="color-hex" id="color-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('color','widget_color','color-picker',this.value)">
+        </div>
       </div>
       <div class="setting-block">
         <div class="setting-title">Widget colour</div>
         <div class="setting-desc">Button colour inside the expert popup</div>
-        <div class="color-swatches" id="accent-swatches"></div>
+        <div class="color-row">
+          <input type="color" class="color-picker" id="accent-picker" oninput="onColorInput('accent','accent_color',this.value)">
+          <input type="text" class="color-hex" id="accent-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('accent','accent_color','accent-picker',this.value)">
+        </div>
       </div>
       <div class="setting-block">
         <div class="setting-title">Widget size</div>
@@ -196,8 +202,6 @@ tr:last-child td{border-bottom:none}
 <script>
 const params = new URLSearchParams(location.search);
 const PUB = params.get('pub') || '';
-const COLORS = ['#e6a820','#3d7a5f','#3b82f6','#8b5cf6','#f43f5e','#64748b'];
-const COLOR_NAMES = ['Gold','Sage','Blue','Purple','Rose','Slate'];
 
 let settings = { color: '#e6a820', accent: '#e6a820', size: 'medium', power: 'moderate', sensitivity: 'balanced' };
 
@@ -255,12 +259,10 @@ async function loadDashboard() {
 }
 
 function renderSettings() {
-  document.getElementById('color-swatches').innerHTML = COLORS.map((c, i) =>
-    `<div class="swatch${settings.color===c?' active':''}" style="background:${c}" title="${COLOR_NAMES[i]}" onclick="pickColor('highlight','widget_color','color-swatches','${c}',this)"></div>`
-  ).join('');
-  document.getElementById('accent-swatches').innerHTML = COLORS.map((c, i) =>
-    `<div class="swatch${settings.accent===c?' active':''}" style="background:${c}" title="${COLOR_NAMES[i]}" onclick="pickColor('accent','accent_color','accent-swatches','${c}',this)"></div>`
-  ).join('');
+  document.getElementById('color-picker').value = settings.color;
+  document.getElementById('color-hex').value = settings.color;
+  document.getElementById('accent-picker').value = settings.accent;
+  document.getElementById('accent-hex').value = settings.accent;
   // Buttons
   setActive('size-group', settings.size);
   setActive('power-group', settings.power);
@@ -280,11 +282,18 @@ function pick(type, el) {
   saveSetting(type === 'power' ? 'match_power' : type === 'sensitivity' ? 'match_sensitivity' : 'widget_' + type, el.dataset.val);
 }
 
-function pickColor(settingKey, field, groupId, color, el) {
-  settings[settingKey] = color;
-  document.getElementById(groupId).querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
-  el.classList.add('active');
-  saveSetting(field, color);
+function onColorInput(settingKey, field, value) {
+  settings[settingKey] = value;
+  const hexId = settingKey === 'color' ? 'color-hex' : 'accent-hex';
+  document.getElementById(hexId).value = value;
+  saveSetting(field, value);
+}
+
+function onHexInput(settingKey, field, pickerId, value) {
+  if (!/^#[0-9a-fA-F]{6}$/.test(value)) return;
+  settings[settingKey] = value;
+  document.getElementById(pickerId).value = value;
+  saveSetting(field, value);
 }
 
 async function saveSetting(field, value) {
