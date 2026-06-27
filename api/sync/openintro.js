@@ -152,15 +152,12 @@ export default async function handler(req, res) {
 
     const allExperts = await fetchAllExperts();
 
-    const sample = allExperts[0] || {};
-    const debugSample = Object.keys(sample);
-
     const publicExperts = allExperts.filter(e => {
       const status = e['Profile status'] || e['Profile_status'] || '';
       return status.includes('Public')
-        && e['Visible on OpenIntro'] === true
-        && e['n-adminCheck'] === 'approved'
-        && e['Add to Chatbot'] === true;
+        && e['Visible-on-OpenIntro'] === true
+        && e['n-AdminCheck'] === 'approved'
+        && e['Add to chatbot'] === true;
     });
 
     const activeIds = [];
@@ -225,7 +222,6 @@ export default async function handler(req, res) {
       total_fetched: allExperts.length,
       after_filters: publicExperts.length,
       upserted,
-      debug_sample: debugSample,
     });
   } catch (err) {
     console.error('Sync error:', err);

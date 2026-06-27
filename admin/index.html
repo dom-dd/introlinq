@@ -365,8 +365,12 @@ async function runSync() {
   document.getElementById('sync-status').textContent = 'Syncing...';
   const res = await fetch('/api/sync/openintro?key=il2026');
   const data = await res.json();
-  document.getElementById('sync-status').textContent = JSON.stringify(data, null, 2);
-  if (data.success) loadStats();
+  if (data.success) {
+    document.getElementById('sync-status').textContent = `Done — ${data.upserted} experts synced (${data.after_filters} passed filters of ${data.total_fetched} total)`;
+    loadStats();
+  } else {
+    document.getElementById('sync-status').textContent = 'Sync failed: ' + (data.error || 'unknown error');
+  }
 }
 
 function copyEmbed(slug) {
