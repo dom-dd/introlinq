@@ -15,6 +15,65 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: auth(req) });
   }
 
+  // Bookings webhook — authenticated via secret header, not IP
+  if (resource === 'bookings' && req.method === 'POST') {
+    if (req.headers['x-webhook-secret'] !== process.env.BOOKINGS_WEBHOOK_SECRET) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const sql = neon(process.env.DATABASE_URL);
+    await sql`CREATE TABLE IF NOT EXISTS bookings (
+      id SERIAL PRIMARY KEY,
+      entry_type TEXT DEFAULT 'webhook',
+      provider TEXT NOT NULL,
+      publisher TEXT,
+      expert_name TEXT,
+      booking_id TEXT UNIQUE,
+      booking_amount DECIMAL,
+      booking_currency TEXT DEFAULT 'GBP',
+      commission_amount DECIMAL,
+      commission_currency TEXT DEFAULT 'GBP',
+      revenue_share DECIMAL,
+      publisher_payout DECIMAL,
+      introlinq_margin DECIMAL,
+      raw_payload JSONB,
+      booked_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`;
+
+    const { click_id, booking_id, provider = 'openintro', expert_name,
+            booking_amount, booking_currency = 'GBP',
+            commission_amount, commission_currency = 'GBP', booked_at } = req.body;
+
+    // Look up publisher from click_id
+    let publisher = req.body.publisher || null;
+    if (!publisher && click_id) {
+      const [click] = await sql`SELECT publisher FROM click_logs WHERE click_id = ${click_id} LIMIT 1`.catch(() => [null]);
+      if (click) publisher = click.publisher;
+    }
+
+    // Get publisher's revenue share
+    let revenue_share = 0.70;
+    if (publisher) {
+      const [pub] = await sql`SELECT revenue_share FROM publishers WHERE slug = ${publisher} LIMIT 1`.catch(() => [null]);
+      if (pub?.revenue_share) revenue_share = parseFloat(pub.revenue_share);
+    }
+
+    const publisher_payout = commission_amount ? Math.round(commission_amount * revenue_share * 100) / 100 : null;
+    const introlinq_margin = commission_amount ? Math.round((commission_amount - publisher_payout) * 100) / 100 : null;
+
+    await sql`INSERT INTO bookings
+      (entry_type, provider, publisher, expert_name, booking_id, booking_amount, booking_currency,
+       commission_amount, commission_currency, revenue_share, publisher_payout, introlinq_margin,
+       raw_payload, booked_at)
+      VALUES ('webhook', ${provider}, ${publisher}, ${expert_name || null}, ${booking_id || null},
+              ${booking_amount || null}, ${booking_currency}, ${commission_amount || null},
+              ${commission_currency}, ${revenue_share}, ${publisher_payout}, ${introlinq_margin},
+              ${JSON.stringify(req.body)}, ${booked_at ? new Date(booked_at) : new Date()})
+      ON CONFLICT (booking_id) DO NOTHING`;
+
+    return res.status(200).json({ ok: true, publisher, publisher_payout, introlinq_margin });
+  }
+
   if (!auth(req)) return res.status(403).json({ error: 'Forbidden' });
 
   const sql = neon(process.env.DATABASE_URL);
@@ -58,6 +117,7 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS widget_size TEXT DEFAULT 'medium'`;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS contact_first_name TEXT`;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS contact_last_name TEXT`;
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS revenue_share DECIMAL DEFAULT 0.70`;
 
     if (req.method === 'GET') {
       const publishers = await sql`SELECT * FROM publishers ORDER BY created_at DESC`;
@@ -76,15 +136,15 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { name, email, slug, domain, notes, contact_first_name, contact_last_name } = req.body;
+      const { name, email, slug, domain, notes, contact_first_name, contact_last_name, revenue_share } = req.body;
       if (!name || !email || !slug) {
         return res.status(400).json({ error: 'name, email and slug are required' });
       }
       const clean = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
       try {
         const [pub] = await sql`
-          INSERT INTO publishers (name, email, slug, domain, notes, contact_first_name, contact_last_name)
-          VALUES (${name}, ${email}, ${clean}, ${domain || null}, ${notes || null}, ${contact_first_name || null}, ${contact_last_name || null})
+          INSERT INTO publishers (name, email, slug, domain, notes, contact_first_name, contact_last_name, revenue_share)
+          VALUES (${name}, ${email}, ${clean}, ${domain || null}, ${notes || null}, ${contact_first_name || null}, ${contact_last_name || null}, ${revenue_share ?? 0.70})
           RETURNING *
         `;
 
@@ -140,6 +200,56 @@ export default async function handler(req, res) {
         sql`DELETE FROM magic_links WHERE email = ${pub.email}`.catch(() => {}),
       ]);
       return res.status(200).json({ ok: true });
+    }
+  }
+
+  // Bookings — admin view + manual entry
+  if (resource === 'bookings') {
+    await sql`CREATE TABLE IF NOT EXISTS bookings (
+      id SERIAL PRIMARY KEY, entry_type TEXT DEFAULT 'manual', provider TEXT,
+      publisher TEXT, expert_name TEXT, booking_id TEXT UNIQUE,
+      booking_amount DECIMAL, booking_currency TEXT DEFAULT 'GBP',
+      commission_amount DECIMAL, commission_currency TEXT DEFAULT 'GBP',
+      revenue_share DECIMAL, publisher_payout DECIMAL, introlinq_margin DECIMAL,
+      raw_payload JSONB, booked_at TIMESTAMPTZ, created_at TIMESTAMPTZ DEFAULT NOW()
+    )`.catch(() => {});
+
+    if (req.method === 'GET') {
+      const bookings = await sql`
+        SELECT b.*, p.name AS publisher_name
+        FROM bookings b
+        LEFT JOIN publishers p ON p.slug = b.publisher
+        ORDER BY b.booked_at DESC LIMIT 100
+      `;
+      const [totals] = await sql`
+        SELECT COUNT(*)::int AS count,
+               COALESCE(SUM(commission_amount),0)::float AS total_commission,
+               COALESCE(SUM(publisher_payout),0)::float AS total_payouts,
+               COALESCE(SUM(introlinq_margin),0)::float AS total_margin
+        FROM bookings
+      `;
+      return res.status(200).json({ bookings, totals });
+    }
+
+    if (req.method === 'POST') {
+      const { provider = 'openintro', publisher, expert_name, booking_amount,
+              booking_currency = 'GBP', commission_amount, commission_currency = 'GBP',
+              booked_at, booking_id } = req.body;
+
+      const [pub] = await sql`SELECT revenue_share FROM publishers WHERE slug = ${publisher} LIMIT 1`.catch(() => [null]);
+      const revenue_share = parseFloat(pub?.revenue_share || 0.70);
+      const publisher_payout = commission_amount ? Math.round(commission_amount * revenue_share * 100) / 100 : null;
+      const introlinq_margin = commission_amount ? Math.round((commission_amount - publisher_payout) * 100) / 100 : null;
+
+      await sql`INSERT INTO bookings
+        (entry_type, provider, publisher, expert_name, booking_id, booking_amount, booking_currency,
+         commission_amount, commission_currency, revenue_share, publisher_payout, introlinq_margin, booked_at)
+        VALUES ('manual', ${provider}, ${publisher}, ${expert_name || null}, ${booking_id || null},
+                ${booking_amount || null}, ${booking_currency}, ${commission_amount || null},
+                ${commission_currency}, ${revenue_share}, ${publisher_payout}, ${introlinq_margin},
+                ${booked_at ? new Date(booked_at) : new Date()})
+        ON CONFLICT (booking_id) DO NOTHING`;
+      return res.status(201).json({ ok: true });
     }
   }
 

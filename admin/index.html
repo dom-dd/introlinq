@@ -204,6 +204,14 @@ tr:hover td{background:rgba(0,0,0,0.01)}
           <div class="form-group"></div>
         </div>
 
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Revenue share (publisher %)</label>
+            <input class="form-input" id="f-revenue-share" type="number" min="0" max="100" value="70" placeholder="70">
+          </div>
+          <div class="form-group"></div>
+        </div>
+
         <div class="form-group" style="margin-bottom:0.75rem">
           <label class="form-label">Notes (optional)</label>
           <input class="form-input" id="f-notes">
@@ -231,6 +239,76 @@ tr:hover td{background:rgba(0,0,0,0.01)}
           </thead>
           <tbody id="publishers-tbody">
             <tr><td colspan="7" class="empty">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Bookings -->
+    <div class="section">
+      <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="section-title">Bookings</div>
+          <div class="section-sub" id="bookings-totals">Loading...</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="toggleBookingForm()">+ Log booking</button>
+      </div>
+      <div id="booking-form" style="display:none;padding:1.5rem;border-bottom:1px solid var(--border);background:var(--white)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Publisher slug *</label>
+            <input class="form-input" id="bf-publisher" placeholder="little-green-agency">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Expert name</label>
+            <input class="form-input" id="bf-expert">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Booking amount</label>
+            <input class="form-input" id="bf-amount" type="number" step="0.01">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Commission received</label>
+            <input class="form-input" id="bf-commission" type="number" step="0.01">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Currency</label>
+            <select class="form-input" id="bf-currency">
+              <option value="GBP">GBP</option>
+              <option value="EUR">EUR</option>
+              <option value="USD">USD</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Booking date</label>
+            <input class="form-input" id="bf-date" type="date">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="logBooking()">Save booking</button>
+          <button class="btn btn-ghost" onclick="toggleBookingForm()">Cancel</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="min-width:700px">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Publisher</th>
+              <th>Expert</th>
+              <th>Booking</th>
+              <th>Commission</th>
+              <th>Publisher payout</th>
+              <th>Our margin</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody id="bookings-tbody">
+            <tr><td colspan="8" class="empty">Loading...</td></tr>
           </tbody>
         </table>
       </div>
@@ -270,6 +348,7 @@ function showAdmin() {
   document.getElementById('admin-view').style.display = 'block';
   loadStats();
   loadPublishers();
+  loadBookings();
 }
 
 async function loadStats() {
@@ -300,6 +379,7 @@ async function loadPublishers() {
         <div class="td-name">${esc(p.name)}</div>
         <div style="font-size:0.75rem;color:var(--ink-muted)">${esc(p.email)}</div>
         ${(p.contact_first_name || p.contact_last_name) ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px;font-style:italic">${esc([p.contact_first_name, p.contact_last_name].filter(Boolean).join(' '))}</div>` : ''}
+        <div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px">${Math.round((p.revenue_share||0.70)*100)}% rev share</div>
       </td>
       <td>
         <div style="display:flex;gap:6px;align-items:center">
@@ -360,6 +440,7 @@ async function addPublisher() {
   const slug = document.getElementById('f-slug').value.trim();
   const domain = document.getElementById('f-domain').value.trim();
   const notes = document.getElementById('f-notes').value.trim();
+  const revenue_share = parseFloat(document.getElementById('f-revenue-share').value || 70) / 100;
   const errEl = document.getElementById('form-error');
   errEl.style.display = 'none';
 
@@ -372,7 +453,7 @@ async function addPublisher() {
   const res = await fetch('/api/admin?resource=publishers', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest'},
-    body: JSON.stringify({ name, email, slug, domain, notes, contact_first_name: firstName, contact_last_name: lastName })
+    body: JSON.stringify({ name, email, slug, domain, notes, contact_first_name: firstName, contact_last_name: lastName, revenue_share })
   });
   const data = await res.json();
 
@@ -424,6 +505,61 @@ async function togglePublisher(id, active) {
   });
   loadPublishers();
   loadStats();
+}
+
+async function loadBookings() {
+  const res = await fetch('/api/admin?resource=bookings', { headers: { 'x-requested-with': 'xmlhttprequest' } });
+  const d = await res.json();
+  const t = d.totals || {};
+  const fmt = (n, c='GBP') => n ? new Intl.NumberFormat('en-GB', { style:'currency', currency: c }).format(n) : '—';
+  document.getElementById('bookings-totals').textContent =
+    `${t.count || 0} bookings · ${fmt(t.total_commission)} commission received · ${fmt(t.total_payouts)} owed to publishers · ${fmt(t.total_margin)} margin`;
+  const tbody = document.getElementById('bookings-tbody');
+  if (!d.bookings?.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">No bookings yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = d.bookings.map(b => `
+    <tr>
+      <td style="white-space:nowrap">${new Date(b.booked_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</td>
+      <td><div style="font-weight:500">${esc(b.publisher_name || b.publisher || '—')}</div><div style="font-size:0.72rem;color:var(--ink-muted)">${esc(b.publisher || '')}</div></td>
+      <td>${esc(b.expert_name || '—')}</td>
+      <td>${b.booking_amount ? new Intl.NumberFormat('en-GB',{style:'currency',currency:b.booking_currency||'GBP'}).format(b.booking_amount) : '—'}</td>
+      <td>${b.commission_amount ? new Intl.NumberFormat('en-GB',{style:'currency',currency:b.commission_currency||'GBP'}).format(b.commission_amount) : '—'}</td>
+      <td style="color:var(--sage);font-weight:500">${b.publisher_payout ? new Intl.NumberFormat('en-GB',{style:'currency',currency:b.commission_currency||'GBP'}).format(b.publisher_payout) : '—'}</td>
+      <td style="font-weight:500">${b.introlinq_margin ? new Intl.NumberFormat('en-GB',{style:'currency',currency:b.commission_currency||'GBP'}).format(b.introlinq_margin) : '—'}</td>
+      <td><span class="badge ${b.entry_type === 'webhook' ? 'badge-active' : ''}" style="${b.entry_type !== 'webhook' ? 'background:#f4f4f8;color:var(--ink-muted)' : ''}">${b.entry_type}</span></td>
+    </tr>
+  `).join('');
+}
+
+function toggleBookingForm() {
+  const f = document.getElementById('booking-form');
+  const open = f.style.display === 'block';
+  f.style.display = open ? 'none' : 'block';
+  if (!open) document.getElementById('bf-date').valueAsDate = new Date();
+}
+
+async function logBooking() {
+  const body = {
+    publisher: document.getElementById('bf-publisher').value.trim(),
+    expert_name: document.getElementById('bf-expert').value.trim(),
+    booking_amount: parseFloat(document.getElementById('bf-amount').value) || null,
+    commission_amount: parseFloat(document.getElementById('bf-commission').value) || null,
+    booking_currency: document.getElementById('bf-currency').value,
+    commission_currency: document.getElementById('bf-currency').value,
+    booked_at: document.getElementById('bf-date').value,
+    booking_id: 'manual-' + Date.now(),
+  };
+  if (!body.publisher) return;
+  await fetch('/api/admin?resource=bookings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify(body)
+  });
+  document.getElementById('booking-form').style.display = 'none';
+  toast('Booking logged');
+  loadBookings();
 }
 
 async function runSync() {

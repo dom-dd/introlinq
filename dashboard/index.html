@@ -145,7 +145,7 @@ tr:last-child td{border-bottom:none}
 
 <div class="body" id="main" style="display:none">
 
-  <div class="stats-grid">
+  <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
     <div class="stat-card">
       <div class="stat-label">Impressions</div>
       <div class="stat-value" id="stat-articles">-</div>
@@ -162,9 +162,14 @@ tr:last-child td{border-bottom:none}
       <div class="stat-sub">click-through rate</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Top expert</div>
-      <div class="stat-value" id="stat-top" style="font-size:1rem;padding-top:0.4rem;line-height:1.3">-</div>
-      <div class="stat-sub">most suggested on your site</div>
+      <div class="stat-label">Bookings</div>
+      <div class="stat-value" id="stat-bookings">-</div>
+      <div class="stat-sub">confirmed sessions</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Earnings</div>
+      <div class="stat-value" id="stat-earnings" style="font-size:1.4rem;padding-top:0.2rem">-</div>
+      <div class="stat-sub">your total payout</div>
     </div>
   </div>
 
@@ -345,7 +350,13 @@ async function loadDashboard() {
   const expertCount = {};
   d.logs.forEach(l => (l.expert_names || []).forEach(n => { expertCount[n] = (expertCount[n] || 0) + 1; }));
   const top = Object.entries(expertCount).sort((a,b) => b[1]-a[1])[0];
-  document.getElementById('stat-top').textContent = top ? top[0] : '—';
+  document.getElementById('stat-top') && (document.getElementById('stat-top').textContent = top ? top[0] : '—');
+  const bk = d.bookings || {};
+  document.getElementById('stat-bookings').textContent = (bk.count || 0).toLocaleString();
+  const payout = bk.total_payout || 0;
+  document.getElementById('stat-earnings').textContent = payout > 0
+    ? new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(payout)
+    : '—';
 
   // Charts
   window._chartData = d;

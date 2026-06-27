@@ -131,11 +131,19 @@ export default async function handler(req, res) {
     const [publisher] = await sql`
       SELECT id, name, slug, domain, created_at,
              match_power, match_sensitivity, widget_color, accent_color, widget_size,
-             COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners
+             COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners,
+             COALESCE(revenue_share, 0.70) AS revenue_share
       FROM publishers WHERE slug = ${pub} AND active = true LIMIT 1
     `;
 
     if (!publisher) return res.status(404).json({ error: 'Publisher not found' });
+
+    const [bookingSummary] = await sql`
+      SELECT COUNT(*)::int AS count,
+             COALESCE(SUM(publisher_payout),0)::float AS total_payout,
+             COALESCE(SUM(booking_amount),0)::float AS total_bookings
+      FROM bookings WHERE publisher = ${pub}
+    `.catch(() => [{ count: 0, total_payout: 0, total_bookings: 0 }]);
 
     const [logs, clickData, providers, expertCounts, totalImpressions,
            clicksByDay, impressionsByDay, clicksByWeek, impressionsByWeek,
@@ -170,6 +178,7 @@ export default async function handler(req, res) {
       clicks: clickData[0]?.total || 0,
       total_impressions: totalImpressions[0]?.total || 0,
       partners: partnersWithStatus,
+      bookings: bookingSummary,
       clicks_by_day: clicksByDay,
       impressions_by_day: impressionsByDay,
       clicks_by_week: clicksByWeek,
