@@ -152,16 +152,13 @@ export default async function handler(req, res) {
 
     const allExperts = await fetchAllExperts();
 
-    // Debug: log filter field values from first expert
-    if (allExperts.length > 0) {
-      const sample = allExperts[0];
-      console.log('SYNC DEBUG - sample expert fields:', JSON.stringify({
-        'Profile status': sample['Profile status'],
-        'Visible on OpenIntro': sample['Visible on OpenIntro'],
-        'n-adminCheck': sample['n-adminCheck'],
-        'Add to Chatbot': sample['Add to Chatbot'],
-      }));
-    }
+    const sample = allExperts[0] || {};
+    const debugSample = {
+      'Profile status': sample['Profile status'],
+      'Visible on OpenIntro': sample['Visible on OpenIntro'],
+      'n-adminCheck': sample['n-adminCheck'],
+      'Add to Chatbot': sample['Add to Chatbot'],
+    };
 
     const publicExperts = allExperts.filter(e => {
       const status = e['Profile status'] || e['Profile_status'] || '';
@@ -170,8 +167,6 @@ export default async function handler(req, res) {
         && e['n-adminCheck'] === 'approved'
         && e['Add to Chatbot'] === true;
     });
-
-    console.log(`SYNC DEBUG - total: ${allExperts.length}, after filters: ${publicExperts.length}`);
 
     const activeIds = [];
     let upserted = 0;
@@ -233,8 +228,9 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       total_fetched: allExperts.length,
-      public_only: publicExperts.length,
+      after_filters: publicExperts.length,
       upserted,
+      debug_sample: debugSample,
     });
   } catch (err) {
     console.error('Sync error:', err);
