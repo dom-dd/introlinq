@@ -137,7 +137,6 @@ Return only valid JSON, no other text:
     res.status(200).json({ matches: enriched, config: pubConfig });
 
     // Log in background after response is sent
-    const publisher = req.body.publisher || null;
     const preview = article.slice(0, 120).replace(/\s+/g, ' ');
     const phrases = enriched.map(m => m.phrase);
     const expertNames = enriched.map(m => m.expert.name);
