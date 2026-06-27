@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Log in · IntroLinq</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--gold:#e6a820;--ink:#1a1a2e;--ink-muted:#8888a8;--cream:#faf8f4;--white:#fff;--border:rgba(26,26,46,0.10);--red:#dc2626}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+.card{background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden;width:100%;max-width:400px}
+.card-header{background:var(--ink);padding:28px 32px}
+.logo{font-family:'DM Serif Display',serif;font-size:1.25rem;color:var(--white)}
+.logo span{color:var(--gold)}
+.card-body{padding:32px}
+.title{font-size:1rem;font-weight:600;color:var(--ink);margin-bottom:6px}
+.sub{font-size:0.875rem;color:var(--ink-muted);line-height:1.6;margin-bottom:24px}
+.input{width:100%;padding:0.75rem 1rem;border:1.5px solid var(--border);border-radius:10px;font-size:0.875rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--white);outline:none;transition:border-color .15s}
+.input:focus{border-color:var(--ink)}
+.btn{display:block;width:100%;margin-top:12px;background:var(--ink);color:var(--white);border:none;padding:0.875rem;border-radius:100px;font-size:0.875rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .15s}
+.btn:hover{opacity:0.85}
+.btn:disabled{opacity:0.5;cursor:default}
+.msg{margin-top:16px;font-size:0.8125rem;text-align:center;line-height:1.5}
+.msg-success{color:#16a34a}
+.msg-error{color:var(--red)}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-header">
+    <div class="logo">Intro<span>Linq</span></div>
+  </div>
+  <div class="card-body">
+    <div id="form-view">
+      <p class="title">Access your dashboard</p>
+      <p class="sub">Enter your email and we'll send you a login link.</p>
+      <input class="input" type="email" id="email-input" placeholder="you@example.com" autocomplete="email">
+      <button class="btn" id="submit-btn" onclick="requestLink()">Send login link</button>
+      <div class="msg" id="msg"></div>
+    </div>
+    <div id="success-view" style="display:none;text-align:center">
+      <div style="font-size:2rem;margin-bottom:12px">✉️</div>
+      <p class="title">Check your email</p>
+      <p class="sub" style="margin-bottom:0">We've sent a login link to <strong id="sent-to"></strong>. It expires in 15 minutes.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const error = params.get('error');
+if (error) {
+  const msgs = { expired: 'This login link has expired. Request a new one below.', notfound: 'No account found for that email.', used: 'This login link has already been used. Request a new one below.' };
+  document.getElementById('msg').textContent = msgs[error] || 'Something went wrong.';
+  document.getElementById('msg').className = 'msg msg-error';
+}
+
+document.getElementById('email-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') requestLink();
+});
+
+async function requestLink() {
+  const email = document.getElementById('email-input').value.trim();
+  if (!email) return;
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+
+  await fetch('/api/auth', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+
+  document.getElementById('sent-to').textContent = email;
+  document.getElementById('form-view').style.display = 'none';
+  document.getElementById('success-view').style.display = 'block';
+}
+</script>
+</body>
+</html>

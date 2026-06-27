@@ -253,13 +253,14 @@ const PUB = params.get('pub') || '';
 let settings = { color: '#e6a820', accent: '#e6a820', size: 'medium', power: 'moderate', sensitivity: 'balanced' };
 
 if (!PUB) {
-  document.getElementById('not-found').style.display = 'flex';
+  window.location.href = '/login';
 } else {
   loadDashboard();
 }
 
 async function loadDashboard() {
-  const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB));
+  const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), { credentials: 'include' });
+  if (res.status === 401) { window.location.href = '/login'; return; }
   if (!res.ok) { document.getElementById('not-found').style.display = 'flex'; return; }
   const d = await res.json();
 
@@ -364,8 +365,10 @@ async function saveSetting(field, value) {
   const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify({ [field]: value })
   });
+  if (res.status === 401) { window.location.href = '/login'; return; }
   if (res.ok) toast('Saved');
 }
 

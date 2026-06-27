@@ -2,16 +2,38 @@ import { neon } from '@neondatabase/serverless';
 
 let clickTableReady = false;
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+function getSessionToken(req) {
+  const cookies = req.headers.cookie || '';
+  const match = cookies.match(/il_session=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
 
+export default async function handler(req, res) {
   const { pub, provider } = req.query;
   if (!pub) return res.status(400).json({ error: 'Missing pub' });
 
   const sql = neon(process.env.DATABASE_URL);
+
+  // POST: click tracking from widget (cross-origin, no session needed)
+  if (req.method === 'POST') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // GET and PATCH: require valid session cookie
+  if (req.method === 'GET' || req.method === 'PATCH') {
+    const sessionToken = getSessionToken(req);
+    if (!sessionToken) return res.status(401).json({ error: 'Not authenticated' });
+    const [session] = await sql`
+      SELECT publisher_slug FROM sessions
+      WHERE token = ${sessionToken} AND expires_at > NOW()
+    `.catch(() => [null]);
+    if (!session || session.publisher_slug !== pub) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+  }
 
   // Click tracking — fired by widget when Book button is clicked
   if (req.method === 'POST') {

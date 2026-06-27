@@ -1,4 +1,5 @@
 import { neon } from '@neondatabase/serverless';
+import { createMagicToken } from './auth.js';
 
 function auth(req) {
   const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress;
@@ -73,6 +74,22 @@ export default async function handler(req, res) {
           VALUES (${name}, ${email}, ${clean}, ${domain || null}, ${notes || null})
           RETURNING *
         `;
+
+        // Send welcome email with magic link (7-day expiry)
+        createMagicToken(sql, email.toLowerCase(), 7 * 24 * 60 * 60 * 1000).then(token => {
+          const link = `https://www.introlinq.com/api/auth?token=${token}`;
+          fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              from: 'IntroLinq <hello@introlinq.com>',
+              to: email,
+              subject: `Welcome to IntroLinq, ${name} — your dashboard is ready`,
+              html: welcomeEmail(name, link),
+            })
+          });
+        }).catch(err => console.error('Welcome email failed:', err));
+
         return res.status(201).json(pub);
       } catch (err) {
         if (err.message.includes('unique')) {
@@ -99,4 +116,20 @@ export default async function handler(req, res) {
   }
 
   return res.status(404).json({ error: 'Unknown resource' });
+}
+
+function welcomeEmail(name, link) {
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#faf8f4;font-family:'Inter',system-ui,sans-serif">
+<div style="max-width:480px;margin:40px auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid rgba(26,26,46,0.08)">
+  <div style="background:#1a1a2e;padding:28px 32px">
+    <div style="font-family:Georgia,serif;font-size:1.25rem;color:#fff">Intro<span style="color:#e6a820">Linq</span></div>
+  </div>
+  <div style="padding:32px">
+    <p style="margin:0 0 8px;font-size:1rem;font-weight:600;color:#1a1a2e">Welcome, ${name} 👋</p>
+    <p style="margin:0 0 24px;font-size:0.875rem;color:#8888a8;line-height:1.6">Your IntroLinq dashboard is ready. Click below to access it — this link is valid for 7 days.</p>
+    <a href="${link}" style="display:block;background:#1a1a2e;color:#fff;text-align:center;padding:14px;border-radius:100px;font-size:0.875rem;font-weight:600;text-decoration:none">Access my dashboard →</a>
+    <p style="margin:20px 0 0;font-size:0.75rem;color:#8888a8;text-align:center">Once logged in, you'll find your embed code, widget settings, and stats all in one place.</p>
+  </div>
+</div>
+</body></html>`;
 }
