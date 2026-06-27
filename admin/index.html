@@ -88,15 +88,10 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 .badge-active{background:var(--green-light);color:var(--green)}
 .badge-inactive{background:var(--red-light);color:var(--red)}
 
-/* Settings selects */
-.setting-select{font-size:0.7rem;font-family:'Inter',sans-serif;color:var(--ink);border:1px solid var(--border);border-radius:6px;padding:0.2rem 0.4rem;background:var(--cream);cursor:pointer;width:100%}
-.setting-select:focus{outline:none;border-color:var(--sage)}
-.setting-group{display:flex;flex-direction:column;gap:4px;min-width:110px}
-.setting-label{font-size:0.65rem;color:var(--ink-muted);font-weight:500;text-transform:uppercase;letter-spacing:0.04em}
-.color-swatches{display:flex;gap:5px;flex-wrap:wrap;margin-top:2px}
-.swatch{width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .1s}
-.swatch:hover{transform:scale(1.2)}
-.swatch.active{border-color:var(--ink)}
+/* Settings values (read-only) */
+.pub-settings{display:flex;align-items:center;gap:6px}
+.set-dot{width:13px;height:13px;border-radius:50%;flex-shrink:0;border:1.5px solid rgba(0,0,0,0.1)}
+.set-val{font-size:0.75rem;color:var(--ink-soft)}
 
 /* Embed code */
 .embed-code{font-family:monospace;font-size:0.75rem;color:var(--sage);background:var(--sage-light);padding:0.375rem 0.625rem;border-radius:6px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:320px;display:block;border:none;text-align:left;transition:background 0.15s}
@@ -292,36 +287,10 @@ async function loadPublishers() {
         </button>
       </td>
       <td>
-        <div class="setting-group">
-          <div>
-            <div class="setting-label">Power</div>
-            <select class="setting-select" onchange="updateSetting(${p.id}, 'match_power', this.value)">
-              <option value="light" ${p.match_power==='light'?'selected':''}>Light (1-2)</option>
-              <option value="moderate" ${p.match_power==='moderate'||!p.match_power?'selected':''}>Moderate (3-4)</option>
-              <option value="heavy" ${p.match_power==='heavy'?'selected':''}>Heavy (5-10)</option>
-              <option value="unlimited" ${p.match_power==='unlimited'?'selected':''}>Unlimited</option>
-            </select>
-          </div>
-          <div>
-            <div class="setting-label">Sensitivity</div>
-            <select class="setting-select" onchange="updateSetting(${p.id}, 'match_sensitivity', this.value)">
-              <option value="strict" ${p.match_sensitivity==='strict'?'selected':''}>Strict</option>
-              <option value="balanced" ${p.match_sensitivity==='balanced'||!p.match_sensitivity?'selected':''}>Balanced</option>
-              <option value="open" ${p.match_sensitivity==='open'?'selected':''}>Open</option>
-            </select>
-          </div>
-          <div>
-            <div class="setting-label">Colour</div>
-            <div class="color-swatches">${['#e6a820','#3d7a5f','#3b82f6','#8b5cf6','#f43f5e','#64748b'].map(c=>`<div class="swatch${(p.widget_color||'#e6a820')===c?' active':''}" style="background:${c}" title="${c}" onclick="pickColor(${p.id}, '${c}', this)"></div>`).join('')}</div>
-          </div>
-          <div>
-            <div class="setting-label">Size</div>
-            <select class="setting-select" onchange="updateSetting(${p.id}, 'widget_size', this.value)">
-              <option value="small" ${p.widget_size==='small'?'selected':''}>Small</option>
-              <option value="medium" ${p.widget_size==='medium'||!p.widget_size?'selected':''}>Medium</option>
-              <option value="large" ${p.widget_size==='large'?'selected':''}>Large</option>
-            </select>
-          </div>
+        <div class="pub-settings">
+          <div class="set-dot" style="background:${p.widget_color||'#e6a820'}" title="Link colour: ${p.widget_color||'#e6a820'}"></div>
+          <div class="set-dot" style="background:${p.accent_color||p.widget_color||'#e6a820'}" title="Widget colour: ${p.accent_color||'#e6a820'}"></div>
+          <span class="set-val">${p.match_power||'moderate'} · ${p.match_sensitivity||'balanced'} · ${p.widget_size||'medium'}</span>
         </div>
       </td>
       <td><span class="badge ${p.active ? 'badge-active' : 'badge-inactive'}">${p.active ? 'Active' : 'Inactive'}</span></td>
@@ -381,20 +350,6 @@ async function addPublisher() {
   loadStats();
 }
 
-function pickColor(id, color, el) {
-  el.closest('.color-swatches').querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
-  el.classList.add('active');
-  updateSetting(id, 'widget_color', color);
-}
-
-async function updateSetting(id, field, value) {
-  await fetch('/api/admin?resource=publishers', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
-    body: JSON.stringify({ id, [field]: value })
-  });
-  toast('Saved');
-}
 
 async function togglePublisher(id, active) {
   await fetch('/api/admin?resource=publishers', {
@@ -404,12 +359,6 @@ async function togglePublisher(id, active) {
   });
   loadPublishers();
   loadStats();
-}
-
-function copyEmbed(slug) {
-  const code = `<script src="https://introlinq.com/widget.js" data-publisher="${slug}"><\/script>`;
-  navigator.clipboard.writeText(code);
-  toast('Embed code copied');
 }
 
 async function runSync() {

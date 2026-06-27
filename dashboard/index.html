@@ -44,8 +44,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .copy-btn{background:var(--sage);color:var(--white);border:none;padding:0.6rem 1.25rem;border-radius:100px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:opacity .15s;flex-shrink:0}
 .copy-btn:hover{opacity:0.85}
 
-/* Settings grid */
-.settings-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.25rem;padding:1.5rem}
+/* Settings layout */
+.settings-cols{display:flex;gap:2rem;padding:1.5rem}
+.settings-col{display:flex;flex-direction:column;gap:1.5rem;flex:1}
+.settings-col-colors{flex:0 0 200px}
 .setting-block{display:flex;flex-direction:column;gap:0.5rem}
 .setting-title{font-size:0.8125rem;font-weight:600;color:var(--ink)}
 .setting-desc{font-size:0.75rem;color:var(--ink-muted);margin-top:-0.25rem}
@@ -128,49 +130,53 @@ tr:last-child td{border-bottom:none}
       <div class="section-title">Widget settings</div>
       <div class="section-sub">Customise how the widget looks and behaves on your site — changes save instantly</div>
     </div>
-    <div class="settings-grid">
-      <div class="setting-block">
-        <div class="setting-title">Link colour</div>
-        <div class="setting-desc">Underline on highlighted phrases in your article</div>
-        <div class="color-row">
-          <input type="color" class="color-picker" id="color-picker" oninput="onColorInput('color','widget_color',this.value)">
-          <input type="text" class="color-hex" id="color-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('color','widget_color','color-picker',this.value)">
+    <div class="settings-cols">
+      <div class="settings-col">
+        <div class="setting-block">
+          <div class="setting-title">Widget size</div>
+          <div class="setting-desc">Size of the expert popup card</div>
+          <div class="option-group" id="size-group">
+            <button class="opt-btn" data-val="small" onclick="pick('size',this)">Small</button>
+            <button class="opt-btn" data-val="medium" onclick="pick('size',this)">Medium</button>
+            <button class="opt-btn" data-val="large" onclick="pick('size',this)">Large</button>
+          </div>
+        </div>
+        <div class="setting-block">
+          <div class="setting-title">Number of experts</div>
+          <div class="setting-desc">Max experts suggested per article</div>
+          <div class="option-group" id="power-group">
+            <button class="opt-btn" data-val="light" onclick="pick('power',this)">Light · 1-2</button>
+            <button class="opt-btn" data-val="moderate" onclick="pick('power',this)">Moderate · 3-4</button>
+            <button class="opt-btn" data-val="heavy" onclick="pick('power',this)">Heavy · 5-10</button>
+            <button class="opt-btn" data-val="unlimited" onclick="pick('power',this)">Unlimited</button>
+          </div>
+        </div>
+        <div class="setting-block">
+          <div class="setting-title">Match sensitivity</div>
+          <div class="setting-desc">How closely a phrase must relate to an expert</div>
+          <div class="option-group" id="sensitivity-group">
+            <button class="opt-btn" data-val="strict" onclick="pick('sensitivity',this)">Strict</button>
+            <button class="opt-btn" data-val="balanced" onclick="pick('sensitivity',this)">Balanced</button>
+            <button class="opt-btn" data-val="open" onclick="pick('sensitivity',this)">Open</button>
+          </div>
         </div>
       </div>
-      <div class="setting-block">
-        <div class="setting-title">Widget colour</div>
-        <div class="setting-desc">Button colour inside the expert popup</div>
-        <div class="color-row">
-          <input type="color" class="color-picker" id="accent-picker" oninput="onColorInput('accent','accent_color',this.value)">
-          <input type="text" class="color-hex" id="accent-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('accent','accent_color','accent-picker',this.value)">
+      <div class="settings-col settings-col-colors">
+        <div class="setting-block">
+          <div class="setting-title">Link colour</div>
+          <div class="setting-desc">Underline on highlighted phrases</div>
+          <div class="color-row">
+            <input type="color" class="color-picker" id="color-picker" oninput="onColorInput('color','widget_color',this.value)">
+            <input type="text" class="color-hex" id="color-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('color','widget_color','color-picker',this.value)">
+          </div>
         </div>
-      </div>
-      <div class="setting-block">
-        <div class="setting-title">Widget size</div>
-        <div class="setting-desc">Size of the expert popup card</div>
-        <div class="option-group" id="size-group">
-          <button class="opt-btn" data-val="small" onclick="pick('size',this)">Small</button>
-          <button class="opt-btn" data-val="medium" onclick="pick('size',this)">Medium</button>
-          <button class="opt-btn" data-val="large" onclick="pick('size',this)">Large</button>
-        </div>
-      </div>
-      <div class="setting-block">
-        <div class="setting-title">Number of experts</div>
-        <div class="setting-desc">Max experts suggested per article</div>
-        <div class="option-group" id="power-group">
-          <button class="opt-btn" data-val="light" onclick="pick('power',this)">Light · 1-2</button>
-          <button class="opt-btn" data-val="moderate" onclick="pick('power',this)">Moderate · 3-4</button>
-          <button class="opt-btn" data-val="heavy" onclick="pick('power',this)">Heavy · 5-10</button>
-          <button class="opt-btn" data-val="unlimited" onclick="pick('power',this)">Unlimited</button>
-        </div>
-      </div>
-      <div class="setting-block">
-        <div class="setting-title">Match sensitivity</div>
-        <div class="setting-desc">How closely a phrase must relate to an expert</div>
-        <div class="option-group" id="sensitivity-group">
-          <button class="opt-btn" data-val="strict" onclick="pick('sensitivity',this)">Strict</button>
-          <button class="opt-btn" data-val="balanced" onclick="pick('sensitivity',this)">Balanced</button>
-          <button class="opt-btn" data-val="open" onclick="pick('sensitivity',this)">Open</button>
+        <div class="setting-block">
+          <div class="setting-title">Widget colour</div>
+          <div class="setting-desc">Button colour inside the popup</div>
+          <div class="color-row">
+            <input type="color" class="color-picker" id="accent-picker" oninput="onColorInput('accent','accent_color',this.value)">
+            <input type="text" class="color-hex" id="accent-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('accent','accent_color','accent-picker',this.value)">
+          </div>
         </div>
       </div>
     </div>
