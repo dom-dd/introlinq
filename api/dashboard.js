@@ -12,15 +12,16 @@ export default async function handler(req, res) {
   const sql = neon(process.env.DATABASE_URL);
 
   if (req.method === 'PATCH') {
-    const { match_power, match_sensitivity, widget_color, widget_size } = req.body;
+    const { match_power, match_sensitivity, widget_color, accent_color, widget_size } = req.body;
     const [updated] = await sql`
       UPDATE publishers SET
         match_power = COALESCE(${match_power ?? null}, match_power),
         match_sensitivity = COALESCE(${match_sensitivity ?? null}, match_sensitivity),
         widget_color = COALESCE(${widget_color ?? null}, widget_color),
+        accent_color = COALESCE(${accent_color ?? null}, accent_color),
         widget_size = COALESCE(${widget_size ?? null}, widget_size)
       WHERE slug = ${pub} AND active = true
-      RETURNING match_power, match_sensitivity, widget_color, widget_size
+      RETURNING match_power, match_sensitivity, widget_color, accent_color, widget_size
     `;
     return res.status(200).json(updated);
   }
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const [publisher] = await sql`
       SELECT id, name, slug, domain, created_at,
-             match_power, match_sensitivity, widget_color, widget_size
+             match_power, match_sensitivity, widget_color, accent_color, widget_size
       FROM publishers WHERE slug = ${pub} AND active = true LIMIT 1
     `;
 

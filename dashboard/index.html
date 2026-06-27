@@ -125,11 +125,14 @@ tr:last-child td{border-bottom:none}
     </div>
     <div class="settings-grid">
       <div class="setting-block">
-        <div class="setting-title">Highlight colour</div>
-        <div class="setting-desc">The underline colour on matched phrases</div>
-        <div class="color-swatches" id="color-swatches">
-          <!-- filled by JS -->
-        </div>
+        <div class="setting-title">Link colour</div>
+        <div class="setting-desc">Underline on highlighted phrases in your article</div>
+        <div class="color-swatches" id="color-swatches"></div>
+      </div>
+      <div class="setting-block">
+        <div class="setting-title">Widget colour</div>
+        <div class="setting-desc">Button colour inside the expert popup</div>
+        <div class="color-swatches" id="accent-swatches"></div>
       </div>
       <div class="setting-block">
         <div class="setting-title">Widget size</div>
@@ -191,7 +194,7 @@ const PUB = params.get('pub') || '';
 const COLORS = ['#e6a820','#3d7a5f','#3b82f6','#8b5cf6','#f43f5e','#64748b'];
 const COLOR_NAMES = ['Gold','Sage','Blue','Purple','Rose','Slate'];
 
-let settings = { color: '#e6a820', size: 'medium', power: 'moderate', sensitivity: 'balanced' };
+let settings = { color: '#e6a820', accent: '#e6a820', size: 'medium', power: 'moderate', sensitivity: 'balanced' };
 
 if (!PUB) {
   document.getElementById('not-found').style.display = 'flex';
@@ -222,6 +225,7 @@ async function loadDashboard() {
   // Load current settings
   const p = d.publisher;
   settings.color = p.widget_color || '#e6a820';
+  settings.accent = p.accent_color || '#e6a820';
   settings.size = p.widget_size || 'medium';
   settings.power = p.match_power || 'moderate';
   settings.sensitivity = p.match_sensitivity || 'balanced';
@@ -243,9 +247,11 @@ async function loadDashboard() {
 }
 
 function renderSettings() {
-  // Color swatches
   document.getElementById('color-swatches').innerHTML = COLORS.map((c, i) =>
-    `<div class="swatch${settings.color===c?' active':''}" style="background:${c}" title="${COLOR_NAMES[i]}" onclick="pickColor('${c}',this)"></div>`
+    `<div class="swatch${settings.color===c?' active':''}" style="background:${c}" title="${COLOR_NAMES[i]}" onclick="pickColor('highlight','widget_color','color-swatches','${c}',this)"></div>`
+  ).join('');
+  document.getElementById('accent-swatches').innerHTML = COLORS.map((c, i) =>
+    `<div class="swatch${settings.accent===c?' active':''}" style="background:${c}" title="${COLOR_NAMES[i]}" onclick="pickColor('accent','accent_color','accent-swatches','${c}',this)"></div>`
   ).join('');
   // Buttons
   setActive('size-group', settings.size);
@@ -266,11 +272,11 @@ function pick(type, el) {
   saveSetting(type === 'power' ? 'match_power' : type === 'sensitivity' ? 'match_sensitivity' : 'widget_' + type, el.dataset.val);
 }
 
-function pickColor(color, el) {
-  settings.color = color;
-  document.getElementById('color-swatches').querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+function pickColor(settingKey, field, groupId, color, el) {
+  settings[settingKey] = color;
+  document.getElementById(groupId).querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
   el.classList.add('active');
-  saveSetting('widget_color', color);
+  saveSetting(field, color);
 }
 
 async function saveSetting(field, value) {
