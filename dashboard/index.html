@@ -64,7 +64,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .partner-card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:1.25rem 1.5rem}
 .partner-card:last-child{margin-bottom:1.25rem}
 .partner-header{display:flex;align-items:center;gap:1rem;padding:1rem 1.25rem;background:var(--white)}
-.partner-logo{width:38px;height:38px;border-radius:8px;background:var(--ink);display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:0.8rem;color:var(--gold);flex-shrink:0}
+.partner-logo{width:38px;height:38px;border-radius:8px;background:var(--sage-light);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.partner-logo img{width:100%;height:100%;object-fit:contain;padding:5px}
 .partner-info{flex:1}
 .partner-name{font-weight:600;font-size:0.9rem;color:var(--ink)}
 .partner-meta{font-size:0.75rem;color:var(--ink-muted);margin-top:1px}
@@ -378,7 +379,7 @@ function renderPartners(partners) {
   list.innerHTML = partners.map(p => `
     <div class="partner-card" id="pc-${p.slug}">
       <div class="partner-header">
-        <div class="partner-logo">IL</div>
+        <div class="partner-logo"><img src="/networks%20logos/${p.slug === 'openintro' ? 'OpenIntro-icon.png' : p.slug + '.png'}" alt="${esc(p.name)}"></div>
         <div class="partner-info">
           <div class="partner-name">${esc(p.name)}</div>
           <div class="partner-meta">${p.expert_count} experts available</div>
