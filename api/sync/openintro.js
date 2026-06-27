@@ -153,12 +153,7 @@ export default async function handler(req, res) {
     const allExperts = await fetchAllExperts();
 
     const sample = allExperts[0] || {};
-    const debugSample = {
-      'Profile status': sample['Profile status'],
-      'Visible on OpenIntro': sample['Visible on OpenIntro'],
-      'n-adminCheck': sample['n-adminCheck'],
-      'Add to Chatbot': sample['Add to Chatbot'],
-    };
+    const debugSample = Object.keys(sample);
 
     const publicExperts = allExperts.filter(e => {
       const status = e['Profile status'] || e['Profile_status'] || '';
