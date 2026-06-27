@@ -54,6 +54,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 
 /* Section */
 .section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1.5rem;overflow:hidden}
+.section-body{overflow-x:auto}
 .section-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border)}
 .section-title{font-weight:600;font-size:0.9375rem;color:var(--ink)}
 .section-body{padding:0}
@@ -195,8 +196,8 @@ tr:hover td{background:rgba(0,0,0,0.01)}
       </div>
 
       <!-- Table -->
-      <div class="section-body">
-        <table>
+      <div class="section-body" style="overflow-x:auto">
+        <table style="min-width:800px">
           <thead>
             <tr>
               <th>Name</th>
