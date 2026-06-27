@@ -206,10 +206,10 @@ export default async function handler(req, res) {
       upserted++;
     }
 
-    // Deactivate experts removed or hidden since last sync
+    // Delete experts that no longer pass filters (data is always re-synced from Bubble)
     if (activeIds.length > 0) {
       await sql`
-        UPDATE experts SET active = false
+        DELETE FROM experts
         WHERE provider_id = ${provider.id}
         AND external_id != ALL(${activeIds})
       `;
