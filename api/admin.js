@@ -132,6 +132,16 @@ export default async function handler(req, res) {
     }
   }
 
+  // Login as publisher — generates a magic link for the admin to open
+  if (resource === 'login_as' && req.method === 'POST') {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email required' });
+    const [pub] = await sql`SELECT slug FROM publishers WHERE email = ${email.toLowerCase()} AND active = true LIMIT 1`;
+    if (!pub) return res.status(404).json({ error: 'Publisher not found' });
+    const token = await createMagicToken(sql, email.toLowerCase(), 60 * 60 * 1000); // 1-hour link
+    return res.status(200).json({ url: `https://www.introlinq.com/api/auth?token=${token}` });
+  }
+
   return res.status(404).json({ error: 'Unknown resource' });
 }
 

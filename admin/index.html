@@ -223,7 +223,6 @@ tr:hover td{background:rgba(0,0,0,0.01)}
               <th>Name</th>
               <th>Domain</th>
               <th>Embed code</th>
-              <th>Settings</th>
               <th>Status</th>
               <th>Added</th>
               <th></th>
@@ -307,17 +306,13 @@ async function loadPublishers() {
           data-publisher="${esc(p.slug)}"
         </button>
       </td>
-      <td>
-        <div class="pub-settings">
-          <div class="set-dot" style="background:${p.widget_color||'#e6a820'}" title="Link colour: ${p.widget_color||'#e6a820'}"></div>
-          <div class="set-dot" style="background:${p.accent_color||p.widget_color||'#e6a820'}" title="Widget colour: ${p.accent_color||'#e6a820'}"></div>
-          <span class="set-val">${p.match_power||'moderate'} · ${p.match_sensitivity||'balanced'} · ${p.widget_size||'medium'}</span>
-        </div>
-      </td>
       <td><span class="badge ${p.active ? 'badge-active' : 'badge-inactive'}">${p.active ? 'Active' : 'Inactive'}</span></td>
       <td>${new Date(p.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</td>
       <td>
         <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end">
+          <button onclick="loginAsPublisher('${esc(p.email)}')" title="Log in as this publisher" style="background:#f0f4ff;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4f6ef7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+          </button>
           <button onclick="togglePublisher(${p.id}, ${!p.active})" title="${p.active ? 'Deactivate' : 'Activate'}" style="background:${p.active ? 'var(--red-light)' : 'var(--green-light)'};border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${p.active ? 'var(--red)' : 'var(--green)'}" stroke-width="2.5" stroke-linecap="round"><path d="M18.36 6.64A9 9 0 1 1 5.64 6.64"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
           </button>
@@ -390,6 +385,20 @@ async function deletePublisher(id, name) {
   toast('Publisher deleted');
   loadPublishers();
   loadStats();
+}
+
+async function loginAsPublisher(email) {
+  const res = await fetch('/api/admin?resource=login_as', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify({ email })
+  });
+  const data = await res.json();
+  if (data.url) {
+    window.open(data.url, '_blank');
+  } else {
+    toast('Could not generate login link');
+  }
 }
 
 async function togglePublisher(id, active) {
