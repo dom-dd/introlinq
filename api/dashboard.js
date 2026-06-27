@@ -1,4 +1,5 @@
 import { neon } from '@neondatabase/serverless';
+import crypto from 'crypto';
 
 let clickTableReady = false;
 
@@ -9,10 +10,42 @@ function getSessionToken(req) {
 }
 
 export default async function handler(req, res) {
-  const { pub, provider } = req.query;
+  const { pub, provider, action } = req.query;
   if (!pub) return res.status(400).json({ error: 'Missing pub' });
 
   const sql = neon(process.env.DATABASE_URL);
+
+  // Public redirect — routes Book button through IntroLinq before sending to partner
+  if (req.method === 'GET' && action === 'out') {
+    const { expert_id, expert_name, expert_url, article } = req.query;
+    if (!expert_url) return res.status(400).json({ error: 'Missing expert_url' });
+
+    const click_id = crypto.randomUUID();
+
+    // Ensure extra columns exist
+    await sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS click_id TEXT`.catch(() => {});
+    await sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS article_url TEXT`.catch(() => {});
+
+    // Ensure table exists then log the click
+    await sql`CREATE TABLE IF NOT EXISTS click_logs (
+      id SERIAL PRIMARY KEY, publisher TEXT, expert_id INT, expert_name TEXT, created_at TIMESTAMPTZ DEFAULT NOW()
+    )`.catch(() => {});
+    await sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url)
+      VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${click_id}, ${article || null})
+    `.catch(() => {});
+
+    // Build partner URL with full attribution params
+    try {
+      const dest = new URL(decodeURIComponent(expert_url));
+      dest.searchParams.set('ref', 'introlinq');
+      dest.searchParams.set('aid', pub);
+      dest.searchParams.set('click_id', click_id);
+      if (article) dest.searchParams.set('campaign', decodeURIComponent(article).slice(0, 200));
+      return res.redirect(302, dest.toString());
+    } catch {
+      return res.redirect(302, decodeURIComponent(expert_url));
+    }
+  }
 
   // CORS for widget click tracking (cross-origin POST)
   if (req.method === 'POST' || req.method === 'OPTIONS') {

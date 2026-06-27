@@ -219,18 +219,18 @@
     document.getElementById('il-pr').textContent = e.price_from ? 'From £' + e.price_from + ' / session' : '';
     var rs = document.getElementById('il-rs');
     if (rs) rs.textContent = match.reason;
-    var url = e.booking_url || '#';
-    if (url !== '#') url += (url.indexOf('?') !== -1 ? '&' : '?') + 'ref=' + encodeURIComponent(PUB);
     var bk = document.getElementById('il-bk');
-    bk.href = url;
-    bk.onclick = function () {
-      fetch('https://www.introlinq.com/api/dashboard?pub=' + encodeURIComponent(PUB), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        keepalive: true,
-        body: JSON.stringify({ expert_id: e.id, expert_name: e.name })
-      }).catch(function () {});
-    };
+    var url = e.booking_url || '#';
+    if (url !== '#') {
+      bk.href = 'https://www.introlinq.com/api/dashboard?action=out'
+        + '&pub=' + encodeURIComponent(PUB)
+        + '&expert_id=' + encodeURIComponent(e.id || '')
+        + '&expert_name=' + encodeURIComponent(e.name || '')
+        + '&expert_url=' + encodeURIComponent(url)
+        + '&article=' + encodeURIComponent(window.location.href.slice(0, 300));
+    } else {
+      bk.href = '#';
+    }
   }
 
   function positionPopup(popup, span, cfg) {
