@@ -156,7 +156,7 @@ export default async function handler(req, res) {
       const status = e['Profile status'] || e['Profile_status'] || '';
       return status.includes('Public')
         && e['Visible on OpenIntro'] === true
-        && e['n-adminCheck'] === 'approve'
+        && e['n-adminCheck'] === 'approved'
         && e['Add to Chatbot'] === true;
     });
 
