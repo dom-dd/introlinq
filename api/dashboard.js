@@ -123,8 +123,10 @@ export default async function handler(req, res) {
       return res.status(200).json({ experts });
     }
 
-    // Ensure enabled_partners column exists
+    // Ensure columns exist
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS enabled_partners TEXT[] DEFAULT ARRAY['openintro']`;
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS revenue_share DECIMAL DEFAULT 0.70`;
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS payment_email TEXT`;
     // Ensure providers have a name column
     await sql`ALTER TABLE providers ADD COLUMN IF NOT EXISTS name TEXT`;
     await sql`UPDATE providers SET name = 'OpenIntro' WHERE slug = 'openintro' AND name IS NULL`;
@@ -133,7 +135,8 @@ export default async function handler(req, res) {
       SELECT id, name, slug, domain, created_at,
              match_power, match_sensitivity, widget_color, accent_color, widget_size,
              COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners,
-             COALESCE(revenue_share, 0.70) AS revenue_share
+             COALESCE(revenue_share, 0.70) AS revenue_share,
+             payment_email
       FROM publishers WHERE slug = ${pub} AND active = true LIMIT 1
     `;
 
