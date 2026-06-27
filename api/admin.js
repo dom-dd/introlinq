@@ -52,6 +52,8 @@ export default async function handler(req, res) {
     `;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS match_power TEXT DEFAULT 'moderate'`;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS match_sensitivity TEXT DEFAULT 'balanced'`;
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS widget_color TEXT DEFAULT '#e6a820'`;
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS widget_size TEXT DEFAULT 'medium'`;
 
     if (req.method === 'GET') {
       const publishers = await sql`SELECT * FROM publishers ORDER BY created_at DESC`;
@@ -80,12 +82,14 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PATCH') {
-      const { id, active, match_power, match_sensitivity } = req.body;
+      const { id, active, match_power, match_sensitivity, widget_color, widget_size } = req.body;
       const [pub] = await sql`
         UPDATE publishers SET
           active = COALESCE(${active ?? null}, active),
           match_power = COALESCE(${match_power ?? null}, match_power),
-          match_sensitivity = COALESCE(${match_sensitivity ?? null}, match_sensitivity)
+          match_sensitivity = COALESCE(${match_sensitivity ?? null}, match_sensitivity),
+          widget_color = COALESCE(${widget_color ?? null}, widget_color),
+          widget_size = COALESCE(${widget_size ?? null}, widget_size)
         WHERE id = ${id} RETURNING *
       `;
       return res.status(200).json(pub);

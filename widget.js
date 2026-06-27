@@ -27,10 +27,11 @@
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (data) {
       if (!data || !data.matches || !data.matches.length) return;
+      var cfg = data.config || {};
       preloadPhotos(data.matches);
-      injectStyles();
-      var popup = createPopup();
-      highlightMatches(el, data.matches, popup);
+      injectStyles(cfg);
+      var popup = createPopup(cfg);
+      highlightMatches(el, data.matches, popup, cfg);
     })
     .catch(function () {});
   }
@@ -70,6 +71,13 @@
     return parts.join(' ');
   }
 
+  function hexToRgba(hex, alpha) {
+    var r = parseInt(hex.slice(1, 3), 16);
+    var g = parseInt(hex.slice(3, 5), 16);
+    var b = parseInt(hex.slice(5, 7), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+  }
+
   function preloadPhotos(matches) {
     matches.forEach(function (m) {
       if (m.expert && m.expert.photo_url) {
@@ -79,14 +87,17 @@
     });
   }
 
-  function injectStyles() {
-    if (document.getElementById('il-styles')) return;
+  function injectStyles(cfg) {
+    var color = cfg.color || '#e6a820';
+    var w = { small: 240, medium: 300, large: 360 }[cfg.size] || 300;
+    var existing = document.getElementById('il-styles');
+    if (existing) existing.remove();
     var s = document.createElement('style');
     s.id = 'il-styles';
     s.textContent =
-      '.il-hl{background:rgba(230,168,32,0.15);border-bottom:2px solid #e6a820;cursor:pointer;border-radius:2px;padding:0 2px;transition:background .15s}' +
-      '.il-hl:hover{background:rgba(230,168,32,0.3)}' +
-      '#il-pop{position:fixed;z-index:2147483647;width:300px;background:#fff;border-radius:16px;' +
+      '.il-hl{background:' + hexToRgba(color, 0.15) + ';border-bottom:2px solid ' + color + ';cursor:pointer;border-radius:2px;padding:0 2px;transition:background .15s}' +
+      '.il-hl:hover{background:' + hexToRgba(color, 0.3) + '}' +
+      '#il-pop{position:fixed;z-index:2147483647;width:' + w + 'px;background:#fff;border-radius:16px;' +
       'box-shadow:0 16px 48px rgba(0,0,0,0.14),0 2px 8px rgba(0,0,0,0.06);' +
       'padding:18px;opacity:0;transform:translateY(6px);' +
       'transition:opacity .18s ease,transform .18s ease;pointer-events:none;' +
@@ -98,20 +109,29 @@
     document.head.appendChild(s);
   }
 
-  function createPopup() {
+  function createPopup(cfg) {
+    var color = cfg.color || '#e6a820';
+    var isSmall = cfg.size === 'small';
+    var isLarge = cfg.size === 'large';
+    var photoSize = isSmall ? 36 : isLarge ? 54 : 46;
+    var nameSize = isLarge ? '15px' : '14px';
+
+    var existing = document.getElementById('il-pop');
+    if (existing) existing.remove();
+
     var p = document.createElement('div');
     p.id = 'il-pop';
     p.innerHTML =
-      '<div style="display:flex;gap:12px;align-items:center;margin-bottom:10px">' +
-        '<img id="il-ph" width="46" height="46" style="border-radius:50%;object-fit:cover;flex-shrink:0;background:#edf5f0" src="" alt="">' +
+      '<div style="display:flex;gap:12px;align-items:center;margin-bottom:' + (isSmall ? '8' : '10') + 'px">' +
+        '<img id="il-ph" width="' + photoSize + '" height="' + photoSize + '" style="border-radius:50%;object-fit:cover;flex-shrink:0;background:#edf5f0" src="" alt="">' +
         '<div>' +
-          '<div id="il-nm" style="font-weight:600;font-size:14px;color:#1a1a2e;line-height:1.25"></div>' +
+          '<div id="il-nm" style="font-weight:600;font-size:' + nameSize + ';color:#1a1a2e;line-height:1.25"></div>' +
           '<div id="il-rl" style="font-size:11.5px;color:#4a4a6a;margin-top:2px;line-height:1.3"></div>' +
           '<div id="il-pr" style="font-size:11px;color:#8888a8;margin-top:3px"></div>' +
         '</div>' +
       '</div>' +
-      '<div id="il-rs" style="font-size:12.5px;color:#4a4a6a;line-height:1.6;margin-bottom:12px;font-style:italic;border-left:2px solid #fef3c7;padding-left:10px"></div>' +
-      '<a id="il-bk" href="#" target="_blank" rel="noopener" style="display:block;background:#e6a820;color:#1a1a2e;text-align:center;padding:9px;border-radius:100px;font-size:13px;font-weight:700;text-decoration:none">Book a call →</a>' +
+      (isSmall ? '' : '<div id="il-rs" style="font-size:' + (isLarge ? '13px' : '12.5px') + ';color:#4a4a6a;line-height:1.6;margin-bottom:12px;font-style:italic;border-left:2px solid ' + hexToRgba(color, 0.3) + ';padding-left:10px"></div>') +
+      '<a id="il-bk" href="#" target="_blank" rel="noopener" style="display:block;background:' + color + ';color:' + getContrastColor(color) + ';text-align:center;padding:' + (isSmall ? '7' : '9') + 'px;border-radius:100px;font-size:13px;font-weight:700;text-decoration:none">Book a call →</a>' +
       '<div style="font-size:9px;color:#8888a8;text-align:center;margin-top:8px;letter-spacing:.05em;text-transform:uppercase">Powered by IntroLinq</div>';
     document.body.appendChild(p);
     p.addEventListener('mouseenter', function () { clearTimeout(hideTimer); });
@@ -119,7 +139,14 @@
     return p;
   }
 
-  function highlightMatches(container, matches, popup) {
+  function getContrastColor(hex) {
+    var r = parseInt(hex.slice(1, 3), 16);
+    var g = parseInt(hex.slice(3, 5), 16);
+    var b = parseInt(hex.slice(5, 7), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 128 ? '#1a1a2e' : '#ffffff';
+  }
+
+  function highlightMatches(container, matches, popup, cfg) {
     var walker = document.createTreeWalker(
       container,
       NodeFilter.SHOW_TEXT,
@@ -156,8 +183,8 @@
         ;(function (sp, m) {
           sp.addEventListener('mouseenter', function () {
             clearTimeout(hideTimer);
-            fillPopup(popup, m);
-            positionPopup(popup, sp);
+            fillPopup(popup, m, cfg);
+            positionPopup(popup, sp, cfg);
             popup.classList.add('il-on');
           });
           sp.addEventListener('mouseleave', function () { scheduleHide(popup); });
@@ -176,7 +203,7 @@
     });
   }
 
-  function fillPopup(popup, match) {
+  function fillPopup(popup, match, cfg) {
     var e = match.expert;
     var img = document.getElementById('il-ph');
     var fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=88&name=' + encodeURIComponent(e.name);
@@ -189,15 +216,17 @@
     document.getElementById('il-nm').textContent = e.name;
     document.getElementById('il-rl').textContent = [e.position, e.company].filter(Boolean).join(' · ');
     document.getElementById('il-pr').textContent = e.price_from ? 'From £' + e.price_from + ' / session' : '';
-    document.getElementById('il-rs').textContent = match.reason;
+    var rs = document.getElementById('il-rs');
+    if (rs) rs.textContent = match.reason;
     var url = e.booking_url || '#';
     if (url !== '#') url += (url.indexOf('?') !== -1 ? '&' : '?') + 'ref=' + encodeURIComponent(PUB);
     document.getElementById('il-bk').href = url;
   }
 
-  function positionPopup(popup, span) {
+  function positionPopup(popup, span, cfg) {
     var rect = span.getBoundingClientRect();
-    var W = 300, H = 220;
+    var W = { small: 240, medium: 300, large: 360 }[cfg.size] || 300;
+    var H = cfg.size === 'small' ? 150 : cfg.size === 'large' ? 260 : 220;
     var top = rect.bottom + 10;
     var left = rect.left;
     if (rect.bottom + H + 10 > window.innerHeight) top = rect.top - H - 10;

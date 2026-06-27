@@ -25,8 +25,10 @@ export default async function handler(req, res) {
     let maxMatches = 4;
     let sensitivityInstruction = 'The match must be genuinely strong. A weak or vague match is worse than no match.';
 
+    let pubConfig = { color: '#e6a820', size: 'medium' };
+
     if (publisher) {
-      const [pub] = await sql`SELECT match_power, match_sensitivity FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`;
+      const [pub] = await sql`SELECT match_power, match_sensitivity, widget_color, widget_size FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`;
       if (pub) {
         const powerMap = { light: 2, moderate: 4, heavy: 10, unlimited: 15 };
         maxMatches = powerMap[pub.match_power] ?? 4;
@@ -36,6 +38,7 @@ export default async function handler(req, res) {
           open: 'Match on broader topic overlap. If the expert\'s field is relevant to the section, include them. Prefer more matches over fewer.',
         };
         sensitivityInstruction = sensitivityMap[pub.match_sensitivity] ?? sensitivityMap.balanced;
+        pubConfig = { color: pub.widget_color || '#e6a820', size: pub.widget_size || 'medium' };
       }
     }
 
@@ -131,7 +134,7 @@ Return only valid JSON, no other text:
       }));
 
     // Send response immediately — don't make user wait for logging
-    res.status(200).json({ matches: enriched });
+    res.status(200).json({ matches: enriched, config: pubConfig });
 
     // Log in background after response is sent
     const publisher = req.body.publisher || null;
