@@ -138,7 +138,8 @@ export default async function handler(req, res) {
     if (!publisher) return res.status(404).json({ error: 'Publisher not found' });
 
     const [logs, clickData, providers, expertCounts, totalImpressions,
-           clicksByDay, impressionsByDay, clicksByMonth, impressionsByMonth,
+           clicksByDay, impressionsByDay, clicksByWeek, impressionsByWeek,
+           clicksByMonth, impressionsByMonth,
            topPhrases, topSources, topDevices] = await Promise.all([
       sql`SELECT phrases, expert_names, match_count, created_at FROM match_logs WHERE publisher = ${pub} ORDER BY created_at DESC LIMIT 20`,
       sql`SELECT COUNT(*)::int AS total FROM click_logs WHERE publisher = ${pub}`.catch(() => [{ total: 0 }]),
@@ -147,6 +148,8 @@ export default async function handler(req, res) {
       sql`SELECT COUNT(*)::int AS total FROM match_logs WHERE publisher = ${pub}`.catch(() => [{ total: 0 }]),
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
+      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`.catch(() => []),
+      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`.catch(() => []),
       sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
       sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
       sql`SELECT phrase, COUNT(*)::int AS clicks FROM click_logs WHERE publisher = ${pub} AND phrase IS NOT NULL AND phrase != '' GROUP BY phrase ORDER BY clicks DESC LIMIT 5`.catch(() => []),
@@ -169,6 +172,8 @@ export default async function handler(req, res) {
       partners: partnersWithStatus,
       clicks_by_day: clicksByDay,
       impressions_by_day: impressionsByDay,
+      clicks_by_week: clicksByWeek,
+      impressions_by_week: impressionsByWeek,
       clicks_by_month: clicksByMonth,
       impressions_by_month: impressionsByMonth,
       top_phrases: topPhrases,
