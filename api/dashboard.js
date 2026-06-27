@@ -17,21 +17,28 @@ export default async function handler(req, res) {
 
   // Public redirect — routes Book button through IntroLinq before sending to partner
   if (req.method === 'GET' && action === 'out') {
-    const { expert_id, expert_name, expert_url, article } = req.query;
+    const { expert_id, expert_name, expert_url, article, phrase, lang, tz, device, source } = req.query;
     if (!expert_url) return res.status(400).json({ error: 'Missing expert_url' });
 
     const click_id = crypto.randomUUID();
 
-    // Ensure extra columns exist
-    await sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS click_id TEXT`.catch(() => {});
-    await sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS article_url TEXT`.catch(() => {});
-
-    // Ensure table exists then log the click
+    // Ensure table and all columns exist
     await sql`CREATE TABLE IF NOT EXISTS click_logs (
       id SERIAL PRIMARY KEY, publisher TEXT, expert_id INT, expert_name TEXT, created_at TIMESTAMPTZ DEFAULT NOW()
     )`.catch(() => {});
-    await sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url)
-      VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${click_id}, ${article || null})
+    await Promise.all([
+      sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS click_id TEXT`.catch(() => {}),
+      sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS article_url TEXT`.catch(() => {}),
+      sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS phrase TEXT`.catch(() => {}),
+      sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS lang TEXT`.catch(() => {}),
+      sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS timezone TEXT`.catch(() => {}),
+      sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS device TEXT`.catch(() => {}),
+      sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS traffic_source TEXT`.catch(() => {}),
+    ]);
+
+    await sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, phrase, lang, timezone, device, traffic_source)
+      VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${click_id}, ${article || null},
+              ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null})
     `.catch(() => {});
 
     // Build partner URL with full attribution params
@@ -40,6 +47,7 @@ export default async function handler(req, res) {
       dest.searchParams.set('ref', 'introlinq');
       dest.searchParams.set('aid', pub);
       dest.searchParams.set('click_id', click_id);
+      if (lang) dest.searchParams.set('lang', lang);
       if (article) dest.searchParams.set('campaign', decodeURIComponent(article).slice(0, 200));
       return res.redirect(302, dest.toString());
     } catch {

@@ -227,7 +227,12 @@
         + '&expert_id=' + encodeURIComponent(e.id || '')
         + '&expert_name=' + encodeURIComponent(e.name || '')
         + '&expert_url=' + encodeURIComponent(url)
-        + '&article=' + encodeURIComponent(window.location.href.slice(0, 300));
+        + '&article=' + encodeURIComponent(window.location.href.slice(0, 300))
+        + '&phrase=' + encodeURIComponent(match.phrase || '')
+        + '&lang=' + encodeURIComponent(navigator.language || '')
+        + '&tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || '')
+        + '&device=' + (window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop')
+        + '&source=' + encodeURIComponent(getTrafficSource());
     } else {
       bk.href = '#';
     }
@@ -244,6 +249,15 @@
     if (left < 8) left = 8;
     popup.style.top = top + 'px';
     popup.style.left = left + 'px';
+  }
+
+  function getTrafficSource() {
+    var ref = document.referrer;
+    if (!ref) return 'direct';
+    if (/google\.|bing\.|yahoo\.|duckduckgo\.|ecosia\./.test(ref)) return 'search';
+    if (/facebook\.|twitter\.|x\.com|linkedin\.|instagram\.|pinterest\.|reddit\.|tiktok\./.test(ref)) return 'social';
+    if (/mail\.|gmail\.|outlook\.|substack\.com/.test(ref)) return 'email';
+    return 'referral';
   }
 
   var hideTimer;
