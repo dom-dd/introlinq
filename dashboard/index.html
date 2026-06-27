@@ -18,34 +18,46 @@
   --ink:#1a1a2e;--ink-soft:#4a4a6a;--ink-muted:#8888a8;
   --cream:#faf8f4;--white:#fff;
   --border:rgba(26,26,46,0.10);--radius:10px;
-  --green:#16a34a;--green-light:#f0fdf4;
 }
 body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh}
 
+/* ── Header ── */
 .header{background:var(--ink);padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between}
 .logo{font-family:'DM Serif Display',serif;font-size:1.125rem;color:var(--white)}
 .logo span{color:var(--gold)}
-.pub-name{font-size:0.8125rem;color:rgba(255,255,255,0.5);font-family:'Inter',sans-serif}
+.pub-name{font-size:0.8125rem;color:rgba(255,255,255,0.5)}
 
+/* ── Tabs ── */
+.tab-bar{background:var(--white);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;gap:0}
+.tab-btn{padding:0.875rem 1.25rem;font-size:0.875rem;font-weight:500;color:var(--ink-muted);border:none;background:none;cursor:pointer;font-family:'Inter',sans-serif;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;white-space:nowrap}
+.tab-btn:hover{color:var(--ink)}
+.tab-btn.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
+
+/* ── Body ── */
 .body{max-width:900px;margin:0 auto;padding:2.5rem 2rem 5rem}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
 
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem}
+/* ── Stat cards ── */
+.stats-grid{display:grid;gap:1rem;margin-bottom:2rem}
 .stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem}
 .stat-label{font-size:0.75rem;color:var(--ink-muted);font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.375rem}
 .stat-value{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--ink);line-height:1}
 .stat-sub{font-size:0.7rem;color:var(--ink-muted);margin-top:0.375rem}
 
+/* ── Sections ── */
 .section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1.5rem;overflow:hidden}
 .section-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border)}
 .section-title{font-weight:600;font-size:0.9375rem;color:var(--ink)}
 .section-sub{font-size:0.8125rem;color:var(--ink-muted);margin-top:0.2rem}
 
+/* ── Embed ── */
 .embed-box{padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1rem}
 .embed-code{font-family:monospace;font-size:0.8125rem;color:var(--sage);background:var(--sage-light);padding:0.625rem 1rem;border-radius:8px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:1px solid rgba(61,122,95,0.2)}
 .copy-btn{background:var(--sage);color:var(--white);border:none;padding:0.6rem 1.25rem;border-radius:100px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:opacity .15s;flex-shrink:0}
 .copy-btn:hover{opacity:0.85}
 
-/* Settings layout */
+/* ── Widget settings ── */
 .settings-cols{display:flex;gap:2rem;padding:1.5rem}
 .settings-col{display:flex;flex-direction:column;gap:1.5rem;flex:1}
 .settings-col-colors{flex:0 0 200px}
@@ -63,7 +75,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .color-reset{background:none;border:none;cursor:pointer;padding:4px;color:var(--ink-muted);border-radius:6px;display:flex;align-items:center;transition:color .15s}
 .color-reset:hover{color:var(--ink)}
 
-/* Partners */
+/* ── Partners ── */
 .partner-card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:1.25rem 1.5rem}
 .partner-card:last-child{margin-bottom:1.25rem}
 .partner-header{display:flex;align-items:center;gap:1rem;padding:1rem 1.25rem;background:var(--white)}
@@ -92,6 +104,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .expert-tile-link{display:block;text-align:center;font-size:0.72rem;font-weight:600;color:var(--sage);text-decoration:none;margin-top:0.25rem;padding:0.3rem;background:var(--sage-light);border-radius:6px}
 .expert-tile-link:hover{opacity:0.8}
 
+/* ── Table ── */
 table{width:100%;border-collapse:collapse}
 th{text-align:left;padding:0.75rem 1.5rem;font-size:0.7rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border)}
 td{padding:0.875rem 1.5rem;font-size:0.875rem;color:var(--ink-soft);border-bottom:1px solid var(--border)}
@@ -99,7 +112,7 @@ tr:last-child td{border-bottom:none}
 .td-phrase-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:320px}
 .expert-pill{display:inline-block;background:var(--sage-light);color:var(--sage);font-size:0.7rem;font-weight:500;padding:0.2rem 0.6rem;border-radius:100px;margin:1px}
 
-/* Charts */
+/* ── Charts ── */
 .period-btns{display:flex;gap:4px}
 .period-btn{padding:0.3rem 0.7rem;border-radius:100px;font-size:0.75rem;font-weight:500;border:1.5px solid var(--border);background:var(--white);color:var(--ink-soft);cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
 .period-btn:hover{border-color:var(--ink-soft)}
@@ -107,7 +120,8 @@ tr:last-child td{border-bottom:none}
 .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem;padding:1.5rem}
 .chart-label{font-size:0.7rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.75rem}
 .chart-wrap{position:relative;height:180px}
-/* Insights */
+
+/* ── Insights ── */
 .insights-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;padding:0}
 .insight-col{padding:1.5rem;border-right:1px solid var(--border)}
 .insight-col:last-child{border-right:none}
@@ -119,6 +133,15 @@ tr:last-child td{border-bottom:none}
 .bar-count{font-size:0.72rem;color:var(--ink-muted);width:24px;text-align:right;flex-shrink:0}
 .no-data{font-size:0.8rem;color:var(--ink-muted);font-style:italic}
 .empty{padding:3rem;text-align:center;color:var(--ink-muted);font-size:0.875rem}
+
+/* ── Payouts ── */
+.payout-field{display:flex;gap:0.75rem;align-items:center;margin-top:0.5rem}
+.payout-input{flex:1;padding:0.625rem 0.875rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.875rem;font-family:'Inter',sans-serif;outline:none;color:var(--ink);transition:border-color .15s}
+.payout-input:focus{border-color:var(--sage)}
+.payout-save{background:var(--sage);color:#fff;border:none;padding:0.625rem 1.125rem;border-radius:8px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap}
+.payout-hint{font-size:0.75rem;color:var(--ink-muted);margin-top:0.5rem}
+
+/* ── Misc ── */
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--ink);color:var(--white);padding:0.75rem 1.25rem;border-radius:100px;font-size:0.875rem;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;z-index:9999}
 .toast.show{opacity:1;transform:translateY(0)}
 #not-found{display:none;align-items:center;justify-content:center;min-height:80vh;text-align:center}
@@ -143,189 +166,242 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
-<div class="body" id="main" style="display:none">
+<div id="main" style="display:none">
 
-  <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
-    <div class="stat-card">
-      <div class="stat-label">Impressions</div>
-      <div class="stat-value" id="stat-articles">-</div>
-      <div class="stat-sub">pages where widget ran</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Clicks</div>
-      <div class="stat-value" id="stat-clicks">-</div>
-      <div class="stat-sub">Book a call clicks</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">CTR</div>
-      <div class="stat-value" id="stat-ctr">-</div>
-      <div class="stat-sub">click-through rate</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Bookings</div>
-      <div class="stat-value" id="stat-bookings">-</div>
-      <div class="stat-sub">confirmed sessions</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Earnings</div>
-      <div class="stat-value" id="stat-earnings" style="font-size:1.4rem;padding-top:0.2rem">-</div>
-      <div class="stat-sub">your total payout</div>
-    </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('overview',this)">Overview</button>
+    <button class="tab-btn" onclick="switchTab('matches',this)">Matches</button>
+    <button class="tab-btn" onclick="switchTab('widget',this)">Widget</button>
+    <button class="tab-btn" onclick="switchTab('payouts',this)">Payouts</button>
   </div>
 
-  <div class="section" id="perf-section">
-    <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
-      <div>
-        <div class="section-title">Performance</div>
-        <div class="section-sub">Clicks and impressions over time</div>
-      </div>
-      <div class="period-btns">
-        <button class="period-btn active" onclick="setPeriod('daily',this)">Daily</button>
-        <button class="period-btn" onclick="setPeriod('weekly',this)">Weekly</button>
-        <button class="period-btn" onclick="setPeriod('monthly',this)">Monthly</button>
-      </div>
-    </div>
-    <div class="chart-grid">
-      <div>
-        <div class="chart-label">Clicks</div>
-        <div class="chart-wrap"><canvas id="chart-clicks"></canvas></div>
-      </div>
-      <div>
-        <div class="chart-label">Impressions</div>
-        <div class="chart-wrap"><canvas id="chart-impr"></canvas></div>
-      </div>
-    </div>
-  </div>
+  <div class="body">
 
-  <div class="section">
-    <div class="section-header">
-      <div class="section-title">Audience insights</div>
-      <div class="section-sub">Based on all-time click data</div>
-    </div>
-    <div class="insights-grid">
-      <div class="insight-col">
-        <div class="insight-title">Top phrases</div>
-        <div id="insight-phrases"><span class="no-data">No clicks yet</span></div>
+    <!-- ── Overview ── -->
+    <div class="tab-panel active" id="tab-overview">
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card">
+          <div class="stat-label">Impressions</div>
+          <div class="stat-value" id="stat-articles">-</div>
+          <div class="stat-sub">pages where widget ran</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Clicks</div>
+          <div class="stat-value" id="stat-clicks">-</div>
+          <div class="stat-sub">Book a call clicks</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">CTR</div>
+          <div class="stat-value" id="stat-ctr">-</div>
+          <div class="stat-sub">click-through rate</div>
+        </div>
       </div>
-      <div class="insight-col">
-        <div class="insight-title">Traffic source</div>
-        <div id="insight-sources"><span class="no-data">No clicks yet</span></div>
-      </div>
-      <div class="insight-col">
-        <div class="insight-title">Device</div>
-        <div id="insight-devices"><span class="no-data">No clicks yet</span></div>
-      </div>
-    </div>
-  </div>
 
-  <div class="section">
-    <div class="section-header">
-      <div class="section-title">Your embed code</div>
-      <div class="section-sub">Paste this before the &lt;/body&gt; tag in your blog template</div>
-    </div>
-    <div class="embed-box">
-      <div class="embed-code" id="embed-display"></div>
-      <button class="copy-btn" onclick="copyEmbed()">Copy code</button>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-header">
-      <div class="section-title">Widget settings</div>
-      <div class="section-sub">Customise how the widget looks and behaves on your site — changes save instantly</div>
-    </div>
-    <div class="settings-cols">
-      <div class="settings-col">
-        <div class="setting-block">
-          <div class="setting-title">Widget size</div>
-          <div class="setting-desc">Size of the expert popup card</div>
-          <div class="option-group" id="size-group">
-            <button class="opt-btn" data-val="small" onclick="pick('size',this)">Small</button>
-            <button class="opt-btn" data-val="medium" onclick="pick('size',this)">Medium</button>
-            <button class="opt-btn" data-val="large" onclick="pick('size',this)">Large</button>
+      <div class="section">
+        <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="section-title">Performance</div>
+            <div class="section-sub">Clicks and impressions over time</div>
+          </div>
+          <div class="period-btns">
+            <button class="period-btn active" onclick="setPeriod('daily',this)">Daily</button>
+            <button class="period-btn" onclick="setPeriod('weekly',this)">Weekly</button>
+            <button class="period-btn" onclick="setPeriod('monthly',this)">Monthly</button>
           </div>
         </div>
-        <div class="setting-block">
-          <div class="setting-title">Number of experts</div>
-          <div class="setting-desc">Max experts suggested per article</div>
-          <div class="option-group" id="power-group">
-            <button class="opt-btn" data-val="light" onclick="pick('power',this)">Light · 1-2</button>
-            <button class="opt-btn" data-val="moderate" onclick="pick('power',this)">Moderate · 3-4</button>
-            <button class="opt-btn" data-val="heavy" onclick="pick('power',this)">Heavy · 5-10</button>
-            <button class="opt-btn" data-val="unlimited" onclick="pick('power',this)">Unlimited</button>
+        <div class="chart-grid">
+          <div>
+            <div class="chart-label">Clicks</div>
+            <div class="chart-wrap"><canvas id="chart-clicks"></canvas></div>
           </div>
-        </div>
-        <div class="setting-block">
-          <div class="setting-title">Match sensitivity</div>
-          <div class="setting-desc">How closely a phrase must relate to an expert</div>
-          <div class="option-group" id="sensitivity-group">
-            <button class="opt-btn" data-val="strict" onclick="pick('sensitivity',this)">Strict</button>
-            <button class="opt-btn" data-val="balanced" onclick="pick('sensitivity',this)">Balanced</button>
-            <button class="opt-btn" data-val="open" onclick="pick('sensitivity',this)">Open</button>
+          <div>
+            <div class="chart-label">Impressions</div>
+            <div class="chart-wrap"><canvas id="chart-impr"></canvas></div>
           </div>
         </div>
       </div>
-      <div class="settings-col">
-        <div class="setting-block">
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Audience insights</div>
+          <div class="section-sub">Based on all-time click data</div>
+        </div>
+        <div class="insights-grid">
+          <div class="insight-col">
+            <div class="insight-title">Top phrases</div>
+            <div id="insight-phrases"><span class="no-data">No clicks yet</span></div>
+          </div>
+          <div class="insight-col">
+            <div class="insight-title">Traffic source</div>
+            <div id="insight-sources"><span class="no-data">No clicks yet</span></div>
+          </div>
+          <div class="insight-col">
+            <div class="insight-title">Device</div>
+            <div id="insight-devices"><span class="no-data">No clicks yet</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Matches ── -->
+    <div class="tab-panel" id="tab-matches">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Recent matches</div>
+          <div class="section-sub">Last 20 times the widget ran on your site</div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Phrase highlighted</th>
+              <th>Experts shown</th>
+              <th>When</th>
+            </tr>
+          </thead>
+          <tbody id="logs-tbody">
+            <tr><td colspan="3" class="empty">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Widget ── -->
+    <div class="tab-panel" id="tab-widget">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Embed code</div>
+          <div class="section-sub">Paste this before the &lt;/body&gt; tag in your blog template</div>
+        </div>
+        <div class="embed-box">
+          <div class="embed-code" id="embed-display"></div>
+          <button class="copy-btn" onclick="copyEmbed()">Copy code</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Appearance &amp; behaviour</div>
+          <div class="section-sub">Changes save instantly</div>
+        </div>
+        <div class="settings-cols">
+          <div class="settings-col">
+            <div class="setting-block">
+              <div class="setting-title">Widget size</div>
+              <div class="setting-desc">Size of the expert popup card</div>
+              <div class="option-group" id="size-group">
+                <button class="opt-btn" data-val="small" onclick="pick('size',this)">Small</button>
+                <button class="opt-btn" data-val="medium" onclick="pick('size',this)">Medium</button>
+                <button class="opt-btn" data-val="large" onclick="pick('size',this)">Large</button>
+              </div>
+            </div>
+            <div class="setting-block">
+              <div class="setting-title">Number of experts</div>
+              <div class="setting-desc">Max experts suggested per article</div>
+              <div class="option-group" id="power-group">
+                <button class="opt-btn" data-val="light" onclick="pick('power',this)">Light · 1-2</button>
+                <button class="opt-btn" data-val="moderate" onclick="pick('power',this)">Moderate · 3-4</button>
+                <button class="opt-btn" data-val="heavy" onclick="pick('power',this)">Heavy · 5-10</button>
+                <button class="opt-btn" data-val="unlimited" onclick="pick('power',this)">Unlimited</button>
+              </div>
+            </div>
+            <div class="setting-block">
+              <div class="setting-title">Match sensitivity</div>
+              <div class="setting-desc">How closely a phrase must relate to an expert</div>
+              <div class="option-group" id="sensitivity-group">
+                <button class="opt-btn" data-val="strict" onclick="pick('sensitivity',this)">Strict</button>
+                <button class="opt-btn" data-val="balanced" onclick="pick('sensitivity',this)">Balanced</button>
+                <button class="opt-btn" data-val="open" onclick="pick('sensitivity',this)">Open</button>
+              </div>
+            </div>
+          </div>
+          <div class="settings-col settings-col-colors">
+            <div class="setting-block">
+              <div class="setting-title">Link colour</div>
+              <div class="setting-desc">Underline on highlighted phrases</div>
+              <div class="color-row">
+                <input type="color" class="color-picker" id="color-picker" oninput="onColorInput('color','widget_color',this.value)">
+                <input type="text" class="color-hex" id="color-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('color','widget_color','color-picker',this.value)">
+                <button class="color-reset" title="Reset to default" onclick="resetColor('color','widget_color')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+              </div>
+            </div>
+            <div class="setting-block">
+              <div class="setting-title">Widget colour</div>
+              <div class="setting-desc">Button colour inside the popup</div>
+              <div class="color-row">
+                <input type="color" class="color-picker" id="accent-picker" oninput="onColorInput('accent','accent_color',this.value)">
+                <input type="text" class="color-hex" id="accent-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('accent','accent_color','accent-picker',this.value)">
+                <button class="color-reset" title="Reset to default" onclick="resetColor('accent','accent_color')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="partners-section" style="display:none">
+        <div class="section-header">
+          <div class="section-title">Expert networks</div>
+          <div class="section-sub">Choose which partner networks appear on your site</div>
+        </div>
+        <div id="partners-list"></div>
+      </div>
+    </div>
+
+    <!-- ── Payouts ── -->
+    <div class="tab-panel" id="tab-payouts">
+      <div class="stats-grid" style="grid-template-columns:repeat(2,1fr)">
+        <div class="stat-card">
+          <div class="stat-label">Confirmed bookings</div>
+          <div class="stat-value" id="stat-bookings">-</div>
+          <div class="stat-sub">sessions booked through your site</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total earnings</div>
+          <div class="stat-value" id="stat-earnings" style="font-size:1.6rem;padding-top:0.15rem">-</div>
+          <div class="stat-sub">your cumulative payout</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Payment details</div>
+          <div class="section-sub">Where we send your payouts — Wise or PayPal accepted</div>
+        </div>
+        <div style="padding:1.5rem;max-width:440px">
           <div class="setting-title">Payment email</div>
-          <div class="setting-desc">Wise or PayPal email for your payouts</div>
-          <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
-            <input type="email" class="form-input" id="payment-email-input" placeholder="your@wise.com" style="flex:1;padding:0.625rem 0.875rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.875rem;font-family:'Inter',sans-serif;outline:none">
-            <button onclick="savePaymentEmail()" style="background:var(--sage);color:#fff;border:none;padding:0.625rem 1rem;border-radius:8px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Save</button>
+          <div class="setting-desc" style="margin-top:0.25rem">Your Wise or PayPal email address</div>
+          <div class="payout-field">
+            <input type="email" class="payout-input" id="payment-email-input" placeholder="your@wise.com">
+            <button class="payout-save" onclick="savePaymentEmail()">Save</button>
           </div>
+          <div class="payout-hint">Payouts are processed monthly. You'll receive an email confirmation when a transfer is sent.</div>
         </div>
       </div>
-      <div class="settings-col settings-col-colors">
-        <div class="setting-block">
-          <div class="setting-title">Link colour</div>
-          <div class="setting-desc">Underline on highlighted phrases</div>
-          <div class="color-row">
-            <input type="color" class="color-picker" id="color-picker" oninput="onColorInput('color','widget_color',this.value)">
-            <input type="text" class="color-hex" id="color-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('color','widget_color','color-picker',this.value)">
-            <button class="color-reset" title="Reset to default" onclick="resetColor('color','widget_color')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
-          </div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Booking history</div>
+          <div class="section-sub" id="booking-history-sub">Loading...</div>
         </div>
-        <div class="setting-block">
-          <div class="setting-title">Widget colour</div>
-          <div class="setting-desc">Button colour inside the popup</div>
-          <div class="color-row">
-            <input type="color" class="color-picker" id="accent-picker" oninput="onColorInput('accent','accent_color',this.value)">
-            <input type="text" class="color-hex" id="accent-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('accent','accent_color','accent-picker',this.value)">
-            <button class="color-reset" title="Reset to default" onclick="resetColor('accent','accent_color')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
-          </div>
+        <div id="booking-history-empty" style="display:none;padding:3rem;text-align:center;color:var(--ink-muted);font-size:0.875rem">No bookings yet — earnings will appear here once sessions are confirmed.</div>
+        <div style="overflow-x:auto" id="booking-history-table" style="display:none">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Expert</th>
+                <th>Session</th>
+                <th>Your payout</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="booking-history-tbody"></tbody>
+          </table>
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="section" id="partners-section" style="display:none">
-    <div class="section-header">
-      <div class="section-title">Expert networks</div>
-      <div class="section-sub">Choose which partner networks appear on your site</div>
-    </div>
-    <div id="partners-list"></div>
-  </div>
-
-  <div class="section">
-    <div class="section-header">
-      <div class="section-title">Recent matches</div>
-      <div class="section-sub">Last 20 times the widget ran on your site</div>
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Phrase highlighted</th>
-          <th>Experts shown</th>
-          <th>When</th>
-        </tr>
-      </thead>
-      <tbody id="logs-tbody">
-        <tr><td colspan="3" class="empty">Loading...</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-</div>
+  </div><!-- .body -->
+</div><!-- #main -->
 
 <div class="toast" id="toast"></div>
 
@@ -341,6 +417,18 @@ if (!PUB) {
   loadDashboard();
 }
 
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'overview' && window._cd && !window._chartsReady) {
+    initCharts(window._cd);
+    setPeriod('daily', document.querySelector('.period-btn.active'));
+    window._chartsReady = true;
+  }
+}
+
 async function loadDashboard() {
   const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), { credentials: 'include' });
   if (res.status === 401) { window.location.href = '/login'; return; }
@@ -350,36 +438,39 @@ async function loadDashboard() {
   document.getElementById('header-name').textContent = d.publisher.name;
   document.getElementById('main').style.display = 'block';
 
-  // Stats
+  // Overview stats
   const impressions = d.total_impressions || 0;
   const clicks = d.clicks || 0;
   const ctr = impressions > 0 ? (clicks / impressions * 100).toFixed(1) : '0.0';
   document.getElementById('stat-articles').textContent = impressions.toLocaleString();
   document.getElementById('stat-clicks').textContent = clicks.toLocaleString();
   document.getElementById('stat-ctr').textContent = ctr + '%';
-  const expertCount = {};
-  d.logs.forEach(l => (l.expert_names || []).forEach(n => { expertCount[n] = (expertCount[n] || 0) + 1; }));
-  const top = Object.entries(expertCount).sort((a,b) => b[1]-a[1])[0];
-  document.getElementById('stat-top') && (document.getElementById('stat-top').textContent = top ? top[0] : '—');
-  const bk = d.bookings || {};
-  document.getElementById('stat-bookings').textContent = (bk.count || 0).toLocaleString();
-  const payout = bk.total_payout || 0;
-  document.getElementById('stat-earnings').textContent = payout > 0
-    ? new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(payout)
-    : '—';
 
-  // Charts
-  window._chartData = d;
+  // Charts (Overview tab)
+  window._cd = d;
   initCharts(d);
   setPeriod('daily', document.querySelector('.period-btn.active'));
+  window._chartsReady = true;
 
-  // Insights
+  // Audience insights
   renderInsights(d);
 
-  // Embed code
-  document.getElementById('embed-display').textContent = `<script src="https://www.introlinq.com/widget.js" data-publisher="${esc(d.publisher.slug)}"><\/script>`;
+  // Matches
+  const tbody = document.getElementById('logs-tbody');
+  if (!d.logs.length) {
+    tbody.innerHTML = '<tr><td colspan="3" class="empty">No matches yet — install the embed code to get started.</td></tr>';
+  } else {
+    tbody.innerHTML = d.logs.map(l => `
+      <tr>
+        <td><div class="td-phrase-text" title="${esc((l.phrases||[]).join(', '))}">${esc((l.phrases||[]).slice(0,2).join(', ') + (l.phrases?.length > 2 ? ` +${l.phrases.length-2} more` : ''))}</div></td>
+        <td>${(l.expert_names||[]).map(n => `<span class="expert-pill">${esc(n)}</span>`).join('')}</td>
+        <td style="white-space:nowrap;color:var(--ink-muted)">${timeAgo(l.created_at)}</td>
+      </tr>
+    `).join('');
+  }
 
-  // Load current settings
+  // Widget tab
+  document.getElementById('embed-display').textContent = `<script src="https://www.introlinq.com/widget.js" data-publisher="${esc(d.publisher.slug)}"><\/script>`;
   const p = d.publisher;
   settings.color = p.widget_color || '#e6a820';
   settings.accent = p.accent_color || '#e6a820';
@@ -388,38 +479,44 @@ async function loadDashboard() {
   settings.sensitivity = p.match_sensitivity || 'balanced';
   renderSettings();
 
-  // Payment email
-  if (d.publisher.payment_email) {
-    document.getElementById('payment-email-input').value = d.publisher.payment_email;
-  }
-
-  // Partners
   if (d.partners && d.partners.length) {
     document.getElementById('partners-section').style.display = 'block';
     renderPartners(d.partners);
   }
 
-  // Logs
-  const tbody = document.getElementById('logs-tbody');
-  if (!d.logs.length) {
-    tbody.innerHTML = '<tr><td colspan="3" class="empty">No matches yet — install the embed code to get started.</td></tr>';
+  // Payouts tab
+  const bk = d.bookings || {};
+  document.getElementById('stat-bookings').textContent = (bk.count || 0).toLocaleString();
+  const payout = bk.total_payout || 0;
+  document.getElementById('stat-earnings').textContent = payout > 0
+    ? new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(payout)
+    : '—';
+  if (p.payment_email) {
+    document.getElementById('payment-email-input').value = p.payment_email;
+  }
+  renderBookingHistory(d.bookings);
+}
+
+function renderBookingHistory(bk) {
+  const sub = document.getElementById('booking-history-sub');
+  const empty = document.getElementById('booking-history-empty');
+  const table = document.getElementById('booking-history-table');
+  if (!bk || !bk.count) {
+    sub.textContent = 'No bookings yet';
+    empty.style.display = 'block';
     return;
   }
-  tbody.innerHTML = d.logs.map(l => `
-    <tr>
-      <td><div class="td-phrase-text" title="${esc((l.phrases||[]).join(', '))}">${esc((l.phrases||[]).slice(0,2).join(', ') + (l.phrases?.length > 2 ? ` +${l.phrases.length-2} more` : ''))}</div></td>
-      <td>${(l.expert_names||[]).map(n => `<span class="expert-pill">${esc(n)}</span>`).join('')}</td>
-      <td style="white-space:nowrap;color:var(--ink-muted)">${timeAgo(l.created_at)}</td>
-    </tr>
-  `).join('');
+  sub.textContent = `${bk.count} booking${bk.count !== 1 ? 's' : ''}`;
+  table.style.display = 'block';
 }
+
+// ── Settings ────────────────────────────────────────────────────────────────
 
 function renderSettings() {
   document.getElementById('color-picker').value = settings.color;
   document.getElementById('color-hex').value = settings.color;
   document.getElementById('accent-picker').value = settings.accent;
   document.getElementById('accent-hex').value = settings.accent;
-  // Buttons
   setActive('size-group', settings.size);
   setActive('power-group', settings.power);
   setActive('sensitivity-group', settings.sensitivity);
@@ -492,20 +589,7 @@ function copyEmbed() {
   toast('Embed code copied!');
 }
 
-function timeAgo(ts) {
-  const diff = Math.floor((Date.now() - new Date(ts)) / 1000);
-  if (diff < 60) return 'just now';
-  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
-  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
-  return Math.floor(diff/86400) + 'd ago';
-}
-
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2500);
-}
+// ── Partners ─────────────────────────────────────────────────────────────────
 
 function renderPartners(partners) {
   const list = document.getElementById('partners-list');
@@ -536,7 +620,6 @@ async function togglePartner(slug, enabled) {
     const cb = card.querySelector('input[type=checkbox]');
     return { slug: id, enabled: id === slug ? enabled : cb.checked };
   }).filter(p => p.enabled).map(p => p.slug);
-
   await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -583,7 +666,7 @@ async function toggleExperts(slug, btn) {
   btn.textContent = 'Hide experts';
 }
 
-// ── Charts ──────────────────────────────────────────────────────────────────
+// ── Charts ───────────────────────────────────────────────────────────────────
 let clicksChart, imprChart;
 
 function fillDays(raw, n) {
@@ -628,7 +711,8 @@ function fillMonths(raw) {
 }
 
 function initCharts(d) {
-  window._cd = d;
+  if (clicksChart) { clicksChart.destroy(); clicksChart = null; }
+  if (imprChart) { imprChart.destroy(); imprChart = null; }
   const baseOpts = {
     responsive: true, maintainAspectRatio: false,
     plugins: { legend: { display: false }, tooltip: { callbacks: { title: t => t[0].label } } },
@@ -690,9 +774,26 @@ function renderInsights(d) {
   bars('insight-devices', d.devices, 'device', 'count');
 }
 
+// ── Misc ─────────────────────────────────────────────────────────────────────
+
 async function logout() {
   await fetch('/api/auth', { method: 'DELETE', credentials: 'include' });
   window.location.href = '/login';
+}
+
+function timeAgo(ts) {
+  const diff = Math.floor((Date.now() - new Date(ts)) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  return Math.floor(diff/86400) + 'd ago';
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
 }
 
 function esc(s) {
