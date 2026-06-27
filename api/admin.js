@@ -113,6 +113,20 @@ export default async function handler(req, res) {
       `;
       return res.status(200).json(pub);
     }
+
+    if (req.method === 'DELETE') {
+      const { id } = req.body;
+      const [pub] = await sql`SELECT slug, email FROM publishers WHERE id = ${id}`;
+      if (!pub) return res.status(404).json({ error: 'Publisher not found' });
+      await Promise.all([
+        sql`DELETE FROM publishers WHERE id = ${id}`,
+        sql`DELETE FROM match_logs WHERE publisher = ${pub.slug}`.catch(() => {}),
+        sql`DELETE FROM click_logs WHERE publisher = ${pub.slug}`.catch(() => {}),
+        sql`DELETE FROM sessions WHERE publisher_slug = ${pub.slug}`.catch(() => {}),
+        sql`DELETE FROM magic_links WHERE email = ${pub.email}`.catch(() => {}),
+      ]);
+      return res.status(200).json({ ok: true });
+    }
   }
 
   return res.status(404).json({ error: 'Unknown resource' });

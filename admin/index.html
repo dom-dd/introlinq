@@ -295,9 +295,12 @@ async function loadPublishers() {
       </td>
       <td><span class="badge ${p.active ? 'badge-active' : 'badge-inactive'}">${p.active ? 'Active' : 'Inactive'}</span></td>
       <td>${new Date(p.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</td>
-      <td>
+      <td style="display:flex;gap:6px;align-items:center">
         <button onclick="togglePublisher(${p.id}, ${!p.active})" title="${p.active ? 'Deactivate' : 'Activate'}" style="background:${p.active ? 'var(--red-light)' : 'var(--green-light)'};border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${p.active ? 'var(--red)' : 'var(--green)'}" stroke-width="2.5" stroke-linecap="round"><path d="M18.36 6.64A9 9 0 1 1 5.64 6.64"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+        </button>
+        <button onclick="deletePublisher(${p.id}, '${esc(p.name)}')" title="Delete permanently" style="background:#f8f8f8;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink-muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
         </button>
       </td>
     </tr>
@@ -350,6 +353,18 @@ async function addPublisher() {
   loadStats();
 }
 
+
+async function deletePublisher(id, name) {
+  if (!confirm(`Permanently delete "${name}"? This removes all their data and cannot be undone.`)) return;
+  await fetch('/api/admin?resource=publishers', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify({ id })
+  });
+  toast('Publisher deleted');
+  loadPublishers();
+  loadStats();
+}
 
 async function togglePublisher(id, active) {
   await fetch('/api/admin?resource=publishers', {
