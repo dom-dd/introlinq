@@ -75,6 +75,72 @@ export default async function handler(req, res) {
     return res.status(200).json({ slug: session.publisher_slug, name: session.publisher_name });
   }
 
+  // POST ?action=signup — self-service publisher signup
+  if (req.method === 'POST' && action === 'signup') {
+    const { name, email, domain, contact_first_name, contact_last_name, slug: requestedSlug } = req.body;
+    if (!name || !email || !domain) return res.status(400).json({ error: 'Name, email and website are required' });
+
+    const normalised = email.toLowerCase().trim();
+
+    // Check email not already registered
+    const [existing] = await sql`SELECT id FROM publishers WHERE email = ${normalised} LIMIT 1`;
+    if (existing) return res.status(409).json({ error: 'An account with this email already exists. Try logging in instead.' });
+
+    // Generate unique slug
+    const base = (requestedSlug || name)
+      .toLowerCase().trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 50);
+    let slug = base;
+    let suffix = 2;
+    while (true) {
+      const [taken] = await sql`SELECT id FROM publishers WHERE slug = ${slug} LIMIT 1`;
+      if (!taken) break;
+      slug = `${base}-${suffix++}`;
+    }
+
+    // Normalise domain
+    let cleanDomain = domain.trim().replace(/\/+$/, '');
+    if (!/^https?:\/\//i.test(cleanDomain)) cleanDomain = 'https://' + cleanDomain;
+
+    // Create publisher
+    const [pub] = await sql`
+      INSERT INTO publishers (name, email, slug, domain, contact_first_name, contact_last_name, revenue_share, active)
+      VALUES (${name.trim()}, ${normalised}, ${slug}, ${cleanDomain},
+              ${contact_first_name?.trim() || null}, ${contact_last_name?.trim() || null},
+              0.70, true)
+      RETURNING *
+    `;
+
+    // Send welcome email with 7-day magic link
+    const token = await createMagicToken(sql, normalised, 7 * 24 * 60 * 60 * 1000);
+    const link = `https://www.introlinq.com/api/auth?token=${token}`;
+    const firstName = contact_first_name?.trim() || name.trim();
+
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'IntroLinq <hello@introlinq.com>',
+        to: normalised,
+        subject: `Welcome to IntroLinq, ${firstName} — your dashboard is ready`,
+        html: welcomeEmail(firstName, link, slug),
+      })
+    }).catch(() => {});
+
+    // Slack notification
+    if (process.env.SLACK_WEBHOOK_URL) {
+      fetch(process.env.SLACK_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: `🎉 New publisher signup: *${name.trim()}* (${normalised}) — ${cleanDomain}` })
+      }).catch(() => {});
+    }
+
+    return res.status(201).json({ ok: true, slug });
+  }
+
   // POST { email } — send login magic link
   if (req.method === 'POST') {
     const { email } = req.body;
@@ -110,6 +176,26 @@ export default async function handler(req, res) {
   }
 
   return res.status(405).end();
+}
+
+function welcomeEmail(name, link, slug) {
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#faf8f4;font-family:'Inter',system-ui,sans-serif">
+<div style="max-width:480px;margin:40px auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid rgba(26,26,46,0.08)">
+  <div style="background:#1a1a2e;padding:28px 32px">
+    <div style="font-family:Georgia,serif;font-size:1.25rem;color:#fff">Intro<span style="color:#e6a820">Linq</span></div>
+  </div>
+  <div style="padding:32px">
+    <p style="margin:0 0 8px;font-size:1rem;font-weight:600;color:#1a1a2e">Welcome, ${name} 👋</p>
+    <p style="margin:0 0 24px;font-size:0.875rem;color:#8888a8;line-height:1.6">Your IntroLinq dashboard is ready. Click below to access it and get your embed code — this link is valid for 7 days.</p>
+    <a href="${link}" style="display:block;background:#1a1a2e;color:#fff;text-align:center;padding:14px;border-radius:100px;font-size:0.875rem;font-weight:600;text-decoration:none">Access my dashboard →</a>
+    <div style="margin:24px 0;padding:16px;background:#faf8f4;border-radius:8px;border:1px solid rgba(26,26,46,0.08)">
+      <p style="margin:0 0 6px;font-size:0.75rem;font-weight:600;color:#8888a8;text-transform:uppercase;letter-spacing:0.05em">Your embed code</p>
+      <code style="font-size:0.75rem;color:#3d7a5f;word-break:break-all">&lt;script src="https://www.introlinq.com/widget.js" data-publisher="${slug}"&gt;&lt;/script&gt;</code>
+    </div>
+    <p style="margin:0;font-size:0.75rem;color:#8888a8;text-align:center">Paste this before the &lt;/body&gt; tag in your blog template to get started.</p>
+  </div>
+</div>
+</body></html>`;
 }
 
 function loginEmail(link) {
