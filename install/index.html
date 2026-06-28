@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Install the widget · IntroLinq</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#e6a820;--sage:#3d7a5f;--sage-light:#edf5f0;
+  --ink:#1a1a2e;--ink-soft:#4a4a6a;--ink-muted:#8888a8;
+  --cream:#faf8f4;--white:#fff;--border:rgba(26,26,46,0.10);--radius:10px;
+}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh}
+
+.header{background:var(--ink);padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:'DM Serif Display',serif;font-size:1.125rem;color:#fff;text-decoration:none}
+.logo span{color:var(--gold)}
+.header-link{font-size:0.8125rem;color:rgba(255,255,255,0.5);text-decoration:none;transition:color .15s}
+.header-link:hover{color:#fff}
+
+.body{max-width:760px;margin:0 auto;padding:3rem 2rem 6rem}
+
+.page-title{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--ink);margin-bottom:0.5rem}
+.page-sub{font-size:0.9375rem;color:var(--ink-muted);margin-bottom:2.5rem;line-height:1.6}
+
+/* Embed code block */
+.embed-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:2.5rem;overflow:hidden}
+.embed-card-header{padding:1rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.embed-card-title{font-size:0.8125rem;font-weight:600;color:var(--ink)}
+.embed-card-sub{font-size:0.75rem;color:var(--ink-muted);margin-top:2px}
+.embed-block{display:flex;align-items:center;gap:1rem;padding:1.25rem 1.5rem}
+.embed-code{font-family:monospace;font-size:0.8125rem;color:var(--sage);background:var(--sage-light);padding:0.75rem 1rem;border-radius:8px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:1px solid rgba(61,122,95,0.2)}
+.copy-btn{background:var(--sage);color:#fff;border:none;padding:0.625rem 1.25rem;border-radius:100px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:opacity .15s;flex-shrink:0}
+.copy-btn:hover{opacity:.85}
+
+/* Platform tabs */
+.tab-row{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:2rem;overflow-x:auto}
+.tab{padding:0.75rem 1.25rem;font-size:0.875rem;font-weight:500;color:var(--ink-muted);border:none;background:none;cursor:pointer;font-family:'Inter',sans-serif;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:color .15s,border-color .15s;display:flex;align-items:center;gap:0.5rem}
+.tab:hover{color:var(--ink)}
+.tab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
+.tab-icon{width:18px;height:18px;flex-shrink:0}
+
+/* Platform panels */
+.platform{display:none}
+.platform.active{display:block}
+
+/* Steps */
+.steps{display:flex;flex-direction:column;gap:1.5rem}
+.step{display:flex;gap:1.25rem;align-items:flex-start}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-size:0.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.step-body{flex:1}
+.step-title{font-size:0.9375rem;font-weight:600;color:var(--ink);margin-bottom:0.375rem}
+.step-desc{font-size:0.875rem;color:var(--ink-soft);line-height:1.65}
+.step-desc code{background:var(--sage-light);color:var(--sage);padding:1px 5px;border-radius:4px;font-size:0.8125rem}
+.step-desc a{color:var(--sage);text-decoration:none}
+.step-desc a:hover{text-decoration:underline}
+.step-img{margin-top:0.75rem;background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;font-size:0.8125rem;color:var(--ink-muted)}
+
+.note{background:var(--gold-light, #fef3c7);border:1px solid rgba(230,168,32,0.25);border-radius:8px;padding:0.875rem 1.125rem;font-size:0.8125rem;color:#92600a;line-height:1.6;margin-top:1.5rem}
+.note strong{color:#78500a}
+
+/* Verify section */
+.verify{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem;margin-top:3rem}
+.verify-title{font-size:1rem;font-weight:600;color:var(--ink);margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem}
+.check-list{display:flex;flex-direction:column;gap:0.75rem}
+.check-item{display:flex;align-items:flex-start;gap:0.75rem;font-size:0.875rem;color:var(--ink-soft);line-height:1.5}
+.check-icon{width:18px;height:18px;background:var(--sage-light);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+
+.help-row{text-align:center;margin-top:2.5rem;font-size:0.875rem;color:var(--ink-muted)}
+.help-row a{color:var(--sage);text-decoration:none;font-weight:500}
+.help-row a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="/" class="logo">Intro<span>Linq</span></a>
+  <a id="dashboard-link" href="/login" class="header-link">Back to dashboard →</a>
+</div>
+
+<div class="body">
+
+  <div class="page-title">Install the widget</div>
+  <div class="page-sub">Paste one line of code into your blog and the widget activates automatically on every article.</div>
+
+  <!-- Embed code -->
+  <div class="embed-card">
+    <div class="embed-card-header">
+      <div>
+        <div class="embed-card-title">Your embed code</div>
+        <div class="embed-card-sub">This is unique to your account — do not share it</div>
+      </div>
+    </div>
+    <div class="embed-block">
+      <div class="embed-code" id="embed-display"></div>
+      <button class="copy-btn" onclick="copyCode()">Copy</button>
+    </div>
+  </div>
+
+  <!-- Platform tabs -->
+  <div class="tab-row">
+    <button class="tab active" onclick="switchTab('wordpress',this)">
+      <svg class="tab-icon" viewBox="0 0 24 24" fill="#21759b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 14.5l-3-8.5h1.5l1.8 5.1 1.7-5.1h1.5l-3 8.5zm6.3 0h-1.5l-1.8-5.1-1.2 3.6.9 2.5H13l-1.2-3.3L13 9h1.5l1.8 5.1 1.5-5.1h1.5l-2.5 7.5z"/></svg>
+      WordPress
+    </button>
+    <button class="tab" onclick="switchTab('ghost',this)">
+      <svg class="tab-icon" viewBox="0 0 24 24" fill="#15171a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+      Ghost
+    </button>
+    <button class="tab" onclick="switchTab('webflow',this)">
+      <svg class="tab-icon" viewBox="0 0 24 24" fill="#4353ff"><path d="M17.5 3h-11C4.67 3 3 4.67 3 6.5v11C3 19.33 4.67 21 6.5 21h11c1.83 0 3.5-1.67 3.5-3.5v-11C21 4.67 19.33 3 17.5 3zm-2.1 10.5l-2.4-4-1.6 2.7L10 10.5l-2.5 4.5h9.9l-2-1.5z"/></svg>
+      Webflow
+    </button>
+    <button class="tab" onclick="switchTab('squarespace',this)">
+      <svg class="tab-icon" viewBox="0 0 24 24" fill="#000"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      Squarespace
+    </button>
+    <button class="tab" onclick="switchTab('html',this)">
+      <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="#4a4a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Other / HTML
+    </button>
+  </div>
+
+  <!-- WordPress -->
+  <div class="platform active" id="tab-wordpress">
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Install the "Insert Headers and Footers" plugin</div>
+          <div class="step-desc">In your WordPress admin, go to <strong>Plugins → Add New</strong> and search for <strong>Insert Headers and Footers</strong> by WPBeginner. Install and activate it.<br><br>This is the safest way to add code — it doesn't require editing theme files and survives theme updates.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Open the plugin settings</div>
+          <div class="step-desc">Go to <strong>Settings → Insert Headers and Footers</strong> in your WordPress admin sidebar.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Paste your embed code in the Footer box</div>
+          <div class="step-desc">Find the <strong>Scripts in Footer</strong> section and paste your embed code there. Then click <strong>Save</strong>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">Done — visit any article to confirm</div>
+          <div class="step-desc">Open a blog post with at least a few paragraphs of text. After a few seconds, you should see phrases highlighted in your articles when there's a matching expert.</div>
+        </div>
+      </div>
+    </div>
+    <div class="note"><strong>Note:</strong> The widget only activates on article/post pages with substantial content (150+ words). It won't appear on your homepage, category pages, or short posts.</div>
+  </div>
+
+  <!-- Ghost -->
+  <div class="platform" id="tab-ghost">
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Open Ghost Admin settings</div>
+          <div class="step-desc">Log in to your Ghost admin panel and click the <strong>Settings</strong> icon (gear icon) in the bottom-left sidebar.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Go to Code injection</div>
+          <div class="step-desc">In Settings, scroll down and click <strong>Code injection</strong>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Paste in the Site Footer box</div>
+          <div class="step-desc">Paste your embed code into the <strong>Site Footer</strong> text area (not the header). Then click <strong>Save</strong>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">Done — open any post to verify</div>
+          <div class="step-desc">Visit a published post with a good amount of text. Phrases matching available experts will be subtly highlighted.</div>
+        </div>
+      </div>
+    </div>
+    <div class="note"><strong>Ghost Pro users:</strong> Code injection is available on the Starter plan and above. If you're on a lower tier, you may need to upgrade or use a custom theme.</div>
+  </div>
+
+  <!-- Webflow -->
+  <div class="platform" id="tab-webflow">
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Open Project Settings</div>
+          <div class="step-desc">In the Webflow Designer, click the <strong>W</strong> logo in the top-left corner, then go to <strong>Project Settings</strong>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Go to the Custom Code tab</div>
+          <div class="step-desc">Click the <strong>Custom Code</strong> tab at the top of Project Settings.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Paste in the Footer Code box</div>
+          <div class="step-desc">Scroll to the <strong>Footer Code</strong> section and paste your embed code there. Click <strong>Save Changes</strong>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">Publish your site</div>
+          <div class="step-desc">Click <strong>Publish</strong> in the Designer to push the changes live. The widget won't appear in the Webflow preview — you need to view the published site.</div>
+        </div>
+      </div>
+    </div>
+    <div class="note"><strong>CMS collections:</strong> If your blog posts are in a Webflow CMS collection, the footer code injection above covers all of them automatically. No per-page setup needed.</div>
+  </div>
+
+  <!-- Squarespace -->
+  <div class="platform" id="tab-squarespace">
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Go to Settings</div>
+          <div class="step-desc">In your Squarespace admin, click <strong>Settings</strong> in the left sidebar.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Open Advanced → Code Injection</div>
+          <div class="step-desc">Scroll to the <strong>Advanced</strong> section and click <strong>Code Injection</strong>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Paste in the Footer box</div>
+          <div class="step-desc">Paste your embed code into the <strong>Footer</strong> text area. Click <strong>Save</strong>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">Done — visit a blog post to verify</div>
+          <div class="step-desc">Open a published blog post. You should see the widget running on posts with enough content.</div>
+        </div>
+      </div>
+    </div>
+    <div class="note"><strong>Squarespace plan:</strong> Code Injection is available on the Business plan and above. It's not available on the Personal plan.</div>
+  </div>
+
+  <!-- Other / HTML -->
+  <div class="platform" id="tab-html">
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Find your site's HTML template</div>
+          <div class="step-desc">Open the main layout or template file that wraps all your pages — usually called <code>layout.html</code>, <code>base.html</code>, <code>_layout.liquid</code>, or similar depending on your platform.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Paste just before <code>&lt;/body&gt;</code></div>
+          <div class="step-desc">Find the closing <code>&lt;/body&gt;</code> tag and paste your embed code immediately before it. It should look like this:<br><br>
+          <code style="display:block;background:var(--sage-light);color:var(--sage);padding:0.75rem;border-radius:6px;margin-top:0.5rem;font-size:0.78rem;word-break:break-all">    ... rest of your page ...<br>    &lt;script src="https://www.introlinq.com/widget.js" data-publisher="your-slug"&gt;&lt;/script&gt;<br>&lt;/body&gt;</code>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Deploy and verify</div>
+          <div class="step-desc">Deploy your changes and open a content-rich page. The widget loads asynchronously so it won't slow down your site.</div>
+        </div>
+      </div>
+    </div>
+    <div class="note"><strong>Using a tag manager?</strong> You can also paste the embed code into Google Tag Manager or similar. Add it as a Custom HTML tag, set it to fire on "All Pages", and deploy.</div>
+  </div>
+
+  <!-- Verify section -->
+  <div class="verify">
+    <div class="verify-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      How to verify it's working
+    </div>
+    <div class="check-list">
+      <div class="check-item">
+        <div class="check-icon">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        Open a published article on your site with at least 3–4 paragraphs of text.
+      </div>
+      <div class="check-item">
+        <div class="check-icon">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        Wait 2–3 seconds for the widget to run. If there's a matching expert, a phrase in the article will be subtly underlined.
+      </div>
+      <div class="check-item">
+        <div class="check-icon">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        Hover over a highlighted phrase — an expert card should appear.
+      </div>
+      <div class="check-item">
+        <div class="check-icon">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        Check your <a id="dashboard-link-2" href="/login">IntroLinq dashboard</a> → the Matches tab should show a new entry within a minute.
+      </div>
+      <div class="check-item">
+        <div class="check-icon">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        No highlights? The article may not match any available experts yet — try a different article or check the <a id="dashboard-link-3" href="/login">Widget tab</a> to adjust your match sensitivity.
+      </div>
+    </div>
+  </div>
+
+  <div class="help-row">
+    Something not working? <a href="mailto:hello@introlinq.com">hello@introlinq.com</a>
+  </div>
+
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const PUB = params.get('pub') || 'your-publication';
+
+const embedCode = `<script src="https://www.introlinq.com/widget.js" data-publisher="${PUB}"><\/script>`;
+document.getElementById('embed-display').textContent = embedCode;
+
+if (params.get('pub')) {
+  const dashUrl = `/dashboard?pub=${encodeURIComponent(PUB)}`;
+  document.getElementById('dashboard-link').href = dashUrl;
+  document.getElementById('dashboard-link-2').href = dashUrl;
+  document.getElementById('dashboard-link-3').href = dashUrl + '&tab=widget';
+}
+
+function copyCode() {
+  navigator.clipboard.writeText(embedCode);
+  const btn = document.querySelector('.copy-btn');
+  btn.textContent = 'Copied ✓';
+  setTimeout(() => btn.textContent = 'Copy', 2000);
+}
+
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.platform').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+</script>
+</body>
+</html>

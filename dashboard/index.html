@@ -270,7 +270,7 @@ tr:last-child td{border-bottom:none}
       <div class="section">
         <div class="section-header">
           <div class="section-title">Embed code</div>
-          <div class="section-sub">Paste this before the &lt;/body&gt; tag in your blog template</div>
+          <div class="section-sub">Paste this before the &lt;/body&gt; tag in your blog template — <a id="install-guide-link" href="/install" style="color:var(--sage);text-decoration:none;font-weight:500">installation guide →</a></div>
         </div>
         <div class="embed-box">
           <div class="embed-code" id="embed-display"></div>
@@ -471,6 +471,7 @@ async function loadDashboard() {
 
   // Widget tab
   document.getElementById('embed-display').textContent = `<script src="https://www.introlinq.com/widget.js" data-publisher="${esc(d.publisher.slug)}"><\/script>`;
+  document.getElementById('install-guide-link').href = `/install?pub=${encodeURIComponent(d.publisher.slug)}`;
   const p = d.publisher;
   settings.color = p.widget_color || '#e6a820';
   settings.accent = p.accent_color || '#e6a820';
