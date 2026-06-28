@@ -120,6 +120,18 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
       <svg class="tab-icon" viewBox="0 0 24 24" fill="#000"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
       Squarespace
     </button>
+    <button class="tab" onclick="switchTab('wix',this)">
+      <svg class="tab-icon" viewBox="0 0 24 24" fill="#FAAD4D"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+      Wix
+    </button>
+    <button class="tab" onclick="switchTab('framer',this)">
+      <svg class="tab-icon" viewBox="0 0 24 24" fill="#0055FF"><path d="M5 3h14v6h-7zm0 6h7l7 6H5zm0 6h7v6z"/></svg>
+      Framer
+    </button>
+    <button class="tab" onclick="switchTab('gtm',this)">
+      <svg class="tab-icon" viewBox="0 0 24 24" fill="#4285f4"><path d="M12 2L2 7l10 5 10-5-10-5zm0 15l-7-3.5V18l7 3.5 7-3.5v-4.5L12 17z"/></svg>
+      Tag Manager
+    </button>
     <button class="tab" onclick="switchTab('html',this)">
       <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="#4a4a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
       Other / HTML
@@ -128,33 +140,35 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 
   <!-- WordPress -->
   <div class="platform active" id="tab-wordpress">
+
+    <div style="background:var(--sage-light);border:1px solid rgba(61,122,95,0.2);border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1.75rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+      <div>
+        <div style="font-size:0.875rem;font-weight:600;color:var(--ink);margin-bottom:3px">IntroLinq WordPress Plugin</div>
+        <div style="font-size:0.8125rem;color:var(--ink-muted)">One-click install — no code editing needed. Enter your Publisher ID and you're done.</div>
+      </div>
+      <a href="/downloads/introlinq.zip" download style="background:var(--sage);color:#fff;text-decoration:none;padding:0.625rem 1.25rem;border-radius:100px;font-size:0.8125rem;font-weight:600;white-space:nowrap;flex-shrink:0">Download plugin</a>
+    </div>
+
     <div class="steps">
       <div class="step">
         <div class="step-num">1</div>
         <div class="step-body">
-          <div class="step-title">Install the "Insert Headers and Footers" plugin</div>
-          <div class="step-desc">In your WordPress admin, go to <strong>Plugins → Add New</strong> and search for <strong>Insert Headers and Footers</strong> by WPBeginner. Install and activate it.<br><br>This is the safest way to add code — it doesn't require editing theme files and survives theme updates.</div>
+          <div class="step-title">Download and install the plugin</div>
+          <div class="step-desc">Download the plugin above. In your WordPress admin, go to <strong>Plugins → Add New → Upload Plugin</strong>, select the downloaded <code>introlinq.zip</code> file, and click <strong>Install Now</strong>. Then click <strong>Activate</strong>.</div>
         </div>
       </div>
       <div class="step">
         <div class="step-num">2</div>
         <div class="step-body">
-          <div class="step-title">Open the plugin settings</div>
-          <div class="step-desc">Go to <strong>Settings → Insert Headers and Footers</strong> in your WordPress admin sidebar.</div>
+          <div class="step-title">Enter your Publisher ID</div>
+          <div class="step-desc">Go to <strong>Settings → IntroLinq</strong> in your WordPress admin sidebar. Enter your Publisher ID (shown in the embed code box above) and click <strong>Save Publisher ID</strong>.</div>
         </div>
       </div>
       <div class="step">
         <div class="step-num">3</div>
         <div class="step-body">
-          <div class="step-title">Paste your embed code in the Footer box</div>
-          <div class="step-desc">Find the <strong>Scripts in Footer</strong> section and paste your embed code there. Then click <strong>Save</strong>.</div>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">4</div>
-        <div class="step-body">
           <div class="step-title">Done — visit any article to confirm</div>
-          <div class="step-desc">Open a blog post with at least a few paragraphs of text. After a few seconds, you should see phrases highlighted in your articles when there's a matching expert.</div>
+          <div class="step-desc">Open a blog post with at least a few paragraphs of text. After a few seconds, you should see phrases highlighted when there's a matching expert.</div>
         </div>
       </div>
     </div>
@@ -266,6 +280,118 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
     <div class="note"><strong>Squarespace plan:</strong> Code Injection is available on the Business plan and above. It's not available on the Personal plan.</div>
   </div>
 
+  <!-- Wix -->
+  <div class="platform" id="tab-wix">
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Open your Wix dashboard and go to Settings</div>
+          <div class="step-desc">Log in to your Wix account, select your site, and click <strong>Settings</strong> in the left sidebar.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Open Custom Code</div>
+          <div class="step-desc">Scroll down to the <strong>Advanced</strong> section and click <strong>Custom Code</strong>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Add a new code snippet</div>
+          <div class="step-desc">Click <strong>+ Add Custom Code</strong>. Paste your embed code in the text area. Set the name to "IntroLinq", the placement to <strong>Body — end</strong>, and apply it to <strong>All Pages</strong>. Then click <strong>Apply</strong>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">Publish your site</div>
+          <div class="step-desc">Click <strong>Publish</strong> in the Wix editor. The widget won't appear inside the Wix Editor preview — you need to view the live published site.</div>
+        </div>
+      </div>
+    </div>
+    <div class="note"><strong>Wix plan:</strong> Custom Code requires a paid Wix plan (Core or above). It's not available on the free plan.</div>
+  </div>
+
+  <!-- Framer -->
+  <div class="platform" id="tab-framer">
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Open Project Settings</div>
+          <div class="step-desc">In your Framer project, click the <strong>gear icon</strong> in the top-right corner to open Project Settings.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Go to the General tab → Custom Code</div>
+          <div class="step-desc">Select the <strong>General</strong> tab and scroll down to the <strong>Custom Code</strong> section.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Paste in "End of &lt;body&gt; tag"</div>
+          <div class="step-desc">Paste your embed code into the <strong>End of &lt;body&gt; tag</strong> field (not the head). Click <strong>Save</strong>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">Publish your site</div>
+          <div class="step-desc">Click <strong>Publish</strong> to push the changes live. As with Wix, the widget won't appear in the Framer canvas preview.</div>
+        </div>
+      </div>
+    </div>
+    <div class="note"><strong>Framer CMS:</strong> If your blog uses Framer CMS, adding the code to Project Settings covers all CMS pages automatically — no per-page setup needed.</div>
+  </div>
+
+  <!-- Google Tag Manager -->
+  <div class="platform" id="tab-gtm">
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Open your GTM container</div>
+          <div class="step-desc">Go to <a href="https://tagmanager.google.com" target="_blank" rel="noopener">tagmanager.google.com</a> and open the container for your website.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Create a new tag</div>
+          <div class="step-desc">Click <strong>Tags → New</strong>. Give it the name "IntroLinq Widget".</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Set Tag Configuration to Custom HTML</div>
+          <div class="step-desc">Click <strong>Tag Configuration</strong>, choose <strong>Custom HTML</strong>, and paste your embed code in the HTML box.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">Set the trigger to All Pages</div>
+          <div class="step-desc">Click <strong>Triggering</strong> and select <strong>All Pages</strong>. Click <strong>Save</strong>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <div class="step-title">Submit and publish the container</div>
+          <div class="step-desc">Click <strong>Submit</strong> in the top-right corner, add a version name like "Add IntroLinq", and click <strong>Publish</strong>. The widget will go live immediately across your whole site.</div>
+        </div>
+      </div>
+    </div>
+    <div class="note"><strong>Already using GTM?</strong> This is the fastest path — no changes to your site's code needed, works across WordPress, Wix, Squarespace, or any platform that has GTM installed.</div>
+  </div>
+
   <!-- Other / HTML -->
   <div class="platform" id="tab-html">
     <div class="steps">
@@ -293,7 +419,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
         </div>
       </div>
     </div>
-    <div class="note"><strong>Using a tag manager?</strong> You can also paste the embed code into Google Tag Manager or similar. Add it as a Custom HTML tag, set it to fire on "All Pages", and deploy.</div>
+    <div class="note"><strong>Using a tag manager?</strong> Switch to the <strong>Tag Manager</strong> tab above for step-by-step Google Tag Manager instructions.</div>
   </div>
 
   <!-- Verify section -->
