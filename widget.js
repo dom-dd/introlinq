@@ -13,11 +13,19 @@
   }
 
   function init() {
-    var el = findArticle();
-    if (!el) return;
+    tryRun(0);
+  }
 
-    var text = extractParagraphText(el);
-    if (text.length < 150) return;
+  function tryRun(attempt) {
+    var el = findArticle();
+    var text = el ? extractParagraphText(el) : '';
+
+    if ((!el || text.length < 150) && attempt < 5) {
+      setTimeout(function () { tryRun(attempt + 1); }, 800);
+      return;
+    }
+
+    if (!el || text.length < 150) return;
 
     fetch(API, {
       method: 'POST',
