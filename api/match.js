@@ -57,7 +57,13 @@ export default async function handler(req, res) {
       `;
       expertsCacheTime = now;
     }
-    const experts = expertsCache;
+    // Sort experts: same country first, then same language region
+    const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
+    const experts = [...expertsCache].sort((a, b) => {
+      const aMatch = readerCountry && (a.location_country || '').toUpperCase().includes(readerCountry) ? 0 : 1;
+      const bMatch = readerCountry && (b.location_country || '').toUpperCase().includes(readerCountry) ? 0 : 1;
+      return aMatch - bMatch;
+    });
 
     if (experts.length === 0) {
       return res.status(200).json({ matches: [] });
