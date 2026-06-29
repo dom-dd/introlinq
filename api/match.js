@@ -151,10 +151,6 @@ Return only valid JSON, no other text:
         expert: expertMap[m.expert_id]
       }));
 
-    // Send response immediately — don't make user wait for logging
-    res.status(200).json({ matches: enriched, config: pubConfig });
-
-    // Log in background after response is sent
     const preview = article.slice(0, 120).replace(/\s+/g, ' ');
     const phrases = enriched.map(m => m.phrase);
     const expertNames = enriched.map(m => m.expert.name);
@@ -205,6 +201,9 @@ Return only valid JSON, no other text:
         });
       })()
     ]);
+
+    // Send response after logging and Slack are done
+    res.status(200).json({ matches: enriched, config: pubConfig });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Something went wrong' });
