@@ -238,8 +238,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .tryit-article{background:var(--white);border-radius:10px;padding:1.25rem 1.5rem;font-size:0.875rem;line-height:1.85;color:var(--ink-soft);max-height:240px;overflow-y:auto}
 .tryit-article p{margin-bottom:1rem}
 .tryit-article p:last-child{margin-bottom:0}
-.il-hl{background:rgba(230,168,32,0.18);border-bottom:2px solid var(--gold);cursor:pointer;border-radius:2px;padding:0 2px;transition:background .15s}
-.il-hl:hover{background:rgba(230,168,32,0.35)}
+.il-highlight{background:rgba(230,168,32,0.15);border-bottom:2px solid var(--gold);cursor:pointer;border-radius:2px;padding:0 2px;transition:background .15s}
+.il-highlight:hover,.il-highlight.active{background:rgba(230,168,32,0.3)}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* Inline expert popup (reuse /app styles) */
 .il-popup{position:fixed;z-index:9999;width:300px;background:var(--white);border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,0.14),0 2px 8px rgba(0,0,0,0.06);padding:1.125rem;opacity:0;transform:translateY(6px);transition:opacity 0.18s ease,transform 0.18s ease;pointer-events:none;border:1px solid var(--border)}
@@ -811,39 +812,63 @@ function switchDemo(name, btn) {
   }
 }
 
-let tryitMatchData = [];
-let tryitHideTimer = null;
-const tryitPopup = document.getElementById('tryit-popup');
+// Tryit tab — exact /app implementation, ti_ prefixed to avoid conflicts
+let ti_matchData = [];
+let ti_hideTimer = null;
+const ti_popup = document.getElementById('tryit-popup');
 
 async function findMatchesInline() {
   const article = document.getElementById('tryit-input').value.trim();
   if (article.length < 50) return;
-  const btn = document.getElementById('tryit-btn');
-  btn.disabled = true;
-  btn.textContent = 'Analysing…';
-  document.getElementById('tryit-loading').style.display = 'flex';
+  ti_setLoading(true);
   document.getElementById('tryit-output').style.display = 'none';
-  tryitPopup.classList.remove('visible');
+  if (ti_popup) ti_popup.classList.remove('visible');
   try {
-    const res = await fetch('/api/match', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ article }) });
+    const res = await fetch('/api/match', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ article })
+    });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Something went wrong');
-    tryitMatchData = data.matches || [];
-    tryitMatchData.forEach(m => { if (m.expert?.photo_url) { const i = new Image(); i.src = m.expert.photo_url; } });
-    renderTryitOutput(article, tryitMatchData);
-  } catch (err) {}
-  document.getElementById('tryit-loading').style.display = 'none';
-  btn.disabled = false;
-  btn.textContent = 'Find matching experts';
+    ti_matchData = data.matches || [];
+    ti_matchData.forEach(m => { if (m.expert?.photo_url) { const img = new Image(); img.src = m.expert.photo_url; } });
+    ti_renderOutput(article, ti_matchData);
+  } catch (err) {
+  } finally {
+    ti_setLoading(false);
+  }
 }
 
-function tryitEsc(t) {
-  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function ti_setLoading(on) {
+  document.getElementById('tryit-loading').style.display = on ? 'flex' : 'none';
+  const btn = document.getElementById('tryit-btn');
+  btn.disabled = on;
+  btn.textContent = on ? 'Analysing...' : 'Find matching experts';
 }
 
-function renderTryitOutput(article, matches) {
+function ti_renderOutput(article, matches) {
   const n = matches.length;
-  document.getElementById('tryit-badge').textContent = n === 0 ? 'No matches found' : `${n} expert ${n === 1 ? 'match' : 'matches'} found`;
+  document.getElementById('tryit-badge').textContent =
+    n === 0 ? 'No matches found' : `${n} expert ${n === 1 ? 'match' : 'matches'} found`;
+  document.getElementById('tryit-article').innerHTML = ti_buildHtml(article, matches);
+  document.getElementById('tryit-output').style.display = 'block';
+  document.querySelectorAll('#tryit-article .il-highlight').forEach(span => {
+    span.addEventListener('mouseenter', () => {
+      clearTimeout(ti_hideTimer);
+      ti_fillPopup(ti_matchData[parseInt(span.dataset.idx)]);
+      ti_positionPopup(span);
+      if (ti_popup) ti_popup.classList.add('visible');
+    });
+    span.addEventListener('mouseleave', () => { ti_hideTimer = setTimeout(ti_maybeHide, 130); });
+  });
+  if (ti_popup) {
+    ti_popup.addEventListener('mouseenter', () => clearTimeout(ti_hideTimer));
+    ti_popup.addEventListener('mouseleave', () => { ti_hideTimer = setTimeout(() => ti_popup.classList.remove('visible'), 130); });
+  }
+}
+
+function ti_buildHtml(article, matches) {
   const ranges = [];
   matches.forEach((m, idx) => { const pos = article.indexOf(m.phrase); if (pos !== -1) ranges.push({ start: pos, end: pos + m.phrase.length, idx }); });
   ranges.sort((a, b) => a.start - b.start);
@@ -851,45 +876,43 @@ function renderTryitOutput(article, matches) {
   for (const r of ranges) { if (r.start >= lastEnd) { clean.push(r); lastEnd = r.end; } }
   let html = ''; let pos = 0;
   for (const r of clean) {
-    html += tryitEsc(article.slice(pos, r.start));
-    html += `<span class="il-hl" data-idx="${r.idx}">${tryitEsc(article.slice(r.start, r.end))}</span>`;
+    html += ti_esc(article.slice(pos, r.start));
+    html += `<span class="il-highlight" data-idx="${r.idx}">${ti_esc(article.slice(r.start, r.end))}</span>`;
     pos = r.end;
   }
-  html += tryitEsc(article.slice(pos));
-  const articleEl = document.getElementById('tryit-article');
-  articleEl.innerHTML = '<p>' + html.replace(/\n\n+/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
-  document.getElementById('tryit-output').style.display = 'block';
-  articleEl.querySelectorAll('.il-hl').forEach(span => {
-    span.addEventListener('mouseenter', () => {
-      clearTimeout(tryitHideTimer);
-      fillTryitPopup(tryitMatchData[parseInt(span.dataset.idx)]);
-      const rect = span.getBoundingClientRect();
-      const W = 300, H = 210;
-      let top = rect.bottom + 10, left = rect.left;
-      if (rect.bottom + H + 10 > window.innerHeight) top = rect.top - H - 10;
-      if (left + W > window.innerWidth - 12) left = window.innerWidth - W - 12;
-      if (left < 8) left = 8;
-      tryitPopup.style.top = top + 'px';
-      tryitPopup.style.left = left + 'px';
-      tryitPopup.classList.add('visible');
-    });
-    span.addEventListener('mouseleave', () => { tryitHideTimer = setTimeout(() => { if (!tryitPopup.matches(':hover')) tryitPopup.classList.remove('visible'); }, 130); });
-  });
-  tryitPopup.addEventListener('mouseenter', () => clearTimeout(tryitHideTimer));
-  tryitPopup.addEventListener('mouseleave', () => { tryitHideTimer = setTimeout(() => tryitPopup.classList.remove('visible'), 130); });
+  html += ti_esc(article.slice(pos));
+  return '<p>' + html.replace(/\n\n+/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
 }
 
-function fillTryitPopup(match) {
+function ti_esc(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function ti_fillPopup(match) {
   const e = match.expert;
   const img = document.getElementById('tryit-popup-photo');
   const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(e.name)}&background=edf5f0&color=3d7a5f&size=88&bold=true&font-size=0.4`;
   img.onload = null; img.onerror = null; img.src = fallback;
-  if (e.photo_url) { const p = new Image(); p.onload = () => { img.src = e.photo_url; }; p.src = e.photo_url; }
+  if (e.photo_url) { const pre = new Image(); pre.onload = () => { img.src = e.photo_url; }; pre.src = e.photo_url; }
   document.getElementById('tryit-popup-name').textContent = e.name;
   document.getElementById('tryit-popup-role').textContent = [e.position, e.company].filter(Boolean).join(' · ');
   document.getElementById('tryit-popup-price').textContent = e.price_from ? `From £${e.price_from} / session` : '';
   document.getElementById('tryit-popup-reason').textContent = match.reason;
   document.getElementById('tryit-popup-book').href = e.booking_url || '#';
+}
+
+function ti_positionPopup(span) {
+  const rect = span.getBoundingClientRect();
+  const W = 300, H = 210;
+  let top = rect.bottom + 10, left = rect.left;
+  if (rect.bottom + H + 10 > window.innerHeight) top = rect.top - H - 10;
+  if (left + W > window.innerWidth - 12) left = window.innerWidth - W - 12;
+  if (left < 8) left = 8;
+  if (ti_popup) { ti_popup.style.top = top + 'px'; ti_popup.style.left = left + 'px'; }
+}
+
+function ti_maybeHide() {
+  if (ti_popup && !ti_popup.matches(':hover')) ti_popup.classList.remove('visible');
 }
 </script>
 
