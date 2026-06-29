@@ -143,7 +143,7 @@
     return p;
   }
 
-  function countryToFlag(country) {
+  function countryToISO(country) {
     if (!country) return '';
     var names = {
       'afghanistan':'AF','albania':'AL','algeria':'DZ','argentina':'AR','australia':'AU',
@@ -164,11 +164,7 @@
       'uk':'GB','united states':'US','usa':'US','uruguay':'UY','venezuela':'VE',
       'vietnam':'VN'
     };
-    var code = country.length === 2 ? country.toUpperCase() : (names[country.toLowerCase()] || '');
-    if (!code) return '';
-    return Array.from(code).map(function (c) {
-      return String.fromCodePoint(c.charCodeAt(0) - 65 + 0x1F1E6);
-    }).join('');
+    return country.length === 2 ? country.toUpperCase() : (names[country.toLowerCase()] || '');
   }
 
   function getContrastColor(hex) {
@@ -247,7 +243,10 @@
     }
     document.getElementById('il-nm').textContent = e.name;
     var fl = document.getElementById('il-fl');
-    if (fl) fl.textContent = e.location_country ? countryToFlag(e.location_country) : '';
+    if (fl) {
+      var iso = countryToISO(e.location_country);
+      fl.innerHTML = iso ? '<img src="https://flagcdn.com/20x15/' + iso.toLowerCase() + '.png" style="border-radius:3px;vertical-align:middle;box-shadow:0 1px 3px rgba(0,0,0,0.15)" width="20" height="15" alt="">' : '';
+    }
     document.getElementById('il-rl').textContent = [e.position, e.company].filter(Boolean).join(' · ');
     document.getElementById('il-pr').textContent = e.price_from ? 'From £' + e.price_from + ' / session' : '';
     var rs = document.getElementById('il-rs');
