@@ -277,7 +277,7 @@
     var fl = document.getElementById('il-fl');
     if (fl) {
       var iso = countryToISO(e.location_country);
-      fl.innerHTML = iso ? '<span style="display:inline-block;overflow:hidden;border-radius:50%;width:18px;height:18px;vertical-align:middle;box-shadow:0 1px 3px rgba(0,0,0,0.25);flex-shrink:0;position:relative"><img src="https://flagcdn.com/40x30/' + iso.toLowerCase() + '.png" width="40" height="30" alt="" style="display:block;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"></span>' : '';
+      fl.innerHTML = iso ? '<img src="https://hatscripts.github.io/circle-flags/flags/' + iso.toLowerCase() + '.svg" width="18" height="18" alt="" style="vertical-align:middle;flex-shrink:0;border-radius:50%">' : '';
     }
     document.getElementById('il-rl').textContent = [e.position, e.company].filter(Boolean).join(' · ');
     document.getElementById('il-pr').textContent = e.price_from ? 'From £' + e.price_from + ' / session' : '';
