@@ -222,38 +222,35 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .demo-panel.active{display:block}
 
 /* Try it panel */
-.tryit-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.625rem}
-.tryit-sample-btn{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);font-size:0.75rem;font-weight:600;padding:0.3rem 0.875rem;border-radius:100px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;white-space:nowrap}
-.tryit-sample-btn:hover{background:rgba(255,255,255,0.18);color:#fff}
-.tryit-textarea{width:100%;height:190px;padding:0.875rem 1rem;border:1.5px solid rgba(255,255,255,0.1);border-radius:10px;font-size:0.875rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);resize:none;outline:none;transition:border-color .15s;line-height:1.7}
-.tryit-textarea:focus{border-color:var(--gold);background:#fff}
-.tryit-textarea::placeholder{color:var(--ink-muted)}
-.tryit-btn{display:block;width:100%;margin-top:0.75rem;background:var(--gold);color:var(--ink);border:none;padding:0.8125rem;border-radius:100px;font-size:0.9375rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .15s;box-shadow:0 4px 16px rgba(230,168,32,0.4);letter-spacing:0.01em}
-.tryit-btn:hover:not(:disabled){opacity:.88}
-.tryit-btn:disabled{opacity:.5;cursor:not-allowed}
-.tryit-loading{text-align:center;padding:1rem;color:rgba(255,255,255,0.45);font-size:0.8125rem;display:none;align-items:center;justify-content:center;gap:0.5rem}
-.tryit-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,0.15);border-top-color:var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
-.tryit-output{display:none;margin-top:0.875rem}
-.tryit-badge{display:inline-block;font-size:0.72rem;font-weight:600;background:rgba(61,122,95,0.3);color:#a8d8c0;padding:0.2rem 0.7rem;border-radius:100px;margin-bottom:0.625rem}
-.tryit-article{background:var(--white);border-radius:10px;padding:1.25rem 1.5rem;font-size:0.875rem;line-height:1.85;color:var(--ink-soft);max-height:240px;overflow-y:auto}
-.tryit-article p{margin-bottom:1rem}
-.tryit-article p:last-child{margin-bottom:0}
+.t-textarea{width:100%;height:190px;padding:0.875rem 1rem;border:1.5px solid rgba(255,255,255,0.1);border-radius:10px;font-size:0.875rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);resize:none;outline:none;transition:border-color .15s;line-height:1.7}
+.t-textarea:focus{border-color:var(--gold);background:#fff}
+.t-textarea::placeholder{color:var(--ink-muted)}
+.t-btn{display:block;width:100%;margin-top:0.75rem;background:var(--gold);color:var(--ink);border:none;padding:0.8125rem;border-radius:100px;font-size:0.9375rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .15s;box-shadow:0 4px 16px rgba(230,168,32,0.4);letter-spacing:0.01em}
+.t-btn:hover:not(:disabled){opacity:.88}
+.t-btn:disabled{opacity:.5;cursor:not-allowed}
+.t-error{background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);color:#fca5a5;border-radius:8px;padding:0.5rem 0.875rem;font-size:0.8rem;margin-top:0.5rem;display:none}
+.t-loading{text-align:center;padding:1rem;color:rgba(255,255,255,0.55);font-size:0.875rem;display:none}
+.t-spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.15);border-top-color:var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;margin-right:0.5rem;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.t-output{display:none;margin-top:0.875rem}
+.t-badge{display:inline-block;font-size:0.72rem;font-weight:600;background:rgba(61,122,95,0.3);color:#a8d8c0;padding:0.2rem 0.7rem;border-radius:100px;margin-bottom:0.625rem}
+.t-article{background:var(--white);border-radius:10px;padding:1.25rem 1.5rem;font-size:0.875rem;line-height:1.85;color:var(--ink-soft);max-height:240px;overflow-y:auto}
+.t-article p{margin-bottom:1rem}
+.t-article p:last-child{margin-bottom:0}
 .il-highlight{background:rgba(230,168,32,0.15);border-bottom:2px solid var(--gold);cursor:pointer;border-radius:2px;padding:0 2px;transition:background .15s}
 .il-highlight:hover,.il-highlight.active{background:rgba(230,168,32,0.3)}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* Inline expert popup (reuse /app styles) */
-.il-popup{position:fixed;z-index:9999;width:300px;background:var(--white);border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,0.14),0 2px 8px rgba(0,0,0,0.06);padding:1.125rem;opacity:0;transform:translateY(6px);transition:opacity 0.18s ease,transform 0.18s ease;pointer-events:none;border:1px solid var(--border)}
-.il-popup.visible{opacity:1;transform:translateY(0);pointer-events:all}
-.il-popup-top{display:flex;gap:0.75rem;align-items:center;margin-bottom:0.75rem}
-.il-avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--cream);border:2px solid var(--cream)}
-.il-name{font-weight:600;font-size:0.875rem;color:var(--ink);line-height:1.25}
-.il-role{font-size:0.72rem;color:var(--ink-soft);margin-top:2px;line-height:1.3}
-.il-price{font-size:0.7rem;color:var(--ink-muted);margin-top:3px}
-.il-reason{font-size:0.8rem;color:var(--ink-soft);line-height:1.6;margin-bottom:0.75rem;font-style:italic;border-left:2px solid var(--gold-light);padding-left:0.625rem}
-.il-book{display:block;background:var(--gold);color:var(--ink);text-align:center;padding:0.5625rem;border-radius:100px;font-size:0.8125rem;font-weight:700;text-decoration:none;transition:opacity 0.15s}
-.il-book:hover{opacity:0.85}
-.il-powered{font-size:0.6rem;color:var(--ink-muted);text-align:center;margin-top:0.5rem;letter-spacing:0.04em;text-transform:uppercase}
+/* Expert popup */
+.t-popup{position:fixed;z-index:9999;width:300px;background:var(--white);border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,0.14),0 2px 8px rgba(0,0,0,0.06);padding:1.125rem;opacity:0;transform:translateY(6px);transition:opacity 0.18s ease,transform 0.18s ease;pointer-events:none;border:1px solid var(--border)}
+.t-popup.visible{opacity:1;transform:translateY(0);pointer-events:all}
+.t-popup-top{display:flex;gap:0.75rem;align-items:center;margin-bottom:0.75rem}
+.t-avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--cream)}
+.t-name{font-weight:600;font-size:0.875rem;color:var(--ink)}
+.t-role{font-size:0.72rem;color:var(--ink-soft);margin-top:2px}
+.t-price{font-size:0.7rem;color:var(--ink-muted);margin-top:3px}
+.t-reason{font-size:0.8rem;color:var(--ink-soft);line-height:1.6;margin-bottom:0.75rem;font-style:italic;border-left:2px solid var(--gold);padding-left:0.625rem}
+.t-book{display:block;background:var(--gold);color:var(--ink);text-align:center;padding:0.5625rem;border-radius:100px;font-size:0.8125rem;font-weight:700;text-decoration:none;transition:opacity 0.15s}
+.t-book:hover{opacity:0.85}
+.t-powered{font-size:0.6rem;color:var(--ink-muted);text-align:center;margin-top:0.5rem;letter-spacing:0.04em;text-transform:uppercase}
 </style>
 </head>
 <body>
@@ -342,9 +339,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
       <!-- Try it panel -->
       <div class="demo-panel" id="dp-tryit">
         <div class="carousel-label" style="margin-bottom:0.75rem">Paste your article below — or use the sample to see it in action</div>
-        <textarea class="tryit-textarea" id="tryit-input" placeholder="Paste any blog post or article here — the longer the better."></textarea>
-        <!-- Sample text lives here so JS never has to escape it -->
-        <textarea id="tryit-sample-src" style="display:none">How to start a company:
+        <textarea class="t-textarea" id="t-input" placeholder="Paste any blog post or article here — the longer the better."></textarea>
+        <textarea id="t-sample-src" style="display:none">How to start a company:
 
 Starting a company begins with a clear idea - not necessarily original, but one that solves a real problem for a specific group of people. The sharper you can define who your customer is and what pain you're removing, the better your foundation.
 Before building anything, validate your idea. Talk to potential customers. The goal isn't to pitch them; it's to understand their world. Most early-stage companies fail not because they built badly, but because they built the wrong thing.
@@ -353,11 +349,12 @@ Focus obsessively on that. Your first few customers will teach you more than any
 As traction builds, document what's working - your sales process, your onboarding, your messaging. That documentation becomes the foundation for hiring and delegation later.
 Fundraising is optional, not a milestone. Many great businesses are built without external capital. Only raise money if it genuinely accelerates something you can't do otherwise, and only when you have enough evidence to negotiate from a position of strength.
 The honest summary: talk to customers early, stay lean, get to revenue as fast as possible, and treat every piece of feedback as a gift.</textarea>
-        <div class="tryit-loading" id="tryit-loading"><div class="tryit-spinner"></div>Matching experts…</div>
-        <button class="tryit-btn" id="tryit-btn" onclick="findMatchesInline()">Find matching experts</button>
-        <div class="tryit-output" id="tryit-output">
-          <span class="tryit-badge" id="tryit-badge"></span>
-          <div class="tryit-article" id="tryit-article"></div>
+        <div class="t-error" id="t-error"></div>
+        <button class="t-btn" id="t-btn" onclick="tFindMatches()">Find matching experts</button>
+        <div class="t-loading" id="t-loading"><span class="t-spinner"></span>Matching experts…</div>
+        <div class="t-output" id="t-output">
+          <span class="t-badge" id="t-badge"></span>
+          <div class="t-article" id="t-article"></div>
         </div>
       </div><!-- /tryit panel -->
 
@@ -633,19 +630,19 @@ The honest summary: talk to customers early, stay lean, get to revenue as fast a
 
 </div>
 
-<!-- Tryit expert popup — must be before <script> so getElementById finds it -->
-<div class="il-popup" id="tryit-popup">
-  <div class="il-popup-top">
-    <img class="il-avatar" id="tryit-popup-photo" src="" alt="">
+<!-- Tryit expert popup -->
+<div class="t-popup" id="t-popup">
+  <div class="t-popup-top">
+    <img class="t-avatar" id="t-photo" src="" alt="">
     <div>
-      <div class="il-name" id="tryit-popup-name"></div>
-      <div class="il-role" id="tryit-popup-role"></div>
-      <div class="il-price" id="tryit-popup-price"></div>
+      <div class="t-name" id="t-name"></div>
+      <div class="t-role" id="t-role"></div>
+      <div class="t-price" id="t-price"></div>
     </div>
   </div>
-  <div class="il-reason" id="tryit-popup-reason"></div>
-  <a class="il-book" id="tryit-popup-book" href="#" target="_blank">Book a call →</a>
-  <div class="il-powered">Powered by IntroLinq</div>
+  <div class="t-reason" id="t-reason"></div>
+  <a class="t-book" id="t-book" href="#" target="_blank">Book a call →</a>
+  <div class="t-powered">Powered by IntroLinq</div>
 </div>
 
 <script>
@@ -805,88 +802,80 @@ function switchDemo(name, btn) {
   document.getElementById('dp-' + name).classList.add('active');
   // Auto-fill textarea with sample when switching to tryit tab
   if (name === 'tryit') {
-    const input = document.getElementById('tryit-input');
+    const input = document.getElementById('t-input');
     if (!input.value.trim()) {
-      input.value = document.getElementById('tryit-sample-src').value;
+      input.value = document.getElementById('t-sample-src').value;
     }
   }
 }
 
-// Tryit tab — exact /app implementation, ti_ prefixed to avoid conflicts
-let ti_matchData = [];
-let ti_hideTimer = null;
-const ti_popup = document.getElementById('tryit-popup');
+// Tryit tab — exact /app code, t_ prefixed
+let t_matchData = [];
+let t_hideTimer = null;
+const t_popup = document.getElementById('t-popup');
 
-async function findMatchesInline() {
-  const article = document.getElementById('tryit-input').value.trim();
-  if (article.length < 50) return;
-
-  const loadEl = document.getElementById('tryit-loading');
-  const btnEl = document.getElementById('tryit-btn');
-  const outputEl = document.getElementById('tryit-output');
-
-  loadEl.style.display = 'flex';
-  btnEl.disabled = true;
-  btnEl.textContent = 'Analysing...';
-  outputEl.style.display = 'none';
-  if (ti_popup) ti_popup.classList.remove('visible');
-
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 35000);
-
+async function tFindMatches() {
+  const article = document.getElementById('t-input').value.trim();
+  if (article.length < 50) { t_showError('Please paste a full article first.'); return; }
+  t_clearError();
+  t_setLoading(true);
+  document.getElementById('t-output').style.display = 'none';
+  t_popup.classList.remove('visible');
   try {
     const res = await fetch('/api/match', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ article }),
-      signal: ctrl.signal
+      body: JSON.stringify({ article })
     });
-    clearTimeout(timer);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Something went wrong');
-    ti_matchData = data.matches || [];
-    ti_matchData.forEach(m => { if (m.expert?.photo_url) { const img = new Image(); img.src = m.expert.photo_url; } });
-    ti_renderOutput(article, ti_matchData);
+    t_matchData = data.matches || [];
+    t_matchData.forEach(m => { if (m.expert?.photo_url) { const img = new Image(); img.src = m.expert.photo_url; } });
+    t_renderOutput(article, t_matchData);
   } catch (err) {
-    document.getElementById('tryit-badge').textContent = err.message || 'Something went wrong';
-    document.getElementById('tryit-output').style.display = 'block';
+    t_showError(err.message || 'Something went wrong. Please try again.');
   } finally {
-    clearTimeout(timer);
-    loadEl.style.display = 'none';
-    btnEl.disabled = false;
-    btnEl.textContent = 'Find matching experts';
+    t_setLoading(false);
   }
 }
 
-function ti_setLoading(on) {
-  document.getElementById('tryit-loading').style.display = on ? 'flex' : 'none';
-  const btn = document.getElementById('tryit-btn');
+function t_setLoading(on) {
+  document.getElementById('t-loading').style.display = on ? 'block' : 'none';
+  const btn = document.getElementById('t-btn');
   btn.disabled = on;
   btn.textContent = on ? 'Analysing...' : 'Find matching experts';
 }
 
-function ti_renderOutput(article, matches) {
-  const n = matches.length;
-  document.getElementById('tryit-badge').textContent =
-    n === 0 ? 'No matches found' : `${n} expert ${n === 1 ? 'match' : 'matches'} found`;
-  document.getElementById('tryit-article').innerHTML = ti_buildHtml(article, matches);
-  document.getElementById('tryit-output').style.display = 'block';
-  document.querySelectorAll('#tryit-article .il-highlight').forEach(span => {
-    span.addEventListener('mouseenter', () => {
-      clearTimeout(ti_hideTimer);
-      ti_fillPopup(ti_matchData[parseInt(span.dataset.idx)]);
-      ti_positionPopup(span);
-      if (ti_popup) ti_popup.classList.add('visible');
-    });
-    span.addEventListener('mouseleave', () => { ti_hideTimer = setTimeout(ti_maybeHide, 130); });
-  });
-  if (ti_popup) {
-    ti_popup.addEventListener('mouseenter', () => clearTimeout(ti_hideTimer));
-    ti_popup.addEventListener('mouseleave', () => { ti_hideTimer = setTimeout(() => ti_popup.classList.remove('visible'), 130); });
-  }
+function t_showError(msg) {
+  const el = document.getElementById('t-error');
+  el.textContent = msg;
+  el.style.display = 'block';
 }
 
-function ti_buildHtml(article, matches) {
+function t_clearError() {
+  document.getElementById('t-error').style.display = 'none';
+}
+
+function t_renderOutput(article, matches) {
+  const n = matches.length;
+  document.getElementById('t-badge').textContent =
+    n === 0 ? 'No matches found' : `${n} expert ${n === 1 ? 'match' : 'matches'} found`;
+  document.getElementById('t-article').innerHTML = t_buildHtml(article, matches);
+  document.getElementById('t-output').style.display = 'block';
+  document.querySelectorAll('#t-article .il-highlight').forEach(span => {
+    span.addEventListener('mouseenter', () => {
+      clearTimeout(t_hideTimer);
+      t_fillPopup(t_matchData[parseInt(span.dataset.idx)]);
+      t_positionPopup(span);
+      t_popup.classList.add('visible');
+    });
+    span.addEventListener('mouseleave', () => { t_hideTimer = setTimeout(t_maybeHide, 130); });
+  });
+  t_popup.addEventListener('mouseenter', () => clearTimeout(t_hideTimer));
+  t_popup.addEventListener('mouseleave', () => { t_hideTimer = setTimeout(() => t_popup.classList.remove('visible'), 130); });
+}
+
+function t_buildHtml(article, matches) {
   const ranges = [];
   matches.forEach((m, idx) => { const pos = article.indexOf(m.phrase); if (pos !== -1) ranges.push({ start: pos, end: pos + m.phrase.length, idx }); });
   ranges.sort((a, b) => a.start - b.start);
@@ -894,43 +883,44 @@ function ti_buildHtml(article, matches) {
   for (const r of ranges) { if (r.start >= lastEnd) { clean.push(r); lastEnd = r.end; } }
   let html = ''; let pos = 0;
   for (const r of clean) {
-    html += ti_esc(article.slice(pos, r.start));
-    html += `<span class="il-highlight" data-idx="${r.idx}">${ti_esc(article.slice(r.start, r.end))}</span>`;
+    html += t_esc(article.slice(pos, r.start));
+    html += `<span class="il-highlight" data-idx="${r.idx}">${t_esc(article.slice(r.start, r.end))}</span>`;
     pos = r.end;
   }
-  html += ti_esc(article.slice(pos));
+  html += t_esc(article.slice(pos));
   return '<p>' + html.replace(/\n\n+/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
 }
 
-function ti_esc(t) {
-  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function t_esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function ti_fillPopup(match) {
+function t_fillPopup(match) {
   const e = match.expert;
-  const img = document.getElementById('tryit-popup-photo');
+  const img = document.getElementById('t-photo');
   const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(e.name)}&background=edf5f0&color=3d7a5f&size=88&bold=true&font-size=0.4`;
   img.onload = null; img.onerror = null; img.src = fallback;
   if (e.photo_url) { const pre = new Image(); pre.onload = () => { img.src = e.photo_url; }; pre.src = e.photo_url; }
-  document.getElementById('tryit-popup-name').textContent = e.name;
-  document.getElementById('tryit-popup-role').textContent = [e.position, e.company].filter(Boolean).join(' · ');
-  document.getElementById('tryit-popup-price').textContent = e.price_from ? `From £${e.price_from} / session` : '';
-  document.getElementById('tryit-popup-reason').textContent = match.reason;
-  document.getElementById('tryit-popup-book').href = e.booking_url || '#';
+  document.getElementById('t-name').textContent = e.name;
+  document.getElementById('t-role').textContent = [e.position, e.company].filter(Boolean).join(' · ');
+  document.getElementById('t-price').textContent = e.price_from ? `From £${e.price_from} / session` : '';
+  document.getElementById('t-reason').textContent = match.reason;
+  document.getElementById('t-book').href = e.booking_url || '#';
 }
 
-function ti_positionPopup(span) {
+function t_positionPopup(span) {
   const rect = span.getBoundingClientRect();
   const W = 300, H = 210;
   let top = rect.bottom + 10, left = rect.left;
   if (rect.bottom + H + 10 > window.innerHeight) top = rect.top - H - 10;
   if (left + W > window.innerWidth - 12) left = window.innerWidth - W - 12;
   if (left < 8) left = 8;
-  if (ti_popup) { ti_popup.style.top = top + 'px'; ti_popup.style.left = left + 'px'; }
+  t_popup.style.top = top + 'px';
+  t_popup.style.left = left + 'px';
 }
 
-function ti_maybeHide() {
-  if (ti_popup && !ti_popup.matches(':hover')) ti_popup.classList.remove('visible');
+function t_maybeHide() {
+  if (!t_popup.matches(':hover')) t_popup.classList.remove('visible');
 }
 </script>
 
