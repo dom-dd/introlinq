@@ -110,7 +110,7 @@ Return only valid JSON, no other text:
     if (!response.ok) {
       const err = await response.text();
       console.error('Anthropic API error:', err);
-      return res.status(500).json({ error: 'AI matching failed', detail: err, status: response.status, hasKey: !!process.env.ANTHROPIC_API_KEY });
+      return res.status(500).json({ error: 'AI matching failed' });
     }
 
     const aiResult = await response.json();
