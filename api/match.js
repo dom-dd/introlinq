@@ -48,7 +48,7 @@ export default async function handler(req, res) {
              booking_url, location_country
       FROM experts
       WHERE active = true
-      ORDER BY id
+      ORDER BY RANDOM()
     `;
 
     if (experts.length === 0) {
