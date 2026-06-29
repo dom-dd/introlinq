@@ -75,7 +75,15 @@ export default async function handler(req, res) {
       `.catch(() => [null]);
 
       if (cached) {
-        return res.status(200).json({ matches: cached.result.matches || [], config: pubConfig, cached: true });
+        const cachedMatches = cached.result.matches || [];
+        // Still log impression even on cache hit
+        const phrases = cachedMatches.map(m => m.phrase);
+        const expertNames = cachedMatches.map(m => m.expert?.name).filter(Boolean);
+        const expertBookingUrls = cachedMatches.map(m => m.expert?.booking_url || null);
+        sql`INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url)
+          VALUES (${publisher}, '[cached]', ${phrases}, ${expertNames}, ${expertBookingUrls}, ${cachedMatches.length}, ${page_url})
+        `.catch(() => {});
+        return res.status(200).json({ matches: cachedMatches, config: pubConfig, cached: true });
       }
     }
 
