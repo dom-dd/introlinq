@@ -84,7 +84,7 @@ NEVER match:
 
 Detect the article language. If not English, strongly prioritise experts who speak that language.
 
-IMPORTANT: Always write the "reason" field in the same language as the article. If the article is in French, write the reason in French. If Spanish, write in Spanish. The reason must feel native to the reader.
+IMPORTANT: Always write the "reason" field in the same language as the article. If the article is in French, write the reason in French. If Spanish, write in Spanish. The reason must feel native to the reader. Always use formal address (vous in French, usted in Spanish, Sie in German) — never informal (tu, tú, du).
 
 Available experts:
 ${expertsList}
