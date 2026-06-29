@@ -45,6 +45,37 @@ export default async function handler(req, res) {
       }
     }
 
+    const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
+
+    // Check match cache (keyed by page_url + country, valid until last expert sync)
+    if (page_url) {
+      await sql`CREATE TABLE IF NOT EXISTS match_cache (
+        id SERIAL PRIMARY KEY,
+        page_url TEXT NOT NULL,
+        country_code TEXT NOT NULL DEFAULT '',
+        result JSONB NOT NULL,
+        has_match BOOLEAN NOT NULL,
+        cached_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(page_url, country_code)
+      )`.catch(() => {});
+
+      const [lastSync] = await sql`SELECT last_synced_at FROM providers WHERE slug = 'openintro' LIMIT 1`.catch(() => [null]);
+      const lastSyncedAt = lastSync?.last_synced_at || new Date(0);
+
+      const [cached] = await sql`
+        SELECT result FROM match_cache
+        WHERE page_url = ${page_url}
+          AND country_code = ${readerCountry}
+          AND cached_at > ${lastSyncedAt}
+          AND cached_at > NOW() - INTERVAL '30 days'
+        LIMIT 1
+      `.catch(() => [null]);
+
+      if (cached) {
+        return res.status(200).json({ matches: cached.result.matches || [], config: pubConfig, cached: true });
+      }
+    }
+
     const now = Date.now();
     if (!expertsCache || now - expertsCacheTime > EXPERTS_TTL) {
       expertsCache = await sql`
@@ -57,8 +88,7 @@ export default async function handler(req, res) {
       `;
       expertsCacheTime = now;
     }
-    // Sort experts: same country first, then same language region
-    const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
+    // Sort experts: same country first
     const experts = [...expertsCache].sort((a, b) => {
       const aMatch = readerCountry && (a.location_country || '').toUpperCase().includes(readerCountry) ? 0 : 1;
       const bMatch = readerCountry && (b.location_country || '').toUpperCase().includes(readerCountry) ? 0 : 1;
@@ -158,6 +188,16 @@ Return only valid JSON, no other text:
     const noMatchReason = enriched.length === 0 ? (parsed.no_match_reason || null) : null;
 
     await Promise.allSettled([
+      // Store in match cache (per page_url + country)
+      (async () => {
+        if (!page_url) return;
+        await sql`
+          INSERT INTO match_cache (page_url, country_code, result, has_match)
+          VALUES (${page_url}, ${readerCountry}, ${JSON.stringify({ matches: enriched })}, ${enriched.length > 0})
+          ON CONFLICT (page_url, country_code) DO UPDATE SET result = EXCLUDED.result, has_match = EXCLUDED.has_match, cached_at = NOW()
+        `.catch(() => {});
+      })(),
+
       // Log to DB
       (async () => {
         if (!tableReady) {
