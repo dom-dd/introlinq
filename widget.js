@@ -6,22 +6,26 @@
   var PUB = script && script.getAttribute('data-publisher');
   if (!PUB) return;
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-
-  function init() {
+  var _started = false;
+  function safeInit() {
+    if (_started) return;
+    _started = true;
     tryRun(0);
   }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', safeInit);
+  } else {
+    safeInit();
+  }
+  window.addEventListener('load', safeInit);
 
   function tryRun(attempt) {
     var el = findArticle();
     var text = el ? extractParagraphText(el) : '';
 
-    if ((!el || text.length < 150) && attempt < 5) {
-      setTimeout(function () { tryRun(attempt + 1); }, 800);
+    if ((!el || text.length < 150) && attempt < 10) {
+      setTimeout(function () { tryRun(attempt + 1); }, 600);
       return;
     }
 
@@ -39,7 +43,11 @@
       preloadPhotos(data.matches);
       injectStyles(cfg);
       var popup = createPopup(cfg);
-      highlightMatches(el, data.matches, popup, cfg);
+      var shown = highlightMatches(el, data.matches, popup, cfg);
+      if (shown === 0 && data.matches.length > 0) {
+        // Phrases not found in DOM — retry with fresh content
+        _started = false;
+      }
     })
     .catch(function () {});
   }
@@ -204,6 +212,7 @@
     var n;
     while ((n = walker.nextNode())) nodes.push(n);
 
+    var highlighted = 0;
     matches.forEach(function (match) {
       var phrase = match.phrase;
       for (var i = 0; i < nodes.length; i++) {
@@ -234,9 +243,11 @@
         if (after) parent.insertBefore(document.createTextNode(after), node);
         parent.removeChild(node);
         nodes.splice(i, 1);
+        highlighted++;
         break;
       }
     });
+    return highlighted;
   }
 
   function fillPopup(popup, match, cfg) {
@@ -253,7 +264,7 @@
     var fl = document.getElementById('il-fl');
     if (fl) {
       var iso = countryToISO(e.location_country);
-      fl.innerHTML = iso ? '<img src="https://flagcdn.com/20x15/' + iso.toLowerCase() + '.png" style="border-radius:3px;vertical-align:middle;box-shadow:0 1px 3px rgba(0,0,0,0.15)" width="20" height="15" alt="">' : '';
+      fl.innerHTML = iso ? '<span style="display:inline-block;overflow:hidden;border-radius:4px;width:20px;height:15px;vertical-align:middle;box-shadow:0 1px 4px rgba(0,0,0,0.18);flex-shrink:0"><img src="https://flagcdn.com/20x15/' + iso.toLowerCase() + '.png" width="20" height="15" alt="" style="display:block"></span>' : '';
     }
     document.getElementById('il-rl').textContent = [e.position, e.company].filter(Boolean).join(' · ');
     document.getElementById('il-pr').textContent = e.price_from ? 'From £' + e.price_from + ' / session' : '';

@@ -1,6 +1,9 @@
 import { neon } from '@neondatabase/serverless';
 
 let tableReady = false;
+let expertsCache = null;
+let expertsCacheTime = 0;
+const EXPERTS_TTL = 5 * 60 * 1000;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -42,14 +45,19 @@ export default async function handler(req, res) {
       }
     }
 
-    const experts = await sql`
-      SELECT id, name, bio, description_long, photo_url, position, company,
-             topics, services, languages, price_from, price_currency,
-             booking_url, location_country
-      FROM experts
-      WHERE active = true
-      ORDER BY RANDOM()
-    `;
+    const now = Date.now();
+    if (!expertsCache || now - expertsCacheTime > EXPERTS_TTL) {
+      expertsCache = await sql`
+        SELECT id, name, bio, description_long, photo_url, position, company,
+               topics, services, languages, price_from, price_currency,
+               booking_url, location_country
+        FROM experts
+        WHERE active = true
+        ORDER BY RANDOM()
+      `;
+      expertsCacheTime = now;
+    }
+    const experts = expertsCache;
 
     if (experts.length === 0) {
       return res.status(200).json({ matches: [] });
