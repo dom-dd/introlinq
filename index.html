@@ -812,15 +812,15 @@ function switchDemo(name, btn) {
 // Tryit tab — exact /app code, t_ prefixed
 let t_matchData = [];
 let t_hideTimer = null;
-const t_popup = document.getElementById('t-popup');
 
 async function tFindMatches() {
+  const popup = document.getElementById('t-popup');
   const article = document.getElementById('t-input').value.trim();
   if (article.length < 50) { t_showError('Please paste a full article first.'); return; }
   t_clearError();
   t_setLoading(true);
   document.getElementById('t-output').style.display = 'none';
-  t_popup.classList.remove('visible');
+  if (popup) popup.classList.remove('visible');
   try {
     const res = await fetch('/api/match', {
       method: 'POST',
@@ -838,6 +838,7 @@ async function tFindMatches() {
     t_setLoading(false);
   }
 }
+
 
 function t_setLoading(on) {
   document.getElementById('t-loading').style.display = on ? 'block' : 'none';
@@ -857,6 +858,7 @@ function t_clearError() {
 }
 
 function t_renderOutput(article, matches) {
+  const popup = document.getElementById('t-popup');
   const n = matches.length;
   document.getElementById('t-badge').textContent =
     n === 0 ? 'No matches found' : `${n} expert ${n === 1 ? 'match' : 'matches'} found`;
@@ -867,12 +869,14 @@ function t_renderOutput(article, matches) {
       clearTimeout(t_hideTimer);
       t_fillPopup(t_matchData[parseInt(span.dataset.idx)]);
       t_positionPopup(span);
-      t_popup.classList.add('visible');
+      if (popup) popup.classList.add('visible');
     });
     span.addEventListener('mouseleave', () => { t_hideTimer = setTimeout(t_maybeHide, 130); });
   });
-  t_popup.addEventListener('mouseenter', () => clearTimeout(t_hideTimer));
-  t_popup.addEventListener('mouseleave', () => { t_hideTimer = setTimeout(() => t_popup.classList.remove('visible'), 130); });
+  if (popup) {
+    popup.addEventListener('mouseenter', () => clearTimeout(t_hideTimer));
+    popup.addEventListener('mouseleave', () => { t_hideTimer = setTimeout(() => popup.classList.remove('visible'), 130); });
+  }
 }
 
 function t_buildHtml(article, matches) {
@@ -909,18 +913,21 @@ function t_fillPopup(match) {
 }
 
 function t_positionPopup(span) {
+  const popup = document.getElementById('t-popup');
+  if (!popup) return;
   const rect = span.getBoundingClientRect();
   const W = 300, H = 210;
   let top = rect.bottom + 10, left = rect.left;
   if (rect.bottom + H + 10 > window.innerHeight) top = rect.top - H - 10;
   if (left + W > window.innerWidth - 12) left = window.innerWidth - W - 12;
   if (left < 8) left = 8;
-  t_popup.style.top = top + 'px';
-  t_popup.style.left = left + 'px';
+  popup.style.top = top + 'px';
+  popup.style.left = left + 'px';
 }
 
 function t_maybeHide() {
-  if (!t_popup.matches(':hover')) t_popup.classList.remove('visible');
+  const popup = document.getElementById('t-popup');
+  if (popup && !popup.matches(':hover')) popup.classList.remove('visible');
 }
 </script>
 
