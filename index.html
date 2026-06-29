@@ -351,7 +351,7 @@ Fundraising is optional, not a milestone. Many great businesses are built withou
 The honest summary: talk to customers early, stay lean, get to revenue as fast as possible, and treat every piece of feedback as a gift.</textarea>
         <div class="t-error" id="t-error"></div>
         <button class="t-btn" id="t-btn" onclick="tFindMatches()">Find matching experts</button>
-        <div class="t-loading" id="t-loading"><span class="t-spinner"></span>Matching experts…</div>
+        <div class="t-loading" id="t-loading"><span class="t-spinner"></span><span id="t-loading-text">Reading your article…</span></div>
         <div class="t-output" id="t-output">
           <span class="t-badge" id="t-badge"></span>
           <div class="t-article" id="t-article"></div>
@@ -840,11 +840,23 @@ async function tFindMatches() {
 }
 
 
+var t_loadingTimer = null;
 function t_setLoading(on) {
   document.getElementById('t-loading').style.display = on ? 'block' : 'none';
   const btn = document.getElementById('t-btn');
   btn.disabled = on;
   btn.textContent = on ? 'Analysing...' : 'Find matching experts';
+  if (on) {
+    const msgs = ['Reading your article…','Detecting key sentences…','Matching experts…','Refining results…','Almost there…'];
+    let i = 0;
+    document.getElementById('t-loading-text').textContent = msgs[0];
+    t_loadingTimer = setInterval(() => {
+      i = (i + 1) % msgs.length;
+      document.getElementById('t-loading-text').textContent = msgs[i];
+    }, 1800);
+  } else {
+    clearInterval(t_loadingTimer);
+  }
 }
 
 function t_showError(msg) {
