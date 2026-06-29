@@ -67,7 +67,7 @@ export default async function handler(req, res) {
         WHERE page_url = ${page_url}
           AND country_code = ${readerCountry}
           AND cached_at > ${lastSyncedAt}
-          AND cached_at > NOW() - INTERVAL '30 days'
+          AND cached_at > NOW() - INTERVAL '1 year'
         LIMIT 1
       `.catch(() => [null]);
 

@@ -162,13 +162,14 @@ export default async function handler(req, res) {
 
     const activeIds = [];
     let upserted = 0;
+    let inserted = 0;
 
     for (const raw of publicExperts) {
       const e = mapExpert(raw, provider.id);
       if (!e.name || !e.external_id) continue;
       activeIds.push(e.external_id);
 
-      await sql`
+      const [result] = await sql`
         INSERT INTO experts (
           provider_id, external_id, name, bio, description_long, photo_url,
           position, company, topics, services, languages, location_country,
@@ -202,20 +203,28 @@ export default async function handler(req, res) {
           active = true,
           raw_data = EXCLUDED.raw_data,
           synced_at = NOW()
+        RETURNING (xmax = 0) AS is_insert
       `;
       upserted++;
+      if (result?.is_insert) inserted++;
     }
 
-    // Delete experts that no longer pass filters (data is always re-synced from Bubble)
+    // Delete experts that no longer pass filters
+    let deleted = 0;
     if (activeIds.length > 0) {
-      await sql`
+      const deleted_result = await sql`
         DELETE FROM experts
         WHERE provider_id = ${provider.id}
         AND external_id != ALL(${activeIds})
+        RETURNING id
       `;
+      deleted = deleted_result.length;
     }
 
-    await sql`UPDATE providers SET last_synced_at = NOW() WHERE id = ${provider.id}`;
+    // Only update last_synced_at if the expert pool actually changed
+    if (inserted > 0 || deleted > 0) {
+      await sql`UPDATE providers SET last_synced_at = NOW() WHERE id = ${provider.id}`;
+    }
 
     return res.status(200).json({
       success: true,
