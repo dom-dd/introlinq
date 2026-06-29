@@ -101,7 +101,7 @@ Return only valid JSON, no other text:
         'content-type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1024,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -110,7 +110,7 @@ Return only valid JSON, no other text:
     if (!response.ok) {
       const err = await response.text();
       console.error('Anthropic API error:', err);
-      return res.status(500).json({ error: 'AI matching failed', detail: err.slice(0, 300), status: response.status });
+      return res.status(500).json({ error: 'AI matching failed' });
     }
 
     const aiResult = await response.json();
