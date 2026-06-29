@@ -80,6 +80,29 @@ textarea::placeholder{color:var(--ink-muted)}
 .il-book{display:block;background:var(--gold);color:var(--ink);text-align:center;padding:0.5625rem;border-radius:100px;font-size:0.8125rem;font-weight:700;text-decoration:none;transition:opacity 0.15s}
 .il-book:hover{opacity:0.85}
 .il-powered{font-size:0.6rem;color:var(--ink-muted);text-align:center;margin-top:0.5rem;letter-spacing:0.04em;text-transform:uppercase}
+
+/* Signup section */
+.signup-section{margin-top:3rem;background:var(--ink);border-radius:20px;padding:2.5rem 2rem;display:none}
+.signup-section.visible{display:block}
+.signup-eyebrow{font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);margin-bottom:0.5rem}
+.signup-title{font-family:'DM Serif Display',serif;font-size:1.625rem;color:#fff;line-height:1.2;margin-bottom:0.5rem}
+.signup-sub{font-size:0.875rem;color:rgba(255,255,255,0.55);line-height:1.6;margin-bottom:1.75rem}
+.signup-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}
+.signup-input{width:100%;padding:0.75rem 1rem;border:1.5px solid rgba(255,255,255,0.12);border-radius:8px;font-size:0.9rem;font-family:'Inter',sans-serif;color:#fff;background:rgba(255,255,255,0.06);outline:none;transition:border-color .15s}
+.signup-input:focus{border-color:var(--gold)}
+.signup-input::placeholder{color:rgba(255,255,255,0.3)}
+.signup-input.full{grid-column:1/-1}
+.signup-btn{grid-column:1/-1;width:100%;padding:0.9375rem;background:var(--gold);color:var(--ink);border:none;border-radius:100px;font-size:1rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;margin-top:0.25rem;transition:opacity .15s;box-shadow:0 4px 18px rgba(230,168,32,0.4)}
+.signup-btn:hover{opacity:.88}
+.signup-btn:disabled{opacity:.5;cursor:not-allowed}
+.signup-trust{grid-column:1/-1;text-align:center;font-size:0.75rem;color:rgba(255,255,255,0.35);margin-top:0.25rem}
+.signup-error{grid-column:1/-1;background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);color:#fca5a5;font-size:0.8125rem;padding:0.75rem 1rem;border-radius:8px;display:none}
+.signup-error.show{display:block}
+.signup-success{text-align:center;padding:1rem 0;display:none}
+.signup-success-icon{width:52px;height:52px;background:rgba(61,122,95,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem}
+.signup-success-title{font-family:'DM Serif Display',serif;font-size:1.375rem;color:#fff;margin-bottom:0.5rem}
+.signup-success-sub{font-size:0.875rem;color:rgba(255,255,255,0.55);line-height:1.6}
+@media(max-width:540px){.signup-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -115,6 +138,32 @@ textarea::placeholder{color:var(--ink-muted)}
       <span class="output-hint">Hover the highlighted phrases to see the expert your reader sees</span>
     </div>
     <div class="article-preview" id="article-rendered"></div>
+  </div>
+
+  <!-- Signup — appears after a match is run -->
+  <div class="signup-section" id="signup-section">
+    <div id="signup-form-wrap">
+      <div class="signup-eyebrow">Free · 2 min setup</div>
+      <div class="signup-title">Add this to your blog today.</div>
+      <div class="signup-sub">One line of code. Runs on every article you've published and every one you write. You earn 70% commission on every expert booking.</div>
+      <div class="signup-error" id="signup-error"></div>
+      <div class="signup-grid">
+        <input class="signup-input full" id="s-name" type="text" placeholder="Publication name" autocomplete="organization">
+        <input class="signup-input" id="s-first" type="text" placeholder="First name" autocomplete="given-name">
+        <input class="signup-input" id="s-last" type="text" placeholder="Last name" autocomplete="family-name">
+        <input class="signup-input full" id="s-email" type="email" placeholder="Email address" autocomplete="email">
+        <input class="signup-input full" id="s-domain" type="url" placeholder="Website URL (https://yourblog.com)" autocomplete="url">
+        <button class="signup-btn" id="signup-btn" onclick="submitSignup()">Create my free account →</button>
+        <div class="signup-trust">No card required · Your embed code arrives by email</div>
+      </div>
+    </div>
+    <div class="signup-success" id="signup-success">
+      <div class="signup-success-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3d7a5f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="signup-success-title">Check your inbox!</div>
+      <div class="signup-success-sub">We've sent your dashboard access link and embed code to <strong id="signup-success-email" style="color:#fff"></strong>.<br>Paste the code and the widget goes live on every article.</div>
+    </div>
   </div>
 </div>
 
@@ -218,6 +267,11 @@ function renderOutput(article, matches) {
   });
 
   document.getElementById('output').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Show signup section after results appear
+  setTimeout(() => {
+    document.getElementById('signup-section').classList.add('visible');
+  }, 800);
 }
 
 function buildHtml(article, matches) {
@@ -309,6 +363,55 @@ function showError(msg) {
 
 function clearError() {
   document.getElementById('error-box').style.display = 'none';
+}
+
+// Signup
+let _slug = '';
+document.getElementById('s-name').addEventListener('input', function() {
+  _slug = this.value.toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50);
+});
+
+async function submitSignup() {
+  const name = document.getElementById('s-name').value.trim();
+  const first = document.getElementById('s-first').value.trim();
+  const email = document.getElementById('s-email').value.trim();
+  const domain = document.getElementById('s-domain').value.trim();
+  const last = document.getElementById('s-last').value.trim();
+  const errEl = document.getElementById('signup-error');
+  errEl.classList.remove('show');
+
+  if (!name) return showSignupError('Please enter your publication name.');
+  if (!first) return showSignupError('Please enter your first name.');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showSignupError('Please enter a valid email address.');
+  if (!domain) return showSignupError('Please enter your website URL.');
+
+  const btn = document.getElementById('signup-btn');
+  btn.disabled = true;
+  btn.textContent = 'Creating your account…';
+
+  const res = await fetch('/api/auth?action=signup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, domain, contact_first_name: first, contact_last_name: last || null, slug: _slug })
+  });
+  const data = await res.json();
+
+  if (!res.ok) {
+    btn.disabled = false;
+    btn.textContent = 'Create my free account →';
+    return showSignupError(data.error || 'Something went wrong — please try again.');
+  }
+
+  document.getElementById('signup-form-wrap').style.display = 'none';
+  document.getElementById('signup-success-email').textContent = email;
+  document.getElementById('signup-success').style.display = 'block';
+}
+
+function showSignupError(msg) {
+  const el = document.getElementById('signup-error');
+  el.textContent = msg;
+  el.classList.add('show');
 }
 </script>
 </body>

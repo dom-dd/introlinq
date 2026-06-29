@@ -220,7 +220,13 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 <nav>
   <a class="nav-logo" href="/">Intro<span>Linq</span></a>
   <span class="nav-tagline">Free for publishers · No setup required</span>
-  <button class="nav-cta" onclick="document.getElementById('signup-form').scrollIntoView({behavior:'smooth'})">Add earnings to my blog</button>
+  <div style="display:flex;align-items:center;gap:0.75rem">
+    <a href="/app" style="font-size:0.875rem;font-weight:600;color:var(--sage);text-decoration:none;display:flex;align-items:center;gap:0.4rem;white-space:nowrap">
+      <span style="font-size:0.65rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;background:var(--gold);color:#fff;padding:0.15rem 0.5rem;border-radius:100px">Beta</span>
+      Try it live →
+    </a>
+    <button class="nav-cta" onclick="document.getElementById('signup-form').scrollIntoView({behavior:'smooth'})">Add earnings to my blog</button>
+  </div>
 </nav>
 
 <div class="page-wrap">
@@ -233,6 +239,11 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
         <p class="hero-eyebrow">See it in action</p>
         <h1 class="hero-title">Turn your readers into a new revenue stream with one line of code.</h1>
         <p class="hero-sub">Every article has readers who need expert guidance. IntroLinq finds them, matches the right expert from our database of 5,000+ specialists - filtered by topic, language, location, and budget - and you earn commission on every booking. No ongoing work. It runs on every article you've published and every one you write.</p>
+        <a href="/app" style="display:inline-flex;align-items:center;gap:0.625rem;background:var(--ink);color:#fff;text-decoration:none;padding:0.75rem 1.5rem;border-radius:100px;font-size:0.9375rem;font-weight:600;margin-top:0.25rem;transition:opacity .15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+          <span style="font-size:0.65rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;background:var(--gold);color:var(--ink);padding:0.2rem 0.5rem;border-radius:100px">Beta</span>
+          Try it on your article — free
+          <span style="font-size:1rem">→</span>
+        </a>
       </div>
       <div class="carousel-wrap">
       <div class="carousel-label">IntroLinq detected the topic and matched an expert automatically - hover the underlined link to see what your readers see</div>
