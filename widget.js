@@ -126,7 +126,10 @@
       '<div style="display:flex;gap:12px;align-items:center;margin-bottom:' + (isSmall ? '8' : '10') + 'px">' +
         '<img id="il-ph" width="' + photoSize + '" height="' + photoSize + '" style="border-radius:50%;object-fit:cover;flex-shrink:0;background:#edf5f0" src="" alt="">' +
         '<div>' +
-          '<div id="il-nm" style="font-weight:600;font-size:' + nameSize + ';color:#1a1a2e;line-height:1.25"></div>' +
+          '<div style="display:flex;align-items:center;gap:6px">' +
+            '<div id="il-nm" style="font-weight:600;font-size:' + nameSize + ';color:#1a1a2e;line-height:1.25"></div>' +
+            '<span id="il-fl" style="font-size:13px;line-height:1;flex-shrink:0"></span>' +
+          '</div>' +
           '<div id="il-rl" style="font-size:11.5px;color:#4a4a6a;margin-top:2px;line-height:1.3"></div>' +
           '<div id="il-pr" style="font-size:11px;color:#8888a8;margin-top:3px"></div>' +
         '</div>' +
@@ -138,6 +141,13 @@
     p.addEventListener('mouseenter', function () { clearTimeout(hideTimer); });
     p.addEventListener('mouseleave', function () { scheduleHide(p); });
     return p;
+  }
+
+  function countryToFlag(code) {
+    if (!code || code.length !== 2) return '';
+    return Array.from(code.toUpperCase()).map(function (c) {
+      return String.fromCodePoint(c.charCodeAt(0) - 65 + 0x1F1E6);
+    }).join('');
   }
 
   function getContrastColor(hex) {
@@ -215,6 +225,8 @@
       pre.src = e.photo_url;
     }
     document.getElementById('il-nm').textContent = e.name;
+    var fl = document.getElementById('il-fl');
+    if (fl) fl.textContent = e.location_country ? countryToFlag(e.location_country) : '';
     document.getElementById('il-rl').textContent = [e.position, e.company].filter(Boolean).join(' · ');
     document.getElementById('il-pr').textContent = e.price_from ? 'From £' + e.price_from + ' / session' : '';
     var rs = document.getElementById('il-rs');
