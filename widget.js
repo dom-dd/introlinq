@@ -279,7 +279,8 @@
       var iso = countryToISO(e.location_country);
       fl.innerHTML = iso ? '<img src="https://hatscripts.github.io/circle-flags/flags/' + iso.toLowerCase() + '.svg" width="18" height="18" alt="" style="vertical-align:middle;flex-shrink:0;border-radius:50%">' : '';
     }
-    document.getElementById('il-rl').textContent = [e.position, e.company].filter(Boolean).join(' · ');
+    var rl = document.getElementById('il-rl');
+    rl.innerHTML = [e.position ? '<span>' + e.position.replace(/</g,'&lt;') + '</span>' : '', e.company ? '<span style="color:#8888a8">' + e.company.replace(/</g,'&lt;') + '</span>' : ''].filter(Boolean).join('<br>');
     document.getElementById('il-pr').textContent = e.price_from ? 'From £' + e.price_from + ' / session' : '';
     var rs = document.getElementById('il-rs');
     if (rs) rs.textContent = match.reason;
