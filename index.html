@@ -816,6 +816,7 @@ var t_hideTimer = null;
 async function tFindMatches() {
   const popup = document.getElementById('t-popup');
   const article = document.getElementById('t-input').value.trim();
+  if (/^https?:\/\/\S+$/.test(article)) { t_showError('That looks like a URL — please paste the article text itself, not the link.'); return; }
   if (article.length < 50) { t_showError('Please paste a full article first.'); return; }
   t_clearError();
   t_setLoading(true);

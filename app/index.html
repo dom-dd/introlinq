@@ -213,6 +213,10 @@ const popup = document.getElementById('il-popup');
 
 async function findMatches() {
   const article = document.getElementById('article-input').value.trim();
+  if (/^https?:\/\/\S+$/.test(article)) {
+    showError('That looks like a URL — please paste the article text itself, not the link.');
+    return;
+  }
   if (article.length < 50) {
     showError('Please paste a full article first.');
     return;
