@@ -765,7 +765,7 @@ if (window.matchMedia('(pointer:fine)').matches) {
     }
   });
 }
-document.getElementById('exit-popup').addEventListener('click', function(e) {
+document.getElementById('exit-popup')?.addEventListener('click', function(e) {
   if (e.target === this) closeExitPopup();
 });
 async function handleExitSubmit(e) {
@@ -810,8 +810,8 @@ function switchDemo(name, btn) {
 }
 
 // Tryit tab — exact /app code, t_ prefixed
-let t_matchData = [];
-let t_hideTimer = null;
+var t_matchData = [];
+var t_hideTimer = null;
 
 async function tFindMatches() {
   const popup = document.getElementById('t-popup');
