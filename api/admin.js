@@ -254,6 +254,25 @@ export default async function handler(req, res) {
     }
   }
 
+  // One-time: flag French-speaking experts by country + name
+  if (resource === 'migrate-languages' && req.method === 'POST') {
+    const namedExperts = ['Dominic Gagnon', 'Judith Fetzer', 'Andrew Lockhead', 'Philippe Therrien'];
+    const [byCountry] = await sql`
+      UPDATE experts
+      SET languages = array(SELECT DISTINCT unnest(COALESCE(languages, '{}') || ARRAY['French']))
+      WHERE location_country = 'FR'
+      RETURNING COUNT(*)::int AS count
+    `.catch(() => [{ count: 0 }]);
+    const [byName] = await sql`
+      UPDATE experts
+      SET languages = array(SELECT DISTINCT unnest(COALESCE(languages, '{}') || ARRAY['French']))
+      WHERE name = ANY(${namedExperts})
+      RETURNING COUNT(*)::int AS count
+    `.catch(() => [{ count: 0 }]);
+    const updated = await sql`SELECT id, name, location_country, languages FROM experts WHERE 'French' = ANY(languages) ORDER BY name`;
+    return res.status(200).json({ by_country: byCountry?.count, by_name: byName?.count, french_speakers: updated });
+  }
+
   // Login as publisher — generates a magic link for the admin to open
   if (resource === 'login_as' && req.method === 'POST') {
     const { email } = req.body;
