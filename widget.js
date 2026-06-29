@@ -143,9 +143,30 @@
     return p;
   }
 
-  function countryToFlag(code) {
-    if (!code || code.length !== 2) return '';
-    return Array.from(code.toUpperCase()).map(function (c) {
+  function countryToFlag(country) {
+    if (!country) return '';
+    var names = {
+      'afghanistan':'AF','albania':'AL','algeria':'DZ','argentina':'AR','australia':'AU',
+      'austria':'AT','bangladesh':'BD','belgium':'BE','brazil':'BR','bulgaria':'BG',
+      'canada':'CA','chile':'CL','china':'CN','colombia':'CO','croatia':'HR',
+      'czech republic':'CZ','czechia':'CZ','denmark':'DK','egypt':'EG','estonia':'EE',
+      'finland':'FI','france':'FR','germany':'DE','ghana':'GH','greece':'GR',
+      'hong kong':'HK','hungary':'HU','india':'IN','indonesia':'ID','iran':'IR',
+      'ireland':'IE','israel':'IL','italy':'IT','japan':'JP','jordan':'JO',
+      'kenya':'KE','latvia':'LV','lebanon':'LB','lithuania':'LT','luxembourg':'LU',
+      'malaysia':'MY','malta':'MT','mexico':'MX','morocco':'MA','netherlands':'NL',
+      'new zealand':'NZ','nigeria':'NG','norway':'NO','pakistan':'PK','peru':'PE',
+      'philippines':'PH','poland':'PL','portugal':'PT','romania':'RO','russia':'RU',
+      'saudi arabia':'SA','serbia':'RS','singapore':'SG','slovakia':'SK','slovenia':'SI',
+      'south africa':'ZA','south korea':'KR','spain':'ES','sri lanka':'LK','sweden':'SE',
+      'switzerland':'CH','taiwan':'TW','thailand':'TH','tunisia':'TN','turkey':'TR',
+      'ukraine':'UA','united arab emirates':'AE','uae':'AE','united kingdom':'GB',
+      'uk':'GB','united states':'US','usa':'US','uruguay':'UY','venezuela':'VE',
+      'vietnam':'VN'
+    };
+    var code = country.length === 2 ? country.toUpperCase() : (names[country.toLowerCase()] || '');
+    if (!code) return '';
+    return Array.from(code).map(function (c) {
       return String.fromCodePoint(c.charCodeAt(0) - 65 + 0x1F1E6);
     }).join('');
   }
