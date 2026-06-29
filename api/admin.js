@@ -273,6 +273,14 @@ export default async function handler(req, res) {
     return res.status(200).json({ by_country: byCountry?.count, by_name: byName?.count, french_speakers: updated });
   }
 
+  // Delete all match logs for a publisher
+  if (resource === 'clear-logs' && req.method === 'POST') {
+    const { publisher } = req.body;
+    if (!publisher) return res.status(400).json({ error: 'publisher required' });
+    const result = await sql`DELETE FROM match_logs WHERE publisher = ${publisher} RETURNING id`;
+    return res.status(200).json({ deleted: result.length });
+  }
+
   // Login as publisher — generates a magic link for the admin to open
   if (resource === 'login_as' && req.method === 'POST') {
     const { email } = req.body;
