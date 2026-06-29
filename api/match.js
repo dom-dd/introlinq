@@ -53,11 +53,13 @@ export default async function handler(req, res) {
         id SERIAL PRIMARY KEY,
         page_url TEXT NOT NULL,
         country_code TEXT NOT NULL DEFAULT '',
+        publisher TEXT NOT NULL DEFAULT '',
         result JSONB NOT NULL,
         has_match BOOLEAN NOT NULL,
         cached_at TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE(page_url, country_code)
+        UNIQUE(page_url, country_code, publisher)
       )`.catch(() => {});
+      await sql`ALTER TABLE match_cache ADD COLUMN IF NOT EXISTS publisher TEXT NOT NULL DEFAULT ''`.catch(() => {});
 
       const [lastSync] = await sql`SELECT last_synced_at FROM providers WHERE slug = 'openintro' LIMIT 1`.catch(() => [null]);
       const lastSyncedAt = lastSync?.last_synced_at || new Date(0);
@@ -66,6 +68,7 @@ export default async function handler(req, res) {
         SELECT result FROM match_cache
         WHERE page_url = ${page_url}
           AND country_code = ${readerCountry}
+          AND publisher = ${publisher || ''}
           AND cached_at > ${lastSyncedAt}
           AND cached_at > NOW() - INTERVAL '1 year'
         LIMIT 1
@@ -192,9 +195,9 @@ Return only valid JSON, no other text:
       (async () => {
         if (!page_url) return;
         await sql`
-          INSERT INTO match_cache (page_url, country_code, result, has_match)
-          VALUES (${page_url}, ${readerCountry}, ${JSON.stringify({ matches: enriched })}, ${enriched.length > 0})
-          ON CONFLICT (page_url, country_code) DO UPDATE SET result = EXCLUDED.result, has_match = EXCLUDED.has_match, cached_at = NOW()
+          INSERT INTO match_cache (page_url, country_code, publisher, result, has_match)
+          VALUES (${page_url}, ${readerCountry}, ${publisher || ''}, ${JSON.stringify({ matches: enriched })}, ${enriched.length > 0})
+          ON CONFLICT (page_url, country_code, publisher) DO UPDATE SET result = EXCLUDED.result, has_match = EXCLUDED.has_match, cached_at = NOW()
         `.catch(() => {});
       })(),
 

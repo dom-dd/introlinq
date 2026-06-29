@@ -186,6 +186,8 @@ export default async function handler(req, res) {
           widget_size = COALESCE(${widget_size ?? null}, widget_size)
         WHERE id = ${id} RETURNING *
       `;
+      // Clear match cache for this publisher so new settings take effect immediately
+      await sql`DELETE FROM match_cache WHERE publisher = ${pub.slug}`.catch(() => {});
       return res.status(200).json(pub);
     }
 
