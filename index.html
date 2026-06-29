@@ -231,7 +231,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .tryit-btn{display:block;width:100%;margin-top:0.75rem;background:var(--gold);color:var(--ink);border:none;padding:0.8125rem;border-radius:100px;font-size:0.9375rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .15s;box-shadow:0 4px 16px rgba(230,168,32,0.4);letter-spacing:0.01em}
 .tryit-btn:hover:not(:disabled){opacity:.88}
 .tryit-btn:disabled{opacity:.5;cursor:not-allowed}
-.tryit-loading{text-align:center;padding:1rem;color:rgba(255,255,255,0.45);font-size:0.8125rem;display:none;display:flex;align-items:center;justify-content:center;gap:0.5rem}
+.tryit-loading{text-align:center;padding:1rem;color:rgba(255,255,255,0.45);font-size:0.8125rem;display:none;align-items:center;justify-content:center;gap:0.5rem}
 .tryit-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,0.15);border-top-color:var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
 .tryit-output{display:none;margin-top:0.875rem}
 .tryit-badge{display:inline-block;font-size:0.72rem;font-weight:600;background:rgba(61,122,95,0.3);color:#a8d8c0;padding:0.2rem 0.7rem;border-radius:100px;margin-bottom:0.625rem}
@@ -241,9 +241,18 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .il-hl{background:rgba(230,168,32,0.18);border-bottom:2px solid var(--gold);cursor:pointer;border-radius:2px;padding:0 2px;transition:background .15s}
 .il-hl:hover{background:rgba(230,168,32,0.35)}
 
-/* Inline expert popup */
-#il-pop{position:fixed;z-index:9999;width:295px;background:var(--white);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,0.16),0 2px 8px rgba(0,0,0,0.06);padding:1rem 1.125rem;opacity:0;transform:translateY(6px);transition:opacity .18s,transform .18s;pointer-events:none;border:1px solid var(--border)}
-#il-pop.show{opacity:1;transform:translateY(0);pointer-events:all}
+/* Inline expert popup (reuse /app styles) */
+.il-popup{position:fixed;z-index:9999;width:300px;background:var(--white);border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,0.14),0 2px 8px rgba(0,0,0,0.06);padding:1.125rem;opacity:0;transform:translateY(6px);transition:opacity 0.18s ease,transform 0.18s ease;pointer-events:none;border:1px solid var(--border)}
+.il-popup.visible{opacity:1;transform:translateY(0);pointer-events:all}
+.il-popup-top{display:flex;gap:0.75rem;align-items:center;margin-bottom:0.75rem}
+.il-avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--cream);border:2px solid var(--cream)}
+.il-name{font-weight:600;font-size:0.875rem;color:var(--ink);line-height:1.25}
+.il-role{font-size:0.72rem;color:var(--ink-soft);margin-top:2px;line-height:1.3}
+.il-price{font-size:0.7rem;color:var(--ink-muted);margin-top:3px}
+.il-reason{font-size:0.8rem;color:var(--ink-soft);line-height:1.6;margin-bottom:0.75rem;font-style:italic;border-left:2px solid var(--gold-light);padding-left:0.625rem}
+.il-book{display:block;background:var(--gold);color:var(--ink);text-align:center;padding:0.5625rem;border-radius:100px;font-size:0.8125rem;font-weight:700;text-decoration:none;transition:opacity 0.15s}
+.il-book:hover{opacity:0.85}
+.il-powered{font-size:0.6rem;color:var(--ink-muted);text-align:center;margin-top:0.5rem;letter-spacing:0.04em;text-transform:uppercase}
 </style>
 </head>
 <body>
@@ -616,6 +625,21 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 
 </div>
 
+<!-- Tryit expert popup — must be before <script> so getElementById finds it -->
+<div class="il-popup" id="tryit-popup">
+  <div class="il-popup-top">
+    <img class="il-avatar" id="tryit-popup-photo" src="" alt="">
+    <div>
+      <div class="il-name" id="tryit-popup-name"></div>
+      <div class="il-role" id="tryit-popup-role"></div>
+      <div class="il-price" id="tryit-popup-price"></div>
+    </div>
+  </div>
+  <div class="il-reason" id="tryit-popup-reason"></div>
+  <a class="il-book" id="tryit-popup-book" href="#" target="_blank">Book a call →</a>
+  <div class="il-powered">Powered by IntroLinq</div>
+</div>
+
 <script>
 async function fetchSpots() {
   try {
@@ -773,49 +797,52 @@ function switchDemo(name, btn) {
   document.getElementById('dp-' + name).classList.add('active');
 }
 
-// Inline article matcher
-const SAMPLE_ARTICLE = `How to start a company:
+// Inline article matcher — mirrors /app exactly
+const TRYIT_SAMPLE = `How to start a company:
 
-Starting a company begins with a clear idea — not necessarily original, but one that solves a real problem for a specific group of people. The sharper you can define who your customer is and what pain you're removing, the better your foundation.
-
+Starting a company begins with a clear idea - not necessarily original, but one that solves a real problem for a specific group of people. The sharper you can define who your customer is and what pain you're removing, the better your foundation.
 Before building anything, validate your idea. Talk to potential customers. The goal isn't to pitch them; it's to understand their world. Most early-stage companies fail not because they built badly, but because they built the wrong thing.
-
-Once you have enough signal, start lean. Choose a legal structure, open a business bank account, and register with the relevant tax authority. You don't need a perfect brand or a polished website on day one — you need your first paying customer.
-
-Focus obsessively on that. Your first few customers will teach you more than any market research. They'll tell you how to price, what features matter, and how to talk about what you do.`;
+Once you have enough signal, start lean. Choose a legal structure (a limited company in the UK, an LLC or C-Corp in the US), open a business bank account, and register with the relevant tax authority. You don't need a perfect brand or a polished website on day one - you need your first paying customer.
+Focus obsessively on that. Your first few customers will teach you more than any market research. They'll tell you how to price, what features matter, and how to talk about what you do.
+As traction builds, document what's working - your sales process, your onboarding, your messaging. That documentation becomes the foundation for hiring and delegation later.
+Fundraising is optional, not a milestone. Many great businesses are built without external capital. Only raise money if it genuinely accelerates something you can't do otherwise, and only when you have enough evidence to negotiate from a position of strength.
+The honest summary: talk to customers early, stay lean, get to revenue as fast as possible, and treat every piece of feedback as a gift.`;
 
 function useSampleInline() {
-  document.getElementById('tryit-input').value = SAMPLE_ARTICLE;
+  document.getElementById('tryit-input').value = TRYIT_SAMPLE;
 }
 
-let _inlineMatches = [];
-let _hideTimer = null;
-const _pop = document.getElementById('il-pop');
+let tryitMatchData = [];
+let tryitHideTimer = null;
+const tryitPopup = document.getElementById('tryit-popup');
 
 async function findMatchesInline() {
   const article = document.getElementById('tryit-input').value.trim();
   if (article.length < 50) return;
   const btn = document.getElementById('tryit-btn');
-  btn.disabled = true; btn.textContent = 'Analysing…';
+  btn.disabled = true;
+  btn.textContent = 'Analysing…';
   document.getElementById('tryit-loading').style.display = 'flex';
   document.getElementById('tryit-output').style.display = 'none';
-  _pop.classList.remove('show');
+  tryitPopup.classList.remove('visible');
   try {
-    const res = await fetch('/api/match', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ article }) });
+    const res = await fetch('/api/match', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ article }) });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    _inlineMatches = data.matches || [];
-    renderInlineOutput(article, _inlineMatches);
-  } catch(e) {}
+    if (!res.ok) throw new Error(data.error || 'Something went wrong');
+    tryitMatchData = data.matches || [];
+    tryitMatchData.forEach(m => { if (m.expert?.photo_url) { const i = new Image(); i.src = m.expert.photo_url; } });
+    renderTryitOutput(article, tryitMatchData);
+  } catch (err) {}
   document.getElementById('tryit-loading').style.display = 'none';
-  btn.disabled = false; btn.textContent = 'Find matching experts';
+  btn.disabled = false;
+  btn.textContent = 'Find matching experts';
 }
 
-function escHtml(t) {
+function tryitEsc(t) {
   return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function renderInlineOutput(article, matches) {
+function renderTryitOutput(article, matches) {
   const n = matches.length;
   document.getElementById('tryit-badge').textContent = n === 0 ? 'No matches found' : `${n} expert ${n === 1 ? 'match' : 'matches'} found`;
   const ranges = [];
@@ -825,60 +852,47 @@ function renderInlineOutput(article, matches) {
   for (const r of ranges) { if (r.start >= lastEnd) { clean.push(r); lastEnd = r.end; } }
   let html = ''; let pos = 0;
   for (const r of clean) {
-    html += escHtml(article.slice(pos, r.start));
-    html += `<span class="il-hl" data-idx="${r.idx}">${escHtml(article.slice(r.start, r.end))}</span>`;
+    html += tryitEsc(article.slice(pos, r.start));
+    html += `<span class="il-hl" data-idx="${r.idx}">${tryitEsc(article.slice(r.start, r.end))}</span>`;
     pos = r.end;
   }
-  html += escHtml(article.slice(pos));
+  html += tryitEsc(article.slice(pos));
   const articleEl = document.getElementById('tryit-article');
   articleEl.innerHTML = '<p>' + html.replace(/\n\n+/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
   document.getElementById('tryit-output').style.display = 'block';
   articleEl.querySelectorAll('.il-hl').forEach(span => {
     span.addEventListener('mouseenter', () => {
-      clearTimeout(_hideTimer);
-      fillInlinePop(_inlineMatches[parseInt(span.dataset.idx)]);
+      clearTimeout(tryitHideTimer);
+      fillTryitPopup(tryitMatchData[parseInt(span.dataset.idx)]);
       const rect = span.getBoundingClientRect();
+      const W = 300, H = 210;
       let top = rect.bottom + 10, left = rect.left;
-      if (rect.bottom + 220 > window.innerHeight) top = rect.top - 220;
-      if (left + 295 > window.innerWidth - 12) left = window.innerWidth - 307;
+      if (rect.bottom + H + 10 > window.innerHeight) top = rect.top - H - 10;
+      if (left + W > window.innerWidth - 12) left = window.innerWidth - W - 12;
       if (left < 8) left = 8;
-      _pop.style.top = top + 'px'; _pop.style.left = left + 'px';
-      _pop.classList.add('show');
+      tryitPopup.style.top = top + 'px';
+      tryitPopup.style.left = left + 'px';
+      tryitPopup.classList.add('visible');
     });
-    span.addEventListener('mouseleave', () => { _hideTimer = setTimeout(() => { if (!_pop.matches(':hover')) _pop.classList.remove('show'); }, 130); });
+    span.addEventListener('mouseleave', () => { tryitHideTimer = setTimeout(() => { if (!tryitPopup.matches(':hover')) tryitPopup.classList.remove('visible'); }, 130); });
   });
-  _pop.addEventListener('mouseenter', () => clearTimeout(_hideTimer));
-  _pop.addEventListener('mouseleave', () => { _hideTimer = setTimeout(() => _pop.classList.remove('show'), 130); });
+  tryitPopup.addEventListener('mouseenter', () => clearTimeout(tryitHideTimer));
+  tryitPopup.addEventListener('mouseleave', () => { tryitHideTimer = setTimeout(() => tryitPopup.classList.remove('visible'), 130); });
 }
 
-function fillInlinePop(m) {
-  const e = m.expert;
-  const img = _pop.querySelector('.il-pop-avatar');
+function fillTryitPopup(match) {
+  const e = match.expert;
+  const img = document.getElementById('tryit-popup-photo');
   const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(e.name)}&background=edf5f0&color=3d7a5f&size=88&bold=true&font-size=0.4`;
-  img.src = fallback;
+  img.onload = null; img.onerror = null; img.src = fallback;
   if (e.photo_url) { const p = new Image(); p.onload = () => { img.src = e.photo_url; }; p.src = e.photo_url; }
-  _pop.querySelector('.il-pop-name').textContent = e.name;
-  _pop.querySelector('.il-pop-role').textContent = [e.position, e.company].filter(Boolean).join(' · ');
-  _pop.querySelector('.il-pop-price').textContent = e.price_from ? `From £${e.price_from} / session` : '';
-  _pop.querySelector('.il-pop-reason').textContent = m.reason;
-  _pop.querySelector('.il-pop-book').href = e.booking_url || '#';
+  document.getElementById('tryit-popup-name').textContent = e.name;
+  document.getElementById('tryit-popup-role').textContent = [e.position, e.company].filter(Boolean).join(' · ');
+  document.getElementById('tryit-popup-price').textContent = e.price_from ? `From £${e.price_from} / session` : '';
+  document.getElementById('tryit-popup-reason').textContent = match.reason;
+  document.getElementById('tryit-popup-book').href = e.booking_url || '#';
 }
 </script>
-
-<!-- Inline expert popup -->
-<div id="il-pop">
-  <div style="display:flex;gap:0.75rem;align-items:center;margin-bottom:0.625rem">
-    <img class="il-pop-avatar" src="" alt="" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--sage-light);border:2px solid var(--sage-light)">
-    <div>
-      <div class="il-pop-name" style="font-weight:600;font-size:0.875rem;color:var(--ink);line-height:1.25"></div>
-      <div class="il-pop-role" style="font-size:0.72rem;color:var(--ink-soft);margin-top:2px;line-height:1.3"></div>
-      <div class="il-pop-price" style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px"></div>
-    </div>
-  </div>
-  <div class="il-pop-reason" style="font-size:0.8rem;color:var(--ink-soft);line-height:1.6;margin-bottom:0.625rem;font-style:italic;border-left:2px solid var(--gold-light);padding-left:0.5rem"></div>
-  <a class="il-pop-book" href="#" target="_blank" style="display:block;background:var(--gold);color:var(--ink);text-align:center;padding:0.5rem;border-radius:100px;font-size:0.8125rem;font-weight:700;text-decoration:none">Book a call →</a>
-  <div style="font-size:0.6rem;color:var(--ink-muted);text-align:center;margin-top:0.4rem;letter-spacing:0.04em;text-transform:uppercase">Powered by IntroLinq</div>
-</div>
 
 <!-- COOKIE BANNER -->
 <div id="cookie-banner" class="cookie-banner">
