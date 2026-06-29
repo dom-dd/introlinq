@@ -125,8 +125,10 @@ Return only valid JSON, no other text:
     }
 
     const expertMap = Object.fromEntries(experts.map(e => [e.id, e]));
+    const seenExperts = new Set();
     const enriched = (parsed.matches || [])
       .filter(m => m.phrase && expertMap[m.expert_id])
+      .filter(m => { if (seenExperts.has(m.expert_id)) return false; seenExperts.add(m.expert_id); return true; })
       .map(m => ({
         phrase: m.phrase,
         reason: m.reason,
