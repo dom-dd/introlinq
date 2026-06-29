@@ -152,8 +152,8 @@ export default async function handler(req, res) {
     const [logs, clickData, providers, expertCounts, totalImpressions,
            clicksByDay, impressionsByDay, clicksByWeek, impressionsByWeek,
            clicksByMonth, impressionsByMonth,
-           topPhrases, topSources, topDevices] = await Promise.all([
-      sql`SELECT phrases, expert_names, match_count, created_at FROM match_logs WHERE publisher = ${pub} ORDER BY created_at DESC LIMIT 20`,
+           topPhrases, topSources, topDevices, pageUrls] = await Promise.all([
+      sql`SELECT phrases, expert_names, match_count, page_url, created_at FROM match_logs WHERE publisher = ${pub} ORDER BY created_at DESC LIMIT 20`,
       sql`SELECT COUNT(*)::int AS total FROM click_logs WHERE publisher = ${pub}`.catch(() => [{ total: 0 }]),
       sql`SELECT slug, COALESCE(name, slug) AS name FROM providers ORDER BY slug`,
       sql`SELECT COUNT(*)::int AS count FROM experts WHERE active = true`,
@@ -167,6 +167,7 @@ export default async function handler(req, res) {
       sql`SELECT phrase, COUNT(*)::int AS clicks FROM click_logs WHERE publisher = ${pub} AND phrase IS NOT NULL AND phrase != '' GROUP BY phrase ORDER BY clicks DESC LIMIT 5`.catch(() => []),
       sql`SELECT traffic_source AS source, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND traffic_source IS NOT NULL GROUP BY traffic_source ORDER BY count DESC`.catch(() => []),
       sql`SELECT device, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND device IS NOT NULL GROUP BY device ORDER BY count DESC`.catch(() => []),
+      sql`SELECT page_url, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND page_url IS NOT NULL GROUP BY page_url ORDER BY count DESC LIMIT 100`.catch(() => []),
     ]);
 
     const partnersWithStatus = providers.map(p => ({
@@ -192,6 +193,7 @@ export default async function handler(req, res) {
       top_phrases: topPhrases,
       traffic_sources: topSources,
       devices: topDevices,
+      page_urls: pageUrls,
     });
   }
 

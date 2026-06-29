@@ -22,7 +22,7 @@
     fetch(API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ article: text.slice(0, 4000), publisher: PUB })
+      body: JSON.stringify({ article: text.slice(0, 4000), publisher: PUB, page_url: window.location.href })
     })
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (data) {

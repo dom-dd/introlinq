@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { article } = req.body;
+  const { article, page_url } = req.body;
   if (!article || article.trim().length < 50) {
     return res.status(400).json({ error: 'Article text is too short' });
   }
@@ -158,9 +158,10 @@ Return only valid JSON, no other text:
           `;
           tableReady = true;
         }
+        await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS page_url TEXT`.catch(() => {});
         await sql`
-          INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, match_count)
-          VALUES (${publisher}, ${preview}, ${phrases}, ${expertNames}, ${enriched.length})
+          INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, match_count, page_url)
+          VALUES (${publisher}, ${preview}, ${phrases}, ${expertNames}, ${enriched.length}, ${page_url || null})
         `;
       })(),
 

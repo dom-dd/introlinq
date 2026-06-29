@@ -35,6 +35,23 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 
 /* ── Body ── */
 .body{max-width:900px;margin:0 auto;padding:2.5rem 2rem 5rem}
+
+/* ── Pages modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,26,46,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:auto}
+.modal{background:var(--white);border-radius:var(--radius);padding:1.75rem;width:min(600px,90vw);max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.15)}
+.modal-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:1.25rem}
+.modal-title{font-family:'DM Serif Display',serif;font-size:1.125rem;color:var(--ink)}
+.modal-close{background:none;border:none;font-size:1.25rem;cursor:pointer;color:var(--ink-muted);line-height:1;padding:0}
+.modal-close:hover{color:var(--ink)}
+.modal-list{overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:0.5rem}
+.modal-page{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.625rem 0.75rem;border-radius:8px;background:var(--cream)}
+.modal-page-url{font-size:0.8125rem;color:var(--sage);text-decoration:none;word-break:break-all;flex:1}
+.modal-page-url:hover{text-decoration:underline}
+.modal-page-count{font-size:0.75rem;color:var(--ink-muted);white-space:nowrap;background:var(--white);border:1px solid var(--border);border-radius:100px;padding:0.1rem 0.5rem}
+.modal-empty{font-size:0.875rem;color:var(--ink-muted);text-align:center;padding:2rem}
+.stat-value.clickable{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:4px}
+.stat-value.clickable:hover{color:var(--sage)}
 .tab-panel{display:none}
 .tab-panel.active{display:block}
 
@@ -208,7 +225,7 @@ tr:last-child td{border-bottom:none}
       <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
         <div class="stat-card">
           <div class="stat-label">Impressions</div>
-          <div class="stat-value" id="stat-articles">-</div>
+          <div class="stat-value clickable" id="stat-articles" onclick="openPagesModal()">-</div>
           <div class="stat-sub">pages where widget ran</div>
         </div>
         <div class="stat-card">
@@ -463,6 +480,9 @@ async function loadDashboard() {
 
   document.getElementById('header-name').textContent = d.publisher.name;
   document.getElementById('main').style.display = 'block';
+
+  // Store page URLs for modal
+  _pageUrls = d.page_urls || [];
 
   // Overview stats
   const impressions = d.total_impressions || 0;
@@ -855,6 +875,41 @@ function toast(msg) {
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ── Pages modal ──────────────────────────────────────────────────────────────
+
+var _pageUrls = [];
+
+function openPagesModal() {
+  const list = document.getElementById('modal-page-list');
+  if (!_pageUrls.length) {
+    list.innerHTML = '<div class="modal-empty">No page URLs recorded yet.<br>They will appear here once the widget fires.</div>';
+  } else {
+    list.innerHTML = _pageUrls.map(p => `
+      <div class="modal-page">
+        <a class="modal-page-url" href="${esc(p.page_url)}" target="_blank" rel="noopener">${esc(p.page_url)}</a>
+        <span class="modal-page-count">${p.count}×</span>
+      </div>
+    `).join('');
+  }
+  document.getElementById('pages-modal').classList.add('open');
+}
+
+function closePagesModal() {
+  document.getElementById('pages-modal').classList.remove('open');
+}
 </script>
+
+<!-- Pages modal -->
+<div class="modal-overlay" id="pages-modal" onclick="if(event.target===this)closePagesModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Pages where widget ran</div>
+      <button class="modal-close" onclick="closePagesModal()">✕</button>
+    </div>
+    <div class="modal-list" id="modal-page-list"></div>
+  </div>
+</div>
+
 </body>
 </html>
