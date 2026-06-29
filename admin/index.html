@@ -330,6 +330,17 @@ tr:hover td{background:rgba(0,0,0,0.01)}
       </div>
     </div>
 
+    <!-- Weekly email -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Weekly stats email</div>
+      </div>
+      <div class="sync-row">
+        <button class="btn btn-ghost" onclick="sendTestEmail()">Send test email</button>
+        <span class="sync-info" id="email-status">Sends weekly stats to dom@open-intro.com (test mode — Little Green Agency only).</span>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -592,6 +603,21 @@ async function logBooking() {
   document.getElementById('booking-form').style.display = 'none';
   toast('Booking logged');
   loadBookings();
+}
+
+async function sendTestEmail() {
+  const status = document.getElementById('email-status');
+  status.textContent = 'Sending...';
+  const res = await fetch('/api/cron/weekly-stats', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer il-cron-2026-xK9mP3qR7vN2wL8j' }
+  });
+  const data = await res.json();
+  if (data.sent > 0) {
+    status.textContent = `Sent! Check dom@open-intro.com.`;
+  } else {
+    status.textContent = `Something went wrong — ${JSON.stringify(data)}`;
+  }
 }
 
 async function runSync() {
