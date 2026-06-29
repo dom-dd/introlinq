@@ -820,23 +820,40 @@ const ti_popup = document.getElementById('tryit-popup');
 async function findMatchesInline() {
   const article = document.getElementById('tryit-input').value.trim();
   if (article.length < 50) return;
-  ti_setLoading(true);
-  document.getElementById('tryit-output').style.display = 'none';
+
+  const loadEl = document.getElementById('tryit-loading');
+  const btnEl = document.getElementById('tryit-btn');
+  const outputEl = document.getElementById('tryit-output');
+
+  loadEl.style.display = 'flex';
+  btnEl.disabled = true;
+  btnEl.textContent = 'Analysing...';
+  outputEl.style.display = 'none';
   if (ti_popup) ti_popup.classList.remove('visible');
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 35000);
+
   try {
     const res = await fetch('/api/match', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ article })
+      body: JSON.stringify({ article }),
+      signal: ctrl.signal
     });
+    clearTimeout(timer);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Something went wrong');
     ti_matchData = data.matches || [];
     ti_matchData.forEach(m => { if (m.expert?.photo_url) { const img = new Image(); img.src = m.expert.photo_url; } });
     ti_renderOutput(article, ti_matchData);
   } catch (err) {
+    // silent — just reset below
   } finally {
-    ti_setLoading(false);
+    clearTimeout(timer);
+    loadEl.style.display = 'none';
+    btnEl.disabled = false;
+    btnEl.textContent = 'Find matching experts';
   }
 }
 
