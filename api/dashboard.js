@@ -130,6 +130,7 @@ export default async function handler(req, res) {
     // Ensure providers have a name column
     await sql`ALTER TABLE providers ADD COLUMN IF NOT EXISTS name TEXT`;
     await sql`UPDATE providers SET name = 'OpenIntro' WHERE slug = 'openintro' AND name IS NULL`;
+    await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS page_url TEXT`.catch(() => {});
 
     const [publisher] = await sql`
       SELECT id, name, slug, domain, created_at,
@@ -153,7 +154,7 @@ export default async function handler(req, res) {
            clicksByDay, impressionsByDay, clicksByWeek, impressionsByWeek,
            clicksByMonth, impressionsByMonth,
            topPhrases, topSources, topDevices, pageUrls] = await Promise.all([
-      sql`SELECT phrases, expert_names, match_count, page_url, created_at FROM match_logs WHERE publisher = ${pub} ORDER BY created_at DESC LIMIT 20`,
+      sql`SELECT phrases, expert_names, match_count, page_url, created_at FROM match_logs WHERE publisher = ${pub} ORDER BY created_at DESC LIMIT 20`.catch(() => []),
       sql`SELECT COUNT(*)::int AS total FROM click_logs WHERE publisher = ${pub}`.catch(() => [{ total: 0 }]),
       sql`SELECT slug, COALESCE(name, slug) AS name FROM providers ORDER BY slug`,
       sql`SELECT COUNT(*)::int AS count FROM experts WHERE active = true`,
