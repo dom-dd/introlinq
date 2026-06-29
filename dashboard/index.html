@@ -74,26 +74,30 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .copy-btn{background:var(--sage);color:var(--white);border:none;padding:0.6rem 1.25rem;border-radius:100px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:opacity .15s;flex-shrink:0}
 .copy-btn:hover{opacity:0.85}
 
-/* ── Log cards ── */
-.log-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:0.875rem;overflow:hidden}
-.log-card-head{display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-bottom:1px solid var(--border);background:var(--cream)}
-.log-card-time{font-size:0.75rem;color:var(--ink-muted);white-space:nowrap}
-.log-card-dot{width:4px;height:4px;border-radius:50%;background:var(--border);flex-shrink:0}
-.log-card-url{font-size:0.75rem;color:var(--sage);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
-.log-card-url:hover{text-decoration:underline}
-.log-card-body{padding:0.875rem 1rem;display:flex;flex-direction:column;gap:0.625rem}
-.log-match-row{display:flex;flex-direction:column;gap:0.25rem}
-.log-phrase{font-size:0.8125rem;color:var(--ink-soft);font-style:italic;padding-left:0.75rem;border-left:2px solid var(--gold)}
-.log-expert{display:flex;align-items:center;gap:0.5rem;padding-left:0.75rem}
+/* ── Logs table ── */
+.logs-table{width:100%;border-collapse:collapse}
+.logs-table thead th{font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-muted);padding:0.625rem 1rem;text-align:left;border-bottom:1px solid var(--border);background:var(--cream)}
+.log-row{cursor:pointer;transition:background .1s}
+.log-row:hover td{background:var(--cream)}
+.log-row td{padding:0.75rem 1rem;font-size:0.8125rem;border-bottom:1px solid var(--border);vertical-align:middle}
+.log-row.open td{border-bottom:none}
+.log-time{white-space:nowrap;color:var(--ink-muted);font-size:0.75rem}
+.log-page{color:var(--sage);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.log-badge{display:inline-flex;align-items:center;gap:0.375rem;font-size:0.75rem;font-weight:600;padding:0.2rem 0.625rem;border-radius:100px;white-space:nowrap}
+.log-badge.matched{background:#dcfce7;color:#166534}
+.log-badge.no-match{background:#f1f5f9;color:var(--ink-muted)}
+.log-chevron{color:var(--ink-muted);font-size:0.7rem;transition:transform .2s;display:inline-block}
+.log-row.open .log-chevron{transform:rotate(180deg)}
+.log-detail-row td{padding:0 1rem 0.875rem;border-bottom:1px solid var(--border)}
+.log-detail{background:var(--cream);border-radius:8px;padding:0.875rem 1rem;display:flex;flex-direction:column;gap:0.625rem}
+.log-match-row{display:flex;flex-direction:column;gap:0.2rem}
+.log-phrase{font-size:0.8rem;color:var(--ink-soft);font-style:italic;padding-left:0.75rem;border-left:2px solid var(--gold)}
+.log-expert{display:flex;align-items:center;gap:0.5rem;padding-left:0.75rem;margin-top:0.15rem}
 .log-expert-name{font-size:0.8rem;font-weight:600;color:var(--ink)}
 .log-expert-link{font-size:0.75rem;color:var(--sage);text-decoration:none}
 .log-expert-link:hover{text-decoration:underline}
-.log-no-match{display:flex;align-items:flex-start;gap:0.625rem}
-.log-no-match-icon{font-size:0.875rem;flex-shrink:0;margin-top:1px}
-.log-no-match-text{display:flex;flex-direction:column;gap:0.125rem}
-.log-no-match-label{font-size:0.8125rem;font-weight:600;color:var(--ink)}
-.log-no-match-reason{font-size:0.75rem;color:var(--ink-muted)}
-.log-separator{border:none;border-top:1px solid var(--border);margin:0.25rem 0}
+.log-separator{border:none;border-top:1px solid var(--border);margin:0.125rem 0}
+.log-no-match-detail{font-size:0.8rem;color:var(--ink-muted)}
 .logs-empty{text-align:center;padding:3rem;color:var(--ink-muted);font-size:0.875rem}
 
 /* ── Setup banner ── */
@@ -837,52 +841,72 @@ function renderLogs(logs) {
     el.innerHTML = '<div class="logs-empty">No widget runs yet — install the embed code to get started.</div>';
     return;
   }
-  el.innerHTML = logs.map(l => {
+
+  const rows = logs.map((l, i) => {
     const dt = new Date(l.created_at);
     const dateStr = dt.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
     const timeStr = dt.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
-    const urlPart = l.page_url
-      ? `<span class="log-card-dot"></span><a class="log-card-url" href="${esc(l.page_url)}" target="_blank" rel="noopener">${esc(l.page_url.replace(/^https?:\/\//,''))}</a>`
-      : '';
     const phrases = l.phrases || [];
     const names = l.expert_names || [];
     const urls = l.expert_booking_urls || [];
+    const matched = phrases.length > 0;
 
-    let body;
-    if (phrases.length === 0) {
+    const pageCell = l.page_url
+      ? `<span class="log-page" title="${esc(l.page_url)}">${esc(l.page_url.replace(/^https?:\/\//,''))}</span>`
+      : '<span style="color:var(--ink-muted);font-size:0.75rem">—</span>';
+
+    const badge = matched
+      ? `<span class="log-badge matched">${phrases.length} expert${phrases.length > 1 ? 's' : ''} shown</span>`
+      : `<span class="log-badge no-match">No expert matched</span>`;
+
+    let detail;
+    if (!matched) {
       const reason = l.no_match_reason || 'No actionable reader challenge identified';
-      body = `<div class="log-no-match">
-        <span class="log-no-match-icon">—</span>
-        <div class="log-no-match-text">
-          <span class="log-no-match-label">No expert matched</span>
-          <span class="log-no-match-reason">${esc(reason)}</span>
-        </div>
-      </div>`;
+      detail = `<div class="log-no-match-detail">${esc(reason)}</div>`;
     } else {
-      body = phrases.map((phrase, i) => {
-        const name = names[i] || '';
-        const url = urls[i] || '';
-        const expertHtml = name
-          ? `<div class="log-expert">
-              <span class="log-expert-name">${esc(name)}</span>
-              ${url ? `<a class="log-expert-link" href="${esc(url)}" target="_blank" rel="noopener">Book a call →</a>` : ''}
-            </div>`
-          : '';
+      detail = phrases.map((phrase, j) => {
+        const name = names[j] || '';
+        const url = urls[j] || '';
         return `<div class="log-match-row">
           <div class="log-phrase">"${esc(phrase)}"</div>
-          ${expertHtml}
+          ${name ? `<div class="log-expert">
+            <span class="log-expert-name">${esc(name)}</span>
+            ${url ? `<a class="log-expert-link" href="${esc(url)}" target="_blank" rel="noopener">Book a call →</a>` : ''}
+          </div>` : ''}
         </div>`;
       }).join('<hr class="log-separator">');
     }
 
-    return `<div class="log-card">
-      <div class="log-card-head">
-        <span class="log-card-time">${dateStr} · ${timeStr}</span>
-        ${urlPart}
-      </div>
-      <div class="log-card-body">${body}</div>
-    </div>`;
+    return `
+      <tr class="log-row" onclick="toggleLog(${i})">
+        <td class="log-time">${dateStr}<br>${timeStr}</td>
+        <td>${pageCell}</td>
+        <td>${badge}</td>
+        <td style="text-align:right"><span class="log-chevron" id="chev-${i}">▼</span></td>
+      </tr>
+      <tr class="log-detail-row" id="log-detail-${i}" style="display:none">
+        <td colspan="4"><div class="log-detail">${detail}</div></td>
+      </tr>`;
   }).join('');
+
+  el.innerHTML = `<table class="logs-table">
+    <thead><tr>
+      <th>Date / Time</th>
+      <th>Page</th>
+      <th>Result</th>
+      <th></th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function toggleLog(i) {
+  const detail = document.getElementById('log-detail-' + i);
+  const row = detail.previousElementSibling;
+  const chev = document.getElementById('chev-' + i);
+  const open = detail.style.display !== 'none';
+  detail.style.display = open ? 'none' : 'table-row';
+  row.classList.toggle('open', !open);
 }
 
 function renderInsights(d) {
