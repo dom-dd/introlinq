@@ -91,7 +91,7 @@ Article:
 ${article.slice(0, 4000)}
 
 Return only valid JSON, no other text:
-{"matches":[{"phrase":"exact substring from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person — e.g. 'If you want to raise your first round without giving away too much equity, Phil has backed 200+ startups and can walk you through the process.'"}]}`;
+{"matches":[{"phrase":"exact substring from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person — e.g. 'If you want to raise your first round without giving away too much equity, Phil has backed 200+ startups and can walk you through the process.'"}],"no_match_reason":"Only include this field when matches is empty. One short phrase explaining why — e.g. 'News article', 'Product announcement', 'Company profile / press release', 'No actionable reader challenge identified', 'Pure statistics reporting'"}}`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -140,6 +140,8 @@ Return only valid JSON, no other text:
     const preview = article.slice(0, 120).replace(/\s+/g, ' ');
     const phrases = enriched.map(m => m.phrase);
     const expertNames = enriched.map(m => m.expert.name);
+    const expertBookingUrls = enriched.map(m => m.expert.booking_url || null);
+    const noMatchReason = enriched.length === 0 ? (parsed.no_match_reason || null) : null;
 
     await Promise.allSettled([
       // Log to DB
@@ -159,9 +161,11 @@ Return only valid JSON, no other text:
           tableReady = true;
         }
         await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS page_url TEXT`.catch(() => {});
+        await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS expert_booking_urls TEXT[]`.catch(() => {});
+        await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS no_match_reason TEXT`.catch(() => {});
         await sql`
-          INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, match_count, page_url)
-          VALUES (${publisher}, ${preview}, ${phrases}, ${expertNames}, ${enriched.length}, ${page_url || null})
+          INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason)
+          VALUES (${publisher}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${enriched.length}, ${page_url || null}, ${noMatchReason})
         `;
       })(),
 

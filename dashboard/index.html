@@ -74,6 +74,28 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .copy-btn{background:var(--sage);color:var(--white);border:none;padding:0.6rem 1.25rem;border-radius:100px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:opacity .15s;flex-shrink:0}
 .copy-btn:hover{opacity:0.85}
 
+/* ── Log cards ── */
+.log-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:0.875rem;overflow:hidden}
+.log-card-head{display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-bottom:1px solid var(--border);background:var(--cream)}
+.log-card-time{font-size:0.75rem;color:var(--ink-muted);white-space:nowrap}
+.log-card-dot{width:4px;height:4px;border-radius:50%;background:var(--border);flex-shrink:0}
+.log-card-url{font-size:0.75rem;color:var(--sage);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.log-card-url:hover{text-decoration:underline}
+.log-card-body{padding:0.875rem 1rem;display:flex;flex-direction:column;gap:0.625rem}
+.log-match-row{display:flex;flex-direction:column;gap:0.25rem}
+.log-phrase{font-size:0.8125rem;color:var(--ink-soft);font-style:italic;padding-left:0.75rem;border-left:2px solid var(--gold)}
+.log-expert{display:flex;align-items:center;gap:0.5rem;padding-left:0.75rem}
+.log-expert-name{font-size:0.8rem;font-weight:600;color:var(--ink)}
+.log-expert-link{font-size:0.75rem;color:var(--sage);text-decoration:none}
+.log-expert-link:hover{text-decoration:underline}
+.log-no-match{display:flex;align-items:flex-start;gap:0.625rem}
+.log-no-match-icon{font-size:0.875rem;flex-shrink:0;margin-top:1px}
+.log-no-match-text{display:flex;flex-direction:column;gap:0.125rem}
+.log-no-match-label{font-size:0.8125rem;font-weight:600;color:var(--ink)}
+.log-no-match-reason{font-size:0.75rem;color:var(--ink-muted)}
+.log-separator{border:none;border-top:1px solid var(--border);margin:0.25rem 0}
+.logs-empty{text-align:center;padding:3rem;color:var(--ink-muted);font-size:0.875rem}
+
 /* ── Setup banner ── */
 .setup-banner{background:#fff8f8;border:2px dashed #f87171;border-radius:var(--radius);padding:1.5rem;margin:1.5rem auto;display:none;width:calc(100% - 3rem);max-width:860px}
 .setup-banner-top{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem}
@@ -213,9 +235,9 @@ tr:last-child td{border-bottom:none}
 
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('overview',this)">Overview</button>
-    <button class="tab-btn" onclick="switchTab('matches',this)">Matches</button>
     <button class="tab-btn" onclick="switchTab('widget',this)">Widget</button>
     <button class="tab-btn" onclick="switchTab('payouts',this)">Payouts</button>
+    <button class="tab-btn" onclick="switchTab('matches',this)">Logs</button>
   </div>
 
   <div class="body">
@@ -286,26 +308,13 @@ tr:last-child td{border-bottom:none}
       </div>
     </div>
 
-    <!-- ── Matches ── -->
+    <!-- ── Logs ── -->
     <div class="tab-panel" id="tab-matches">
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Recent matches</div>
-          <div class="section-sub">Last 20 times the widget ran on your site</div>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Phrase highlighted</th>
-              <th>Experts shown</th>
-              <th>When</th>
-            </tr>
-          </thead>
-          <tbody id="logs-tbody">
-            <tr><td colspan="3" class="empty">Loading...</td></tr>
-          </tbody>
-        </table>
+      <div class="section-header" style="padding:1.25rem 0 0.75rem">
+        <div class="section-title">Widget logs</div>
+        <div class="section-sub">Last 50 times the widget ran on your site</div>
       </div>
+      <div id="logs-list"><div class="logs-empty">Loading…</div></div>
     </div>
 
     <!-- ── Widget ── -->
@@ -501,19 +510,8 @@ async function loadDashboard() {
   // Audience insights
   renderInsights(d);
 
-  // Matches
-  const tbody = document.getElementById('logs-tbody');
-  if (!d.logs.length) {
-    tbody.innerHTML = '<tr><td colspan="3" class="empty">No matches yet — install the embed code to get started.</td></tr>';
-  } else {
-    tbody.innerHTML = d.logs.map(l => `
-      <tr>
-        <td><div class="td-phrase-text" title="${esc((l.phrases||[]).join(', '))}">${esc((l.phrases||[]).slice(0,2).join(', ') + (l.phrases?.length > 2 ? ` +${l.phrases.length-2} more` : ''))}</div></td>
-        <td>${(l.expert_names||[]).map(n => `<span class="expert-pill">${esc(n)}</span>`).join('')}</td>
-        <td style="white-space:nowrap;color:var(--ink-muted)">${timeAgo(l.created_at)}</td>
-      </tr>
-    `).join('');
-  }
+  // Logs
+  renderLogs(d.logs || []);
 
   // Setup banner — show until widget has fired at least once
   const embedCode = `<script src="https://www.introlinq.com/widget.js" data-publisher="${esc(d.publisher.slug)}"><\/script>`;
@@ -831,6 +829,60 @@ function setPeriod(period, btn) {
   imprChart.data.labels = m.labels;
   imprChart.data.datasets[0].data = m.data;
   imprChart.update();
+}
+
+function renderLogs(logs) {
+  const el = document.getElementById('logs-list');
+  if (!logs.length) {
+    el.innerHTML = '<div class="logs-empty">No widget runs yet — install the embed code to get started.</div>';
+    return;
+  }
+  el.innerHTML = logs.map(l => {
+    const dt = new Date(l.created_at);
+    const dateStr = dt.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    const timeStr = dt.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+    const urlPart = l.page_url
+      ? `<span class="log-card-dot"></span><a class="log-card-url" href="${esc(l.page_url)}" target="_blank" rel="noopener">${esc(l.page_url.replace(/^https?:\/\//,''))}</a>`
+      : '';
+    const phrases = l.phrases || [];
+    const names = l.expert_names || [];
+    const urls = l.expert_booking_urls || [];
+
+    let body;
+    if (phrases.length === 0) {
+      const reason = l.no_match_reason || 'No actionable reader challenge identified';
+      body = `<div class="log-no-match">
+        <span class="log-no-match-icon">—</span>
+        <div class="log-no-match-text">
+          <span class="log-no-match-label">No expert matched</span>
+          <span class="log-no-match-reason">${esc(reason)}</span>
+        </div>
+      </div>`;
+    } else {
+      body = phrases.map((phrase, i) => {
+        const name = names[i] || '';
+        const url = urls[i] || '';
+        const expertHtml = name
+          ? `<div class="log-expert">
+              <span class="log-expert-name">${esc(name)}</span>
+              ${url ? `<a class="log-expert-link" href="${esc(url)}" target="_blank" rel="noopener">Book a call →</a>` : ''}
+            </div>`
+          : '';
+        return `<div class="log-match-row">
+          <div class="log-phrase">"${esc(phrase)}"</div>
+          ${expertHtml}
+        </div>`;
+      }).join('<hr class="log-separator">');
+    }
+
+    return `<div class="log-card">
+      <div class="log-card-head">
+        <span class="log-card-time">${dateStr} · ${timeStr}</span>
+        ${urlPart}
+      </div>
+      <div class="log-card-body">${body}</div>
+    </div>`;
+  }).join('');
 }
 
 function renderInsights(d) {
