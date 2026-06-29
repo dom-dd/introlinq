@@ -190,6 +190,18 @@
     return (r * 299 + g * 587 + b * 114) / 1000 > 128 ? '#1a1a2e' : '#ffffff';
   }
 
+  function findBestPhrase(nodes, phrase) {
+    var allText = nodes.map(function(n){ return n.textContent; }).join('\n');
+    if (allText.indexOf(phrase) !== -1) return phrase;
+    // Trim progressively from the end until we find a match in the DOM
+    var words = phrase.split(' ');
+    for (var len = Math.floor(words.length * 0.75); len >= 4; len--) {
+      var shorter = words.slice(0, len).join(' ');
+      if (allText.indexOf(shorter) !== -1) return shorter;
+    }
+    return null;
+  }
+
   function highlightMatches(container, matches, popup, cfg) {
     var walker = document.createTreeWalker(
       container,
@@ -214,7 +226,8 @@
 
     var highlighted = 0;
     matches.forEach(function (match) {
-      var phrase = match.phrase;
+      var phrase = findBestPhrase(nodes, match.phrase);
+      if (!phrase) return;
       for (var i = 0; i < nodes.length; i++) {
         var node = nodes[i];
         var text = node.textContent;
