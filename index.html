@@ -222,7 +222,16 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .demo-panel.active{display:block}
 
 /* Try it panel */
-.t-textarea{width:100%;height:190px;padding:0.875rem 1rem;border:1.5px solid rgba(255,255,255,0.1);border-radius:10px;font-size:0.875rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);resize:none;outline:none;transition:border-color .15s;line-height:1.7}
+.t-url-row{display:flex;gap:8px;margin-bottom:0.875rem}
+.t-url-input{flex:1;padding:0.75rem 1rem;border:1.5px solid rgba(255,255,255,0.15);border-radius:10px;font-size:0.875rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);outline:none;transition:border-color .15s;min-width:0}
+.t-url-input:focus{border-color:var(--gold);background:#fff}
+.t-url-input::placeholder{color:var(--ink-muted)}
+.t-url-btn{background:var(--gold);color:var(--ink);border:none;padding:0.75rem 1.125rem;border-radius:10px;font-size:0.875rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:opacity .15s;flex-shrink:0}
+.t-url-btn:hover:not(:disabled){opacity:.85}
+.t-url-btn:disabled{opacity:.5;cursor:not-allowed}
+.t-divider{display:flex;align-items:center;gap:0.625rem;margin-bottom:0.75rem;color:rgba(255,255,255,0.25);font-size:0.7rem;letter-spacing:0.04em}
+.t-divider::before,.t-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.1)}
+.t-textarea{width:100%;height:130px;padding:0.875rem 1rem;border:1.5px solid rgba(255,255,255,0.1);border-radius:10px;font-size:0.875rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);resize:none;outline:none;transition:border-color .15s;line-height:1.7}
 .t-textarea:focus{border-color:var(--gold);background:#fff}
 .t-textarea::placeholder{color:var(--ink-muted)}
 .t-btn{display:block;width:100%;margin-top:0.75rem;background:var(--gold);color:var(--ink);border:none;padding:0.8125rem;border-radius:100px;font-size:0.9375rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .15s;box-shadow:0 4px 16px rgba(230,168,32,0.4);letter-spacing:0.01em}
@@ -246,7 +255,6 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .t-avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--cream)}
 .t-name{font-weight:600;font-size:0.875rem;color:var(--ink)}
 .t-role{font-size:0.72rem;color:var(--ink-soft);margin-top:2px}
-.t-price{font-size:0.7rem;color:var(--ink-muted);margin-top:3px}
 .t-reason{font-size:0.8rem;color:var(--ink-soft);line-height:1.6;margin-bottom:0.75rem;font-style:italic;border-left:2px solid var(--gold);padding-left:0.625rem}
 .t-book{display:block;background:var(--gold);color:var(--ink);text-align:center;padding:0.5625rem;border-radius:100px;font-size:0.8125rem;font-weight:700;text-decoration:none;transition:opacity 0.15s}
 .t-book:hover{opacity:0.85}
@@ -275,7 +283,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
       <div class="carousel-wrap">
       <div class="demo-tab-bar">
         <button class="demo-tab active" onclick="switchDemo('demo',this)">Demo</button>
-        <button class="demo-tab" onclick="switchDemo('tryit',this)">✏️ Try your article</button>
+        <button class="demo-tab" onclick="switchDemo('tryit',this)">🔗 Try any article</button>
       </div>
 
       <!-- Demo panel -->
@@ -338,7 +346,12 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 
       <!-- Try it panel -->
       <div class="demo-panel" id="dp-tryit">
-        <div class="carousel-label" style="margin-bottom:0.75rem">Paste your article below — or use the sample to see it in action</div>
+        <div class="carousel-label" style="margin-bottom:0.75rem">Enter any article URL — we'll fetch it and show which experts IntroLinq would surface for your readers</div>
+        <div class="t-url-row">
+          <input type="url" class="t-url-input" id="t-url" placeholder="https://yourblog.com/any-article" onkeydown="if(event.key==='Enter')tFetchUrl()">
+          <button class="t-url-btn" id="t-url-btn" onclick="tFetchUrl()">Analyse →</button>
+        </div>
+        <div class="t-divider">or paste article text</div>
         <textarea class="t-textarea" id="t-input" placeholder="Paste any blog post or article here — the longer the better."></textarea>
         <textarea id="t-sample-src" style="display:none">How to start a company:
 
@@ -629,7 +642,6 @@ The honest summary: talk to customers early, stay lean, get to revenue as fast a
     <div>
       <div class="t-name" id="t-name"></div>
       <div class="t-role" id="t-role"></div>
-      <div class="t-price" id="t-price"></div>
     </div>
   </div>
   <div class="t-reason" id="t-reason"></div>
@@ -805,26 +817,41 @@ function switchDemo(name, btn) {
 var t_matchData = [];
 var t_hideTimer = null;
 
+async function tFetchUrl() {
+  const urlEl = document.getElementById('t-url');
+  const btnEl = document.getElementById('t-url-btn');
+  const url = urlEl.value.trim();
+  if (!url) { t_showError('Please enter a URL first.'); return; }
+  t_clearError();
+  btnEl.disabled = true;
+  t_setLoading(true, 'Fetching article…');
+  document.getElementById('t-output').style.display = 'none';
+  try {
+    const r = await fetch('/api/demo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Could not fetch that URL');
+    await tRunMatch(d.text, url, d.title);
+  } catch (err) {
+    t_showError(err.message || 'Something went wrong. Please try again.');
+    t_setLoading(false);
+  } finally {
+    btnEl.disabled = false;
+  }
+}
+
 async function tFindMatches() {
-  const popup = document.getElementById('t-popup');
   const article = document.getElementById('t-input').value.trim();
-  if (/^https?:\/\/\S+$/.test(article)) { t_showError('That looks like a URL — please paste the article text itself, not the link.'); return; }
   if (article.length < 50) { t_showError('Please paste a full article first.'); return; }
   t_clearError();
   t_setLoading(true);
   document.getElementById('t-output').style.display = 'none';
-  if (popup) popup.classList.remove('visible');
+  document.getElementById('t-popup')?.classList.remove('visible');
   try {
-    const res = await fetch('/api/match', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ article })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Something went wrong');
-    t_matchData = data.matches || [];
-    t_matchData.forEach(m => { if (m.expert?.photo_url) { const img = new Image(); img.src = m.expert.photo_url; } });
-    t_renderOutput(article, t_matchData);
+    await tRunMatch(article, null, null);
   } catch (err) {
     t_showError(err.message || 'Something went wrong. Please try again.');
   } finally {
@@ -832,15 +859,31 @@ async function tFindMatches() {
   }
 }
 
+async function tRunMatch(article, pageUrl, pageTitle) {
+  const popup = document.getElementById('t-popup');
+  if (popup) popup.classList.remove('visible');
+  const res = await fetch('/api/match', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ article, page_url: pageUrl || undefined, page_title: pageTitle || undefined })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Something went wrong');
+  t_matchData = data.matches || [];
+  t_matchData.forEach(m => { if (m.expert?.photo_url) { const img = new Image(); img.src = m.expert.photo_url; } });
+  t_renderOutput(article, t_matchData);
+  t_setLoading(false);
+}
+
 
 var t_loadingTimer = null;
-function t_setLoading(on) {
+function t_setLoading(on, firstMsg) {
   document.getElementById('t-loading').style.display = on ? 'block' : 'none';
   const btn = document.getElementById('t-btn');
   btn.disabled = on;
   btn.textContent = on ? 'Analysing...' : 'Find matching experts';
   if (on) {
-    const msgs = ['Reading your article…','Detecting key sentences…','Matching experts…','Refining results…','Almost there…'];
+    const msgs = [firstMsg || 'Reading your article…','Detecting key sentences…','Matching experts…','Refining results…','Almost there…'];
     let i = 0;
     document.getElementById('t-loading-text').textContent = msgs[0];
     t_loadingTimer = setInterval(() => {
@@ -912,7 +955,6 @@ function t_fillPopup(match) {
   if (e.photo_url) { const pre = new Image(); pre.onload = () => { img.src = e.photo_url; }; pre.src = e.photo_url; }
   document.getElementById('t-name').textContent = e.name;
   document.getElementById('t-role').textContent = [e.position, e.company].filter(Boolean).join(' · ');
-  document.getElementById('t-price').textContent = e.price_from ? `From £${e.price_from} / session` : '';
   document.getElementById('t-reason').textContent = match.reason;
   document.getElementById('t-book').href = e.booking_url || '#';
 }
