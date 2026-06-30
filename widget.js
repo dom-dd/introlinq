@@ -158,7 +158,6 @@
             '<span id="il-fl" style="font-size:13px;line-height:1;flex-shrink:0"></span>' +
           '</div>' +
           '<div id="il-rl" style="font-size:11.5px;color:#4a4a6a;margin-top:2px;line-height:1.3"></div>' +
-          '<div id="il-pr" style="font-size:11px;color:#8888a8;margin-top:3px"></div>' +
         '</div>' +
       '</div>' +
       (isSmall ? '' : '<div id="il-rs" style="font-size:' + (isLarge ? '13px' : '12.5px') + ';color:#4a4a6a;line-height:1.6;margin-bottom:12px;font-style:italic;border-left:2px solid ' + hexToRgba(accent, 0.3) + ';padding-left:10px"></div>') +
@@ -307,7 +306,6 @@
     }
     var rl = document.getElementById('il-rl');
     rl.innerHTML = [e.position ? '<span>' + e.position.replace(/</g,'&lt;') + '</span>' : '', e.company ? '<span style="color:#8888a8">' + e.company.replace(/</g,'&lt;') + '</span>' : ''].filter(Boolean).join('<br>');
-    document.getElementById('il-pr').textContent = e.price_from ? 'From £' + e.price_from + ' / session' : '';
     var rs = document.getElementById('il-rs');
     if (rs) rs.textContent = match.reason;
     var bk = document.getElementById('il-bk');
