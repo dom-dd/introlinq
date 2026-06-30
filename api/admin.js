@@ -275,6 +275,17 @@ export default async function handler(req, res) {
     return res.status(200).json({ by_country: byCountry?.count, by_name: byName?.count, french_speakers: updated });
   }
 
+  // Global logs
+  if (resource === 'logs' && req.method === 'GET') {
+    const logs = await sql`
+      SELECT publisher, page_url, match_count, no_match_reason, country_code, created_at
+      FROM match_logs
+      ORDER BY created_at DESC
+      LIMIT 200
+    `.catch(() => []);
+    return res.status(200).json(logs);
+  }
+
   // Delete all match logs for a publisher
   if (resource === 'clear-logs' && req.method === 'POST') {
     const { publisher } = req.body;

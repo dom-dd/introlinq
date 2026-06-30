@@ -319,6 +319,30 @@ tr:hover td{background:rgba(0,0,0,0.01)}
       </div>
     </div>
 
+    <!-- Global logs -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">All widget logs</div>
+        <span style="font-size:0.8125rem;color:var(--ink-muted)">Last 200 requests across all publishers</span>
+      </div>
+      <div class="section-body">
+        <table>
+          <thead>
+            <tr>
+              <th>Date / Time</th>
+              <th>Publisher</th>
+              <th>Page</th>
+              <th>Country</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody id="global-logs-tbody">
+            <tr><td colspan="5" class="empty">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- Sync -->
     <div class="section">
       <div class="section-header">
@@ -365,6 +389,33 @@ function showAdmin() {
   loadStats();
   loadPublishers();
   loadBookings();
+  loadGlobalLogs();
+}
+
+async function loadGlobalLogs() {
+  const res = await fetch('/api/admin?resource=logs');
+  const logs = await res.json();
+  const tbody = document.getElementById('global-logs-tbody');
+  if (!logs.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty">No logs yet</td></tr>'; return; }
+  tbody.innerHTML = logs.map(l => {
+    const dt = new Date(l.created_at);
+    const date = dt.toLocaleDateString('en-GB', { day:'2-digit', month:'short' });
+    const time = dt.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+    const page = l.page_url ? l.page_url.replace(/^https?:\/\//, '') : '—';
+    const pageShort = page.length > 50 ? page.slice(0, 50) + '…' : page;
+    const result = l.match_count > 0
+      ? `<span class="badge badge-active">${l.match_count} expert${l.match_count !== 1 ? 's' : ''}</span>`
+      : `<span class="badge badge-inactive">${l.no_match_reason || 'no match'}</span>`;
+    const country = l.country_code || '—';
+    const pub = l.publisher || '/app';
+    return `<tr>
+      <td style="white-space:nowrap;color:var(--ink-muted);font-size:0.8rem">${date} ${time}</td>
+      <td class="td-name">${esc(pub)}</td>
+      <td style="font-size:0.8rem;color:var(--ink-muted)" title="${esc(page)}">${esc(pageShort)}</td>
+      <td style="font-size:0.8rem">${esc(country)}</td>
+      <td>${result}</td>
+    </tr>`;
+  }).join('');
 }
 
 async function loadStats() {
