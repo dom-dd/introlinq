@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       `.catch(() => [null]);
     }
 
-    const publisherSlug = pub || click?.publisher;
+    const publisherSlug = click?.publisher || pub;
     if (!publisherSlug) return res.status(400).json({ error: 'Cannot resolve publisher' });
 
     const [publisher] = await sql`

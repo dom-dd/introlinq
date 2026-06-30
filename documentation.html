@@ -144,15 +144,16 @@
   <div class="section">
     <h2>Webhook endpoint</h2>
     <h3>Request</h3>
-    <pre><code>POST https://www.introlinq.com/api/dashboard?action=booking&amp;pub={publisher-slug}
+    <pre><code>POST https://www.introlinq.com/api/dashboard?action=booking&amp;pub={your-platform-slug}
 Content-Type: application/json
 x-introlinq-secret: {your_secret_key}</code></pre>
+    <p style="margin-top:0.75rem;font-size:0.875rem;color:#555">The <code>pub</code> parameter is your fixed platform identifier (e.g. <code>open-intro</code>) — it stays the same for every booking you send. IntroLinq resolves which publisher to pay from the <code>click_id</code>.</p>
 
     <h3>Payload</h3>
     <table>
       <tr><th>Field</th><th>Type</th><th>Description</th></tr>
-      <tr><td>click_id</td><td>string <span class="req">required</span></td><td>The <code>click_id</code> received in the attribution URL.</td></tr>
-      <tr><td>booking_amount</td><td>number <span class="req">required</span></td><td>Total session price charged to the reader.</td></tr>
+      <tr><td>click_id</td><td>string <span class="req">required</span></td><td>The <code>click_id</code> received in the attribution URL. This is how IntroLinq identifies which publisher referred the reader and calculates their payout.</td></tr>
+      <tr><td>booking_amount</td><td>number <span class="req">required</span></td><td>The amount IntroLinq uses to calculate the publisher payout — as agreed in your partner contract. The publisher receives their revenue share percentage of this figure.</td></tr>
       <tr><td>currency</td><td>string <span class="req">required</span></td><td>ISO 4217 currency code, e.g. <code>GBP</code>, <code>EUR</code>, <code>USD</code>.</td></tr>
       <tr><td>expert_id</td><td>integer <span class="opt">optional</span></td><td>Your internal expert ID.</td></tr>
       <tr><td>expert_name</td><td>string <span class="opt">optional</span></td><td>Expert's full name - shown in the publisher's commission email.</td></tr>
@@ -164,7 +165,7 @@ x-introlinq-secret: {your_secret_key}</code></pre>
   "click_id": "4f3a9b2c-1234-4d56-a789-0abc12def345",
   "expert_id": 38,
   "expert_name": "Jane Smith",
-  "booking_amount": 150,
+  "booking_amount": 15,
   "currency": "GBP"
 }</code></pre>
 
@@ -174,7 +175,7 @@ x-introlinq-secret: {your_secret_key}</code></pre>
         <h4>200 OK</h4>
         <pre><code>{
   "ok": true,
-  "publisher_payout": 105,
+  "publisher_payout": 10.50,
   "publisher": "entrepreneurs-collective",
   "expert": "Jane Smith"
 }</code></pre>
@@ -192,18 +193,18 @@ x-introlinq-secret: {your_secret_key}</code></pre>
   <div class="section">
     <h2>Testing your integration</h2>
     <p>Before going live, verify your integration using test mode. Set <code>"test": true</code> in the payload - IntroLinq will validate the request, resolve the publisher, calculate the payout, and fire a Slack notification, but will <strong>not</strong> record the booking or email the publisher.</p>
-    <pre><code>curl -X POST "https://www.introlinq.com/api/dashboard?action=booking&pub=your-publisher-slug" \
+    <pre><code>curl -X POST "https://www.introlinq.com/api/dashboard?action=booking&pub=open-intro" \
   -H "Content-Type: application/json" \
   -H "x-introlinq-secret: YOUR_SECRET" \
   -d '{
     "click_id": "test-click-id-123",
     "expert_name": "Test Expert",
-    "booking_amount": 100,
+    "booking_amount": 15,
     "currency": "GBP",
     "test": true
   }'</code></pre>
     <div class="callout">
-      <strong>Expected response:</strong> <code>{"ok":true,"test":true,"publisher_payout":70,"publisher":"your-publisher-slug","expert":"Test Expert"}</code>
+      <strong>Expected response:</strong> <code>{"ok":true,"test":true,"publisher_payout":10.5,"publisher":"entrepreneurs-collective","expert":"Test Expert"}</code>
     </div>
   </div>
 
