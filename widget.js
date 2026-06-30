@@ -152,7 +152,7 @@
       '</div>' +
       (isSmall ? '' : '<div id="il-rs" style="font-size:' + (isLarge ? '13px' : '12.5px') + ';color:#4a4a6a;line-height:1.6;margin-bottom:12px;font-style:italic;border-left:2px solid ' + hexToRgba(accent, 0.3) + ';padding-left:10px"></div>') +
       '<a id="il-bk" href="#" target="_blank" rel="noopener" style="display:block;background:' + accent + ';color:' + getContrastColor(accent) + ';text-align:center;padding:' + (isSmall ? '7' : '9') + 'px;border-radius:100px;font-size:13px;font-weight:700;text-decoration:none">Book a call →</a>' +
-      '<div id="il-pv" style="font-size:9px;color:#8888a8;text-align:center;margin-top:8px;letter-spacing:.05em;text-transform:uppercase">Powered by IntroLinq</div>';
+      '<div id="il-pv" style="font-size:8.5px;color:#8888a8;text-align:center;margin-top:6px;letter-spacing:.02em"></div>';
     document.body.appendChild(p);
     p.addEventListener('mouseenter', function () { clearTimeout(hideTimer); });
     p.addEventListener('mouseleave', function () { scheduleHide(p); });
@@ -244,6 +244,7 @@
             fillPopup(popup, m, cfg);
             positionPopup(popup, sp, cfg);
             popup.classList.add('il-on');
+            if ('ontouchstart' in window) closeOnScroll(popup);
           });
           sp.addEventListener('mouseleave', function () { scheduleHide(popup); });
         })(span, match);
@@ -343,6 +344,14 @@
     hideTimer = setTimeout(function () {
       popup.classList.remove('il-on');
     }, 150);
+  }
+
+  function closeOnScroll(popup) {
+    var handler = function () {
+      popup.classList.remove('il-on');
+      window.removeEventListener('scroll', handler, { passive: true });
+    };
+    window.addEventListener('scroll', handler, { passive: true });
   }
 
 })();
