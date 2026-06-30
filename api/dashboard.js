@@ -15,6 +15,82 @@ export default async function handler(req, res) {
 
   const sql = neon(process.env.DATABASE_URL);
 
+  // Booking webhook — called by partners (OpenIntro etc.) when a booking completes
+  if (req.method === 'POST' && action === 'booking') {
+    const secret = req.headers['x-introlinq-secret'];
+    if (!process.env.BOOKING_WEBHOOK_SECRET || secret !== process.env.BOOKING_WEBHOOK_SECRET) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { click_id, expert_id, expert_name, booking_amount, currency = 'GBP' } = req.body || {};
+    if (!booking_amount) return res.status(400).json({ error: 'Missing booking_amount' });
+
+    // Look up click for attribution
+    let click = null;
+    if (click_id) {
+      [click] = await sql`
+        SELECT publisher, expert_name, article_url, article_title
+        FROM click_logs WHERE click_id = ${click_id} LIMIT 1
+      `.catch(() => [null]);
+    }
+
+    const publisherSlug = pub || click?.publisher;
+    if (!publisherSlug) return res.status(400).json({ error: 'Cannot resolve publisher' });
+
+    const [publisher] = await sql`
+      SELECT slug, name, payment_email, COALESCE(revenue_share, 0.70) AS revenue_share
+      FROM publishers WHERE slug = ${publisherSlug} AND active = true LIMIT 1
+    `.catch(() => [null]);
+
+    if (!publisher) return res.status(404).json({ error: 'Publisher not found' });
+
+    const payout = Math.round(booking_amount * publisher.revenue_share * 100) / 100;
+    const resolvedExpert = expert_name || click?.expert_name || 'an expert';
+    const articleUrl = click?.article_url || null;
+    const articleTitle = click?.article_title || null;
+
+    // Store booking
+    await sql`CREATE TABLE IF NOT EXISTS bookings (
+      id SERIAL PRIMARY KEY, publisher TEXT, expert_id INT, expert_name TEXT,
+      booking_amount DECIMAL, currency TEXT, publisher_payout DECIMAL,
+      click_id TEXT, article_url TEXT, article_title TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`.catch(() => {});
+
+    await sql`
+      INSERT INTO bookings (publisher, expert_id, expert_name, booking_amount, currency, publisher_payout, click_id, article_url, article_title)
+      VALUES (${publisherSlug}, ${expert_id || null}, ${resolvedExpert}, ${booking_amount}, ${currency}, ${payout}, ${click_id || null}, ${articleUrl}, ${articleTitle})
+    `;
+
+    // Email publisher
+    if (publisher.payment_email && process.env.RESEND_API_KEY) {
+      const articleLine = articleTitle
+        ? `\n\nThe booking came from your article: ${articleTitle}${articleUrl ? `\n${articleUrl}` : ''}`
+        : '';
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: 'IntroLinq <notifications@introlinq.com>',
+          to: publisher.payment_email,
+          subject: `You earned ${currency} ${payout.toFixed(2)} — new booking on your site`,
+          text: `Hi ${publisher.name},\n\nA reader on your site just booked a session with ${resolvedExpert}.\n\nBooking value: ${currency} ${Number(booking_amount).toFixed(2)}\nYour commission (${Math.round(publisher.revenue_share * 100)}%): ${currency} ${payout.toFixed(2)}${articleLine}\n\nThis will be included in your next payout.\n\nBest,\nThe IntroLinq team`,
+        }),
+      }).catch(err => console.error('Booking email failed:', err));
+    }
+
+    // Slack
+    if (process.env.SLACK_WEBHOOK_URL) {
+      await fetch(process.env.SLACK_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: `💰 *New booking* — ${resolvedExpert} · ${currency} ${Number(booking_amount).toFixed(2)} · ${publisher.name} · Payout: ${currency} ${payout.toFixed(2)}${articleTitle ? ` · _${articleTitle}_` : ''}` }),
+      }).catch(() => {});
+    }
+
+    return res.status(200).json({ ok: true, publisher_payout: payout });
+  }
+
   // Public redirect — routes Book button through IntroLinq before sending to partner
   if (req.method === 'GET' && action === 'out') {
     const { expert_id, expert_name, expert_url, article, phrase, lang, tz, device, source, title } = req.query;
