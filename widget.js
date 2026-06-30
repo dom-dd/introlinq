@@ -156,6 +156,10 @@
     document.body.appendChild(p);
     p.addEventListener('mouseenter', function () { clearTimeout(hideTimer); });
     p.addEventListener('mouseleave', function () { scheduleHide(p); });
+    if ('ontouchstart' in window) {
+      p.addEventListener('click', function (ev) { ev.stopPropagation(); });
+      document.addEventListener('click', function () { p.classList.remove('il-on'); });
+    }
     return p;
   }
 
@@ -239,14 +243,24 @@
         span.textContent = phrase;
 
         ;(function (sp, m) {
-          sp.addEventListener('mouseenter', function () {
-            clearTimeout(hideTimer);
-            fillPopup(popup, m, cfg);
-            positionPopup(popup, sp, cfg);
-            popup.classList.add('il-on');
-            if ('ontouchstart' in window) closeOnScroll(popup);
-          });
-          sp.addEventListener('mouseleave', function () { scheduleHide(popup); });
+          if ('ontouchstart' in window) {
+            sp.addEventListener('click', function (ev) {
+              ev.stopPropagation();
+              clearTimeout(hideTimer);
+              fillPopup(popup, m, cfg);
+              positionPopup(popup, sp, cfg);
+              popup.classList.add('il-on');
+              closeOnScroll(popup);
+            });
+          } else {
+            sp.addEventListener('mouseenter', function () {
+              clearTimeout(hideTimer);
+              fillPopup(popup, m, cfg);
+              positionPopup(popup, sp, cfg);
+              popup.classList.add('il-on');
+            });
+            sp.addEventListener('mouseleave', function () { scheduleHide(popup); });
+          }
         })(span, match);
 
         var parent = node.parentNode;
@@ -319,11 +333,19 @@
     var rect = span.getBoundingClientRect();
     var isMobile = window.innerWidth < 520;
     var W = isMobile ? Math.min(280, window.innerWidth - 24) : ({ small: 240, medium: 300, large: 360 }[cfg.size] || 300);
-    var H = cfg.size === 'small' ? 150 : cfg.size === 'large' ? 260 : 220;
     popup.style.width = W + 'px';
+    // Use actual rendered height (forces layout) so we know exactly how tall it is
+    var H = popup.offsetHeight || (isMobile ? 360 : (cfg.size === 'small' ? 150 : cfg.size === 'large' ? 260 : 220));
+    // Use visualViewport on mobile to exclude browser chrome (address bar, bottom bar)
+    var vpH = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+    var margin = 12;
     var top = rect.bottom + 10;
     var left = isMobile ? Math.round((window.innerWidth - W) / 2) : rect.left;
-    if (rect.bottom + H + 10 > window.innerHeight) top = rect.top - H - 10;
+    // Flip above the span if popup would be cut off at bottom
+    if (top + H + margin > vpH) top = rect.top - H - 10;
+    // Clamp to visible area
+    if (top < margin) top = margin;
+    if (top + H + margin > vpH) top = Math.max(margin, vpH - H - margin);
     if (!isMobile && left + W > window.innerWidth - 12) left = window.innerWidth - W - 12;
     if (left < 8) left = 8;
     popup.style.top = top + 'px';
