@@ -309,8 +309,8 @@
       var providerSlug = e.provider_slug || 'openintro';
       var providerName = e.provider_name || 'OpenIntro';
       var providerUrl = providerUrls[providerSlug] || '#';
-      var linkStyle = 'color:#8888a8;text-decoration:none';
-      pv.innerHTML = '<a href="https://www.introlinq.com" target="_blank" rel="noopener" style="' + linkStyle + '">IntroLinq</a><span style="color:#8888a8"> in partnership with </span><a href="' + providerUrl + '" target="_blank" rel="noopener" style="' + linkStyle + '">' + providerName + '</a>';
+      var linkStyle = 'color:#4a4a6a;text-decoration:none';
+      pv.innerHTML = '<a href="https://www.introlinq.com" target="_blank" rel="noopener" style="' + linkStyle + '">IntroLinq</a><span style="color:#4a4a6a"> in partnership with </span><a href="' + providerUrl + '" target="_blank" rel="noopener" style="' + linkStyle + '">' + providerName + '</a>';
     }
   }
 
