@@ -273,7 +273,7 @@ Return only valid JSON, no other text:
     ]);
 
     // Send response after logging and Slack are done
-    res.status(200).json({ matches: enriched, config: pubConfig });
+    res.status(200).json({ matches: enriched, config: pubConfig, no_match_reason: noMatchReason || undefined });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Something went wrong' });

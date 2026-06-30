@@ -367,6 +367,7 @@ The honest summary: talk to customers early, stay lean, get to revenue as fast a
         <div class="t-loading" id="t-loading"><span class="t-spinner"></span><span id="t-loading-text">Reading your article…</span></div>
         <div class="t-output" id="t-output">
           <span class="t-badge" id="t-badge"></span>
+          <div id="t-no-match" style="display:none;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:1.25rem 1.5rem;font-size:0.875rem;line-height:1.7;color:rgba(255,255,255,0.75);margin-top:0.5rem"></div>
           <div class="t-article" id="t-article"></div>
         </div>
       </div><!-- /tryit panel -->
@@ -871,7 +872,7 @@ async function tRunMatch(article, pageUrl, pageTitle) {
   if (!res.ok) throw new Error(data.error || 'Something went wrong');
   t_matchData = data.matches || [];
   t_matchData.forEach(m => { if (m.expert?.photo_url) { const img = new Image(); img.src = m.expert.photo_url; } });
-  t_renderOutput(article, t_matchData);
+  t_renderOutput(article, t_matchData, data.no_match_reason || null);
   t_setLoading(false);
 }
 
@@ -905,11 +906,34 @@ function t_clearError() {
   document.getElementById('t-error').style.display = 'none';
 }
 
-function t_renderOutput(article, matches) {
+function t_renderOutput(article, matches, noMatchReason) {
   const popup = document.getElementById('t-popup');
   const n = matches.length;
-  document.getElementById('t-badge').textContent =
-    n === 0 ? 'No matches found' : `${n} expert ${n === 1 ? 'match' : 'matches'} found`;
+  const badge = document.getElementById('t-badge');
+  const noMatchEl = document.getElementById('t-no-match');
+  if (n === 0) {
+    badge.textContent = 'No experts matched this article';
+    badge.style.background = 'rgba(255,255,255,0.08)';
+    badge.style.color = '#aaa';
+    const reasonLine = noMatchReason ? `<p style="margin:0 0 10px"><strong>Why:</strong> ${noMatchReason}</p>` : '';
+    noMatchEl.innerHTML = reasonLine +
+      '<p style="margin:0 0 10px">IntroLinq works best with <strong>practical, how-to content</strong> — articles where readers are actively trying to solve a problem or make a decision.</p>' +
+      '<p style="margin:0 0 12px">Works well with:</p>' +
+      '<ul style="margin:0 0 16px;padding-left:1.2em;display:flex;flex-direction:column;gap:4px">' +
+        '<li>How-to guides and tutorials</li>' +
+        '<li>Opinion pieces with expert takes</li>' +
+        '<li>Industry analysis or deep dives</li>' +
+        '<li>Articles with actionable advice</li>' +
+      '</ul>' +
+      '<button onclick="document.getElementById(\'t-url\').value=\'\';document.getElementById(\'t-url\').focus();document.getElementById(\'t-output\').style.display=\'none\'" ' +
+        'style="background:var(--gold);color:var(--ink);border:none;border-radius:8px;padding:8px 18px;font-weight:600;cursor:pointer;font-size:0.875rem">Try a different article →</button>';
+    noMatchEl.style.display = 'block';
+  } else {
+    badge.textContent = `${n} expert ${n === 1 ? 'match' : 'matches'} found`;
+    badge.style.background = '';
+    badge.style.color = '';
+    noMatchEl.style.display = 'none';
+  }
   document.getElementById('t-article').innerHTML = t_buildHtml(article, matches);
   document.getElementById('t-output').style.display = 'block';
   document.querySelectorAll('#t-article .il-highlight').forEach(span => {
