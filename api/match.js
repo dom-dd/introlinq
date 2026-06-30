@@ -256,8 +256,7 @@ Return only valid JSON, no other text:
         if (enriched.length === 0) {
           msg = `🔍 ${header}\n> No match: ${noMatchReason || 'no reason given'}`;
         } else {
-          const pairs = enriched.map(m => `"${m.phrase.slice(0, 80)}"\n    → ${m.expert.name}`).join('\n\n');
-          msg = `🔍 ${header}\n\n${pairs}`;
+          msg = `🔍 ${header}`;
         }
         await fetch(process.env.SLACK_WEBHOOK_URL, {
           method: 'POST',
