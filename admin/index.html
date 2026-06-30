@@ -404,8 +404,8 @@ async function loadGlobalLogs() {
     const page = l.page_url ? l.page_url.replace(/^https?:\/\//, '') : '-';
     const pageShort = page.length > 50 ? page.slice(0, 50) + '…' : page;
     const result = l.match_count > 0
-      ? `<span class="badge badge-active">${l.match_count} expert${l.match_count !== 1 ? 's' : ''}</span>`
-      : `<span class="badge badge-inactive">${l.no_match_reason || 'no match'}</span>`;
+      ? `<span style="font-size:0.8rem;color:var(--ink)">${(l.expert_names || []).join(', ') || l.match_count + ' expert' + (l.match_count !== 1 ? 's' : '')}</span>`
+      : `<span style="font-size:0.8rem;color:var(--ink-muted)">${l.no_match_reason || 'no match'}</span>`;
     const country = l.country_code || '-';
     const pub = l.publisher || '/app';
     return `<tr>
