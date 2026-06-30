@@ -160,10 +160,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .expert-tile-link:hover{opacity:0.8}
 
 /* ── Danger zone ── */
-.danger-section{border-color:rgba(220,38,38,0.25)}
-.danger-title{color:#c0392b}
-.deactivate-btn{background:var(--white);color:#c0392b;border:1.5px solid #c0392b;padding:0.6rem 1.25rem;border-radius:100px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
-.deactivate-btn:hover{background:#c0392b;color:var(--white)}
 
 /* ── Table ── */
 table{width:100%;border-collapse:collapse}
@@ -407,15 +403,6 @@ tr:last-child td{border-bottom:none}
         <div id="partners-list"></div>
       </div>
 
-      <div class="section danger-section">
-        <div class="section-header">
-          <div class="section-title danger-title">Danger zone</div>
-          <div class="section-sub">Deactivating removes the widget from your site immediately and stops all IntroLinq emails. Contact us to reactivate.</div>
-        </div>
-        <div style="padding:1.25rem 1.5rem">
-          <button class="deactivate-btn" onclick="deactivateAccount()">Deactivate account</button>
-        </div>
-      </div>
     </div>
 
     <!-- ── Payouts ── -->
@@ -949,20 +936,6 @@ async function logout() {
   window.location.href = '/login';
 }
 
-async function deactivateAccount() {
-  if (!confirm('Deactivate your IntroLinq account? This removes the widget from your site immediately and stops all emails. Contact hello@introlinq.com to reactivate.')) return;
-  const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ active: false })
-  });
-  if (res.status === 401) { window.location.href = '/login'; return; }
-  if (!res.ok) { toast('Something went wrong'); return; }
-  await fetch('/api/auth', { method: 'DELETE', credentials: 'include' });
-  alert('Your account has been deactivated.');
-  window.location.href = '/';
-}
 
 function timeAgo(ts) {
   const diff = Math.floor((Date.now() - new Date(ts)) / 1000);
