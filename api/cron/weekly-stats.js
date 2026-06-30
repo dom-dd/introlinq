@@ -1,6 +1,6 @@
 ﻿import { neon } from '@neondatabase/serverless';
 
-const TEST_MODE = true; // sends all emails to dom@open-intro.com, only for Little Green Agency
+const TEST_MODE = false; // sends all emails to dom@open-intro.com, only for Little Green Agency
 const TEST_PUBLISHER = 'little-green-agency';
 const TEST_EMAIL = 'dom@open-intro.com';
 

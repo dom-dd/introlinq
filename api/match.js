@@ -32,17 +32,19 @@ export default async function handler(req, res) {
 
     if (publisher) {
       const [pub] = await sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`;
-      if (pub) {
-        const powerMap = { light: 2, moderate: 4, heavy: 10, unlimited: 15 };
-        maxMatches = powerMap[pub.match_power] ?? 4;
-        const sensitivityMap = {
-          strict: 'The match must be very specific and actionable. Only match if the expert\'s expertise directly addresses the exact challenge described. A weak match is worse than no match.',
-          balanced: 'Match when there is clear value to the reader. The connection should be meaningful but does not need to be hyper-specific.',
-          open: 'Match on broader topic overlap. If the expert\'s field is relevant to the section, include them. Prefer more matches over fewer.',
-        };
-        sensitivityInstruction = sensitivityMap[pub.match_sensitivity] ?? sensitivityMap.balanced;
-        pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium' };
+      if (!pub) {
+        // Publisher deactivated or unknown - don't serve the widget
+        return res.status(200).json({ matches: [] });
       }
+      const powerMap = { light: 2, moderate: 4, heavy: 10, unlimited: 15 };
+      maxMatches = powerMap[pub.match_power] ?? 4;
+      const sensitivityMap = {
+        strict: 'The match must be very specific and actionable. Only match if the expert\'s expertise directly addresses the exact challenge described. A weak match is worse than no match.',
+        balanced: 'Match when there is clear value to the reader. The connection should be meaningful but does not need to be hyper-specific.',
+        open: 'Match on broader topic overlap. If the expert\'s field is relevant to the section, include them. Prefer more matches over fewer.',
+      };
+      sensitivityInstruction = sensitivityMap[pub.match_sensitivity] ?? sensitivityMap.balanced;
+      pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium' };
     }
 
     const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();

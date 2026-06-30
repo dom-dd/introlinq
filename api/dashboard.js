@@ -176,7 +176,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-    const { match_power, match_sensitivity, widget_color, accent_color, widget_size, enabled_partners, payment_email } = req.body;
+    const { match_power, match_sensitivity, widget_color, accent_color, widget_size, enabled_partners, payment_email, active } = req.body;
     const [updated] = await sql`
       UPDATE publishers SET
         match_power = COALESCE(${match_power ?? null}, match_power),
@@ -185,9 +185,10 @@ export default async function handler(req, res) {
         accent_color = COALESCE(${accent_color ?? null}, accent_color),
         widget_size = COALESCE(${widget_size ?? null}, widget_size),
         enabled_partners = COALESCE(${enabled_partners ? sql.array(enabled_partners) : null}, enabled_partners),
-        payment_email = COALESCE(${payment_email ?? null}, payment_email)
+        payment_email = COALESCE(${payment_email ?? null}, payment_email),
+        active = COALESCE(${active ?? null}, active)
       WHERE slug = ${pub} AND active = true
-      RETURNING match_power, match_sensitivity, widget_color, accent_color, widget_size, enabled_partners, payment_email
+      RETURNING match_power, match_sensitivity, widget_color, accent_color, widget_size, enabled_partners, payment_email, active
     `;
     return res.status(200).json(updated);
   }
