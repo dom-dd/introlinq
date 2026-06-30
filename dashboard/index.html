@@ -258,7 +258,7 @@ tr:last-child td{border-bottom:none}
         <div class="stat-card">
           <div class="stat-label">Impressions</div>
           <div class="stat-value clickable" id="stat-articles" onclick="openPagesModal()">-</div>
-          <div class="stat-sub">pages where widget ran</div>
+          <div class="stat-sub">pages where an expert was shown</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Clicks</div>
@@ -533,9 +533,9 @@ async function loadDashboard() {
   // Logs
   renderLogs(d.logs || []);
 
-  // Setup banner - show until widget has fired at least once
+  // Setup banner - show until widget has fired at least once (regardless of match outcome)
   const embedCode = `<script src="https://www.introlinq.com/widget.js" data-publisher="${esc(d.publisher.slug)}"><\/script>`;
-  if (!impressions) {
+  if (!(d.logs && d.logs.length)) {
     document.getElementById('setup-banner').style.display = 'block';
     document.getElementById('setup-embed-code').textContent = embedCode;
     document.getElementById('setup-install-link').href = `/install?pub=${encodeURIComponent(d.publisher.slug)}`;
@@ -1011,7 +1011,7 @@ function closePagesModal() {
 <div class="modal-overlay" id="pages-modal" onclick="if(event.target===this)closePagesModal()">
   <div class="modal">
     <div class="modal-head">
-      <div class="modal-title">Pages where widget ran</div>
+      <div class="modal-title">Pages where an expert was shown</div>
       <button class="modal-close" onclick="closePagesModal()">✕</button>
     </div>
     <div class="modal-list" id="modal-page-list"></div>

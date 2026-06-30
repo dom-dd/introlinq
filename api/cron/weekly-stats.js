@@ -23,9 +23,9 @@ export default async function handler(req, res) {
     const firstName = pub.contact_first_name || pub.name;
 
     const [impressions, clicks, topPages, topExperts] = await Promise.all([
-      sql`SELECT COUNT(*)::int AS count FROM match_logs WHERE publisher = ${slug} AND created_at >= NOW() - INTERVAL '7 days'`.catch(() => [{ count: 0 }]),
+      sql`SELECT COUNT(*)::int AS count FROM match_logs WHERE publisher = ${slug} AND match_count > 0 AND created_at >= NOW() - INTERVAL '7 days'`.catch(() => [{ count: 0 }]),
       sql`SELECT COUNT(*)::int AS count FROM click_logs WHERE publisher = ${slug} AND created_at >= NOW() - INTERVAL '7 days'`.catch(() => [{ count: 0 }]),
-      sql`SELECT page_url, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${slug} AND created_at >= NOW() - INTERVAL '7 days' AND page_url IS NOT NULL GROUP BY page_url ORDER BY count DESC LIMIT 5`.catch(() => []),
+      sql`SELECT page_url, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${slug} AND match_count > 0 AND created_at >= NOW() - INTERVAL '7 days' AND page_url IS NOT NULL GROUP BY page_url ORDER BY count DESC LIMIT 5`.catch(() => []),
       sql`SELECT expert_name, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${slug} AND created_at >= NOW() - INTERVAL '7 days' AND expert_name IS NOT NULL GROUP BY expert_name ORDER BY count DESC LIMIT 5`.catch(() => []),
     ]);
 
