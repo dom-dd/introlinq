@@ -90,11 +90,13 @@ export default async function handler(req, res) {
     const now = Date.now();
     if (!expertsCache || now - expertsCacheTime > EXPERTS_TTL) {
       expertsCache = await sql`
-        SELECT id, name, bio, description_long, photo_url, position, company,
-               topics, services, languages, price_from, price_currency,
-               booking_url, location_country
-        FROM experts
-        WHERE active = true
+        SELECT e.id, e.name, e.bio, e.description_long, e.photo_url, e.position, e.company,
+               e.topics, e.services, e.languages, e.price_from, e.price_currency,
+               e.booking_url, e.location_country,
+               p.name AS provider_name, p.slug AS provider_slug
+        FROM experts e
+        LEFT JOIN providers p ON p.id = e.provider_id
+        WHERE e.active = true
         ORDER BY RANDOM()
       `;
       expertsCacheTime = now;

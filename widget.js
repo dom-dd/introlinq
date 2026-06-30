@@ -152,7 +152,7 @@
       '</div>' +
       (isSmall ? '' : '<div id="il-rs" style="font-size:' + (isLarge ? '13px' : '12.5px') + ';color:#4a4a6a;line-height:1.6;margin-bottom:12px;font-style:italic;border-left:2px solid ' + hexToRgba(accent, 0.3) + ';padding-left:10px"></div>') +
       '<a id="il-bk" href="#" target="_blank" rel="noopener" style="display:block;background:' + accent + ';color:' + getContrastColor(accent) + ';text-align:center;padding:' + (isSmall ? '7' : '9') + 'px;border-radius:100px;font-size:13px;font-weight:700;text-decoration:none">Book a call →</a>' +
-      '<div style="font-size:9px;color:#8888a8;text-align:center;margin-top:8px;letter-spacing:.05em;text-transform:uppercase">Powered by IntroLinq</div>';
+      '<div id="il-pv" style="font-size:9px;color:#8888a8;text-align:center;margin-top:8px;letter-spacing:.05em;text-transform:uppercase">Powered by IntroLinq</div>';
     document.body.appendChild(p);
     p.addEventListener('mouseenter', function () { clearTimeout(hideTimer); });
     p.addEventListener('mouseleave', function () { scheduleHide(p); });
@@ -301,6 +301,15 @@
         + '&title=' + encodeURIComponent(document.title.slice(0, 150));
     } else {
       bk.href = '#';
+    }
+
+    var pv = document.getElementById('il-pv');
+    if (pv) {
+      var providerUrls = { openintro: 'https://open-intro.com', introlinq: 'https://www.introlinq.com' };
+      var providerSlug = e.provider_slug || 'openintro';
+      var providerName = e.provider_name || 'OpenIntro';
+      var providerUrl = providerUrls[providerSlug] || '#';
+      pv.innerHTML = 'IntroLinq · <a href="' + providerUrl + '" target="_blank" rel="noopener" style="color:#8888a8;text-decoration:underline">View more experts on ' + providerName + '</a>';
     }
   }
 
