@@ -56,10 +56,13 @@ export default async function handler(req, res) {
         publisher TEXT NOT NULL DEFAULT '',
         result JSONB NOT NULL,
         has_match BOOLEAN NOT NULL,
-        cached_at TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE(page_url, country_code, publisher)
+        cached_at TIMESTAMPTZ DEFAULT NOW()
       )`.catch(() => {});
       await sql`ALTER TABLE match_cache ADD COLUMN IF NOT EXISTS publisher TEXT NOT NULL DEFAULT ''`.catch(() => {});
+      // Ensure correct unique constraint exists (drop old one if needed)
+      await sql`ALTER TABLE match_cache DROP CONSTRAINT IF EXISTS match_cache_page_url_country_code_key`.catch(() => {});
+      await sql`ALTER TABLE match_cache DROP CONSTRAINT IF EXISTS match_cache_page_url_country_code_publisher_key`.catch(() => {});
+      await sql`CREATE UNIQUE INDEX IF NOT EXISTS match_cache_unique ON match_cache(page_url, country_code, publisher)`.catch(() => {});
 
       const [lastSync] = await sql`SELECT last_synced_at FROM providers WHERE slug = 'openintro' LIMIT 1`.catch(() => [null]);
       const lastSyncedAt = lastSync?.last_synced_at || new Date(0);
