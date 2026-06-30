@@ -309,7 +309,11 @@
       var providerSlug = e.provider_slug || 'openintro';
       var providerName = e.provider_name || 'OpenIntro';
       var providerUrl = providerUrls[providerSlug] || '#';
-      pv.innerHTML = 'IntroLinq · <a href="' + providerUrl + '" target="_blank" rel="noopener" style="color:#8888a8;text-decoration:underline">View more experts on ' + providerName + '</a>';
+      var logoStyle = 'height:14px;width:auto;vertical-align:middle;opacity:0.7;display:inline-block';
+      var ilLogo = '<img src="https://www.introlinq.com/favicon.svg" alt="IntroLinq" style="' + logoStyle + '">';
+      var partnerFavicon = 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(providerUrl.replace('https://','')) + '&sz=16';
+      var partnerLogo = '<img src="' + partnerFavicon + '" alt="' + providerName + '" style="' + logoStyle + ';border-radius:3px">';
+      pv.innerHTML = '<span style="letter-spacing:.04em">Powered by ' + ilLogo + ' &nbsp;·&nbsp; ' + partnerLogo + ' ' + providerName + '</span>';
     }
   }
 
