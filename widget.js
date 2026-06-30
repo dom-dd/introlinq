@@ -121,7 +121,8 @@
       'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;' +
       'box-sizing:border-box;line-height:normal;text-align:left}' +
       '#il-pop.il-on{opacity:1;transform:translateY(0);pointer-events:all}' +
-      '#il-pop *{box-sizing:border-box}';
+      '#il-pop *{box-sizing:border-box}' +
+      '#il-pop img{max-width:none!important;max-height:none!important}';
     document.head.appendChild(s);
   }
 
@@ -277,7 +278,7 @@
     var fl = document.getElementById('il-fl');
     if (fl) {
       var iso = countryToISO(e.location_country);
-      fl.innerHTML = iso ? '<img src="https://hatscripts.github.io/circle-flags/flags/' + iso.toLowerCase() + '.svg" width="18" height="18" alt="" style="vertical-align:middle;flex-shrink:0;border-radius:50%">' : '';
+      fl.innerHTML = iso ? '<img src="https://hatscripts.github.io/circle-flags/flags/' + iso.toLowerCase() + '.svg" alt="" style="width:18px;height:18px;min-width:18px;min-height:18px;max-width:18px;max-height:18px;vertical-align:middle;flex-shrink:0;border-radius:50%;display:inline-block">' : '';
     }
     var rl = document.getElementById('il-rl');
     rl.innerHTML = [e.position ? '<span>' + e.position.replace(/</g,'&lt;') + '</span>' : '', e.company ? '<span style="color:#8888a8">' + e.company.replace(/</g,'&lt;') + '</span>' : ''].filter(Boolean).join('<br>');
