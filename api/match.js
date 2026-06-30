@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { article, page_url } = req.body;
+  const { article, page_url, page_title } = req.body;
   if (!article || article.trim().length < 50) {
     return res.status(400).json({ error: 'Article text is too short' });
   }
@@ -237,13 +237,27 @@ Return only valid JSON, no other text:
       // Slack notification
       (async () => {
         if (!process.env.SLACK_WEBHOOK_URL) return;
-        const src = publisher ? `*${publisher}*` : '`/app`';
+
+        // Resolve publisher display name
+        let pubName = publisher || '/app';
+        if (publisher) {
+          const [pubRow] = await sql`SELECT name FROM publishers WHERE slug = ${publisher} LIMIT 1`.catch(() => [null]);
+          if (pubRow?.name) pubName = pubRow.name;
+        }
+
+        // Resolve country name from ISO code
+        const countryNames = { AF:'Afghanistan',AL:'Albania',DZ:'Algeria',AR:'Argentina',AU:'Australia',AT:'Austria',BE:'Belgium',BR:'Brazil',CA:'Canada',CL:'Chile',CN:'China',CO:'Colombia',HR:'Croatia',CZ:'Czechia',DK:'Denmark',EG:'Egypt',FI:'Finland',FR:'France',DE:'Germany',GH:'Ghana',GR:'Greece',HK:'Hong Kong',HU:'Hungary',IN:'India',ID:'Indonesia',IE:'Ireland',IL:'Israel',IT:'Italy',JP:'Japan',KE:'Kenya',MY:'Malaysia',MX:'Mexico',MA:'Morocco',NL:'Netherlands',NZ:'New Zealand',NG:'Nigeria',NO:'Norway',PK:'Pakistan',PH:'Philippines',PL:'Poland',PT:'Portugal',RO:'Romania',RU:'Russia',SA:'Saudi Arabia',SG:'Singapore',ZA:'South Africa',KR:'South Korea',ES:'Spain',SE:'Sweden',CH:'Switzerland',TW:'Taiwan',TH:'Thailand',TR:'Turkey',UA:'Ukraine',AE:'UAE',GB:'United Kingdom',US:'United States',VN:'Vietnam' };
+        const countryLabel = readerCountry ? (countryNames[readerCountry] || readerCountry) : 'Unknown';
+
+        const title = page_title ? page_title.slice(0, 60) : (page_url ? page_url.replace(/^https?:\/\/[^/]+/, '').slice(0, 60) : 'homepage demo');
+        const header = `*${pubName}* · ${title} · *${enriched.length} expert${enriched.length !== 1 ? 's' : ''} found* · 🌍 ${countryLabel}`;
+
         let msg;
         if (enriched.length === 0) {
-          msg = `🔍 Match on ${src} — *no experts found*\n> ${preview}`;
+          msg = `🔍 ${header}\n> No match: ${noMatchReason || 'no reason given'}`;
         } else {
-          const pairs = enriched.map(m => `"${m.phrase}"\n    → ${m.expert.name}`).join('\n\n');
-          msg = `🔍 Match on ${src} — *${enriched.length} result${enriched.length > 1 ? 's' : ''}*\n\n${pairs}`;
+          const pairs = enriched.map(m => `"${m.phrase.slice(0, 80)}"\n    → ${m.expert.name}`).join('\n\n');
+          msg = `🔍 ${header}\n\n${pairs}`;
         }
         await fetch(process.env.SLACK_WEBHOOK_URL, {
           method: 'POST',
