@@ -316,12 +316,14 @@
 
   function positionPopup(popup, span, cfg) {
     var rect = span.getBoundingClientRect();
-    var W = { small: 240, medium: 300, large: 360 }[cfg.size] || 300;
+    var isMobile = window.innerWidth < 520;
+    var W = isMobile ? Math.min(280, window.innerWidth - 24) : ({ small: 240, medium: 300, large: 360 }[cfg.size] || 300);
     var H = cfg.size === 'small' ? 150 : cfg.size === 'large' ? 260 : 220;
+    popup.style.width = W + 'px';
     var top = rect.bottom + 10;
-    var left = rect.left;
+    var left = isMobile ? Math.round((window.innerWidth - W) / 2) : rect.left;
     if (rect.bottom + H + 10 > window.innerHeight) top = rect.top - H - 10;
-    if (left + W > window.innerWidth - 12) left = window.innerWidth - W - 12;
+    if (!isMobile && left + W > window.innerWidth - 12) left = window.innerWidth - W - 12;
     if (left < 8) left = 8;
     popup.style.top = top + 'px';
     popup.style.left = left + 'px';
