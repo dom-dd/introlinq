@@ -951,15 +951,34 @@ function t_renderOutput(article, matches, noMatchReason) {
   }
 }
 
+function t_norm(s) {
+  return s
+    .replace(/[‘’ʼ′`´]/g, "'")
+    .replace(/[“”«»]/g, '"')
+    .replace(/[–—―]/g, '-')
+    .replace(/…/g, '...')
+    .replace(/ /g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
 function t_buildHtml(rawArticle, matches) {
-  // Normalise whitespace so phrase matching works whether text came from paste or URL fetch
-  const article = rawArticle.replace(/\s+/g, ' ').trim();
+  // Normalise typography so phrase matching works regardless of curly quotes, em dashes, etc.
+  const article = rawArticle
+    .replace(/[‘’ʼ′`´]/g, "'")
+    .replace(/[“”«»]/g, '"')
+    .replace(/[–—―]/g, '-')
+    .replace(/…/g, '...')
+    .replace(/ /g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   const articleLower = article.toLowerCase();
   const ranges = [];
   matches.forEach((m, idx) => {
-    const phrase = (m.phrase || '').replace(/\s+/g, ' ').trim();
+    const phrase = t_norm(m.phrase || '');
     if (!phrase) return;
-    const pos = articleLower.indexOf(phrase.toLowerCase());
+    const pos = articleLower.indexOf(phrase);
     if (pos !== -1) ranges.push({ start: pos, end: pos + phrase.length, idx });
   });
   ranges.sort((a, b) => a.start - b.start);
