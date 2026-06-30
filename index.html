@@ -951,9 +951,17 @@ function t_renderOutput(article, matches, noMatchReason) {
   }
 }
 
-function t_buildHtml(article, matches) {
+function t_buildHtml(rawArticle, matches) {
+  // Normalise whitespace so phrase matching works whether text came from paste or URL fetch
+  const article = rawArticle.replace(/\s+/g, ' ').trim();
+  const articleLower = article.toLowerCase();
   const ranges = [];
-  matches.forEach((m, idx) => { const pos = article.indexOf(m.phrase); if (pos !== -1) ranges.push({ start: pos, end: pos + m.phrase.length, idx }); });
+  matches.forEach((m, idx) => {
+    const phrase = (m.phrase || '').replace(/\s+/g, ' ').trim();
+    if (!phrase) return;
+    const pos = articleLower.indexOf(phrase.toLowerCase());
+    if (pos !== -1) ranges.push({ start: pos, end: pos + phrase.length, idx });
+  });
   ranges.sort((a, b) => a.start - b.start);
   const clean = []; let lastEnd = 0;
   for (const r of ranges) { if (r.start >= lastEnd) { clean.push(r); lastEnd = r.end; } }
