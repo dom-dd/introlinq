@@ -305,11 +305,12 @@
 
     var pv = document.getElementById('il-pv');
     if (pv) {
-      var providerLogos = { openintro: 'https://www.introlinq.com/networks%20logos/OpenIntro-Black-Large.png' };
+      var providerUrls = { openintro: 'https://open-intro.com' };
       var providerSlug = e.provider_slug || 'openintro';
-      var partnerLogoUrl = providerLogos[providerSlug] || '';
-      var partnerImg = partnerLogoUrl ? '<img src="' + partnerLogoUrl + '" alt="' + (e.provider_name || 'OpenIntro') + '" style="height:12px;width:auto;vertical-align:middle;display:inline-block;opacity:0.75">' : (e.provider_name || '');
-      pv.innerHTML = '<a href="https://www.introlinq.com" target="_blank" rel="noopener" style="color:#8888a8;text-decoration:none;font-weight:600">IntroLinq</a><span style="color:#c0c0d0"> &nbsp;in partnership with&nbsp; </span>' + partnerImg;
+      var providerName = e.provider_name || 'OpenIntro';
+      var providerUrl = providerUrls[providerSlug] || '#';
+      var linkStyle = 'color:#8888a8;text-decoration:none;font-weight:600';
+      pv.innerHTML = '<a href="https://www.introlinq.com" target="_blank" rel="noopener" style="' + linkStyle + '">IntroLinq</a><span style="color:#c0c0d0"> in partnership with </span><a href="' + providerUrl + '" target="_blank" rel="noopener" style="' + linkStyle + '">' + providerName + '</a>';
     }
   }
 
