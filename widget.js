@@ -121,8 +121,7 @@
       'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;' +
       'box-sizing:border-box;line-height:normal;text-align:left}' +
       '#il-pop.il-on{opacity:1;transform:translateY(0);pointer-events:all}' +
-      '#il-pop *{box-sizing:border-box}' +
-      '#il-pop img{max-width:none!important;max-height:none!important}';
+      '#il-pop *{box-sizing:border-box}';
     document.head.appendChild(s);
   }
 
@@ -141,7 +140,7 @@
     p.id = 'il-pop';
     p.innerHTML =
       '<div style="display:flex;gap:12px;align-items:center;margin-bottom:' + (isSmall ? '8' : '10') + 'px">' +
-        '<img id="il-ph" style="width:' + photoSize + 'px;height:' + photoSize + 'px;min-width:' + photoSize + 'px;min-height:' + photoSize + 'px;max-width:' + photoSize + 'px;max-height:' + photoSize + 'px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#edf5f0;display:block" src="" alt="">' +
+        '<img id="il-ph" style="width:' + photoSize + 'px!important;height:' + photoSize + 'px!important;min-width:' + photoSize + 'px!important;min-height:' + photoSize + 'px!important;max-width:' + photoSize + 'px!important;max-height:' + photoSize + 'px!important;border-radius:50%!important;object-fit:cover!important;flex-shrink:0!important;background:#edf5f0!important;display:block!important" src="" alt="">' +
         '<div>' +
           '<div style="display:flex;align-items:center;gap:6px">' +
             '<div id="il-nm" style="font-weight:600;font-size:' + nameSize + ';color:#1a1a2e;line-height:1.25"></div>' +
@@ -278,7 +277,7 @@
     var fl = document.getElementById('il-fl');
     if (fl) {
       var iso = countryToISO(e.location_country);
-      fl.innerHTML = iso ? '<img src="https://hatscripts.github.io/circle-flags/flags/' + iso.toLowerCase() + '.svg" alt="" style="width:18px;height:18px;min-width:18px;min-height:18px;max-width:18px;max-height:18px;vertical-align:middle;flex-shrink:0;border-radius:50%;display:inline-block">' : '';
+      fl.innerHTML = iso ? '<img src="https://hatscripts.github.io/circle-flags/flags/' + iso.toLowerCase() + '.svg" alt="" style="width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;max-width:18px!important;max-height:18px!important;vertical-align:middle!important;flex-shrink:0!important;border-radius:50%!important;display:inline-block!important">' : '';
     }
     var rl = document.getElementById('il-rl');
     rl.innerHTML = [e.position ? '<span>' + e.position.replace(/</g,'&lt;') + '</span>' : '', e.company ? '<span style="color:#8888a8">' + e.company.replace(/</g,'&lt;') + '</span>' : ''].filter(Boolean).join('<br>');
