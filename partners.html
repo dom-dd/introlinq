@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IntroLinq Partner Integration</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink: #1a1a2e;
+      --gold: #e6a820;
+      --green: #3d7a5f;
+      --bg: #f9f8f5;
+      --white: #ffffff;
+      --border: rgba(0,0,0,0.08);
+      --code-bg: #1a1a2e;
+      --code-text: #a8d8c0;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--ink); line-height: 1.7; }
+    a { color: var(--green); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .header { background: var(--ink); color: white; padding: 2rem 0; }
+    .header-inner { max-width: 760px; margin: 0 auto; padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+    .logo { font-weight: 700; font-size: 1.2rem; color: white; letter-spacing: -0.02em; }
+    .logo span { color: var(--gold); }
+    .badge { background: var(--gold); color: var(--ink); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.2rem 0.6rem; border-radius: 100px; }
+
+    .hero { background: var(--ink); color: white; padding: 3rem 0 4rem; border-bottom: 3px solid var(--gold); }
+    .hero-inner { max-width: 760px; margin: 0 auto; padding: 0 1.5rem; }
+    .hero h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 0.75rem; }
+    .hero p { color: rgba(255,255,255,0.7); font-size: 1.05rem; max-width: 560px; }
+
+    .content { max-width: 760px; margin: 0 auto; padding: 3rem 1.5rem; }
+
+    .section { margin-bottom: 3rem; }
+    .section h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--border); }
+    .section h3 { font-size: 1rem; font-weight: 600; margin: 1.5rem 0 0.5rem; color: var(--green); }
+    .section p { margin-bottom: 0.875rem; color: #444; }
+
+    .steps { counter-reset: steps; display: flex; flex-direction: column; gap: 1rem; }
+    .step { display: flex; gap: 1rem; align-items: flex-start; background: white; border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem 1.5rem; }
+    .step-num { counter-increment: steps; background: var(--green); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; margin-top: 2px; }
+    .step-num::before { content: counter(steps); }
+    .step-body h4 { font-weight: 600; margin-bottom: 0.25rem; }
+    .step-body p { margin: 0; color: #555; font-size: 0.9rem; }
+
+    pre { background: var(--code-bg); color: var(--code-text); padding: 1.25rem 1.5rem; border-radius: 10px; overflow-x: auto; font-size: 0.85rem; line-height: 1.6; margin: 0.75rem 0 1rem; }
+    code { font-family: 'SF Mono', 'Fira Code', monospace; }
+    p code, li code { background: rgba(61,122,95,0.1); color: var(--green); padding: 0.1em 0.4em; border-radius: 4px; font-size: 0.875em; font-family: 'SF Mono', 'Fira Code', monospace; }
+
+    .callout { background: white; border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; padding: 1rem 1.25rem; margin: 1rem 0; font-size: 0.9rem; color: #555; }
+    .callout strong { color: var(--ink); }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.75rem 0 1rem; font-size: 0.875rem; }
+    th { text-align: left; padding: 0.6rem 0.75rem; background: var(--ink); color: white; font-weight: 600; }
+    td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); color: #444; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    td:first-child { font-family: 'SF Mono', 'Fira Code', monospace; color: var(--green); font-size: 0.8rem; }
+    .req { color: #c0392b; font-size: 0.75rem; font-weight: 600; }
+    .opt { color: #888; font-size: 0.75rem; }
+
+    .response-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem; }
+    .response-box { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; }
+    .response-box h4 { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+    .response-box.ok h4 { color: var(--green); }
+    .response-box.err h4 { color: #c0392b; }
+    .response-box pre { margin: 0; padding: 0.75rem 1rem; font-size: 0.78rem; }
+
+    .contact { background: var(--ink); color: white; border-radius: 12px; padding: 2rem; text-align: center; }
+    .contact h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+    .contact p { color: rgba(255,255,255,0.6); margin-bottom: 1rem; }
+    .contact a { color: var(--gold); font-weight: 600; }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 1.5rem; }
+      .response-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">Intro<span>Linq</span></div>
+    <span class="badge">Partner Docs</span>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-inner">
+    <h1>Booking Platform Integration</h1>
+    <p>Connect your booking platform to IntroLinq to earn a share of every session booked through our publisher network.</p>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="section">
+    <h2>How it works</h2>
+    <p>IntroLinq embeds a widget on publisher blogs that surfaces relevant experts as readers scroll. When a reader clicks <strong>"Book a call"</strong>, they pass through IntroLinq and arrive on your booking page with attribution parameters in the URL. When the booking completes, you send a webhook back to us.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num"></div>
+        <div class="step-body">
+          <h4>Reader clicks "Book a call"</h4>
+          <p>IntroLinq logs the click and redirects to your expert's booking page with <code>click_id</code> and <code>aid</code> appended to the URL.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num"></div>
+        <div class="step-body">
+          <h4>Store the attribution params</h4>
+          <p>On page load, read <code>click_id</code> and <code>aid</code> from the URL and store them in a cookie (30-day expiry recommended). This ensures attribution survives if the reader books later.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num"></div>
+        <div class="step-body">
+          <h4>Booking completes — send a webhook</h4>
+          <p>When a booking is confirmed, POST to the IntroLinq webhook endpoint with the booking details and the stored attribution params.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Attribution URL params</h2>
+    <p>When IntroLinq redirects a reader to your platform, the following params are appended to the expert's booking URL:</p>
+    <table>
+      <tr><th>Parameter</th><th>Description</th></tr>
+      <tr><td>click_id</td><td>Unique UUID for this click — the primary attribution key. Store this and return it in the webhook.</td></tr>
+      <tr><td>aid</td><td>Publisher slug — identifies which publisher's site the reader came from.</td></tr>
+      <tr><td>ref</td><td>Always <code>introlinq</code> — lets you identify IntroLinq traffic.</td></tr>
+      <tr><td>campaign</td><td>The article URL the reader was on when they clicked.</td></tr>
+      <tr><td>lang</td><td>Reader's browser language (e.g. <code>en-GB</code>, <code>fr</code>).</td></tr>
+    </table>
+    <div class="callout">
+      <strong>Example URL your booking page will receive:</strong><br>
+      <code>https://yourbookingplatform.com/expert/jane-smith?click_id=4f3a…&aid=entrepreneurs-collective&ref=introlinq&campaign=https%3A%2F%2F…</code>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Webhook endpoint</h2>
+    <h3>Request</h3>
+    <pre><code>POST https://www.introlinq.com/api/dashboard?action=booking&amp;pub={publisher-slug}
+Content-Type: application/json
+x-introlinq-secret: {your_secret_key}</code></pre>
+
+    <h3>Payload</h3>
+    <table>
+      <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+      <tr><td>click_id</td><td>string <span class="req">required</span></td><td>The <code>click_id</code> received in the attribution URL.</td></tr>
+      <tr><td>booking_amount</td><td>number <span class="req">required</span></td><td>Total session price charged to the reader.</td></tr>
+      <tr><td>currency</td><td>string <span class="req">required</span></td><td>ISO 4217 currency code, e.g. <code>GBP</code>, <code>EUR</code>, <code>USD</code>.</td></tr>
+      <tr><td>expert_id</td><td>integer <span class="opt">optional</span></td><td>Your internal expert ID.</td></tr>
+      <tr><td>expert_name</td><td>string <span class="opt">optional</span></td><td>Expert's full name — shown in the publisher's commission email.</td></tr>
+      <tr><td>test</td><td>boolean <span class="opt">optional</span></td><td>Set <code>true</code> during integration testing. No booking is recorded, no email sent — but Slack fires so you can verify delivery. Default: <code>false</code>.</td></tr>
+    </table>
+
+    <h3>Example</h3>
+    <pre><code>{
+  "click_id": "4f3a9b2c-1234-4d56-a789-0abc12def345",
+  "expert_id": 38,
+  "expert_name": "Jane Smith",
+  "booking_amount": 150,
+  "currency": "GBP"
+}</code></pre>
+
+    <h3>Response</h3>
+    <div class="response-grid">
+      <div class="response-box ok">
+        <h4>200 OK</h4>
+        <pre><code>{
+  "ok": true,
+  "publisher_payout": 105,
+  "publisher": "entrepreneurs-collective",
+  "expert": "Jane Smith"
+}</code></pre>
+      </div>
+      <div class="response-box err">
+        <h4>Errors</h4>
+        <pre><code>401 — Invalid or missing secret
+400 — Missing booking_amount
+400 — Cannot resolve publisher
+404 — Publisher not found</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Testing your integration</h2>
+    <p>Before going live, verify your integration using test mode. Set <code>"test": true</code> in the payload — IntroLinq will validate the request, resolve the publisher, calculate the payout, and fire a Slack notification, but will <strong>not</strong> record the booking or email the publisher.</p>
+    <pre><code>curl -X POST "https://www.introlinq.com/api/dashboard?action=booking&pub=your-publisher-slug" \
+  -H "Content-Type: application/json" \
+  -H "x-introlinq-secret: YOUR_SECRET" \
+  -d '{
+    "click_id": "test-click-id-123",
+    "expert_name": "Test Expert",
+    "booking_amount": 100,
+    "currency": "GBP",
+    "test": true
+  }'</code></pre>
+    <div class="callout">
+      <strong>Expected response:</strong> <code>{"ok":true,"test":true,"publisher_payout":70,"publisher":"your-publisher-slug","expert":"Test Expert"}</code>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Authentication</h2>
+    <p>All webhook requests must include your secret key in the <code>x-introlinq-secret</code> header. Your key is shared with you directly — never include it in client-side code or public repositories.</p>
+    <p>We recommend rotating your key every 6–12 months. Contact us to issue a new one.</p>
+  </div>
+
+  <div class="section">
+    <h2>Commission &amp; payouts</h2>
+    <p>Each publisher has a configured revenue share (default 70%). IntroLinq calculates and logs the <code>publisher_payout</code> automatically based on the <code>booking_amount</code> you send. The publisher receives an email notification for each booking, and a weekly summary of their earnings.</p>
+    <p>Payouts are issued separately — the webhook is for attribution and notification only.</p>
+  </div>
+
+  <div class="section">
+    <div class="contact">
+      <h3>Questions or issues?</h3>
+      <p>Reach out during your integration — we're happy to help debug webhook delivery, test payloads, or walk through the flow.</p>
+      <a href="mailto:dom@introlinq.com">dom@introlinq.com</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
