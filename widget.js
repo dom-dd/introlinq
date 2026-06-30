@@ -140,7 +140,7 @@
     p.id = 'il-pop';
     p.innerHTML =
       '<div style="display:flex;gap:12px;align-items:center;margin-bottom:' + (isSmall ? '8' : '10') + 'px">' +
-        '<img id="il-ph" width="' + photoSize + '" height="' + photoSize + '" style="border-radius:50%;object-fit:cover;flex-shrink:0;background:#edf5f0" src="" alt="">' +
+        '<img id="il-ph" style="width:' + photoSize + 'px;height:' + photoSize + 'px;min-width:' + photoSize + 'px;min-height:' + photoSize + 'px;max-width:' + photoSize + 'px;max-height:' + photoSize + 'px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#edf5f0;display:block" src="" alt="">' +
         '<div>' +
           '<div style="display:flex;align-items:center;gap:6px">' +
             '<div id="il-nm" style="font-weight:600;font-size:' + nameSize + ';color:#1a1a2e;line-height:1.25"></div>' +
