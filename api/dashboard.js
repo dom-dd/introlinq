@@ -11,7 +11,7 @@ function getSessionToken(req) {
 
 export default async function handler(req, res) {
   const { pub, provider, action } = req.query;
-  if (!pub) return res.status(400).json({ error: 'Missing pub' });
+  if (!pub && action !== 'booking') return res.status(400).json({ error: 'Missing pub' });
 
   const sql = neon(process.env.DATABASE_URL);
 
