@@ -95,8 +95,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .form-input{width:100%;padding:0.75rem 1rem;border:2px solid rgba(26,26,46,0.28);border-radius:var(--radius-sm);font-size:0.9375rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--white);outline:none;transition:border-color 0.15s;margin-bottom:0.75rem}
 .form-input:focus{border-color:var(--sage);background:var(--white)}
 .form-input::placeholder{color:var(--ink-muted)}
-.form-submit{width:100%;background:var(--gold);color:var(--ink);border:none;padding:1rem;border-radius:100px;font-size:1rem;font-weight:700;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;font-family:'Inter',sans-serif;margin-bottom:0.75rem;box-shadow:0 4px 18px rgba(230,168,32,0.45),0 1px 4px rgba(0,0,0,0.1);letter-spacing:0.01em}
-.form-submit:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(230,168,32,0.55),0 2px 6px rgba(0,0,0,0.1)}
+.form-submit{width:100%;background:#16a34a;color:#fff;border:none;padding:1rem;border-radius:100px;font-size:1rem;font-weight:700;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;font-family:'Inter',sans-serif;margin-bottom:0.75rem;box-shadow:0 4px 18px rgba(22,163,74,0.45),0 1px 4px rgba(0,0,0,0.1);letter-spacing:0.01em}
+.form-submit:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(22,163,74,0.55),0 2px 6px rgba(0,0,0,0.1)}
 .form-trust{text-align:center;font-size:0.75rem;color:var(--ink-muted);line-height:1.6}
 .form-platforms{margin-top:1.75rem;padding-top:1.75rem;border-top:1px solid var(--border)}
 .form-platforms-label{font-size:0.7rem;color:var(--ink-muted);text-align:center;margin-bottom:0.625rem;letter-spacing:0.04em}
@@ -376,15 +376,7 @@ The honest summary: talk to customers early, stay lean, get to revenue as fast a
             <input class="form-input" type="text" name="name" placeholder="Your name" required>
             <input class="form-input" type="email" name="email" placeholder="Your email" required>
             <input class="form-input" type="text" name="blog" placeholder="Your blog URL" required>
-            <select class="form-input form-select" name="monthly_visitors" required>
-              <option value="" disabled selected>Monthly readers / visitors</option>
-              <option value="under_1k">Under 1,000</option>
-              <option value="1k_10k">1,000 – 10,000</option>
-              <option value="10k_50k">10,000 – 50,000</option>
-              <option value="50k_100k">50,000 – 100,000</option>
-              <option value="100k_plus">100,000+</option>
-            </select>
-            <button class="form-submit" type="submit">Add earnings to my blog</button>
+            <button class="form-submit" type="submit">Save my spot</button>
           </form>
           <p class="form-trust">Free forever · No card needed · 2 min setup</p>
           <div class="form-platforms">
@@ -720,7 +712,7 @@ async function handleLpSubmit(e) {
         name: form.name.value,
         email: form.email.value,
         blog: form.blog.value,
-        monthly_visitors: form.monthly_visitors.value
+        monthly_visitors: ''
       })
     });
     if (!res.ok) throw new Error();
