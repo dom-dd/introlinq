@@ -676,7 +676,7 @@ fetchSpots();
   }).then(r => r.json()).then(d => { viewId = d.viewId; }).catch(() => {});
   function sendExit() {
     if (!viewId) return;
-    navigator.sendBeacon('/api/track-exit', new Blob([JSON.stringify({ viewId, timeSpent: Math.round((Date.now() - startTime) / 1000) })], { type: 'application/json' }));
+    navigator.sendBeacon('/api/track', new Blob([JSON.stringify({ action: 'exit', viewId, timeSpent: Math.round((Date.now() - startTime) / 1000) })], { type: 'application/json' }));
   }
   window.addEventListener('beforeunload', sendExit);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sendExit(); });
@@ -788,7 +788,7 @@ async function handleExitSubmit(e) {
     _exitSubmitted = true;
     form.style.display = 'none';
     document.getElementById('exit-success').style.display = 'block';
-    if (window._ilViewId) fetch('/api/track-convert', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ viewId: window._ilViewId }) }).catch(()=>{});
+    if (window._ilViewId) fetch('/api/track', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action: 'convert', viewId: window._ilViewId }) }).catch(()=>{});
     fetchSpots();
     setTimeout(closeExitPopup, 3000);
   } catch {

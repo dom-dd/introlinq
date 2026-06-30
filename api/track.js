@@ -3,16 +3,32 @@ import { neon } from '@neondatabase/serverless';
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { visitor_type } = req.body;
+  const { action, visitor_type, viewId, timeSpent } = req.body || {};
   const country = req.headers['x-vercel-ip-country'] || null;
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim();
 
-  if (process.env.OWNER_IP && ip === process.env.OWNER_IP) {
-    return res.status(200).json({ ok: true, viewId: null });
-  }
-
   try {
     const sql = neon(process.env.DATABASE_URL);
+
+    // Exit beacon
+    if (action === 'exit') {
+      if (!viewId) return res.status(400).end();
+      await sql`UPDATE page_views SET time_spent_seconds = ${Math.round(timeSpent || 0)} WHERE id = ${viewId}`;
+      return res.status(200).json({ ok: true });
+    }
+
+    // Convert beacon
+    if (action === 'convert') {
+      if (!viewId) return res.status(400).end();
+      await sql`UPDATE page_views SET converted = TRUE WHERE id = ${viewId}`;
+      return res.status(200).json({ ok: true });
+    }
+
+    // New page view (default)
+    if (process.env.OWNER_IP && ip === process.env.OWNER_IP) {
+      return res.status(200).json({ ok: true, viewId: null });
+    }
+
     await sql`
       CREATE TABLE IF NOT EXISTS page_views (
         id SERIAL PRIMARY KEY,
@@ -23,7 +39,7 @@ export default async function handler(req, res) {
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `;
-    await sql`ALTER TABLE page_views ADD COLUMN IF NOT EXISTS converted BOOLEAN DEFAULT FALSE`;
+    await sql`ALTER TABLE page_views ADD COLUMN IF NOT EXISTS converted BOOLEAN DEFAULT FALSE`.catch(() => {});
 
     if (visitor_type !== 'new') {
       return res.status(200).json({ ok: true, viewId: null });
@@ -34,18 +50,18 @@ export default async function handler(req, res) {
       VALUES (${visitor_type}, ${country})
       RETURNING id
     `;
-    const viewId = result[0].id;
+    const newViewId = result[0].id;
 
     if (process.env.SLACK_WEBHOOK_URL) {
       const flag = country ? ` → :flag-${country.toLowerCase()}:` : '';
-      await fetch(process.env.SLACK_WEBHOOK_URL, {
+      fetch(process.env.SLACK_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: `👋 *New visitor*${flag}` })
-      });
+      }).catch(() => {});
     }
 
-    return res.status(200).json({ ok: true, viewId });
+    return res.status(200).json({ ok: true, viewId: newViewId });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Tracking failed' });
