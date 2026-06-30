@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -46,14 +46,24 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .admin-body{max-width:1100px;margin:0 auto;padding:2.5rem 2rem 5rem}
 
 /* Stats */
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2.5rem}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem}
 .stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem}
 .stat-label{font-size:0.75rem;color:var(--ink-muted);font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.375rem}
 .stat-value{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--ink);line-height:1}
 .stat-sub{font-size:0.7rem;color:var(--ink-muted);margin-top:0.375rem}
 
+/* Tabs */
+.tab-bar{background:var(--white);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;padding:0 1.5rem;display:flex;gap:0;margin-bottom:0}
+.tab-btn{padding:0.875rem 1.25rem;font-size:0.875rem;font-weight:500;color:var(--ink-muted);border:none;background:none;cursor:pointer;font-family:'Inter',sans-serif;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;white-space:nowrap}
+.tab-btn:hover{color:var(--ink)}
+.tab-btn.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
 /* Section */
-.section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1.5rem;overflow:hidden}
+.section{background:var(--white);border:1px solid var(--border);border-top:none;overflow:hidden;margin-bottom:0}
+.section+.section{border-top:1px solid var(--border)}
+.section:last-child{border-radius:0 0 var(--radius) var(--radius)}
 .section-body{overflow-x:auto}
 .section-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border)}
 .section-title{font-weight:600;font-size:0.9375rem;color:var(--ink)}
@@ -157,211 +167,225 @@ tr:hover td{background:rgba(0,0,0,0.01)}
       </div>
     </div>
 
-    <!-- Publishers -->
-    <div class="section">
-      <div class="section-header">
-        <div class="section-title">Publishers</div>
-        <button class="btn btn-primary" onclick="toggleAddForm()">+ Add publisher</button>
-      </div>
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('publishers',this)">Publishers</button>
+      <button class="tab-btn" onclick="switchTab('bookings',this)">Bookings</button>
+      <button class="tab-btn" onclick="switchTab('logs',this)">Logs</button>
+      <button class="tab-btn" onclick="switchTab('tools',this)">Tools</button>
+    </div>
 
-      <!-- Add form -->
-      <div id="add-form">
-        <div class="form-section">Contact</div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">First name *</label>
-            <input class="form-input" id="f-first-name">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Last name *</label>
-            <input class="form-input" id="f-last-name">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Email *</label>
-            <input class="form-input" id="f-email" type="email">
-          </div>
-          <div class="form-group"></div>
+    <!-- Publishers tab -->
+    <div class="tab-panel active" id="tab-publishers">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Publishers</div>
+          <button class="btn btn-primary" onclick="toggleAddForm()">+ Add publisher</button>
         </div>
 
-        <div class="form-section">Website</div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Website name *</label>
-            <input class="form-input" id="f-name" oninput="autoSlug()">
+        <!-- Add form -->
+        <div id="add-form">
+          <div class="form-section">Contact</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">First name *</label>
+              <input class="form-input" id="f-first-name">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Last name *</label>
+              <input class="form-input" id="f-last-name">
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Website URL</label>
-            <input class="form-input" id="f-domain">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Email *</label>
+              <input class="form-input" id="f-email" type="email">
+            </div>
+            <div class="form-group"></div>
           </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">IntroLinq slug *</label>
-            <input class="form-input" id="f-slug">
+
+          <div class="form-section">Website</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Website name *</label>
+              <input class="form-input" id="f-name" oninput="autoSlug()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Website URL</label>
+              <input class="form-input" id="f-domain">
+            </div>
           </div>
-          <div class="form-group"></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">IntroLinq slug *</label>
+              <input class="form-input" id="f-slug">
+            </div>
+            <div class="form-group"></div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Revenue share (publisher %)</label>
+              <input class="form-input" id="f-revenue-share" type="number" min="0" max="100" value="70" placeholder="70">
+            </div>
+            <div class="form-group"></div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0.75rem">
+            <label class="form-label">Notes (optional)</label>
+            <input class="form-input" id="f-notes">
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="addPublisher()">Create publisher</button>
+            <button class="btn btn-ghost" onclick="toggleAddForm()">Cancel</button>
+          </div>
+          <div id="form-error" style="font-size:0.8125rem;color:var(--red);margin-top:0.5rem;display:none"></div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Revenue share (publisher %)</label>
-            <input class="form-input" id="f-revenue-share" type="number" min="0" max="100" value="70" placeholder="70">
-          </div>
-          <div class="form-group"></div>
+        <!-- Table -->
+        <div class="section-body" style="overflow-x:auto">
+          <table style="min-width:900px">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Links</th>
+                <th>Stats</th>
+                <th>Networks</th>
+                <th>Status</th>
+                <th>Added</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="publishers-tbody">
+              <tr><td colspan="7" class="empty">Loading...</td></tr>
+            </tbody>
+          </table>
         </div>
-
-        <div class="form-group" style="margin-bottom:0.75rem">
-          <label class="form-label">Notes (optional)</label>
-          <input class="form-input" id="f-notes">
-        </div>
-        <div class="form-actions">
-          <button class="btn btn-primary" onclick="addPublisher()">Create publisher</button>
-          <button class="btn btn-ghost" onclick="toggleAddForm()">Cancel</button>
-        </div>
-        <div id="form-error" style="font-size:0.8125rem;color:var(--red);margin-top:0.5rem;display:none"></div>
-      </div>
-
-      <!-- Table -->
-      <div class="section-body" style="overflow-x:auto">
-        <table style="min-width:900px">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Links</th>
-              <th>Stats</th>
-              <th>Networks</th>
-              <th>Status</th>
-              <th>Added</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="publishers-tbody">
-            <tr><td colspan="7" class="empty">Loading...</td></tr>
-          </tbody>
-        </table>
       </div>
     </div>
 
-    <!-- Bookings -->
-    <div class="section">
-      <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
-        <div>
-          <div class="section-title">Bookings</div>
-          <div class="section-sub" id="bookings-totals">Loading...</div>
-        </div>
-        <div style="display:flex;gap:0.5rem;align-items:center">
-          <select id="bookings-filter" class="form-input" style="width:200px;padding:0.4rem 0.75rem;font-size:0.8125rem" onchange="filterBookings()">
-            <option value="">All publishers</option>
-          </select>
-          <button class="btn btn-primary btn-sm" onclick="toggleBookingForm()">+ Log booking</button>
-        </div>
-      </div>
-      <div id="booking-form" style="display:none;padding:1.5rem;border-bottom:1px solid var(--border);background:var(--white)">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Publisher slug *</label>
-            <input class="form-input" id="bf-publisher" placeholder="little-green-agency">
+    <!-- Bookings tab -->
+    <div class="tab-panel" id="tab-bookings">
+      <div class="section">
+        <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
+          <div>
+            <div class="section-title">Bookings</div>
+            <div class="section-sub" id="bookings-totals">Loading...</div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Expert name</label>
-            <input class="form-input" id="bf-expert">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Booking amount</label>
-            <input class="form-input" id="bf-amount" type="number" step="0.01">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Commission received</label>
-            <input class="form-input" id="bf-commission" type="number" step="0.01">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Currency</label>
-            <select class="form-input" id="bf-currency">
-              <option value="GBP">GBP</option>
-              <option value="EUR">EUR</option>
-              <option value="USD">USD</option>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <select id="bookings-filter" class="form-input" style="width:200px;padding:0.4rem 0.75rem;font-size:0.8125rem" onchange="filterBookings()">
+              <option value="">All publishers</option>
             </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Booking date</label>
-            <input class="form-input" id="bf-date" type="date">
+            <button class="btn btn-primary btn-sm" onclick="toggleBookingForm()">+ Log booking</button>
           </div>
         </div>
-        <div class="form-actions">
-          <button class="btn btn-primary" onclick="logBooking()">Save booking</button>
-          <button class="btn btn-ghost" onclick="toggleBookingForm()">Cancel</button>
+        <div id="booking-form" style="display:none;padding:1.5rem;border-bottom:1px solid var(--border);background:var(--white)">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Publisher slug *</label>
+              <input class="form-input" id="bf-publisher" placeholder="little-green-agency">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Expert name</label>
+              <input class="form-input" id="bf-expert">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Booking amount</label>
+              <input class="form-input" id="bf-amount" type="number" step="0.01">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Commission received</label>
+              <input class="form-input" id="bf-commission" type="number" step="0.01">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Currency</label>
+              <select class="form-input" id="bf-currency">
+                <option value="GBP">GBP</option>
+                <option value="EUR">EUR</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Booking date</label>
+              <input class="form-input" id="bf-date" type="date">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="logBooking()">Save booking</button>
+            <button class="btn btn-ghost" onclick="toggleBookingForm()">Cancel</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table style="min-width:700px">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Publisher</th>
+                <th>Expert</th>
+                <th>Booking</th>
+                <th>Commission</th>
+                <th>Publisher payout</th>
+                <th>Our margin</th>
+                <th>Type</th>
+              </tr>
+            </thead>
+            <tbody id="bookings-tbody">
+              <tr><td colspan="8" class="empty">Loading...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
-      <div style="overflow-x:auto">
-        <table style="min-width:700px">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Publisher</th>
-              <th>Expert</th>
-              <th>Booking</th>
-              <th>Commission</th>
-              <th>Publisher payout</th>
-              <th>Our margin</th>
-              <th>Type</th>
-            </tr>
-          </thead>
-          <tbody id="bookings-tbody">
-            <tr><td colspan="8" class="empty">Loading...</td></tr>
-          </tbody>
-        </table>
+    </div>
+
+    <!-- Logs tab -->
+    <div class="tab-panel" id="tab-logs">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">All widget logs</div>
+          <span style="font-size:0.8125rem;color:var(--ink-muted)">Last 200 requests across all publishers</span>
+        </div>
+        <div class="section-body">
+          <table>
+            <thead>
+              <tr>
+                <th>Date / Time</th>
+                <th>Publisher</th>
+                <th>Page</th>
+                <th>Country</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody id="global-logs-tbody">
+              <tr><td colspan="5" class="empty">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <!-- Global logs -->
-    <div class="section">
-      <div class="section-header">
-        <div class="section-title">All widget logs</div>
-        <span style="font-size:0.8125rem;color:var(--ink-muted)">Last 200 requests across all publishers</span>
+    <!-- Tools tab -->
+    <div class="tab-panel" id="tab-tools">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">OpenIntro sync</div>
+        </div>
+        <div class="sync-row">
+          <button class="btn btn-gold" onclick="runSync()">Run sync now</button>
+          <span class="sync-info" id="sync-status">Pulls all public experts from OpenIntro and updates the database.</span>
+        </div>
       </div>
-      <div class="section-body">
-        <table>
-          <thead>
-            <tr>
-              <th>Date / Time</th>
-              <th>Publisher</th>
-              <th>Page</th>
-              <th>Country</th>
-              <th>Result</th>
-            </tr>
-          </thead>
-          <tbody id="global-logs-tbody">
-            <tr><td colspan="5" class="empty">Loading...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Sync -->
-    <div class="section">
-      <div class="section-header">
-        <div class="section-title">OpenIntro sync</div>
-      </div>
-      <div class="sync-row">
-        <button class="btn btn-gold" onclick="runSync()">Run sync now</button>
-        <span class="sync-info" id="sync-status">Pulls all public experts from OpenIntro and updates the database.</span>
-      </div>
-    </div>
-
-    <!-- Weekly email -->
-    <div class="section">
-      <div class="section-header">
-        <div class="section-title">Weekly stats email</div>
-      </div>
-      <div class="sync-row">
-        <button class="btn btn-ghost" onclick="sendTestEmail()">Send test email</button>
-        <span class="sync-info" id="email-status">Sends weekly stats to dom@open-intro.com (test mode - Little Green Agency only).</span>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Weekly stats email</div>
+        </div>
+        <div class="sync-row">
+          <button class="btn btn-ghost" onclick="sendTestEmail()">Send test email</button>
+          <span class="sync-info" id="email-status">Sends weekly stats to dom@open-intro.com (test mode - Little Green Agency only).</span>
+        </div>
       </div>
     </div>
 
@@ -390,6 +414,13 @@ function showAdmin() {
   loadPublishers();
   loadBookings();
   loadGlobalLogs();
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
 }
 
 async function loadGlobalLogs() {
@@ -556,7 +587,7 @@ async function deletePublisher(id, name) {
 function viewPublisherBookings(slug) {
   document.getElementById('bookings-filter').value = slug;
   filterBookings();
-  document.getElementById('bookings-filter').closest('.section').scrollIntoView({ behavior: 'smooth' });
+  switchTab('bookings', document.querySelector('.tab-btn:nth-child(2)'));
 }
 
 async function loginAsPublisher(email) {
