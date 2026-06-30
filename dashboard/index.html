@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -223,7 +223,7 @@ tr:last-child td{border-bottom:none}
 
 <div id="main" style="display:none">
 
-  <!-- Setup banner — shown until widget fires for the first time -->
+  <!-- Setup banner - shown until widget fires for the first time -->
   <div class="setup-banner" id="setup-banner">
     <div class="setup-banner-top">
       <div>
@@ -326,7 +326,7 @@ tr:last-child td{border-bottom:none}
       <div class="section">
         <div class="section-header">
           <div class="section-title">Embed code</div>
-          <div class="section-sub">Paste this before the &lt;/body&gt; tag in your blog template — <a id="install-guide-link" href="/install" style="color:var(--sage);text-decoration:none;font-weight:500">installation guide →</a></div>
+          <div class="section-sub">Paste this before the &lt;/body&gt; tag in your blog template - <a id="install-guide-link" href="/install" style="color:var(--sage);text-decoration:none;font-weight:500">installation guide →</a></div>
         </div>
         <div class="embed-box">
           <div class="embed-code" id="embed-display"></div>
@@ -420,7 +420,7 @@ tr:last-child td{border-bottom:none}
       <div class="section">
         <div class="section-header">
           <div class="section-title">Payment details</div>
-          <div class="section-sub">Where we send your payouts — Wise or PayPal accepted</div>
+          <div class="section-sub">Where we send your payouts - Wise or PayPal accepted</div>
         </div>
         <div style="padding:1.5rem;max-width:440px">
           <div class="setting-title">Payment email</div>
@@ -438,7 +438,7 @@ tr:last-child td{border-bottom:none}
           <div class="section-title">Booking history</div>
           <div class="section-sub" id="booking-history-sub">Loading...</div>
         </div>
-        <div id="booking-history-empty" style="display:none;padding:3rem;text-align:center;color:var(--ink-muted);font-size:0.875rem">No bookings yet — earnings will appear here once sessions are confirmed.</div>
+        <div id="booking-history-empty" style="display:none;padding:3rem;text-align:center;color:var(--ink-muted);font-size:0.875rem">No bookings yet - earnings will appear here once sessions are confirmed.</div>
         <div style="overflow-x:auto" id="booking-history-table" style="display:none">
           <table>
             <thead>
@@ -517,7 +517,7 @@ async function loadDashboard() {
   // Logs
   renderLogs(d.logs || []);
 
-  // Setup banner — show until widget has fired at least once
+  // Setup banner - show until widget has fired at least once
   const embedCode = `<script src="https://www.introlinq.com/widget.js" data-publisher="${esc(d.publisher.slug)}"><\/script>`;
   if (!impressions) {
     document.getElementById('setup-banner').style.display = 'block';
@@ -547,7 +547,7 @@ async function loadDashboard() {
   const payout = bk.total_payout || 0;
   document.getElementById('stat-earnings').textContent = payout > 0
     ? new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(payout)
-    : '—';
+    : '-';
   if (p.payment_email) {
     document.getElementById('payment-email-input').value = p.payment_email;
   }
@@ -838,7 +838,7 @@ function setPeriod(period, btn) {
 function renderLogs(logs) {
   const el = document.getElementById('logs-list');
   if (!logs.length) {
-    el.innerHTML = '<div class="logs-empty">No widget runs yet — install the embed code to get started.</div>';
+    el.innerHTML = '<div class="logs-empty">No widget runs yet - install the embed code to get started.</div>';
     return;
   }
 
@@ -853,7 +853,7 @@ function renderLogs(logs) {
 
     const pageCell = l.page_url
       ? `<span class="log-page" title="${esc(l.page_url)}">${esc(l.page_url.replace(/^https?:\/\//,''))}</span>`
-      : '<span style="color:var(--ink-muted);font-size:0.75rem">—</span>';
+      : '<span style="color:var(--ink-muted);font-size:0.75rem">-</span>';
 
     const badge = matched
       ? `<span class="log-badge matched">${phrases.length} expert${phrases.length > 1 ? 's' : ''} shown</span>`

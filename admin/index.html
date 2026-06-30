@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -361,7 +361,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
       </div>
       <div class="sync-row">
         <button class="btn btn-ghost" onclick="sendTestEmail()">Send test email</button>
-        <span class="sync-info" id="email-status">Sends weekly stats to dom@open-intro.com (test mode — Little Green Agency only).</span>
+        <span class="sync-info" id="email-status">Sends weekly stats to dom@open-intro.com (test mode - Little Green Agency only).</span>
       </div>
     </div>
 
@@ -401,12 +401,12 @@ async function loadGlobalLogs() {
     const dt = new Date(l.created_at);
     const date = dt.toLocaleDateString('en-GB', { day:'2-digit', month:'short' });
     const time = dt.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
-    const page = l.page_url ? l.page_url.replace(/^https?:\/\//, '') : '—';
+    const page = l.page_url ? l.page_url.replace(/^https?:\/\//, '') : '-';
     const pageShort = page.length > 50 ? page.slice(0, 50) + '…' : page;
     const result = l.match_count > 0
       ? `<span class="badge badge-active">${l.match_count} expert${l.match_count !== 1 ? 's' : ''}</span>`
       : `<span class="badge badge-inactive">${l.no_match_reason || 'no match'}</span>`;
-    const country = l.country_code || '—';
+    const country = l.country_code || '-';
     const pub = l.publisher || '/app';
     return `<tr>
       <td style="white-space:nowrap;color:var(--ink-muted);font-size:0.8rem">${date} ${time}</td>
@@ -591,7 +591,7 @@ async function loadBookings() {
   _allBookings = d.bookings || [];
 
   const t = d.totals || {};
-  const fmt = (n, c='GBP') => n ? new Intl.NumberFormat('en-GB', { style:'currency', currency:c }).format(n) : '—';
+  const fmt = (n, c='GBP') => n ? new Intl.NumberFormat('en-GB', { style:'currency', currency:c }).format(n) : '-';
   document.getElementById('bookings-totals').textContent =
     `${t.count || 0} bookings · ${fmt(t.total_commission)} commission · ${fmt(t.total_payouts)} owed to publishers · ${fmt(t.total_margin)} margin`;
 
@@ -616,12 +616,12 @@ function filterBookings() {
   tbody.innerHTML = rows.map(b => `
     <tr>
       <td style="white-space:nowrap">${new Date(b.booked_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</td>
-      <td><div style="font-weight:500">${esc(b.publisher_name || b.publisher || '—')}</div><div style="font-size:0.72rem;color:var(--ink-muted)">${esc(b.publisher || '')}</div></td>
-      <td>${esc(b.expert_name || '—')}</td>
-      <td>${b.booking_amount ? new Intl.NumberFormat('en-GB',{style:'currency',currency:b.booking_currency||'GBP'}).format(b.booking_amount) : '—'}</td>
-      <td>${b.commission_amount ? new Intl.NumberFormat('en-GB',{style:'currency',currency:b.commission_currency||'GBP'}).format(b.commission_amount) : '—'}</td>
-      <td style="color:var(--sage);font-weight:500">${b.publisher_payout ? new Intl.NumberFormat('en-GB',{style:'currency',currency:b.commission_currency||'GBP'}).format(b.publisher_payout) : '—'}</td>
-      <td style="font-weight:500">${b.introlinq_margin ? new Intl.NumberFormat('en-GB',{style:'currency',currency:b.commission_currency||'GBP'}).format(b.introlinq_margin) : '—'}</td>
+      <td><div style="font-weight:500">${esc(b.publisher_name || b.publisher || '-')}</div><div style="font-size:0.72rem;color:var(--ink-muted)">${esc(b.publisher || '')}</div></td>
+      <td>${esc(b.expert_name || '-')}</td>
+      <td>${b.booking_amount ? new Intl.NumberFormat('en-GB',{style:'currency',currency:b.booking_currency||'GBP'}).format(b.booking_amount) : '-'}</td>
+      <td>${b.commission_amount ? new Intl.NumberFormat('en-GB',{style:'currency',currency:b.commission_currency||'GBP'}).format(b.commission_amount) : '-'}</td>
+      <td style="color:var(--sage);font-weight:500">${b.publisher_payout ? new Intl.NumberFormat('en-GB',{style:'currency',currency:b.commission_currency||'GBP'}).format(b.publisher_payout) : '-'}</td>
+      <td style="font-weight:500">${b.introlinq_margin ? new Intl.NumberFormat('en-GB',{style:'currency',currency:b.commission_currency||'GBP'}).format(b.introlinq_margin) : '-'}</td>
       <td><span class="badge ${b.entry_type === 'webhook' ? 'badge-active' : ''}" style="${b.entry_type !== 'webhook' ? 'background:#f4f4f8;color:var(--ink-muted)' : ''}">${b.entry_type}</span></td>
     </tr>
   `).join('');
@@ -667,7 +667,7 @@ async function sendTestEmail() {
   if (data.sent > 0) {
     status.textContent = `Sent! Check dom@open-intro.com.`;
   } else {
-    status.textContent = `Something went wrong — ${JSON.stringify(data)}`;
+    status.textContent = `Something went wrong - ${JSON.stringify(data)}`;
   }
 }
 
@@ -676,7 +676,7 @@ async function runSync() {
   const res = await fetch('/api/sync/openintro?key=il2026');
   const data = await res.json();
   if (data.success) {
-    document.getElementById('sync-status').textContent = `Done — ${data.upserted} experts synced (${data.after_filters} passed filters of ${data.total_fetched} total)`;
+    document.getElementById('sync-status').textContent = `Done - ${data.upserted} experts synced (${data.after_filters} passed filters of ${data.total_fetched} total)`;
     loadStats();
   } else {
     document.getElementById('sync-status').textContent = 'Sync failed: ' + (data.error || 'unknown error');

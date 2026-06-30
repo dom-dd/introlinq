@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -117,7 +117,7 @@
       <div class="step">
         <div class="step-num"></div>
         <div class="step-body">
-          <h4>Booking completes — send a webhook</h4>
+          <h4>Booking completes - send a webhook</h4>
           <p>When a booking is confirmed, POST to the IntroLinq webhook endpoint with the booking details and the stored attribution params.</p>
         </div>
       </div>
@@ -129,9 +129,9 @@
     <p>When IntroLinq redirects a reader to your platform, the following params are appended to the expert's booking URL:</p>
     <table>
       <tr><th>Parameter</th><th>Description</th></tr>
-      <tr><td>click_id</td><td>Unique UUID for this click — the primary attribution key. Store this and return it in the webhook.</td></tr>
-      <tr><td>aid</td><td>Publisher slug — identifies which publisher's site the reader came from.</td></tr>
-      <tr><td>ref</td><td>Always <code>introlinq</code> — lets you identify IntroLinq traffic.</td></tr>
+      <tr><td>click_id</td><td>Unique UUID for this click - the primary attribution key. Store this and return it in the webhook.</td></tr>
+      <tr><td>aid</td><td>Publisher slug - identifies which publisher's site the reader came from.</td></tr>
+      <tr><td>ref</td><td>Always <code>introlinq</code> - lets you identify IntroLinq traffic.</td></tr>
       <tr><td>campaign</td><td>The article URL the reader was on when they clicked.</td></tr>
       <tr><td>lang</td><td>Reader's browser language (e.g. <code>en-GB</code>, <code>fr</code>).</td></tr>
     </table>
@@ -155,8 +155,8 @@ x-introlinq-secret: {your_secret_key}</code></pre>
       <tr><td>booking_amount</td><td>number <span class="req">required</span></td><td>Total session price charged to the reader.</td></tr>
       <tr><td>currency</td><td>string <span class="req">required</span></td><td>ISO 4217 currency code, e.g. <code>GBP</code>, <code>EUR</code>, <code>USD</code>.</td></tr>
       <tr><td>expert_id</td><td>integer <span class="opt">optional</span></td><td>Your internal expert ID.</td></tr>
-      <tr><td>expert_name</td><td>string <span class="opt">optional</span></td><td>Expert's full name — shown in the publisher's commission email.</td></tr>
-      <tr><td>test</td><td>boolean <span class="opt">optional</span></td><td>Set <code>true</code> during integration testing. No booking is recorded, no email sent — but Slack fires so you can verify delivery. Default: <code>false</code>.</td></tr>
+      <tr><td>expert_name</td><td>string <span class="opt">optional</span></td><td>Expert's full name - shown in the publisher's commission email.</td></tr>
+      <tr><td>test</td><td>boolean <span class="opt">optional</span></td><td>Set <code>true</code> during integration testing. No booking is recorded, no email sent - but Slack fires so you can verify delivery. Default: <code>false</code>.</td></tr>
     </table>
 
     <h3>Example</h3>
@@ -181,17 +181,17 @@ x-introlinq-secret: {your_secret_key}</code></pre>
       </div>
       <div class="response-box err">
         <h4>Errors</h4>
-        <pre><code>401 — Invalid or missing secret
-400 — Missing booking_amount
-400 — Cannot resolve publisher
-404 — Publisher not found</code></pre>
+        <pre><code>401 - Invalid or missing secret
+400 - Missing booking_amount
+400 - Cannot resolve publisher
+404 - Publisher not found</code></pre>
       </div>
     </div>
   </div>
 
   <div class="section">
     <h2>Testing your integration</h2>
-    <p>Before going live, verify your integration using test mode. Set <code>"test": true</code> in the payload — IntroLinq will validate the request, resolve the publisher, calculate the payout, and fire a Slack notification, but will <strong>not</strong> record the booking or email the publisher.</p>
+    <p>Before going live, verify your integration using test mode. Set <code>"test": true</code> in the payload - IntroLinq will validate the request, resolve the publisher, calculate the payout, and fire a Slack notification, but will <strong>not</strong> record the booking or email the publisher.</p>
     <pre><code>curl -X POST "https://www.introlinq.com/api/dashboard?action=booking&pub=your-publisher-slug" \
   -H "Content-Type: application/json" \
   -H "x-introlinq-secret: YOUR_SECRET" \
@@ -209,20 +209,20 @@ x-introlinq-secret: {your_secret_key}</code></pre>
 
   <div class="section">
     <h2>Authentication</h2>
-    <p>All webhook requests must include your secret key in the <code>x-introlinq-secret</code> header. Your key is shared with you directly — never include it in client-side code or public repositories.</p>
+    <p>All webhook requests must include your secret key in the <code>x-introlinq-secret</code> header. Your key is shared with you directly - never include it in client-side code or public repositories.</p>
     <p>We recommend rotating your key every 6–12 months. Contact us to issue a new one.</p>
   </div>
 
   <div class="section">
     <h2>Commission &amp; payouts</h2>
     <p>Each publisher has a configured revenue share (default 70%). IntroLinq calculates and logs the <code>publisher_payout</code> automatically based on the <code>booking_amount</code> you send. The publisher receives an email notification for each booking, and a weekly summary of their earnings.</p>
-    <p>Payouts are issued separately — the webhook is for attribution and notification only.</p>
+    <p>Payouts are issued separately - the webhook is for attribution and notification only.</p>
   </div>
 
   <div class="section">
     <div class="contact">
       <h3>Questions or issues?</h3>
-      <p>Reach out during your integration — we're happy to help debug webhook delivery, test payloads, or walk through the flow.</p>
+      <p>Reach out during your integration - we're happy to help debug webhook delivery, test payloads, or walk through the flow.</p>
       <a href="mailto:hello@introlinq.com">hello@introlinq.com</a>
     </div>
   </div>

@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless';
+﻿import { neon } from '@neondatabase/serverless';
 import { createMagicToken } from './auth.js';
 
 function auth(req) {
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: auth(req) });
   }
 
-  // Bookings webhook — authenticated via secret header, not IP
+  // Bookings webhook - authenticated via secret header, not IP
   if (resource === 'bookings' && req.method === 'POST') {
     if (req.headers['x-webhook-secret'] !== process.env.BOOKINGS_WEBHOOK_SECRET) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -159,7 +159,7 @@ export default async function handler(req, res) {
             body: JSON.stringify({
               from: 'IntroLinq <hello@introlinq.com>',
               to: email,
-              subject: `Welcome to IntroLinq, ${firstName} — your dashboard is ready`,
+              subject: `Welcome to IntroLinq, ${firstName} - your dashboard is ready`,
               html: welcomeEmail(firstName, link),
             })
           });
@@ -206,7 +206,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // Bookings — admin view + manual entry
+  // Bookings - admin view + manual entry
   if (resource === 'bookings') {
     await sql`CREATE TABLE IF NOT EXISTS bookings (
       id SERIAL PRIMARY KEY, entry_type TEXT DEFAULT 'manual', provider TEXT,
@@ -294,7 +294,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ deleted: result.length });
   }
 
-  // Login as publisher — generates a magic link for the admin to open
+  // Login as publisher - generates a magic link for the admin to open
   if (resource === 'login_as' && req.method === 'POST') {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email required' });
@@ -315,7 +315,7 @@ function welcomeEmail(name, link) {
   </div>
   <div style="padding:32px">
     <p style="margin:0 0 8px;font-size:1rem;font-weight:600;color:#1a1a2e">Welcome, ${name} 👋</p>
-    <p style="margin:0 0 24px;font-size:0.875rem;color:#8888a8;line-height:1.6">Your IntroLinq dashboard is ready. Click below to access it — this link is valid for 7 days.</p>
+    <p style="margin:0 0 24px;font-size:0.875rem;color:#8888a8;line-height:1.6">Your IntroLinq dashboard is ready. Click below to access it - this link is valid for 7 days.</p>
     <a href="${link}" style="display:block;background:#1a1a2e;color:#fff;text-align:center;padding:14px;border-radius:100px;font-size:0.875rem;font-weight:600;text-decoration:none">Access my dashboard →</a>
     <p style="margin:20px 0 0;font-size:0.75rem;color:#8888a8;text-align:center">Once logged in, you'll find your embed code, widget settings, and stats all in one place.</p>
   </div>

@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless';
+﻿import { neon } from '@neondatabase/serverless';
 
 const TEST_MODE = true; // sends all emails to dom@open-intro.com, only for Little Green Agency
 const TEST_PUBLISHER = 'little-green-agency';
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         from: 'IntroLinq <hello@introlinq.com>',
         to: email,
-        subject: `Your IntroLinq weekly report — ${weekImpressions} impressions, ${weekClicks} clicks`,
+        subject: `Your IntroLinq weekly report - ${weekImpressions} impressions, ${weekClicks} clicks`,
         html,
       }),
     });

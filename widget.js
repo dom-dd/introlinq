@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   'use strict';
 
   var API = 'https://www.introlinq.com/api/match';
@@ -56,7 +56,7 @@
       var popup = createPopup(cfg);
       var shown = highlightMatches(el, data.matches, popup, cfg);
       if (shown === 0 && data.matches.length > 0) {
-        // Phrases not found in DOM — retry with fresh content
+        // Phrases not found in DOM - retry with fresh content
         _started = false;
       }
     })

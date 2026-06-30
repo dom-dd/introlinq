@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -346,13 +346,13 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 
       <!-- Try it panel -->
       <div class="demo-panel" id="dp-tryit">
-        <div class="carousel-label" style="margin-bottom:0.75rem">Enter any article URL — we'll fetch it and show which experts IntroLinq would surface for your readers</div>
+        <div class="carousel-label" style="margin-bottom:0.75rem">Enter any article URL - we'll fetch it and show which experts IntroLinq would surface for your readers</div>
         <div class="t-url-row">
           <input type="url" class="t-url-input" id="t-url" placeholder="https://yourblog.com/any-article" onkeydown="if(event.key==='Enter')tFetchUrl()">
           <button class="t-url-btn" id="t-url-btn" onclick="tFetchUrl()">Analyse →</button>
         </div>
         <div class="t-divider">or paste article text</div>
-        <textarea class="t-textarea" id="t-input" placeholder="Paste any blog post or article here — the longer the better."></textarea>
+        <textarea class="t-textarea" id="t-input" placeholder="Paste any blog post or article here - the longer the better."></textarea>
         <textarea id="t-sample-src" style="display:none">How to start a company:
 
 Starting a company begins with a clear idea - not necessarily original, but one that solves a real problem for a specific group of people. The sharper you can define who your customer is and what pain you're removing, the better your foundation.
@@ -814,7 +814,7 @@ function switchDemo(name, btn) {
   }
 }
 
-// Tryit tab — exact /app code, t_ prefixed
+// Tryit tab - exact /app code, t_ prefixed
 var t_matchData = [];
 var t_hideTimer = null;
 
@@ -917,7 +917,7 @@ function t_renderOutput(article, matches, noMatchReason) {
     badge.style.color = '#aaa';
     const reasonLine = noMatchReason ? `<p style="margin:0 0 10px"><strong>Why:</strong> ${noMatchReason}</p>` : '';
     noMatchEl.innerHTML = reasonLine +
-      '<p style="margin:0 0 10px">IntroLinq works best with <strong>practical, how-to content</strong> — articles where readers are actively trying to solve a problem or make a decision.</p>' +
+      '<p style="margin:0 0 10px">IntroLinq works best with <strong>practical, how-to content</strong> - articles where readers are actively trying to solve a problem or make a decision.</p>' +
       '<p style="margin:0 0 12px">Works well with:</p>' +
       '<ul style="margin:0 0 16px;padding-left:1.2em;display:flex;flex-direction:column;gap:4px">' +
         '<li>How-to guides and tutorials</li>' +
@@ -955,7 +955,7 @@ function t_norm(s) {
   return s
     .replace(/[‘’ʼ′`´]/g, "'")
     .replace(/[“”«»]/g, '"')
-    .replace(/[–—―]/g, '-')
+    .replace(/[–-―]/g, '-')
     .replace(/…/g, '...')
     .replace(/ /g, ' ')
     .replace(/\s+/g, ' ')
@@ -968,7 +968,7 @@ function t_buildHtml(rawArticle, matches) {
   const article = rawArticle
     .replace(/[‘’ʼ′`´]/g, "'")
     .replace(/[“”«»]/g, '"')
-    .replace(/[–—―]/g, '-')
+    .replace(/[–-―]/g, '-')
     .replace(/…/g, '...')
     .replace(/ /g, ' ')
     .replace(/\s+/g, ' ')

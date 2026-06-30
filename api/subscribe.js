@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless';
+﻿import { neon } from '@neondatabase/serverless';
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -145,7 +145,7 @@ function alertEmail({ name, email, blogUrl, monthly_visitors, country }) {
             <tr><td style="padding:10px 0;border-bottom:1px solid rgba(26,26,46,0.06);font-size:14px;color:#8888a8">Email</td><td style="padding:10px 0;border-bottom:1px solid rgba(26,26,46,0.06);font-size:14px;color:#1a1a2e;font-weight:500">${email}</td></tr>
             <tr><td style="padding:10px 0;border-bottom:1px solid rgba(26,26,46,0.06);font-size:14px;color:#8888a8">Blog</td><td style="padding:10px 0;border-bottom:1px solid rgba(26,26,46,0.06);font-size:14px;color:#1a1a2e;font-weight:500">${blogUrl}</td></tr>
             <tr><td style="padding:10px 0;border-bottom:1px solid rgba(26,26,46,0.06);font-size:14px;color:#8888a8">Monthly visitors</td><td style="padding:10px 0;border-bottom:1px solid rgba(26,26,46,0.06);font-size:14px;color:#1a1a2e;font-weight:500">${formatVisitors(monthly_visitors)}</td></tr>
-            <tr><td style="padding:10px 0;font-size:14px;color:#8888a8">Country</td><td style="padding:10px 0;font-size:14px;color:#1a1a2e;font-weight:500">${country || '—'}</td></tr>
+            <tr><td style="padding:10px 0;font-size:14px;color:#8888a8">Country</td><td style="padding:10px 0;font-size:14px;color:#1a1a2e;font-weight:500">${country || '-'}</td></tr>
           </table>
         </td></tr>
       </table>

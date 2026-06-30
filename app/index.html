@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -140,7 +140,7 @@ textarea::placeholder{color:var(--ink-muted)}
     <div class="article-preview" id="article-rendered"></div>
   </div>
 
-  <!-- Signup — appears after a match is run -->
+  <!-- Signup - appears after a match is run -->
   <div class="signup-section" id="signup-section">
     <div id="signup-form-wrap">
       <div class="signup-eyebrow">Free · 2 min setup</div>
@@ -214,7 +214,7 @@ const popup = document.getElementById('il-popup');
 async function findMatches() {
   const article = document.getElementById('article-input').value.trim();
   if (/^https?:\/\/\S+$/.test(article)) {
-    showError('That looks like a URL — please paste the article text itself, not the link.');
+    showError('That looks like a URL - please paste the article text itself, not the link.');
     return;
   }
   if (article.length < 50) {
@@ -404,7 +404,7 @@ async function submitSignup() {
   if (!res.ok) {
     btn.disabled = false;
     btn.textContent = 'Create my free account →';
-    return showSignupError(data.error || 'Something went wrong — please try again.');
+    return showSignupError(data.error || 'Something went wrong - please try again.');
   }
 
   document.getElementById('signup-form-wrap').style.display = 'none';

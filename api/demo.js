@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+﻿export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -33,9 +33,9 @@ export default async function handler(req, res) {
     html = await r.text();
   } catch (err) {
     if (err.name === 'TimeoutError' || err.name === 'AbortError') {
-      return res.status(400).json({ error: 'That page took too long to load — try pasting the text instead' });
+      return res.status(400).json({ error: 'That page took too long to load - try pasting the text instead' });
     }
-    return res.status(400).json({ error: 'Could not reach that URL — try pasting the article text instead' });
+    return res.status(400).json({ error: 'Could not reach that URL - try pasting the article text instead' });
   }
 
   // Extract title
@@ -64,12 +64,12 @@ export default async function handler(req, res) {
     .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)))
     .replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'")
     .replace(/&rsquo;/g,"'").replace(/&lsquo;/g,"'").replace(/&rdquo;/g,'"').replace(/&ldquo;/g,'"')
-    .replace(/&mdash;/g,'—').replace(/&ndash;/g,'–').replace(/&hellip;/g,'…').replace(/&middot;/g,'·')
+    .replace(/&mdash;/g,'-').replace(/&ndash;/g,'–').replace(/&hellip;/g,'…').replace(/&middot;/g,'·')
     .replace(/\s+/g, ' ')
     .trim();
 
   if (text.length < 150) {
-    return res.status(400).json({ error: "Couldn't extract enough text from that page — try pasting the article directly" });
+    return res.status(400).json({ error: "Couldn't extract enough text from that page - try pasting the article directly" });
   }
 
   return res.status(200).json({ title, text: text.slice(0, 5000) });

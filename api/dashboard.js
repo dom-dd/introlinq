@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless';
+﻿import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
 
 let clickTableReady = false;
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
 
   const sql = neon(process.env.DATABASE_URL);
 
-  // Booking webhook — called by partners (OpenIntro etc.) when a booking completes
+  // Booking webhook - called by partners (OpenIntro etc.) when a booking completes
   if (req.method === 'POST' && action === 'booking') {
     const secret = req.headers['x-introlinq-secret'];
     if (!process.env.BOOKING_WEBHOOK_SECRET || secret !== process.env.BOOKING_WEBHOOK_SECRET) {
@@ -74,27 +74,27 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             from: 'IntroLinq <notifications@introlinq.com>',
             to: publisher.payment_email,
-            subject: `You earned ${currency} ${payout.toFixed(2)} — new booking on your site`,
+            subject: `You earned ${currency} ${payout.toFixed(2)} - new booking on your site`,
             text: `Hi ${publisher.name},\n\nA reader on your site just booked a session with ${resolvedExpert}.\n\nBooking value: ${currency} ${Number(booking_amount).toFixed(2)}\nYour commission (${Math.round(publisher.revenue_share * 100)}%): ${currency} ${payout.toFixed(2)}${articleLine}\n\nThis will be included in your next payout.\n\nBest,\nThe IntroLinq team`,
           }),
         }).catch(err => console.error('Booking email failed:', err));
       }
     }
 
-    // Slack — always fires, marked [TEST] when in test mode
+    // Slack - always fires, marked [TEST] when in test mode
     if (process.env.SLACK_WEBHOOK_URL) {
       const testTag = test ? ' · *[TEST]*' : '';
       await fetch(process.env.SLACK_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: `💰 *New booking*${testTag} — ${resolvedExpert} · ${currency} ${Number(booking_amount).toFixed(2)} · ${publisher.name} · Payout: ${currency} ${payout.toFixed(2)}${articleTitle ? ` · _${articleTitle}_` : ''}` }),
+        body: JSON.stringify({ text: `💰 *New booking*${testTag} - ${resolvedExpert} · ${currency} ${Number(booking_amount).toFixed(2)} · ${publisher.name} · Payout: ${currency} ${payout.toFixed(2)}${articleTitle ? ` · _${articleTitle}_` : ''}` }),
       }).catch(() => {});
     }
 
     return res.status(200).json({ ok: true, test: !!test, publisher_payout: payout, publisher: publisherSlug, expert: resolvedExpert });
   }
 
-  // Public redirect — routes Book button through IntroLinq before sending to partner
+  // Public redirect - routes Book button through IntroLinq before sending to partner
   if (req.method === 'GET' && action === 'out') {
     const { expert_id, expert_name, expert_url, article, phrase, lang, tz, device, source, title } = req.query;
     if (!expert_url) return res.status(400).json({ error: 'Missing expert_url' });
@@ -156,7 +156,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // Click tracking — fired by widget when Book button is clicked
+  // Click tracking - fired by widget when Book button is clicked
   if (req.method === 'POST') {
     const { expert_id, expert_name } = req.body;
     if (!clickTableReady) {

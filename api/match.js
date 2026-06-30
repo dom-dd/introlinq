@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless';
+﻿import { neon } from '@neondatabase/serverless';
 
 let tableReady = false;
 let expertsCache = null;
@@ -125,10 +125,10 @@ export default async function handler(req, res) {
 
     const prompt = `You are the matching engine for IntroLinq, a platform that connects blog READERS with experts they can book a 1:1 call with.
 
-Your job: identify moments in the article where a reader — someone trying to learn, make a decision, or solve a problem — would benefit from a personal consultation with a specific expert. ${sensitivityInstruction}
+Your job: identify moments in the article where a reader - someone trying to learn, make a decision, or solve a problem - would benefit from a personal consultation with a specific expert. ${sensitivityInstruction}
 
 Criteria for a valid match:
-1. The reader faces a specific, actionable challenge or decision — not just reading about a topic
+1. The reader faces a specific, actionable challenge or decision - not just reading about a topic
 2. The expert's expertise is a clear fit for that challenge (not just the same broad field)
 3. A 1:1 call with this expert would genuinely help the reader take action
 
@@ -144,7 +144,7 @@ NEVER match:
 
 Detect the article language. If not English, strongly prioritise experts who speak that language.
 
-IMPORTANT: Always write the "reason" field in the same language as the article. If the article is in French, write the reason in French. If Spanish, write in Spanish. The reason must feel native to the reader. Always use formal address (vous in French, usted in Spanish, Sie in German) — never informal (tu, tú, du).
+IMPORTANT: Always write the "reason" field in the same language as the article. If the article is in French, write the reason in French. If Spanish, write in Spanish. The reason must feel native to the reader. Always use formal address (vous in French, usted in Spanish, Sie in German) - never informal (tu, tú, du).
 
 Available experts:
 ${expertsList}
@@ -153,7 +153,7 @@ Article:
 ${article.slice(0, 4000)}
 
 Return only valid JSON, no other text:
-{"matches":[{"phrase":"exact substring from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person — e.g. 'If you want to raise your first round without giving away too much equity, Phil has backed 200+ startups and can walk you through the process.'"}],"no_match_reason":"Only include this field when matches is empty. One short phrase explaining why — e.g. 'News article', 'Product announcement', 'Company profile / press release', 'No actionable reader challenge identified', 'Pure statistics reporting'"}}`;
+{"matches":[{"phrase":"exact substring from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person - e.g. 'If you want to raise your first round without giving away too much equity, Phil has backed 200+ startups and can walk you through the process.'"}],"no_match_reason":"Only include this field when matches is empty. One short phrase explaining why - e.g. 'News article', 'Product announcement', 'Company profile / press release', 'No actionable reader challenge identified', 'Pure statistics reporting'"}}`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

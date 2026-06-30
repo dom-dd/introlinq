@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless';
+﻿import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
 
 let tableReady = false;
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
 
   const { action, token } = req.query;
 
-  // GET ?token=xxx — verify magic link, create session, redirect to dashboard
+  // GET ?token=xxx - verify magic link, create session, redirect to dashboard
   if (req.method === 'GET' && token) {
     const [link] = await sql`
       SELECT * FROM magic_links
@@ -63,7 +63,7 @@ export default async function handler(req, res) {
     return res.redirect(302, `/dashboard?pub=${pub.slug}`);
   }
 
-  // GET ?action=me — return session info (used by dashboard page on load)
+  // GET ?action=me - return session info (used by dashboard page on load)
   if (req.method === 'GET' && action === 'me') {
     const sessionToken = getSessionToken(req);
     if (!sessionToken) return res.status(401).json({ error: 'Not authenticated' });
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ slug: session.publisher_slug, name: session.publisher_name });
   }
 
-  // POST ?action=signup — self-service publisher signup
+  // POST ?action=signup - self-service publisher signup
   if (req.method === 'POST' && action === 'signup') {
     const { name, email, domain, contact_first_name, contact_last_name, slug: requestedSlug } = req.body;
     if (!name || !email || !domain) return res.status(400).json({ error: 'Name, email and website are required' });
@@ -124,7 +124,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         from: 'IntroLinq <hello@introlinq.com>',
         to: normalised,
-        subject: `Welcome to IntroLinq, ${firstName} — your dashboard is ready`,
+        subject: `Welcome to IntroLinq, ${firstName} - your dashboard is ready`,
         html: welcomeEmail(firstName, link, slug),
       })
     }).catch(() => {});
@@ -134,14 +134,14 @@ export default async function handler(req, res) {
       fetch(process.env.SLACK_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: `🎉 New publisher signup: *${name.trim()}* (${normalised}) — ${cleanDomain}` })
+        body: JSON.stringify({ text: `🎉 New publisher signup: *${name.trim()}* (${normalised}) - ${cleanDomain}` })
       }).catch(() => {});
     }
 
     return res.status(201).json({ ok: true, slug });
   }
 
-  // POST { email } — send login magic link
+  // POST { email } - send login magic link
   if (req.method === 'POST') {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email required' });
@@ -167,7 +167,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
-  // DELETE — logout
+  // DELETE - logout
   if (req.method === 'DELETE') {
     const sessionToken = getSessionToken(req);
     if (sessionToken) await sql`DELETE FROM sessions WHERE token = ${sessionToken}`;
@@ -186,7 +186,7 @@ function welcomeEmail(name, link, slug) {
   </div>
   <div style="padding:32px">
     <p style="margin:0 0 8px;font-size:1rem;font-weight:600;color:#1a1a2e">Welcome, ${name} 👋</p>
-    <p style="margin:0 0 24px;font-size:0.875rem;color:#8888a8;line-height:1.6">Your IntroLinq dashboard is ready. Click below to access it and get your embed code — this link is valid for 7 days.</p>
+    <p style="margin:0 0 24px;font-size:0.875rem;color:#8888a8;line-height:1.6">Your IntroLinq dashboard is ready. Click below to access it and get your embed code - this link is valid for 7 days.</p>
     <a href="${link}" style="display:block;background:#1a1a2e;color:#fff;text-align:center;padding:14px;border-radius:100px;font-size:0.875rem;font-weight:600;text-decoration:none">Access my dashboard →</a>
     <div style="margin:24px 0;padding:16px;background:#faf8f4;border-radius:8px;border:1px solid rgba(26,26,46,0.08)">
       <p style="margin:0 0 6px;font-size:0.75rem;font-weight:600;color:#8888a8;text-transform:uppercase;letter-spacing:0.05em">Your embed code</p>
