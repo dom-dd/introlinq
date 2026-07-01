@@ -307,7 +307,7 @@ export default async function handler(req, res) {
 
   // Clear no-match cache entries - forces re-scan on next visit
   if (resource === 'clear_nomatch_cache' && req.method === 'POST') {
-    const result = await sql`DELETE FROM match_cache WHERE has_match = false RETURNING id`.catch(() => []);
+    const result = await sql`DELETE FROM match_cache WHERE has_match = false AND publisher = '' RETURNING id`.catch(() => []);
     return res.status(200).json({ ok: true, deleted: result.length });
   }
 
