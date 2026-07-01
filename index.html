@@ -216,8 +216,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 
 /* Demo tabs */
 .demo-tab-bar{display:flex;gap:3px;margin-bottom:1.25rem;background:rgba(255,255,255,0.06);border-radius:9px;padding:3px}
-.demo-tab{flex:1;padding:0.5rem 0.75rem;font-size:0.8125rem;font-weight:600;color:rgba(255,255,255,0.4);border:none;background:none;cursor:pointer;font-family:'Inter',sans-serif;border-radius:7px;transition:all .15s;white-space:nowrap}
+.demo-tab{flex:1;padding:0.5rem 0.75rem;font-size:0.8125rem;font-weight:600;color:rgba(255,255,255,0.4);border:1px solid transparent;background:none;cursor:pointer;font-family:'Inter',sans-serif;border-radius:7px;transition:all .15s;white-space:nowrap}
 .demo-tab.active{background:rgba(255,255,255,0.13);color:#fff}
+.demo-tab.tab-glow{color:rgba(255,255,255,0.75);animation:tabPulse 2s ease-in-out infinite}
+@keyframes tabPulse{0%,100%{border-color:rgba(230,168,32,0.4);box-shadow:0 0 0 2px rgba(230,168,32,0.1)}50%{border-color:rgba(230,168,32,0.85);box-shadow:0 0 0 4px rgba(230,168,32,0.2)}}
 .demo-panel{display:none}
 .demo-panel.active{display:block}
 
@@ -287,7 +289,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
       <div class="carousel-wrap">
       <div class="demo-tab-bar">
         <button class="demo-tab active" onclick="switchDemo('demo',this)">Demo</button>
-        <button class="demo-tab" onclick="switchDemo('tryit',this)">🔗 Try any article</button>
+        <button class="demo-tab tab-glow" id="tryit-tab" onclick="switchDemo('tryit',this)">🔗 Try any article</button>
       </div>
 
       <!-- Demo panel -->
@@ -809,6 +811,7 @@ async function handleExitSubmit(e) {
 function switchDemo(name, btn) {
   document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.demo-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tryit-tab')?.classList.remove('tab-glow');
   btn.classList.add('active');
   document.getElementById('dp-' + name).classList.add('active');
   // Auto-fill textarea with sample when switching to tryit tab
