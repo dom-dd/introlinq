@@ -225,12 +225,12 @@ export default async function handler(req, res) {
 
     if (!publisher) return res.status(404).json({ error: 'Publisher not found' });
 
-    const [bookingSummary] = await sql`
-      SELECT COUNT(*)::int AS count,
-             COALESCE(SUM(publisher_payout),0)::float AS total_payout,
-             COALESCE(SUM(booking_amount),0)::float AS total_bookings
-      FROM bookings WHERE publisher = ${pub}
-    `.catch(() => [{ count: 0, total_payout: 0, total_bookings: 0 }]);
+    const [bookingCountRow, payoutByCurrency, bookingRows] = await Promise.all([
+      sql`SELECT COUNT(*)::int AS count FROM bookings WHERE publisher = ${pub}`.catch(() => [{ count: 0 }]),
+      sql`SELECT currency, COALESCE(SUM(publisher_payout),0)::float AS payout FROM bookings WHERE publisher = ${pub} GROUP BY currency ORDER BY payout DESC`.catch(() => []),
+      sql`SELECT expert_name, booking_amount, currency, publisher_payout, created_at FROM bookings WHERE publisher = ${pub} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
+    ]);
+    const bookingSummary = { count: bookingCountRow[0]?.count || 0, by_currency: payoutByCurrency, rows: bookingRows };
 
     const [logs, clickData, providers, expertCounts, totalImpressions,
            clicksByDay, impressionsByDay, clicksByWeek, impressionsByWeek,

@@ -547,10 +547,15 @@ async function loadDashboard() {
   // Payouts tab
   const bk = d.bookings || {};
   document.getElementById('stat-bookings').textContent = (bk.count || 0).toLocaleString();
-  const payout = bk.total_payout || 0;
-  document.getElementById('stat-earnings').textContent = payout > 0
-    ? new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(payout)
-    : '-';
+  const byCurrency = bk.by_currency || [];
+  const earningsEl = document.getElementById('stat-earnings');
+  if (byCurrency.length) {
+    earningsEl.innerHTML = byCurrency.map(r =>
+      `<div style="font-size:${byCurrency.length > 1 ? '1.25rem' : '2rem'};line-height:1.6">${new Intl.NumberFormat('en-US', { style:'currency', currency: r.currency }).format(r.payout)}</div>`
+    ).join('');
+  } else {
+    earningsEl.textContent = '-';
+  }
   if (p.payment_email) {
     document.getElementById('payment-email-input').value = p.payment_email;
   }
@@ -568,6 +573,18 @@ function renderBookingHistory(bk) {
   }
   sub.textContent = `${bk.count} booking${bk.count !== 1 ? 's' : ''}`;
   table.style.display = 'block';
+  const tbody = document.getElementById('booking-history-tbody');
+  tbody.innerHTML = (bk.rows || []).map(b => {
+    const date = new Date(b.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    const fmt = (n, c) => new Intl.NumberFormat('en-US', { style:'currency', currency: c }).format(n);
+    return `<tr>
+      <td style="white-space:nowrap;color:var(--ink-muted);font-size:0.8rem">${date}</td>
+      <td>${esc(b.expert_name || '-')}</td>
+      <td>${fmt(b.booking_amount, b.currency)}</td>
+      <td style="color:var(--sage);font-weight:600">${fmt(b.publisher_payout, b.currency)}</td>
+      <td><span style="font-size:0.75rem;background:#f0fdf4;color:#166534;padding:0.15rem 0.5rem;border-radius:100px;font-weight:600">Confirmed</span></td>
+    </tr>`;
+  }).join('');
 }
 
 // ── Settings ────────────────────────────────────────────────────────────────
