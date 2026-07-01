@@ -305,6 +305,12 @@ export default async function handler(req, res) {
     return res.status(200).json({ url: `https://www.introlinq.com/api/auth?token=${token}` });
   }
 
+  // Clear no-match cache entries - forces re-scan on next visit
+  if (resource === 'clear_nomatch_cache' && req.method === 'POST') {
+    const result = await sql`DELETE FROM match_cache WHERE has_match = false RETURNING id`.catch(() => []);
+    return res.status(200).json({ ok: true, deleted: result.length });
+  }
+
   return res.status(404).json({ error: 'Unknown resource' });
 }
 

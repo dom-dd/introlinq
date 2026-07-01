@@ -385,6 +385,15 @@ tr:hover td{background:rgba(0,0,0,0.01)}
           <span class="sync-info" id="email-status">Sends weekly stats to dom@open-intro.com (test mode - Little Green Agency only).</span>
         </div>
       </div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">No-match cache</div>
+        </div>
+        <div class="sync-row">
+          <button class="btn btn-danger" onclick="clearNoMatchCache()">Clear no-match cache</button>
+          <span class="sync-info" id="nomatch-status">Forces all previously-unmatched pages to be re-scanned by AI on next visit. Use after changing the matching prompt or adding new expert categories.</span>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -697,6 +706,22 @@ async function sendTestEmail() {
     status.textContent = `Sent! Check dom@open-intro.com.`;
   } else {
     status.textContent = `Something went wrong - ${JSON.stringify(data)}`;
+  }
+}
+
+async function clearNoMatchCache() {
+  if (!confirm('Clear all no-match cache entries? Pages that previously returned 0 experts will be re-scanned on the next visit.')) return;
+  const status = document.getElementById('nomatch-status');
+  status.textContent = 'Clearing...';
+  const res = await fetch('/api/admin?resource=clear_nomatch_cache', {
+    method: 'POST',
+    headers: { 'x-requested-with': 'xmlhttprequest' }
+  });
+  const data = await res.json();
+  if (data.ok) {
+    status.textContent = `Done — ${data.deleted} no-match cache entries cleared.`;
+  } else {
+    status.textContent = 'Failed: ' + (data.error || 'unknown error');
   }
 }
 

@@ -25,8 +25,8 @@ export default async function handler(req, res) {
 
     // Look up publisher settings if a publisher slug was provided
     const { publisher } = req.body;
-    let maxMatches = 4;
-    let sensitivityInstruction = 'The match must be genuinely strong. A weak or vague match is worse than no match.';
+    let maxMatches = 3;
+    let sensitivityInstruction = 'Match on broader topic overlap. If the expert\'s field is relevant to the section, include them. Prefer more matches over fewer.';
 
     let pubConfig = { color: '#e6a820', accent: '#e6a820', size: 'medium' };
 
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
         WHERE page_url = ${page_url}
           AND country_code = ${cacheCountry}
           AND publisher = ${publisher || ''}
-          AND cached_at > ${lastSyncedAt}
+          AND (has_match = false OR cached_at > ${lastSyncedAt})
           AND cached_at > NOW() - INTERVAL '1 year'
         LIMIT 1
       `.catch(() => [null]);
@@ -262,12 +262,9 @@ Return only valid JSON, no other text:
         const urlLine = (!publisher && page_url) ? `\n${page_url}` : '';
         const header = `*${pubName}* · *${enriched.length} expert${enriched.length !== 1 ? 's' : ''} found* · 🌍 ${countryLabel}\n_${title}_${urlLine}`;
 
-        let msg;
-        if (enriched.length === 0) {
-          msg = `🔍 ${header}\n> No match: ${noMatchReason || 'no reason given'}`;
-        } else {
-          msg = `🔍 ${header}`;
-        }
+        if (enriched.length === 0) return; // don't ping Slack for no-match results
+
+        const msg = `🔍 ${header}`;
         await fetch(process.env.SLACK_WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
