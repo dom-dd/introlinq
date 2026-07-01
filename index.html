@@ -223,8 +223,12 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 
 /* Try it panel */
 .t-url-row{display:flex;gap:8px;margin-bottom:0.875rem}
-.t-url-input{flex:1;padding:0.75rem 1rem;border:1.5px solid rgba(255,255,255,0.15);border-radius:10px;font-size:0.875rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);outline:none;transition:border-color .15s;min-width:0}
-.t-url-input:focus{border-color:var(--gold);background:#fff}
+.t-url-shine{flex:1;min-width:0;padding:2px;border-radius:12px;background:linear-gradient(90deg,#e6a820,#3d7a5f,#e6a820,#e6a820);background-size:300% 100%;animation:urlShine 2.5s linear infinite}
+.t-url-shine.done{animation:none;background:transparent;padding:0}
+@keyframes urlShine{from{background-position:200% 0}to{background-position:-100% 0}}
+.t-url-input{width:100%;padding:0.75rem 1rem;border:none;border-radius:10px;font-size:0.875rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);outline:none;min-width:0}
+.t-url-shine.done .t-url-input{border:1.5px solid rgba(255,255,255,0.15)}
+.t-url-input:focus{background:#fff}
 .t-url-input::placeholder{color:var(--ink-muted)}
 .t-url-btn{background:var(--gold);color:var(--ink);border:none;padding:0.75rem 1.125rem;border-radius:10px;font-size:0.875rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:opacity .15s;flex-shrink:0}
 .t-url-btn:hover:not(:disabled){opacity:.85}
@@ -348,7 +352,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
       <div class="demo-panel" id="dp-tryit">
         <div class="carousel-label" style="margin-bottom:0.75rem">Enter any article URL - we'll fetch it and show which experts IntroLinq would surface for your readers</div>
         <div class="t-url-row">
-          <input type="url" class="t-url-input" id="t-url" placeholder="https://yourblog.com/any-article" onkeydown="if(event.key==='Enter')tFetchUrl()">
+          <div class="t-url-shine" id="t-url-shine">
+            <input type="url" class="t-url-input" id="t-url" placeholder="https://yourblog.com/any-article" onkeydown="if(event.key==='Enter')tFetchUrl()" onfocus="document.getElementById('t-url-shine').classList.add('done')">
+          </div>
           <button class="t-url-btn" id="t-url-btn" onclick="tFetchUrl()">Analyse →</button>
         </div>
         <div class="t-divider">or paste article text</div>
