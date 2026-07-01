@@ -48,6 +48,7 @@ export default async function handler(req, res) {
     }
 
     const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
+    const cacheCountry = readerCountry || 'XX'; // 'XX' = unknown country, avoids empty-string NULL issue in cache
 
     // Check match cache (keyed by page_url + country, valid until last expert sync)
     if (page_url) {
@@ -72,7 +73,7 @@ export default async function handler(req, res) {
       const [cached] = await sql`
         SELECT result FROM match_cache
         WHERE page_url = ${page_url}
-          AND country_code = ${readerCountry}
+          AND country_code = ${cacheCountry}
           AND publisher = ${publisher || ''}
           AND cached_at > ${lastSyncedAt}
           AND cached_at > NOW() - INTERVAL '1 year'
@@ -211,7 +212,7 @@ Return only valid JSON, no other text:
         if (!page_url) return;
         await sql`
           INSERT INTO match_cache (page_url, country_code, publisher, result, has_match)
-          VALUES (${page_url}, ${readerCountry}, ${publisher || ''}, ${JSON.stringify({ matches: enriched })}, ${enriched.length > 0})
+          VALUES (${page_url}, ${cacheCountry}, ${publisher || ''}, ${JSON.stringify({ matches: enriched })}, ${enriched.length > 0})
           ON CONFLICT (page_url, country_code, publisher) DO UPDATE SET result = EXCLUDED.result, has_match = EXCLUDED.has_match, cached_at = NOW()
         `.catch(() => {});
       })(),
