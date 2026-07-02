@@ -305,7 +305,8 @@
       fl.innerHTML = iso ? '<img src="https://hatscripts.github.io/circle-flags/flags/' + iso.toLowerCase() + '.svg" alt="" style="width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;max-width:18px!important;max-height:18px!important;vertical-align:middle!important;flex-shrink:0!important;border-radius:50%!important;display:inline-block!important">' : '';
     }
     var rl = document.getElementById('il-rl');
-    rl.innerHTML = [e.position ? '<span>' + e.position.replace(/</g,'&lt;') + '</span>' : '', e.company ? '<span style="color:#8888a8">' + e.company.replace(/</g,'&lt;') + '</span>' : ''].filter(Boolean).join('<br>');
+    var showCompany = !e.is_demo_provider;
+    rl.innerHTML = [e.position ? '<span>' + e.position.replace(/</g,'&lt;') + '</span>' : '', showCompany && e.company ? '<span style="color:#8888a8">' + e.company.replace(/</g,'&lt;') + '</span>' : ''].filter(Boolean).join('<br>');
     var rs = document.getElementById('il-rs');
     if (rs) rs.textContent = match.reason;
     var bk = document.getElementById('il-bk');
@@ -333,14 +334,19 @@
       var providerLogoUrl = e.provider_logo_url || null;
       var providerUrl = e.provider_website_url || '#';
       var cfg = { name: providerName, url: providerUrl, logo: providerLogoUrl };
-      var providerLogoHtml = cfg.logo
-        ? '<img src="' + cfg.logo + '" alt="' + cfg.name + '" style="width:13px;height:13px;object-fit:contain;border-radius:2px;vertical-align:middle;margin-right:3px">'
-        : '';
       var ilLogo = '<img src="https://www.introlinq.com/favicon.svg" alt="IntroLinq" style="width:11px;height:11px;border-radius:2px;vertical-align:middle;margin-right:3px">';
       var s = 'font-size:8.5px;color:#8888a8;font-family:Inter,system-ui,sans-serif;text-decoration:none;display:flex;align-items:center;gap:2px';
       pv.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-top:6px;padding-top:6px;border-top:1px solid rgba(26,26,46,0.07)';
-      pv.innerHTML = '<a href="' + cfg.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with ' + providerLogoHtml + cfg.name + '</a>'
-        + '<a href="https://www.introlinq.com" target="_blank" rel="noopener" style="' + s + '">' + ilLogo + 'IntroLinq</a>';
+      var partnerLink;
+      if (e.is_demo_provider) {
+        partnerLink = '<a href="' + cfg.url + '" target="_blank" rel="noopener" style="' + s + '">' + cfg.name + '</a>';
+      } else {
+        var providerLogoHtml = cfg.logo
+          ? '<img src="' + cfg.logo + '" alt="' + cfg.name + '" style="width:13px;height:13px;object-fit:contain;border-radius:2px;vertical-align:middle;margin-right:3px">'
+          : '';
+        partnerLink = '<a href="' + cfg.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with ' + providerLogoHtml + cfg.name + '</a>';
+      }
+      pv.innerHTML = partnerLink + '<a href="https://www.introlinq.com" target="_blank" rel="noopener" style="' + s + '">' + ilLogo + 'IntroLinq</a>';
     }
   }
 
