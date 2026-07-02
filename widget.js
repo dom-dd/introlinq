@@ -329,11 +329,9 @@
 
     var pv = document.getElementById('il-pv');
     if (pv) {
-      var providerUrls = { openintro: 'https://open-intro.com', 'intro-co': 'https://intro.co', topmate: 'https://topmate.io' };
-      var providerSlug = e.provider_slug || 'openintro';
-      var providerName = e.provider_name || providerSlug;
+      var providerName = e.provider_name || (e.provider_slug || 'openintro');
       var providerLogoUrl = e.provider_logo_url || null;
-      var providerUrl = providerUrls[providerSlug] || '#';
+      var providerUrl = e.provider_website_url || '#';
       var cfg = { name: providerName, url: providerUrl, logo: providerLogoUrl };
       var providerLogoHtml = cfg.logo
         ? '<img src="' + cfg.logo + '" alt="' + cfg.name + '" style="width:13px;height:13px;object-fit:contain;border-radius:2px;vertical-align:middle;margin-right:3px">'

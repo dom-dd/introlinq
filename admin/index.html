@@ -386,9 +386,15 @@ tr:hover td{background:rgba(0,0,0,0.01)}
               <input class="form-input" id="gf-slug" placeholder="e.g. intro-co">
             </div>
           </div>
-          <div class="form-group" style="margin-bottom:0.75rem">
-            <label class="form-label">Logo URL — upload to /networks logos/ then paste the URL</label>
-            <input class="form-input" id="gf-logo" placeholder="https://www.introlinq.com/networks%20logos/PartnerName-icon.png">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Partner website URL</label>
+              <input class="form-input" id="gf-website" placeholder="https://intro.co">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Logo URL — upload to /networks logos/ then paste URL</label>
+              <input class="form-input" id="gf-logo" placeholder="https://www.introlinq.com/networks%20logos/Name-icon.png">
+            </div>
           </div>
           <div class="form-actions">
             <button class="btn btn-primary" onclick="addGroup()">Create group</button>
@@ -916,8 +922,9 @@ async function addGroup() {
   const errEl = document.getElementById('group-error');
   errEl.style.display = 'none';
   const logo_url = document.getElementById('gf-logo').value.trim() || null;
+  const website_url = document.getElementById('gf-website').value.trim() || null;
   if (!name || !slug) { errEl.textContent = 'Name and slug are required.'; errEl.style.display = 'block'; return; }
-  const res = await fetch('/api/admin?resource=groups', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' }, body: JSON.stringify({ name, slug, logo_url }) });
+  const res = await fetch('/api/admin?resource=groups', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' }, body: JSON.stringify({ name, slug, logo_url, website_url }) });
   const data = await res.json();
   if (!res.ok || data.error) { errEl.textContent = data.error || 'Failed'; errEl.style.display = 'block'; return; }
   document.getElementById('gf-name').value = '';
