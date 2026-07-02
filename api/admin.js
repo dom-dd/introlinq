@@ -314,20 +314,21 @@ export default async function handler(req, res) {
   // Groups (demo providers)
   if (resource === 'groups') {
     await sql`ALTER TABLE providers ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT false`.catch(() => {});
+    await sql`ALTER TABLE providers ADD COLUMN IF NOT EXISTS logo_url TEXT`.catch(() => {});
 
     if (req.method === 'GET') {
-      const groups = await sql`SELECT id, name, slug, COALESCE(is_demo, false) AS is_demo FROM providers ORDER BY is_demo ASC, name ASC`;
+      const groups = await sql`SELECT id, name, slug, logo_url, COALESCE(is_demo, false) AS is_demo FROM providers ORDER BY is_demo ASC, name ASC`;
       return res.status(200).json(groups);
     }
 
     if (req.method === 'POST') {
-      const { name, slug } = req.body;
+      const { name, slug, logo_url } = req.body;
       if (!name || !slug) return res.status(400).json({ error: 'Name and slug required' });
       const [group] = await sql`
-        INSERT INTO providers (name, slug, is_demo)
-        VALUES (${name}, ${slug.toLowerCase().replace(/[^a-z0-9-]/g, '-')}, true)
+        INSERT INTO providers (name, slug, logo_url, is_demo)
+        VALUES (${name}, ${slug.toLowerCase().replace(/[^a-z0-9-]/g, '-')}, ${logo_url || null}, true)
         ON CONFLICT (slug) DO NOTHING
-        RETURNING id, name, slug, is_demo
+        RETURNING id, name, slug, logo_url, is_demo
       `;
       return res.status(200).json(group || { error: 'Slug already exists' });
     }

@@ -386,6 +386,10 @@ tr:hover td{background:rgba(0,0,0,0.01)}
               <input class="form-input" id="gf-slug" placeholder="e.g. intro-co">
             </div>
           </div>
+          <div class="form-group" style="margin-bottom:0.75rem">
+            <label class="form-label">Logo URL — upload to /networks logos/ then paste the URL</label>
+            <input class="form-input" id="gf-logo" placeholder="https://www.introlinq.com/networks%20logos/PartnerName-icon.png">
+          </div>
           <div class="form-actions">
             <button class="btn btn-primary" onclick="addGroup()">Create group</button>
             <button class="btn btn-ghost" onclick="toggleGroupForm()">Cancel</button>
@@ -394,8 +398,8 @@ tr:hover td{background:rgba(0,0,0,0.01)}
         </div>
         <div class="section-body">
           <table>
-            <thead><tr><th>Name</th><th>Slug</th><th>Type</th><th></th></tr></thead>
-            <tbody id="groups-tbody"><tr><td colspan="4" class="empty">Loading...</td></tr></tbody>
+            <thead><tr><th>Name</th><th>Slug</th><th>Logo</th><th>Type</th><th></th></tr></thead>
+            <tbody id="groups-tbody"><tr><td colspan="5" class="empty">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -881,6 +885,7 @@ async function loadGroups() {
     <tr>
       <td class="td-name">${esc(g.name)}</td>
       <td style="font-size:0.8rem;color:var(--ink-muted);font-family:monospace">${esc(g.slug)}</td>
+      <td>${g.logo_url ? `<img src="${esc(g.logo_url)}" style="height:20px;width:auto;object-fit:contain;border-radius:3px" alt="${esc(g.name)}">` : '<span style="font-size:0.75rem;color:var(--ink-muted)">—</span>'}</td>
       <td><span class="badge ${g.is_demo ? '' : 'badge-active'}" style="${g.is_demo ? 'background:#f4f4f8;color:var(--ink-muted)' : ''}">${g.is_demo ? 'Demo' : 'Live'}</span></td>
       <td>${g.slug === 'openintro' ? '' : `<button class="btn btn-danger btn-sm" onclick="deleteGroup(${g.id},'${esc(g.name)}')">Delete</button>`}</td>
     </tr>`).join('');
@@ -910,8 +915,9 @@ async function addGroup() {
   const slug = document.getElementById('gf-slug').value.trim();
   const errEl = document.getElementById('group-error');
   errEl.style.display = 'none';
+  const logo_url = document.getElementById('gf-logo').value.trim() || null;
   if (!name || !slug) { errEl.textContent = 'Name and slug are required.'; errEl.style.display = 'block'; return; }
-  const res = await fetch('/api/admin?resource=groups', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' }, body: JSON.stringify({ name, slug }) });
+  const res = await fetch('/api/admin?resource=groups', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' }, body: JSON.stringify({ name, slug, logo_url }) });
   const data = await res.json();
   if (!res.ok || data.error) { errEl.textContent = data.error || 'Failed'; errEl.style.display = 'block'; return; }
   document.getElementById('gf-name').value = '';

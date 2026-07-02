@@ -329,13 +329,12 @@
 
     var pv = document.getElementById('il-pv');
     if (pv) {
-      var providerConfig = {
-        openintro: { name: 'OpenIntro', url: 'https://open-intro.com', logo: 'https://www.introlinq.com/networks%20logos/OpenIntro-icon.png' },
-        'intro-co': { name: 'Intro.co', url: 'https://intro.co', logo: 'https://www.google.com/s2/favicons?domain=intro.co&sz=32' },
-        topmate:    { name: 'Topmate',  url: 'https://topmate.io', logo: 'https://www.google.com/s2/favicons?domain=topmate.io&sz=32' },
-      };
+      var providerUrls = { openintro: 'https://open-intro.com', 'intro-co': 'https://intro.co', topmate: 'https://topmate.io' };
       var providerSlug = e.provider_slug || 'openintro';
-      var cfg = providerConfig[providerSlug] || { name: e.provider_name || providerSlug, url: '#', logo: null };
+      var providerName = e.provider_name || providerSlug;
+      var providerLogoUrl = e.provider_logo_url || null;
+      var providerUrl = providerUrls[providerSlug] || '#';
+      var cfg = { name: providerName, url: providerUrl, logo: providerLogoUrl };
       var providerLogoHtml = cfg.logo
         ? '<img src="' + cfg.logo + '" alt="' + cfg.name + '" style="width:13px;height:13px;object-fit:contain;border-radius:2px;vertical-align:middle;margin-right:3px">'
         : '';

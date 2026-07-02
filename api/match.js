@@ -102,7 +102,7 @@ export default async function handler(req, res) {
         SELECT e.id, e.name, e.bio, e.description_long, e.photo_url, e.position, e.company,
                e.topics, e.services, e.languages, e.price_from, e.price_currency,
                e.booking_url, e.location_country,
-               p.name AS provider_name, p.slug AS provider_slug,
+               p.name AS provider_name, p.slug AS provider_slug, p.logo_url AS provider_logo_url,
                COALESCE(p.is_demo, false) AS is_demo_provider
         FROM experts e
         LEFT JOIN providers p ON p.id = e.provider_id
