@@ -324,17 +324,22 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { name, slug, logo_url, website_url } = req.body;
-      if (!name || !slug) return res.status(400).json({ error: 'Name and slug required' });
-      const cleanSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-      const [existing] = await sql`SELECT id FROM providers WHERE slug = ${cleanSlug}`;
-      if (existing) return res.status(400).json({ error: 'A group with this slug already exists' });
-      const [group] = await sql`
-        INSERT INTO providers (name, slug, logo_url, website_url, is_demo)
-        VALUES (${name}, ${cleanSlug}, ${logo_url || null}, ${website_url || null}, true)
-        RETURNING id, name, slug, logo_url, website_url, is_demo
-      `;
-      return res.status(200).json(group);
+      try {
+        const { name, slug, logo_url, website_url } = req.body || {};
+        if (!name || !slug) return res.status(400).json({ error: 'Name and slug required' });
+        const cleanSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+        const [existing] = await sql`SELECT id FROM providers WHERE slug = ${cleanSlug}`;
+        if (existing) return res.status(400).json({ error: 'A group with this slug already exists' });
+        const [group] = await sql`
+          INSERT INTO providers (name, slug, logo_url, website_url, is_demo)
+          VALUES (${name}, ${cleanSlug}, ${logo_url || null}, ${website_url || null}, true)
+          RETURNING id, name, slug, logo_url, website_url, is_demo
+        `;
+        return res.status(200).json(group);
+      } catch (e) {
+        console.error('Groups POST error:', e);
+        return res.status(500).json({ error: e.message || 'Failed to create group' });
+      }
     }
 
     if (req.method === 'DELETE') {
