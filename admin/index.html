@@ -947,20 +947,25 @@ async function addGroup() {
   const logo_url = _groupLogoDataUrl || null;
   const website_url = document.getElementById('gf-website').value.trim() || null;
   if (!name || !slug) { errEl.textContent = 'Name and slug are required.'; errEl.style.display = 'block'; return; }
-  const res = await fetch('/api/admin?resource=groups', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' }, body: JSON.stringify({ name, slug, logo_url, website_url }) });
-  const data = await res.json();
-  if (!res.ok || data.error) { errEl.textContent = data.error || 'Failed'; errEl.style.display = 'block'; return; }
-  document.getElementById('gf-name').value = '';
-  document.getElementById('gf-slug').value = '';
-  document.getElementById('gf-website').value = '';
-  document.getElementById('gf-logo-file').value = '';
-  document.getElementById('gf-logo-preview').style.display = 'none';
-  document.getElementById('gf-logo-name').textContent = 'No file chosen';
-  _groupLogoDataUrl = null;
-  document.getElementById('group-form').style.display = 'none';
-  toast('Group created');
-  loadGroups();
-  loadExperts();
+  try {
+    const res = await fetch('/api/admin?resource=groups', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' }, body: JSON.stringify({ name, slug, logo_url, website_url }) });
+    const data = await res.json();
+    if (!res.ok || data.error) { errEl.textContent = data.error || 'Failed'; errEl.style.display = 'block'; return; }
+    document.getElementById('gf-name').value = '';
+    document.getElementById('gf-slug').value = '';
+    document.getElementById('gf-website').value = '';
+    document.getElementById('gf-logo-file').value = '';
+    document.getElementById('gf-logo-preview').style.display = 'none';
+    document.getElementById('gf-logo-name').textContent = 'No file chosen';
+    _groupLogoDataUrl = null;
+    document.getElementById('group-form').style.display = 'none';
+    toast('Group created');
+    loadGroups();
+    loadExperts();
+  } catch(e) {
+    errEl.textContent = 'Error: ' + e.message;
+    errEl.style.display = 'block';
+  }
 }
 
 async function deleteGroup(id, name) {
