@@ -339,7 +339,7 @@
       pv.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-top:6px;padding-top:6px;border-top:1px solid rgba(26,26,46,0.07)';
       var partnerLink;
       if (e.is_demo_provider && cfg.logo) {
-        partnerLink = '<a href="' + cfg.url + '" target="_blank" rel="noopener" style="' + s + '"><img src="' + cfg.logo + '" alt="' + cfg.name + '" style="height:16px;width:auto;max-width:70px;object-fit:contain;margin-right:4px"> ' + cfg.name + '</a>';
+        partnerLink = '<a href="' + cfg.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with <img src="' + cfg.logo + '" alt="' + cfg.name + '" style="height:14px;width:auto;max-width:70px;object-fit:contain;margin-left:4px;vertical-align:middle"></a>';
       } else {
         var providerLogoHtml = cfg.logo
           ? '<img src="' + cfg.logo + '" alt="' + cfg.name + '" style="width:13px;height:13px;object-fit:contain;border-radius:2px;vertical-align:middle;margin-right:3px">'
