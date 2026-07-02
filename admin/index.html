@@ -144,6 +144,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
     <button class="tab-btn active" onclick="switchTab('publishers',this)">Publishers</button>
     <button class="tab-btn" onclick="switchTab('bookings',this)">Bookings</button>
     <button class="tab-btn" onclick="switchTab('logs',this)">Logs</button>
+    <button class="tab-btn" onclick="switchTab('experts',this)">Experts</button>
     <button class="tab-btn" onclick="switchTab('tools',this)">Tools</button>
   </div>
 
@@ -365,6 +366,118 @@ tr:hover td{background:rgba(0,0,0,0.01)}
       </div>
     </div>
 
+    <!-- Experts tab -->
+    <div class="tab-panel" id="tab-experts">
+
+      <!-- Groups -->
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Groups</div>
+          <button class="btn btn-primary btn-sm" onclick="toggleGroupForm()">+ Add group</button>
+        </div>
+        <div id="group-form" style="display:none;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border)">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Group name *</label>
+              <input class="form-input" id="gf-name" placeholder="e.g. Intro.co" oninput="autoGroupSlug()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Slug (auto)</label>
+              <input class="form-input" id="gf-slug" placeholder="e.g. intro-co">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="addGroup()">Create group</button>
+            <button class="btn btn-ghost" onclick="toggleGroupForm()">Cancel</button>
+          </div>
+          <div id="group-error" style="font-size:0.8125rem;color:var(--red);margin-top:0.5rem;display:none"></div>
+        </div>
+        <div class="section-body">
+          <table>
+            <thead><tr><th>Name</th><th>Slug</th><th>Type</th><th></th></tr></thead>
+            <tbody id="groups-tbody"><tr><td colspan="4" class="empty">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Experts -->
+      <div class="section">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Demo experts</div>
+          </div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <select id="experts-filter" class="form-input" style="width:180px;padding:0.4rem 0.75rem;font-size:0.8125rem" onchange="filterExperts()">
+              <option value="">All groups</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="toggleExpertForm()">+ Add expert</button>
+          </div>
+        </div>
+        <div id="expert-form" style="display:none;padding:1.5rem;border-bottom:1px solid var(--border)">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Full name *</label>
+              <input class="form-input" id="ef-name" placeholder="e.g. Sarah Johnson">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Group *</label>
+              <select class="form-input" id="ef-group"><option value="">Select group...</option></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Job title</label>
+              <input class="form-input" id="ef-position" placeholder="e.g. Startup Advisor">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Company</label>
+              <input class="form-input" id="ef-company" placeholder="e.g. Acme Capital">
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0.75rem">
+            <label class="form-label">Bio (used for matching — be specific about expertise)</label>
+            <textarea class="form-input" id="ef-bio" rows="3" style="height:auto;resize:vertical" placeholder="Describe what this expert specialises in and who they help..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Booking URL *</label>
+              <input class="form-input" id="ef-booking" placeholder="https://intro.co/expert-name">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Photo URL</label>
+              <input class="form-input" id="ef-photo" placeholder="https://...">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Price from</label>
+              <input class="form-input" id="ef-price" type="number" placeholder="50">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Currency</label>
+              <select class="form-input" id="ef-currency">
+                <option value="GBP">GBP</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="addExpert()">Add expert</button>
+            <button class="btn btn-ghost" onclick="toggleExpertForm()">Cancel</button>
+          </div>
+          <div id="expert-error" style="font-size:0.8125rem;color:var(--red);margin-top:0.5rem;display:none"></div>
+        </div>
+        <div class="section-body" style="overflow-x:auto">
+          <table style="min-width:700px">
+            <thead><tr><th>Expert</th><th>Group</th><th>Bio</th><th>Price</th><th>Booking URL</th><th></th></tr></thead>
+            <tbody id="experts-tbody"><tr><td colspan="6" class="empty">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
     <!-- Tools tab -->
     <div class="tab-panel" id="tab-tools">
       <div class="section">
@@ -421,6 +534,8 @@ function showAdmin() {
   loadPublishers();
   loadBookings();
   loadGlobalLogs();
+  loadGroups();
+  loadExperts();
 }
 
 function switchTab(name, btn) {
@@ -752,6 +867,135 @@ function toast(msg) {
 
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Groups ──────────────────────────────────────────────────────
+let _allGroups = [];
+
+async function loadGroups() {
+  const res = await fetch('/api/admin?resource=groups', { headers: { 'x-requested-with': 'xmlhttprequest' } });
+  _allGroups = await res.json();
+  const tbody = document.getElementById('groups-tbody');
+  if (!_allGroups.length) { tbody.innerHTML = '<tr><td colspan="4" class="empty">No groups yet.</td></tr>'; }
+  else tbody.innerHTML = _allGroups.map(g => `
+    <tr>
+      <td class="td-name">${esc(g.name)}</td>
+      <td style="font-size:0.8rem;color:var(--ink-muted);font-family:monospace">${esc(g.slug)}</td>
+      <td><span class="badge ${g.is_demo ? '' : 'badge-active'}" style="${g.is_demo ? 'background:#f4f4f8;color:var(--ink-muted)' : ''}">${g.is_demo ? 'Demo' : 'Live'}</span></td>
+      <td>${g.slug === 'openintro' ? '' : `<button class="btn btn-danger btn-sm" onclick="deleteGroup(${g.id},'${esc(g.name)}')">Delete</button>`}</td>
+    </tr>`).join('');
+
+  // Populate dropdowns
+  const demoGroups = _allGroups.filter(g => g.is_demo);
+  const filterEl = document.getElementById('experts-filter');
+  const formEl = document.getElementById('ef-group');
+  const current = filterEl.value;
+  filterEl.innerHTML = '<option value="">All groups</option>' + demoGroups.map(g => `<option value="${esc(g.slug)}" ${g.slug === current ? 'selected' : ''}>${esc(g.name)}</option>`).join('');
+  formEl.innerHTML = '<option value="">Select group...</option>' + demoGroups.map(g => `<option value="${esc(g.slug)}">${esc(g.name)}</option>`).join('');
+}
+
+function toggleGroupForm() {
+  const f = document.getElementById('group-form');
+  const open = f.style.display === 'block';
+  f.style.display = open ? 'none' : 'block';
+  if (!open) document.getElementById('gf-name').focus();
+}
+
+function autoGroupSlug() {
+  document.getElementById('gf-slug').value = document.getElementById('gf-name').value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+async function addGroup() {
+  const name = document.getElementById('gf-name').value.trim();
+  const slug = document.getElementById('gf-slug').value.trim();
+  const errEl = document.getElementById('group-error');
+  errEl.style.display = 'none';
+  if (!name || !slug) { errEl.textContent = 'Name and slug are required.'; errEl.style.display = 'block'; return; }
+  const res = await fetch('/api/admin?resource=groups', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' }, body: JSON.stringify({ name, slug }) });
+  const data = await res.json();
+  if (!res.ok || data.error) { errEl.textContent = data.error || 'Failed'; errEl.style.display = 'block'; return; }
+  document.getElementById('gf-name').value = '';
+  document.getElementById('gf-slug').value = '';
+  document.getElementById('group-form').style.display = 'none';
+  toast('Group created');
+  loadGroups();
+  loadExperts();
+}
+
+async function deleteGroup(id, name) {
+  if (!confirm(`Delete group "${name}" and all its experts? This cannot be undone.`)) return;
+  await fetch('/api/admin?resource=groups', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' }, body: JSON.stringify({ id }) });
+  toast('Group deleted');
+  loadGroups();
+  loadExperts();
+}
+
+// ── Experts ──────────────────────────────────────────────────────
+let _allExperts = [];
+
+async function loadExperts() {
+  const res = await fetch('/api/admin?resource=experts', { headers: { 'x-requested-with': 'xmlhttprequest' } });
+  _allExperts = await res.json();
+  filterExperts();
+}
+
+function filterExperts() {
+  const group = document.getElementById('experts-filter').value;
+  const rows = group ? _allExperts.filter(e => e.provider_slug === group) : _allExperts;
+  const tbody = document.getElementById('experts-tbody');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">No demo experts yet. Add one above.</td></tr>'; return; }
+  tbody.innerHTML = rows.map(e => `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:0.625rem">
+          ${e.photo_url ? `<img src="${esc(e.photo_url)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0">` : '<div style="width:32px;height:32px;border-radius:50%;background:var(--sage-light);flex-shrink:0"></div>'}
+          <div><div class="td-name">${esc(e.name)}</div><div style="font-size:0.72rem;color:var(--ink-muted)">${esc([e.position, e.company].filter(Boolean).join(' · '))}</div></div>
+        </div>
+      </td>
+      <td><span class="badge" style="background:#f4f4f8;color:var(--ink-muted)">${esc(e.provider_name || e.provider_slug || '-')}</span></td>
+      <td style="font-size:0.8rem;color:var(--ink-muted);max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.bio || '-')}</td>
+      <td style="white-space:nowrap">${e.price_from ? `${e.price_currency || 'GBP'} ${e.price_from}` : '-'}</td>
+      <td style="font-size:0.8rem"><a href="${esc(e.booking_url || '')}" target="_blank" style="color:var(--sage);text-decoration:none">${e.booking_url ? '↗ View' : '-'}</a></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteExpert(${e.id}, '${esc(e.name)}')">Delete</button></td>
+    </tr>`).join('');
+}
+
+function toggleExpertForm() {
+  const f = document.getElementById('expert-form');
+  const open = f.style.display === 'block';
+  f.style.display = open ? 'none' : 'block';
+  if (!open) document.getElementById('ef-name').focus();
+}
+
+async function addExpert() {
+  const errEl = document.getElementById('expert-error');
+  errEl.style.display = 'none';
+  const body = {
+    name: document.getElementById('ef-name').value.trim(),
+    position: document.getElementById('ef-position').value.trim(),
+    company: document.getElementById('ef-company').value.trim(),
+    bio: document.getElementById('ef-bio').value.trim(),
+    booking_url: document.getElementById('ef-booking').value.trim(),
+    photo_url: document.getElementById('ef-photo').value.trim(),
+    price_from: parseFloat(document.getElementById('ef-price').value) || null,
+    price_currency: document.getElementById('ef-currency').value,
+    provider_slug: document.getElementById('ef-group').value,
+  };
+  if (!body.name || !body.provider_slug) { errEl.textContent = 'Name and group are required.'; errEl.style.display = 'block'; return; }
+  const res = await fetch('/api/admin?resource=experts', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' }, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (!res.ok || data.error) { errEl.textContent = data.error || 'Failed'; errEl.style.display = 'block'; return; }
+  ['ef-name','ef-position','ef-company','ef-bio','ef-booking','ef-photo','ef-price'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('expert-form').style.display = 'none';
+  toast('Expert added');
+  loadExperts();
+}
+
+async function deleteExpert(id, name) {
+  if (!confirm(`Delete "${name}"?`)) return;
+  await fetch('/api/admin?resource=experts', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' }, body: JSON.stringify({ id }) });
+  toast('Expert deleted');
+  loadExperts();
 }
 
 // Check IP access on load

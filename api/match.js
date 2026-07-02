@@ -30,8 +30,10 @@ export default async function handler(req, res) {
 
     let pubConfig = { color: '#e6a820', accent: '#e6a820', size: 'medium' };
 
+    let enabledPartners = null; // null = homepage demo
+
     if (publisher) {
-      const [pub] = await sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`;
+      const [pub] = await sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`;
       if (!pub) {
         // Publisher deactivated or unknown - don't serve the widget
         return res.status(200).json({ matches: [] });
@@ -45,6 +47,7 @@ export default async function handler(req, res) {
       };
       sensitivityInstruction = sensitivityMap[pub.match_sensitivity] ?? sensitivityMap.balanced;
       pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium' };
+      enabledPartners = pub.enabled_partners || ['openintro'];
     }
 
     const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
@@ -99,7 +102,8 @@ export default async function handler(req, res) {
         SELECT e.id, e.name, e.bio, e.description_long, e.photo_url, e.position, e.company,
                e.topics, e.services, e.languages, e.price_from, e.price_currency,
                e.booking_url, e.location_country,
-               p.name AS provider_name, p.slug AS provider_slug
+               p.name AS provider_name, p.slug AS provider_slug,
+               COALESCE(p.is_demo, false) AS is_demo_provider
         FROM experts e
         LEFT JOIN providers p ON p.id = e.provider_id
         WHERE e.active = true
@@ -107,8 +111,15 @@ export default async function handler(req, res) {
       `;
       expertsCacheTime = now;
     }
+    // Filter by group: real publishers see their enabled providers only; homepage demo sees non-demo experts
+    let experts = [...expertsCache].filter(e =>
+      enabledPartners
+        ? enabledPartners.includes(e.provider_slug || 'openintro')
+        : !e.is_demo_provider
+    );
+
     // Sort experts: same country first
-    const experts = [...expertsCache].sort((a, b) => {
+    experts = experts.sort((a, b) => {
       const aMatch = readerCountry && (a.location_country || '').toUpperCase().includes(readerCountry) ? 0 : 1;
       const bMatch = readerCountry && (b.location_country || '').toUpperCase().includes(readerCountry) ? 0 : 1;
       return aMatch - bMatch;

@@ -311,6 +311,82 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, deleted: result.length });
   }
 
+  // Groups (demo providers)
+  if (resource === 'groups') {
+    await sql`ALTER TABLE providers ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT false`.catch(() => {});
+
+    if (req.method === 'GET') {
+      const groups = await sql`SELECT id, name, slug, COALESCE(is_demo, false) AS is_demo FROM providers ORDER BY is_demo ASC, name ASC`;
+      return res.status(200).json(groups);
+    }
+
+    if (req.method === 'POST') {
+      const { name, slug } = req.body;
+      if (!name || !slug) return res.status(400).json({ error: 'Name and slug required' });
+      const [group] = await sql`
+        INSERT INTO providers (name, slug, is_demo)
+        VALUES (${name}, ${slug.toLowerCase().replace(/[^a-z0-9-]/g, '-')}, true)
+        ON CONFLICT (slug) DO NOTHING
+        RETURNING id, name, slug, is_demo
+      `;
+      return res.status(200).json(group || { error: 'Slug already exists' });
+    }
+
+    if (req.method === 'DELETE') {
+      const { id } = req.body;
+      if (!id) return res.status(400).json({ error: 'id required' });
+      const [prov] = await sql`SELECT slug FROM providers WHERE id = ${id}`;
+      if (prov?.slug === 'openintro') return res.status(400).json({ error: 'Cannot delete OpenIntro' });
+      await sql`DELETE FROM experts WHERE provider_id = ${id}`;
+      await sql`DELETE FROM providers WHERE id = ${id}`;
+      return res.status(200).json({ ok: true });
+    }
+  }
+
+  // Custom experts (demo groups only)
+  if (resource === 'experts') {
+    if (req.method === 'GET') {
+      const experts = await sql`
+        SELECT e.id, e.name, e.position, e.company, e.bio, e.photo_url, e.booking_url,
+               e.price_from, e.price_currency, e.active,
+               p.name AS provider_name, p.slug AS provider_slug
+        FROM experts e
+        LEFT JOIN providers p ON p.id = e.provider_id
+        WHERE COALESCE(p.is_demo, false) = true
+        ORDER BY p.name ASC, e.name ASC
+      `;
+      return res.status(200).json(experts);
+    }
+
+    if (req.method === 'POST') {
+      const { name, position, company, bio, photo_url, booking_url, price_from, price_currency = 'GBP', provider_slug } = req.body;
+      if (!name || !provider_slug) return res.status(400).json({ error: 'Name and group required' });
+      const [provider] = await sql`SELECT id FROM providers WHERE slug = ${provider_slug} AND is_demo = true LIMIT 1`;
+      if (!provider) return res.status(400).json({ error: 'Group not found' });
+      const [expert] = await sql`
+        INSERT INTO experts (name, position, company, bio, photo_url, booking_url, price_from, price_currency, provider_id, active)
+        VALUES (${name}, ${position || null}, ${company || null}, ${bio || null},
+                ${photo_url || null}, ${booking_url || null}, ${price_from || null}, ${price_currency},
+                ${provider.id}, true)
+        RETURNING id, name
+      `;
+      return res.status(200).json(expert);
+    }
+
+    if (req.method === 'DELETE') {
+      const { id } = req.body;
+      if (!id) return res.status(400).json({ error: 'id required' });
+      const [check] = await sql`
+        SELECT e.id FROM experts e
+        LEFT JOIN providers p ON p.id = e.provider_id
+        WHERE e.id = ${id} AND COALESCE(p.is_demo, false) = true
+      `;
+      if (!check) return res.status(400).json({ error: 'Not a demo expert' });
+      await sql`DELETE FROM experts WHERE id = ${id}`;
+      return res.status(200).json({ ok: true });
+    }
+  }
+
   return res.status(404).json({ error: 'Unknown resource' });
 }
 
