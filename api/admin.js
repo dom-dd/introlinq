@@ -331,8 +331,8 @@ export default async function handler(req, res) {
         const [existing] = await sql`SELECT id FROM providers WHERE slug = ${cleanSlug}`;
         if (existing) return res.status(400).json({ error: 'A group with this slug already exists' });
         const [group] = await sql`
-          INSERT INTO providers (name, slug, logo_url, website_url, is_demo)
-          VALUES (${name}, ${cleanSlug}, ${logo_url || null}, ${website_url || null}, true)
+          INSERT INTO providers (name, slug, logo_url, website_url, is_demo, connection_type)
+          VALUES (${name}, ${cleanSlug}, ${logo_url || null}, ${website_url || null}, true, 'manual')
           RETURNING id, name, slug, logo_url, website_url, is_demo
         `;
         return res.status(200).json(group);
