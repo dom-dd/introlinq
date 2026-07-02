@@ -383,6 +383,31 @@ export default async function handler(req, res) {
       return res.status(200).json(expert);
     }
 
+    if (req.method === 'PATCH') {
+      const { id, name, position, company, bio, photo_url, booking_url, price_from, price_currency } = req.body || {};
+      if (!id) return res.status(400).json({ error: 'id required' });
+      const [check] = await sql`
+        SELECT e.id FROM experts e
+        LEFT JOIN providers p ON p.id = e.provider_id
+        WHERE e.id = ${id} AND COALESCE(p.is_demo, false) = true
+      `;
+      if (!check) return res.status(400).json({ error: 'Not a demo expert' });
+      const [updated] = await sql`
+        UPDATE experts SET
+          name = ${name},
+          position = ${position || null},
+          company = ${company || null},
+          bio = ${bio || null},
+          photo_url = ${photo_url || null},
+          booking_url = ${booking_url || null},
+          price_from = ${price_from || null},
+          price_currency = ${price_currency || 'USD'}
+        WHERE id = ${id}
+        RETURNING id, name
+      `;
+      return res.status(200).json(updated);
+    }
+
     if (req.method === 'DELETE') {
       const { id } = req.body;
       if (!id) return res.status(400).json({ error: 'id required' });
