@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building a Two-Sided Marketplace: From Zero to Liquidity | IntroLinq × MentorCruise</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:#1a1a2e;background:#fff;line-height:1.6}
+.banner{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);color:#fff;padding:0.875rem 2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.banner-left{display:flex;align-items:center;gap:0.875rem}
+.banner-logo{height:26px}
+.banner-divider{width:1px;height:18px;background:rgba(255,255,255,0.25)}
+.banner-name{color:#fff;font-size:0.9rem;font-weight:600}
+.badge{background:#e6a820;color:#1a1a2e;font-size:0.6875rem;font-weight:700;padding:0.25rem 0.625rem;border-radius:100px;letter-spacing:0.05em;text-transform:uppercase;white-space:nowrap}
+.container{max-width:740px;margin:0 auto;padding:3rem 1.5rem 4rem}
+.tip{background:#fffbf0;border:1px solid #f0d98a;border-radius:10px;padding:1rem 1.25rem;margin-bottom:2.5rem;display:flex;align-items:flex-start;gap:0.75rem}
+.tip-icon{font-size:1.1rem;flex-shrink:0;margin-top:0.1rem}
+.tip-text{font-size:0.875rem;color:#6b4f00;line-height:1.55}
+.tip-text strong{color:#4a3600}
+.category{color:#e6a820;font-weight:700;text-transform:uppercase;font-size:0.72rem;letter-spacing:0.08em;margin-bottom:0.5rem}
+h1{font-size:1.9rem;font-weight:800;line-height:1.2;margin-bottom:0.875rem;color:#1a1a2e}
+.lead{font-size:1.1rem;color:#555;margin-bottom:2rem;padding-bottom:2rem;border-bottom:1px solid #eee;line-height:1.7}
+h2{font-size:1.2rem;font-weight:700;margin:2rem 0 0.75rem;color:#1a1a2e}
+p{margin-bottom:1.25rem;color:#333;line-height:1.8}
+footer{text-align:center;padding:2rem;color:#aaa;font-size:0.8rem;border-top:1px solid #eee;margin-top:2rem}
+footer a{color:#e6a820;text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <div class="banner-left">
+    <img src="https://www.introlinq.com/favicon.svg" class="banner-logo" alt="IntroLinq">
+    <div class="banner-divider"></div>
+    <div class="banner-name">IntroLinq × MentorCruise</div>
+  </div>
+  <span class="badge">Private Demo</span>
+</div>
+
+<div class="container">
+  <div class="tip">
+    <div class="tip-icon">👆</div>
+    <div class="tip-text"><strong>You're viewing a private IntroLinq demo.</strong> As you read the article below, hover over any <span style="background:#fff3cd;padding:0 3px;border-radius:3px">gold-highlighted text</span> to see relevant MentorCruise experts you can book a 1:1 call with. This is a live preview of how IntroLinq appears on any article or blog post.</div>
+  </div>
+
+  <div class="category">Product & Marketplaces</div>
+  <h1>Building a Two-Sided Marketplace: From Zero to Liquidity</h1>
+  <p class="lead">Two-sided marketplaces are among the most defensible businesses in technology — but they're also among the hardest to start. You need supply to attract demand, and demand to attract supply, and neither will come without the other. Solving this chicken-and-egg problem is the central challenge of marketplace building. Here's how successful marketplace founders approach it.</p>
+
+  <h2>The cold start problem and why it kills most marketplace ideas</h2>
+  <p>Every marketplace faces a version of the same problem at launch: an empty platform is useless to both sides. Buyers leave because there's no inventory. Sellers leave because there are no buyers. And without a critical mass of both, you can't generate the transactions that prove your model works.</p>
+  <p>The marketplaces that survive this phase tend to use one of two approaches. The first is to constrain the market geographically — launch in a single city, a single vertical, or a single institution until you achieve local density, then expand. The second is to seed supply manually before opening demand — curating your first cohort of sellers, often personally recruiting them, and ensuring the quality is high enough that when your first buyers arrive, they have a compelling experience.</p>
+
+  <h2>Designing for liquidity: the metrics that matter most early</h2>
+  <p>Liquidity — the probability that someone who comes to your marketplace finds what they're looking for and completes a transaction — is the key metric in the early days. Not GMV, not registered users, not listing count. Liquidity. If 40% of buyers who arrive can find and complete a transaction, you have something worth scaling. If it's 4%, you don't yet.</p>
+  <p>Designing for high early liquidity often means constraining supply aggressively. A marketplace with 100 excellent listings in one category will outperform one with 10,000 mediocre listings across 50 categories. Focus and curation — at least in the early phase — beat breadth.</p>
+
+  <h2>Product strategy in the early marketplace phase</h2>
+  <p>Early marketplace product decisions have outsized consequences. Decisions about whether to charge on listing, on transaction, or on subscription; whether to use instant booking or request-to-book; whether to build messaging tools or point to external channels — these shape the user experience, the economic model, and the data you accumulate about your users' behaviour.</p>
+  <p>The best marketplace product leaders resist the temptation to build features before understanding the core transaction. Every feature you build is a hypothesis about what makes the core exchange work better. Test those hypotheses with the minimum viable product before committing engineering resources to a full build. Talk to your users obsessively, especially in the first 12 months, and let their behaviour — not their stated preferences — guide your roadmap decisions.</p>
+
+  <h2>Preventing off-platform leakage</h2>
+  <p>One of the most common threats to marketplace economics is leakage — users who discover each other on your platform and then transact offline to avoid paying your fee. At low take rates, this is less of a concern. At higher take rates, it becomes an existential threat.</p>
+  <p>The best defences against leakage are providing value that makes staying on-platform worthwhile: payments infrastructure, identity verification, dispute resolution, reviews and social proof, scheduling tools, and platform protections that give both sides confidence they couldn't have outside the marketplace. The goal is to make on-platform transacting so much better than off-platform that users choose to pay the fee rather than absorb the friction of going around you.</p>
+
+  <h2>Scaling supply quality as you grow</h2>
+  <p>The second hardest thing in marketplace building — after the cold start — is maintaining supply quality as you scale. The first 100 providers you recruit tend to be excellent because you recruited them personally. The next 10,000 come from referrals, organic discovery, and marketing, and quality variance increases dramatically.</p>
+  <p>Building a supply quality framework early — whether through algorithmic ranking, human curation, review systems, or certification programmes — gives you a mechanism to surface the best supply to demand even as the total number of listings grows. Demand users don't want more options; they want better options. Consistently connecting them with excellent providers is what drives retention and word-of-mouth growth.</p>
+
+  <h2>The technical architecture of a marketplace platform</h2>
+  <p>From an engineering standpoint, marketplaces are complex systems. They require search and discovery infrastructure, trust and payments rails, communication tools, moderation systems, and analytics pipelines that track both sides of the transaction. Building all of this from scratch is expensive and slow — and typically unnecessary in the early stages.</p>
+  <p>Modern marketplaces should use Stripe Connect for payments, standard cloud infrastructure for search and messaging, and off-the-shelf identity and KYC tools where possible. The custom engineering work should be reserved for the parts of the product that are genuinely differentiating — usually the matching algorithm, the review and ranking system, and the parts of the experience that make your marketplace feel different from a generic Craigslist.</p>
+</div>
+
+<footer>Private demo · <a href="https://www.introlinq.com">IntroLinq</a> × <a href="https://mentorcruise.com" target="_blank">MentorCruise</a> · Not for public distribution</footer>
+
+<script src="https://www.introlinq.com/widget.js" data-publisher="demo-mentorcruise"></script>
+</body>
+</html>

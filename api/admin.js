@@ -137,15 +137,16 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { name, email, slug, domain, notes, contact_first_name, contact_last_name, revenue_share } = req.body;
+      const { name, email, slug, domain, notes, contact_first_name, contact_last_name, revenue_share, enabled_partners, match_sensitivity } = req.body;
       if (!name || !email || !slug) {
         return res.status(400).json({ error: 'name, email and slug are required' });
       }
       const clean = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
+      await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS enabled_partners TEXT[]`.catch(() => {});
       try {
         const [pub] = await sql`
-          INSERT INTO publishers (name, email, slug, domain, notes, contact_first_name, contact_last_name, revenue_share)
-          VALUES (${name}, ${email}, ${clean}, ${domain || null}, ${notes || null}, ${contact_first_name || null}, ${contact_last_name || null}, ${revenue_share ?? 0.70})
+          INSERT INTO publishers (name, email, slug, domain, notes, contact_first_name, contact_last_name, revenue_share, enabled_partners, match_sensitivity)
+          VALUES (${name}, ${email}, ${clean}, ${domain || null}, ${notes || null}, ${contact_first_name || null}, ${contact_last_name || null}, ${revenue_share ?? 0.70}, ${enabled_partners || null}, ${match_sensitivity || 'balanced'})
           RETURNING *
         `;
 
@@ -175,7 +176,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PATCH') {
-      const { id, active, match_power, match_sensitivity, widget_color, accent_color, widget_size } = req.body;
+      const { id, active, match_power, match_sensitivity, widget_color, accent_color, widget_size, enabled_partners } = req.body;
       const [pub] = await sql`
         UPDATE publishers SET
           active = COALESCE(${active ?? null}, active),
@@ -183,7 +184,8 @@ export default async function handler(req, res) {
           match_sensitivity = COALESCE(${match_sensitivity ?? null}, match_sensitivity),
           widget_color = COALESCE(${widget_color ?? null}, widget_color),
           accent_color = COALESCE(${accent_color ?? null}, accent_color),
-          widget_size = COALESCE(${widget_size ?? null}, widget_size)
+          widget_size = COALESCE(${widget_size ?? null}, widget_size),
+          enabled_partners = COALESCE(${enabled_partners ?? null}, enabled_partners)
         WHERE id = ${id} RETURNING *
       `;
       // Clear match cache for this publisher so new settings take effect immediately
@@ -321,6 +323,25 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const groups = await sql`SELECT id, name, slug, logo_url, website_url, COALESCE(is_demo, false) AS is_demo FROM providers ORDER BY is_demo ASC, name ASC`;
       return res.status(200).json(groups);
+    }
+
+    if (req.method === 'PATCH') {
+      try {
+        const { id, name, logo_url, website_url } = req.body || {};
+        if (!id || !name) return res.status(400).json({ error: 'id and name required' });
+        const [updated] = await sql`
+          UPDATE providers SET
+            name = ${name},
+            logo_url = ${logo_url || null},
+            website_url = ${website_url || null}
+          WHERE id = ${id}
+          RETURNING id, name, slug, logo_url, website_url, is_demo
+        `;
+        return res.status(200).json(updated);
+      } catch (e) {
+        console.error('Groups PATCH error:', e);
+        return res.status(500).json({ error: e.message || 'Failed to update group' });
+      }
     }
 
     if (req.method === 'POST') {
