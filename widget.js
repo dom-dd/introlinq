@@ -341,8 +341,8 @@
       var ilLogo = '<img src="https://www.introlinq.com/favicon.svg" alt="IntroLinq" style="width:11px;height:11px;border-radius:2px;vertical-align:middle;margin-right:3px">';
       var s = 'font-size:8.5px;color:#8888a8;font-family:Inter,system-ui,sans-serif;text-decoration:none;display:flex;align-items:center;gap:2px';
       pv.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-top:6px;padding-top:6px;border-top:1px solid rgba(26,26,46,0.07)';
-      pv.innerHTML = '<a href="https://www.introlinq.com" target="_blank" rel="noopener" style="' + s + '">' + ilLogo + 'Powered by IntroLinq</a>'
-        + '<a href="' + cfg.url + '" target="_blank" rel="noopener" style="' + s + '">' + providerLogoHtml + cfg.name + '</a>';
+      pv.innerHTML = '<a href="' + cfg.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with ' + providerLogoHtml + cfg.name + '</a>'
+        + '<a href="https://www.introlinq.com" target="_blank" rel="noopener" style="' + s + '">' + ilLogo + 'IntroLinq</a>';
     }
   }
 
