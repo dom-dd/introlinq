@@ -329,12 +329,21 @@
 
     var pv = document.getElementById('il-pv');
     if (pv) {
-      var providerUrls = { openintro: 'https://open-intro.com' };
+      var providerConfig = {
+        openintro: { name: 'OpenIntro', url: 'https://open-intro.com', logo: 'https://www.introlinq.com/networks%20logos/OpenIntro-icon.png' },
+        'intro-co': { name: 'Intro.co', url: 'https://intro.co', logo: 'https://www.google.com/s2/favicons?domain=intro.co&sz=32' },
+        topmate:    { name: 'Topmate',  url: 'https://topmate.io', logo: 'https://www.google.com/s2/favicons?domain=topmate.io&sz=32' },
+      };
       var providerSlug = e.provider_slug || 'openintro';
-      var providerName = e.provider_name || 'OpenIntro';
-      var providerUrl = providerUrls[providerSlug] || '#';
-      var linkStyle = 'color:#4a4a6a;text-decoration:none;font-size:8px';
-      pv.innerHTML = '<a href="https://www.introlinq.com" target="_blank" rel="noopener" style="' + linkStyle + '">IntroLinq</a><span style="color:#4a4a6a;font-size:8px"> in partnership with </span><a href="' + providerUrl + '" target="_blank" rel="noopener" style="' + linkStyle + '">' + providerName + '</a>';
+      var cfg = providerConfig[providerSlug] || { name: e.provider_name || providerSlug, url: '#', logo: null };
+      var providerLogoHtml = cfg.logo
+        ? '<img src="' + cfg.logo + '" alt="' + cfg.name + '" style="width:13px;height:13px;object-fit:contain;border-radius:2px;vertical-align:middle;margin-right:3px">'
+        : '';
+      var ilLogo = '<img src="https://www.introlinq.com/favicon.svg" alt="IntroLinq" style="width:11px;height:11px;border-radius:2px;vertical-align:middle;margin-right:3px">';
+      var s = 'font-size:8.5px;color:#8888a8;font-family:Inter,system-ui,sans-serif;text-decoration:none;display:flex;align-items:center;gap:2px';
+      pv.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-top:6px;padding-top:6px;border-top:1px solid rgba(26,26,46,0.07)';
+      pv.innerHTML = '<a href="https://www.introlinq.com" target="_blank" rel="noopener" style="' + s + '">' + ilLogo + 'Powered by IntroLinq</a>'
+        + '<a href="' + cfg.url + '" target="_blank" rel="noopener" style="' + s + '">' + providerLogoHtml + cfg.name + '</a>';
     }
   }
 
