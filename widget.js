@@ -42,6 +42,18 @@
 
     if (!el || text.length < 150) return;
 
+    if (window.IL_PRELOADED_MATCHES) {
+      var pre = window.IL_PRELOADED_MATCHES;
+      if (pre.matches && pre.matches.length) {
+        var pcfg = pre.config || {};
+        preloadPhotos(pre.matches);
+        injectStyles(pcfg);
+        var ppopup = createPopup(pcfg);
+        highlightMatches(el, pre.matches, ppopup, pcfg);
+      }
+      return;
+    }
+
     fetch(API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
