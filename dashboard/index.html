@@ -345,6 +345,17 @@ tr:last-child td{border-bottom:none}
 
       <div class="section">
         <div class="section-header">
+          <div class="section-title">ExpertBoard</div>
+          <div class="section-sub">A browsable directory of your experts - paste anywhere on your site to let readers find and book directly</div>
+        </div>
+        <div class="embed-box">
+          <div class="embed-code" id="board-embed-display"></div>
+          <button class="copy-btn" onclick="copyBoardEmbed()">Copy code</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
           <div class="section-title">Appearance &amp; behaviour</div>
           <div class="section-sub">Changes save instantly</div>
         </div>
@@ -549,6 +560,8 @@ async function loadDashboard() {
   document.getElementById('embed-display').textContent = embedCode;
   const gtmCode = `<script>window.IL_PUBLISHER_ID = '${esc(d.publisher.slug)}';<\/script>\n<script src="https://www.introlinq.com/widget.js"><\/script>`;
   document.getElementById('gtm-embed-display').textContent = gtmCode;
+  const boardCode = `<script src="https://www.introlinq.com/expertboard.js" data-publisher="${esc(d.publisher.slug)}"><\/script>`;
+  document.getElementById('board-embed-display').textContent = boardCode;
   document.getElementById('install-guide-link').href = `/install?pub=${encodeURIComponent(d.publisher.slug)}`;
   const p = d.publisher;
   settings.color = p.widget_color || '#e6a820';
@@ -714,6 +727,11 @@ function copyEmbed() {
 function copyGtmEmbed() {
   navigator.clipboard.writeText(document.getElementById('gtm-embed-display').textContent.trim());
   toast('GTM code copied!');
+}
+
+function copyBoardEmbed() {
+  navigator.clipboard.writeText(document.getElementById('board-embed-display').textContent.trim());
+  toast('ExpertBoard code copied!');
 }
 
 function copySetupCode() {
