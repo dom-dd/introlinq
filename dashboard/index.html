@@ -424,6 +424,16 @@ tr:last-child td{border-bottom:none}
           <div class="stat-label">Total earnings</div>
           <div class="stat-value" id="stat-earnings" style="font-size:1.6rem;padding-top:0.15rem">-</div>
           <div class="stat-sub">your cumulative payout</div>
+          <div id="payout-progress" style="display:none;margin-top:0.75rem">
+            <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--ink-muted);margin-bottom:0.3rem">
+              <span id="payout-progress-label">$0 of $50 minimum</span>
+              <span id="payout-progress-pct">0%</span>
+            </div>
+            <div style="height:5px;background:#eee;border-radius:100px;overflow:hidden">
+              <div id="payout-progress-bar" style="height:100%;background:var(--sage);border-radius:100px;transition:width .4s ease;width:0%"></div>
+            </div>
+            <div id="payout-ready" style="display:none;margin-top:0.4rem;font-size:0.7rem;font-weight:600;color:var(--sage)">✓ Ready for payout</div>
+          </div>
         </div>
       </div>
 
@@ -439,7 +449,7 @@ tr:last-child td{border-bottom:none}
             <input type="email" class="payout-input" id="payment-email-input" placeholder="your@wise.com">
             <button class="payout-save" onclick="savePaymentEmail()">Save</button>
           </div>
-          <div class="payout-hint">Payouts are processed monthly. You'll receive an email confirmation when a transfer is sent.</div>
+          <div class="payout-hint">Payouts are processed monthly once you reach the $50 minimum. You'll receive an email confirmation when a transfer is sent.</div>
         </div>
       </div>
 
@@ -562,6 +572,16 @@ async function loadDashboard() {
     earningsEl.innerHTML = byCurrency.map(r =>
       `<div style="font-size:${byCurrency.length > 1 ? '1.25rem' : '2rem'};line-height:1.6">${new Intl.NumberFormat('en-US', { style:'currency', currency: r.currency }).format(r.payout)}</div>`
     ).join('');
+    const primary = byCurrency[0];
+    const MINIMUM = 50;
+    const earned = primary.payout || 0;
+    const pct = Math.min(100, Math.round((earned / MINIMUM) * 100));
+    const fmt = new Intl.NumberFormat('en-US', { style:'currency', currency: primary.currency });
+    document.getElementById('payout-progress').style.display = 'block';
+    document.getElementById('payout-progress-label').textContent = `${fmt.format(earned)} of ${fmt.format(MINIMUM)} minimum`;
+    document.getElementById('payout-progress-pct').textContent = pct + '%';
+    document.getElementById('payout-progress-bar').style.width = pct + '%';
+    if (earned >= MINIMUM) document.getElementById('payout-ready').style.display = 'block';
   } else {
     earningsEl.textContent = '-';
   }
