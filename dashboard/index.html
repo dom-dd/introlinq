@@ -334,6 +334,14 @@ tr:last-child td{border-bottom:none}
           <div class="embed-code" id="embed-display"></div>
           <button class="copy-btn" onclick="copyEmbed()">Copy code</button>
         </div>
+        <div style="margin-top:1rem;padding:0.875rem 1rem;background:#f8faf9;border:1px solid var(--border);border-radius:10px">
+          <div style="font-size:0.8125rem;font-weight:600;color:var(--ink);margin-bottom:0.25rem">Using Google Tag Manager?</div>
+          <div style="font-size:0.775rem;color:var(--ink-muted);margin-bottom:0.75rem">Add a Custom HTML tag in GTM and paste this instead. Your widget settings (colour, size, etc.) still apply automatically.</div>
+          <div class="embed-box">
+            <div class="embed-code" id="gtm-embed-display"></div>
+            <button class="copy-btn" onclick="copyGtmEmbed()">Copy</button>
+          </div>
+        </div>
       </div>
 
       <div class="section">
@@ -530,6 +538,8 @@ async function loadDashboard() {
 
   // Widget tab
   document.getElementById('embed-display').textContent = embedCode;
+  const gtmCode = `<script>window.IL_PUBLISHER_ID = '${esc(d.publisher.slug)}';<\/script>\n<script src="https://www.introlinq.com/widget.js"><\/script>`;
+  document.getElementById('gtm-embed-display').textContent = gtmCode;
   document.getElementById('install-guide-link').href = `/install?pub=${encodeURIComponent(d.publisher.slug)}`;
   const p = d.publisher;
   settings.color = p.widget_color || '#e6a820';
@@ -680,6 +690,11 @@ async function savePaymentEmail() {
 function copyEmbed() {
   navigator.clipboard.writeText(document.getElementById('embed-display').textContent.trim());
   toast('Embed code copied!');
+}
+
+function copyGtmEmbed() {
+  navigator.clipboard.writeText(document.getElementById('gtm-embed-display').textContent.trim());
+  toast('GTM code copied!');
 }
 
 function copySetupCode() {
