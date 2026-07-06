@@ -54,6 +54,7 @@
     '#'+uid+' .ilc-card:hover{box-shadow:0 4px 18px rgba(0,0,0,0.09);transform:translateY(-2px)}',
     '#'+uid+' .ilc-photo{width:52px!important;height:52px!important;min-width:52px;border-radius:50%!important;object-fit:cover;background:#edf5f0}',
     '#'+uid+' .ilc-name{font-weight:600;font-size:0.8rem;color:#1a1a2e;line-height:1.3;width:100%}',
+    '#'+uid+' .ilc-headline{font-size:0.7rem;font-style:italic;color:var(--ilc-color);line-height:1.3;width:100%;font-weight:500}',
     '#'+uid+' .ilc-position{font-size:0.7rem;color:#8888a8;line-height:1.3;width:100%}',
     '#'+uid+' .ilc-company{font-size:0.675rem;color:#aaaacc;line-height:1.3;width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}',
     '#'+uid+' .ilc-tags{display:flex;flex-wrap:wrap;gap:0.25rem;justify-content:center;margin-top:0.125rem}',
@@ -93,6 +94,7 @@
       var flagHtml = iso ? '<img src="https://hatscripts.github.io/circle-flags/flags/'+iso.toLowerCase()+'.svg" style="width:11px;height:11px;border-radius:50%;vertical-align:middle;margin-left:2px" alt="">' : '';
       var price = e.price_from ? 'From '+(e.price_currency||'USD')+' '+e.price_from : '';
       var tags = (e.topics || []).slice(0, 2);
+      var headline = (e.headlines || {})[_lang] || (e.headlines || {})['en'] || '';
       var bookUrl = e.booking_url
         ? TRACK+'&pub='+encodeURIComponent(PUB)
           +'&expert_id='+encodeURIComponent(e.id||'')
@@ -104,6 +106,7 @@
       return '<div class="ilc-card">'
         +'<img class="ilc-photo" src="'+esc(e.photo_url||fallback)+'" onerror="this.src=\''+fallback+'\'" alt="'+esc(e.name)+'">'
         +'<div class="ilc-name">'+esc(e.name)+flagHtml+'</div>'
+        +(headline?'<div class="ilc-headline">'+esc(headline)+'</div>':'')
         +(e.position?'<div class="ilc-position">'+esc(e.position)+'</div>':'')
         +(e.company?'<div class="ilc-company">'+esc(e.company)+'</div>':'')
         +(tags.length?'<div class="ilc-tags">'+tags.map(function(t){return '<span class="ilc-tag">'+esc(t)+'</span>';}).join('')+'</div>':'')

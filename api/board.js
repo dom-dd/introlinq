@@ -20,6 +20,7 @@ export default async function handler(req, res) {
   const experts = await sql`
     SELECT e.id, e.name, e.position, e.company, e.bio, e.photo_url, e.booking_url,
            e.price_from, e.price_currency, e.topics, e.languages, e.location_country,
+           COALESCE(e.headlines, '{}'::jsonb) AS headlines,
            p.slug AS provider_slug, p.website_url AS provider_url
     FROM experts e
     JOIN providers p ON p.id = e.provider_id

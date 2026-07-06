@@ -72,6 +72,7 @@
     '.ilb-card-top{display:flex;gap:0.75rem;align-items:center}',
     '.ilb-photo{width:48px!important;height:48px!important;min-width:48px;border-radius:50%!important;object-fit:cover;background:#edf5f0}',
     '.ilb-name{font-weight:600;font-size:0.875rem;color:#1a1a2e;line-height:1.3}',
+    '.ilb-headline{font-size:0.75rem;font-style:italic;color:var(--ilb-color);line-height:1.3;margin-top:1px;font-weight:500}',
     '.ilb-role{font-size:0.75rem;color:#6a6a8a;margin-top:2px;line-height:1.4}',
     '.ilb-topics{display:flex;flex-wrap:wrap;gap:0.3rem}',
     '.ilb-topic{font-size:0.675rem;padding:0.2rem 0.5rem;border-radius:100px;background:#f4f4f8;color:#4a4a6a;font-weight:500}',
@@ -170,6 +171,7 @@
 
     grid.innerHTML = filtered.map(function(e) {
       var fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=96&name=' + encodeURIComponent(e.name);
+      var headline = (e.headlines || {})[_lang] || (e.headlines || {})['en'] || '';
       var role = [e.position, e.company].filter(Boolean).join(' · ');
       var topics = (e.topics || []).slice(0, 3);
       var iso = countryToISO(e.location_country || '');
@@ -190,6 +192,7 @@
         + '<img class="ilb-photo" src="' + esc(e.photo_url || fallback) + '" onerror="this.src=\'' + fallback + '\'" alt="' + esc(e.name) + '">'
         + '<div>'
         + '<div class="ilb-name">' + esc(e.name) + flagHtml + '</div>'
+        + (headline ? '<div class="ilb-headline">' + esc(headline) + '</div>' : '')
         + (role ? '<div class="ilb-role">' + esc(role) + '</div>' : '')
         + '</div></div>'
         + (topics.length ? '<div class="ilb-topics">' + topics.map(function(t){ return '<span class="ilb-topic">'+esc(t)+'</span>'; }).join('') + '</div>' : '')

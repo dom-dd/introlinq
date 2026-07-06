@@ -493,6 +493,27 @@ tr:hover td{background:rgba(0,0,0,0.01)}
         </div>
       </div>
 
+      <!-- Expert Headlines -->
+      <div class="section">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Expert Headlines</div>
+          </div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <select id="hl-provider-filter" class="form-input" style="width:180px;padding:0.4rem 0.75rem;font-size:0.8125rem" onchange="loadHeadlines()">
+              <option value="openintro">OpenIntro</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="generateMissingHeadlines()" id="hl-generate-btn">✨ Generate missing</button>
+          </div>
+        </div>
+        <div class="section-body" style="overflow-x:auto">
+          <table style="min-width:600px">
+            <thead><tr><th>Expert</th><th>Headline</th><th></th></tr></thead>
+            <tbody id="headlines-tbody"><tr><td colspan="3" class="empty">Select a provider above to load experts.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
 
     <!-- Tools tab -->
@@ -560,6 +581,7 @@ function switchTab(name, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'experts') loadHeadlines();
 }
 
 async function loadGlobalLogs() {
@@ -914,6 +936,12 @@ async function loadGroups() {
   const current = filterEl.value;
   filterEl.innerHTML = '<option value="">All groups</option>' + demoGroups.map(g => `<option value="${esc(g.slug)}" ${g.slug === current ? 'selected' : ''}>${esc(g.name)}</option>`).join('');
   formEl.innerHTML = '<option value="">Select group...</option>' + demoGroups.map(g => `<option value="${esc(g.slug)}">${esc(g.name)}</option>`).join('');
+
+  // Populate headline provider filter
+  const hlFilter = document.getElementById('hl-provider-filter');
+  const hlCurrent = hlFilter.value;
+  hlFilter.innerHTML = _allGroups.map(g => `<option value="${esc(g.slug)}" ${g.slug === hlCurrent ? 'selected' : ''}>${esc(g.name)}</option>`).join('');
+  if (!hlCurrent) hlFilter.value = 'openintro';
 }
 
 function toggleGroupForm() {
@@ -1213,6 +1241,14 @@ document.getElementById('group-edit-overlay').addEventListener('click', function
       <label class="form-label">Bio</label>
       <textarea class="form-input" id="em-bio" rows="4" style="resize:vertical;font-family:inherit"></textarea>
     </div>
+    <div class="form-group" style="margin-bottom:0.875rem">
+      <label class="form-label">Headline <span style="color:var(--ink-muted);font-weight:400;font-size:0.75rem">— punchy one-liner on cards (e.g. "£500m exit")</span></label>
+      <div style="display:flex;gap:0.5rem">
+        <input class="form-input" id="em-headline" placeholder="e.g. £500m exit" style="flex:1">
+        <button type="button" onclick="generateHeadlineForEdit()" id="em-headline-btn" style="padding:0 0.875rem;background:#f4f4f8;border:1.5px solid #e4e4ee;border-radius:8px;font-size:0.75rem;cursor:pointer;white-space:nowrap;color:var(--ink);font-family:inherit">✨ Auto</button>
+      </div>
+      <div id="em-headline-status" style="font-size:0.75rem;color:var(--green,#2e7d32);margin-top:0.25rem;display:none"></div>
+    </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Price from</label>
@@ -1250,6 +1286,8 @@ function editExpert(id) {
   document.getElementById('em-bio').value = e.bio || '';
   document.getElementById('em-price').value = e.price_from || '';
   document.getElementById('em-currency').value = e.price_currency || 'USD';
+  document.getElementById('em-headline').value = (e.headlines && e.headlines.en) || '';
+  document.getElementById('em-headline-status').style.display = 'none';
   document.getElementById('em-error').style.display = 'none';
   updatePhotoPreview();
   const overlay = document.getElementById('expert-edit-overlay');
@@ -1286,6 +1324,23 @@ async function saveExpert() {
     const res = await fetch('/api/admin?resource=experts', { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' }, body: JSON.stringify(body) });
     const data = await res.json();
     if (!res.ok || data.error) { errEl.textContent = data.error || 'Failed'; errEl.style.display = 'block'; return; }
+
+    // If headline changed, save + translate in background
+    const headlineVal = document.getElementById('em-headline').value.trim();
+    const existingEn = (_allExperts.find(x => x.id === _editingExpertId)?.headlines || {}).en || '';
+    if (headlineVal !== existingEn) {
+      const statusEl = document.getElementById('em-headline-status');
+      statusEl.textContent = '🌍 Translating…'; statusEl.style.display = 'block';
+      fetch('/api/admin?resource=headlines', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+        body: JSON.stringify({ expert_id: _editingExpertId, headline: headlineVal })
+      }).then(r => r.json()).then(d => {
+        if (d.ok) { statusEl.textContent = '✓ Translated to 7 languages'; loadExperts(); }
+        else statusEl.textContent = '⚠ Translation failed: ' + (d.error || 'unknown');
+      }).catch(() => { statusEl.textContent = '⚠ Translation request failed'; });
+    }
+
     closeEditModal();
     toast('Expert updated');
     loadExperts();
@@ -1298,6 +1353,108 @@ async function saveExpert() {
 document.getElementById('expert-edit-overlay').addEventListener('click', function(e) {
   if (e.target === this) closeEditModal();
 });
+
+// ── Expert Headlines ────────────────────────────────────────────────
+let _hlExperts = [];
+
+async function loadHeadlines() {
+  const provider = document.getElementById('hl-provider-filter').value;
+  if (!provider) return;
+  const tbody = document.getElementById('headlines-tbody');
+  tbody.innerHTML = '<tr><td colspan="3" class="empty">Loading…</td></tr>';
+  const res = await fetch(`/api/admin?resource=headlines&provider=${encodeURIComponent(provider)}`, { headers: { 'x-requested-with': 'xmlhttprequest' } });
+  _hlExperts = await res.json();
+  if (!_hlExperts.length) { tbody.innerHTML = '<tr><td colspan="3" class="empty">No experts found.</td></tr>'; return; }
+  tbody.innerHTML = _hlExperts.map(e => {
+    const hl = (e.headlines && e.headlines.en) || '';
+    const translated = e.headlines && Object.keys(e.headlines).length > 1;
+    return `<tr id="hl-row-${e.id}">
+      <td style="font-size:0.8125rem"><strong>${esc(e.name)}</strong><br><span style="font-size:0.75rem;color:var(--ink-muted)">${esc(e.position || '')}${e.company ? ' · ' + esc(e.company) : ''}</span></td>
+      <td><input class="form-input" style="padding:0.35rem 0.6rem;font-size:0.8rem" id="hl-input-${e.id}" value="${esc(hl)}" placeholder="e.g. £500m exit"></td>
+      <td style="white-space:nowrap;display:flex;gap:0.375rem;align-items:center">
+        <button class="btn btn-primary btn-sm" onclick="saveOneHeadline(${e.id})">Save</button>
+        <button class="btn btn-ghost btn-sm" onclick="autoHeadline(${e.id})" title="Auto-generate from bio">✨</button>
+        ${translated ? '<span style="font-size:0.7rem;color:var(--green,#2e7d32)" title="Translated to 7 languages">🌍</span>' : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function saveOneHeadline(expertId) {
+  const input = document.getElementById('hl-input-' + expertId);
+  const headline = input.value.trim();
+  input.disabled = true;
+  const res = await fetch('/api/admin?resource=headlines', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify({ expert_id: expertId, headline })
+  });
+  const d = await res.json();
+  input.disabled = false;
+  if (d.ok) {
+    toast('Headline saved & translated');
+    const row = document.getElementById('hl-row-' + expertId);
+    if (row) {
+      const globe = row.querySelector('span[title]');
+      if (!globe) row.querySelector('td:last-child').insertAdjacentHTML('beforeend', '<span style="font-size:0.7rem;color:var(--green,#2e7d32)" title="Translated to 7 languages">🌍</span>');
+    }
+  } else toast('Error: ' + (d.error || 'failed'));
+}
+
+async function autoHeadline(expertId) {
+  const input = document.getElementById('hl-input-' + expertId);
+  input.disabled = true;
+  input.value = '⏳ Generating…';
+  const res = await fetch('/api/admin?resource=headlines', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify({ expert_id: expertId })
+  });
+  const d = await res.json();
+  input.disabled = false;
+  if (d.ok) { input.value = d.headlines.en || ''; toast('Generated & translated'); }
+  else { input.value = ''; toast('Error: ' + (d.error || 'failed')); }
+}
+
+async function generateMissingHeadlines() {
+  const missing = _hlExperts.filter(e => !e.headlines || !e.headlines.en);
+  if (!missing.length) { toast('All experts already have headlines'); return; }
+  const btn = document.getElementById('hl-generate-btn');
+  btn.disabled = true;
+  btn.textContent = `✨ Generating 0/${missing.length}…`;
+  let done = 0;
+  for (const e of missing) {
+    await autoHeadline(e.id);
+    done++;
+    btn.textContent = `✨ Generating ${done}/${missing.length}…`;
+  }
+  btn.disabled = false;
+  btn.textContent = '✨ Generate missing';
+  toast(`Generated ${done} headlines`);
+}
+
+async function generateHeadlineForEdit() {
+  if (!_editingExpertId) return;
+  const btn = document.getElementById('em-headline-btn');
+  const statusEl = document.getElementById('em-headline-status');
+  btn.disabled = true; btn.textContent = '⏳';
+  statusEl.style.display = 'none';
+  const res = await fetch('/api/admin?resource=headlines', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify({ expert_id: _editingExpertId })
+  });
+  const d = await res.json();
+  btn.disabled = false; btn.textContent = '✨ Auto';
+  if (d.ok) {
+    document.getElementById('em-headline').value = d.headlines.en || '';
+    statusEl.textContent = '✓ Generated & translated to 7 languages';
+    statusEl.style.display = 'block';
+  } else {
+    statusEl.textContent = '⚠ ' + (d.error || 'Failed');
+    statusEl.style.display = 'block';
+  }
+}
 </script>
 </body>
 </html>

@@ -374,12 +374,51 @@ export default async function handler(req, res) {
     }
   }
 
+  // Expert headlines — generate + store (works for any expert, not just demo)
+  if (resource === 'headlines') {
+    await sql`ALTER TABLE experts ADD COLUMN IF NOT EXISTS headlines JSONB DEFAULT '{}'`.catch(() => {});
+
+    if (req.method === 'GET') {
+      const { provider } = req.query;
+      const experts = provider
+        ? await sql`SELECT e.id, e.name, e.position, e.company, e.bio, e.topics, e.headlines, p.slug AS provider_slug FROM experts e JOIN providers p ON p.id = e.provider_id WHERE p.slug = ${provider} AND e.active = true ORDER BY e.name ASC`
+        : await sql`SELECT e.id, e.name, e.position, e.company, e.bio, e.topics, e.headlines, p.slug AS provider_slug FROM experts e JOIN providers p ON p.id = e.provider_id WHERE e.active = true ORDER BY p.slug ASC, e.name ASC LIMIT 300`;
+      return res.status(200).json(experts);
+    }
+
+    if (req.method === 'POST') {
+      const { expert_id, headline } = req.body;
+      if (!expert_id) return res.status(400).json({ error: 'expert_id required' });
+      if (!process.env.ANTHROPIC_API_KEY) return res.status(503).json({ error: 'ANTHROPIC_API_KEY not configured' });
+
+      const [expert] = await sql`SELECT id, name, bio, position, topics FROM experts WHERE id = ${expert_id}`;
+      if (!expert) return res.status(404).json({ error: 'Expert not found' });
+
+      let headlineEn = (headline || '').trim();
+
+      if (!headlineEn) {
+        const bio = [expert.position, expert.bio, (expert.topics || []).join(', ')].filter(Boolean).join('. ');
+        const generated = await callClaude(`Write one short punchy headline for this expert's profile card. Like: "£500m exit", "100+ startup investments", "Built team 0 → 120", "20 years McKinsey". Max 8 words. No punctuation at end. No quotes in your answer.
+
+${expert.name} — ${bio}`);
+        headlineEn = generated.trim().replace(/^["'`]|["'`]$/g, '').replace(/\.$/, '');
+      }
+
+      const translations = await translateHeadline(headlineEn);
+      const headlines = { en: headlineEn, ...translations };
+
+      await sql`UPDATE experts SET headlines = ${JSON.stringify(headlines)}::jsonb WHERE id = ${expert_id}`;
+      return res.status(200).json({ ok: true, headlines });
+    }
+  }
+
   // Custom experts (demo groups only)
   if (resource === 'experts') {
     if (req.method === 'GET') {
+      await sql`ALTER TABLE experts ADD COLUMN IF NOT EXISTS headlines JSONB DEFAULT '{}'`.catch(() => {});
       const experts = await sql`
         SELECT e.id, e.name, e.position, e.company, e.bio, e.photo_url, e.booking_url,
-               e.price_from, e.price_currency, e.active,
+               e.price_from, e.price_currency, e.active, e.headlines,
                p.name AS provider_name, p.slug AS provider_slug
         FROM experts e
         LEFT JOIN providers p ON p.id = e.provider_id
@@ -444,6 +483,32 @@ export default async function handler(req, res) {
   }
 
   return res.status(404).json({ error: 'Unknown resource' });
+}
+
+async function callClaude(prompt) {
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 256, messages: [{ role: 'user', content: prompt }] }),
+  });
+  const d = await r.json();
+  return d.content?.[0]?.text || '';
+}
+
+async function translateHeadline(headline) {
+  const text = await callClaude(`Translate this expert headline into 7 languages. Keep it equally punchy and short (max 8 words). Natural tone, not literal.
+
+English: "${headline}"
+
+Return ONLY valid JSON: {"fr":"...","es":"...","de":"...","it":"...","pt":"...","nl":"...","pl":"...","sv":"..."}`);
+  try {
+    const m = text.match(/\{[\s\S]*?\}/);
+    return m ? JSON.parse(m[0]) : {};
+  } catch(e) { return {}; }
 }
 
 function welcomeEmail(name, link) {
