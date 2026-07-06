@@ -50,14 +50,14 @@
     '#'+uid+' .ilc-track-wrap::after{content:"";position:absolute;right:0;top:0;bottom:0;width:48px;background:linear-gradient(to right,transparent,var(--ilc-bg,#fff));pointer-events:none}',
     '#'+uid+' .ilc-track{display:flex;gap:0.875rem;overflow-x:auto;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}',
     '#'+uid+' .ilc-track::-webkit-scrollbar{display:none}',
-    '#'+uid+' .ilc-card{flex:0 0 160px;border:1.5px solid #e4e4ee;border-radius:14px;padding:1rem 0.875rem;background:#fff;display:flex;flex-direction:column;align-items:center;text-align:center;gap:0.375rem;transition:box-shadow .15s,transform .15s;cursor:default}',
+    '#'+uid+' .ilc-card{flex:0 0 180px;min-width:0;max-width:180px;border:1.5px solid #e4e4ee;border-radius:14px;padding:1rem 0.875rem;background:#fff;display:flex;flex-direction:column;align-items:center;text-align:center;gap:0.375rem;transition:box-shadow .15s,transform .15s;cursor:default}',
     '#'+uid+' .ilc-card:hover{box-shadow:0 4px 18px rgba(0,0,0,0.09);transform:translateY(-2px)}',
-    '#'+uid+' .ilc-photo{width:52px!important;height:52px!important;min-width:52px;border-radius:50%!important;object-fit:cover;background:#edf5f0}',
+    '#'+uid+' .ilc-photo{width:52px!important;height:52px!important;min-width:52px;border-radius:50%!important;object-fit:cover;background:#edf5f0;flex-shrink:0}',
     '#'+uid+' .ilc-name{font-weight:600;font-size:0.8rem;color:#1a1a2e;line-height:1.3;width:100%}',
-    '#'+uid+' .ilc-role{font-size:0.7rem;color:#8888a8;line-height:1.3;width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}',
-    '#'+uid+' .ilc-bio{font-size:0.7rem;color:#4a4a6a;line-height:1.45;width:100%;text-align:left}',
-    '#'+uid+' .ilc-tags{display:flex;flex-wrap:wrap;gap:0.25rem;justify-content:center;margin-top:0.125rem}',
-    '#'+uid+' .ilc-tag{font-size:0.6rem;padding:0.15rem 0.45rem;border-radius:100px;background:#f0f0f8;color:#6a6a8a;font-weight:500;white-space:nowrap}',
+    '#'+uid+' .ilc-role{font-size:0.68rem;color:#8888a8;line-height:1.3;width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}',
+    '#'+uid+' .ilc-bio{font-size:0.68rem;color:#4a4a6a;line-height:1.45;width:100%;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
+    '#'+uid+' .ilc-tags{display:flex;flex-wrap:wrap;gap:0.25rem;justify-content:center;margin-top:0.125rem;width:100%;overflow:hidden}',
+    '#'+uid+' .ilc-tag{font-size:0.595rem;padding:0.15rem 0.4rem;border-radius:100px;background:#f0f0f8;color:#6a6a8a;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}',
     '#'+uid+' .ilc-btn{display:block;width:100%;text-align:center;padding:0.45rem 0.5rem;border-radius:100px;font-size:0.72rem;font-weight:700;text-decoration:none;background:var(--ilc-color);color:var(--ilc-color-contrast);transition:opacity .15s;font-family:inherit;margin-top:auto}',
     '#'+uid+' .ilc-btn:hover{opacity:0.85}',
     '#'+uid+' .ilc-price{font-size:0.65rem;color:#bbb;margin-top:0.125rem}',
@@ -85,14 +85,14 @@
     container.style.setProperty('--ilc-color', color);
     container.style.setProperty('--ilc-color-contrast', contrast);
 
-    var cardWidth = 160 + 14; // card width (160px) + gap (0.875rem ≈ 14px)
+    var cardWidth = 180 + 14; // card width (180px) + gap (0.875rem ≈ 14px)
 
     var cards = experts.map(function(e) {
       var fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=96&name=' + encodeURIComponent(e.name);
       var iso = countryToISO(e.location_country || '');
       var flagHtml = iso ? '<img src="https://hatscripts.github.io/circle-flags/flags/'+iso.toLowerCase()+'.svg" style="width:11px;height:11px;border-radius:50%;vertical-align:middle;margin-left:6px" alt="">' : '';
       var price = e.price_from ? 'From '+(e.price_currency||'USD')+' '+e.price_from : '';
-      var tags = (e.topics || []).slice(0, 3);
+      var tags = (e.topics || []).slice(0, 2);
       var role = [e.position, e.company].filter(Boolean).join(' · ');
       var bio = (e.headlines || {})[_lang] || (e.headlines || {})['en'] || e.bio || '';
       var bookUrl = e.booking_url
