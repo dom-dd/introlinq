@@ -59,8 +59,9 @@
     '#'+uid+' .ilc-card:hover{box-shadow:0 4px 18px rgba(0,0,0,0.09);transform:translateY(-2px)}',
     '#'+uid+' .ilc-photo{width:52px!important;height:52px!important;min-width:52px;border-radius:50%!important;object-fit:cover;background:#edf5f0}',
     '#'+uid+' .ilc-name{font-weight:600;font-size:0.8rem;color:#1a1a2e;line-height:1.3;width:100%}',
-    '#'+uid+' .ilc-role{font-size:0.7rem;color:#8888a8;line-height:1.3;width:100%;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
-    '#'+uid+' .ilc-price{font-size:0.675rem;color:#aaa;margin-top:auto}',
+    '#'+uid+' .ilc-position{font-size:0.7rem;color:#8888a8;line-height:1.3;width:100%}',
+    '#'+uid+' .ilc-company{font-size:0.675rem;color:#aaaacc;line-height:1.3;width:100%;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}',
+    '#'+uid+' .ilc-price{font-size:0.65rem;color:#bbb;margin-top:0.25rem}',
     '#'+uid+' .ilc-btn{display:block;width:100%;text-align:center;padding:0.45rem 0.5rem;border-radius:100px;font-size:0.72rem;font-weight:700;text-decoration:none;background:var(--ilc-color);color:var(--ilc-color-contrast);transition:opacity .15s;font-family:inherit;margin-top:auto}',
     '#'+uid+' .ilc-btn:hover{opacity:0.85}',
     '#'+uid+' .ilc-footer{margin-top:0.625rem;text-align:right;font-size:0.675rem;color:#ccc}',
@@ -89,7 +90,6 @@
 
     var cards = experts.map(function(e) {
       var fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=96&name=' + encodeURIComponent(e.name);
-      var role = [e.position, e.company].filter(Boolean).join(' · ');
       var iso = countryToISO(e.location_country || '');
       var flagHtml = iso ? '<img src="https://hatscripts.github.io/circle-flags/flags/'+iso.toLowerCase()+'.svg" style="width:11px;height:11px;border-radius:50%;vertical-align:middle;margin-left:2px" alt="">' : '';
       var price = e.price_from ? 'From '+(e.price_currency||'USD')+' '+e.price_from : '';
@@ -104,9 +104,10 @@
       return '<div class="ilc-card">'
         +'<img class="ilc-photo" src="'+esc(e.photo_url||fallback)+'" onerror="this.src=\''+fallback+'\'" alt="'+esc(e.name)+'">'
         +'<div class="ilc-name">'+esc(e.name)+flagHtml+'</div>'
-        +(role?'<div class="ilc-role">'+esc(role)+'</div>':'')
-        +(price?'<div class="ilc-price">'+esc(price)+'</div>':'')
+        +(e.position?'<div class="ilc-position">'+esc(e.position)+'</div>':'')
+        +(e.company?'<div class="ilc-company">'+esc(e.company)+'</div>':'')
         +(bookUrl!=='#'?'<a class="ilc-btn" href="'+esc(bookUrl)+'" target="_blank" rel="noopener">'+BOOK_LABEL+'</a>':'')
+        +(price?'<div class="ilc-price">'+esc(price)+'</div>':'')
         +'</div>';
     }).join('');
 
@@ -124,6 +125,33 @@
       +'<div class="ilc-track-wrap"><div class="ilc-track" id="'+uid+'-track">'+cards+'</div></div>'
       +'<div class="ilc-footer"><a href="https://www.introlinq.com" target="_blank" rel="noopener">Powered by IntroLinq</a></div>'
       +'</div>';
+
+    // Auto-scroll: advance one card every 3s, loop back to start at end
+    var track = document.getElementById(uid+'-track');
+    var cardWidth = 160 + 14; // card width + gap
+    var autoTimer = setInterval(function() {
+      if (!document.getElementById(uid+'-track')) { clearInterval(autoTimer); return; }
+      var maxScroll = track.scrollWidth - track.clientWidth;
+      if (track.scrollLeft >= maxScroll - 4) {
+        track.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        track.scrollBy({ left: cardWidth, behavior: 'smooth' });
+      }
+    }, 3000);
+
+    // Pause on hover
+    track.addEventListener('mouseenter', function() { clearInterval(autoTimer); });
+    track.addEventListener('mouseleave', function() {
+      autoTimer = setInterval(function() {
+        if (!document.getElementById(uid+'-track')) { clearInterval(autoTimer); return; }
+        var maxScroll = track.scrollWidth - track.clientWidth;
+        if (track.scrollLeft >= maxScroll - 4) {
+          track.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          track.scrollBy({ left: cardWidth, behavior: 'smooth' });
+        }
+      }, 3000);
+    });
   }
 
 })();
