@@ -15,11 +15,6 @@
   };
   var BOOK_LABEL = _bookLabels[_lang] || 'Book a call →';
 
-  function hexToRgba(hex, alpha) {
-    var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
-    return 'rgba('+r+','+g+','+b+','+alpha+')';
-  }
-
   function getContrastColor(hex) {
     var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
     return (r*299+g*587+b*114)/1000 > 128 ? '#1a1a2e' : '#ffffff';
@@ -57,24 +52,20 @@
     '.ilb-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;margin-bottom:1.25rem}',
     '.ilb-title{font-size:1.125rem;font-weight:700;color:#1a1a2e}',
     '.ilb-search{flex:1;min-width:180px;max-width:320px;position:relative}',
-    '.ilb-search input{width:100%;padding:0.5rem 0.75rem 0.5rem 2rem;border:1.5px solid #e4e4ee;border-radius:100px;font-size:0.8125rem;font-family:inherit;outline:none;color:#1a1a2e;transition:border-color .15s}',
+    '.ilb-search input{width:100%;padding:0.5rem 0.75rem 0.5rem 2rem;border:1.5px solid #e4e4ee;border-radius:100px;font-size:0.8125rem;font-family:inherit;outline:none;color:#1a1a2e;transition:border-color .15s;background:#fff}',
     '.ilb-search input:focus{border-color:var(--ilb-color)}',
     '.ilb-search-icon{position:absolute;left:0.625rem;top:50%;transform:translateY(-50%);color:#8888a8;pointer-events:none}',
-    '.ilb-filters{display:flex;gap:0.5rem;overflow-x:auto;flex-wrap:nowrap;margin-bottom:1.25rem;scrollbar-width:none;padding-bottom:2px}',
-    '.ilb-filters::-webkit-scrollbar{display:none}',
-    '.ilb-filter{padding:0.3rem 0.875rem;border-radius:100px;border:1.5px solid #e4e4ee;background:#fff;font-size:0.75rem;font-weight:500;color:#4a4a6a;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap;flex-shrink:0}',
-    '.ilb-filter:hover{border-color:var(--ilb-color);color:var(--ilb-color)}',
-    '.ilb-filter.active{background:var(--ilb-color);border-color:var(--ilb-color);color:var(--ilb-color-contrast)}',
     '.ilb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}',
-    '@media(max-width:700px){.ilb-grid{grid-template-columns:repeat(2,1fr)}}',
-    '@media(max-width:440px){.ilb-grid{grid-template-columns:1fr}}',
-    '.ilb-card{border:1.5px solid #e4e4ee;border-radius:14px;padding:1rem 0.875rem;background:#fff;display:flex;flex-direction:column;align-items:center;text-align:center;gap:0.375rem;transition:box-shadow .15s,transform .15s}',
+    '@media(max-width:680px){.ilb-grid{grid-template-columns:repeat(2,1fr)}}',
+    '@media(max-width:420px){.ilb-grid{grid-template-columns:1fr}}',
+    '.ilb-card{border:1.5px solid #e4e4ee;border-radius:14px;padding:1rem;background:#fff;display:flex;flex-direction:column;gap:0.5rem;transition:box-shadow .15s,transform .15s}',
     '.ilb-card:hover{box-shadow:0 6px 24px rgba(0,0,0,0.09);transform:translateY(-2px)}',
-    '.ilb-photo{width:52px!important;height:52px!important;min-width:52px;border-radius:50%!important;object-fit:cover;background:#edf5f0;flex-shrink:0}',
-    '.ilb-name{font-weight:600;font-size:0.875rem;color:#1a1a2e;line-height:1.3;width:100%}',
-    '.ilb-role{font-size:0.72rem;color:#8888a8;line-height:1.3;width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}',
-    '.ilb-bio{font-size:0.72rem;color:#4a4a6a;line-height:1.45;width:100%;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-top:2px}',
-    '.ilb-btn{display:block;width:100%;text-align:center;padding:0.5rem 0.75rem;border-radius:100px;font-size:0.8rem;font-weight:700;text-decoration:none;background:var(--ilb-color);color:var(--ilb-color-contrast);transition:opacity .15s;font-family:inherit;margin-top:auto}',
+    '.ilb-card-top{display:flex;gap:0.75rem;align-items:center}',
+    '.ilb-photo{width:44px!important;height:44px!important;min-width:44px;border-radius:50%!important;object-fit:cover;background:#edf5f0;flex-shrink:0}',
+    '.ilb-name{font-weight:600;font-size:0.875rem;color:#1a1a2e;line-height:1.3}',
+    '.ilb-role{font-size:0.72rem;color:#8888a8;margin-top:2px;line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}',
+    '.ilb-bio{font-size:0.75rem;color:#4a4a6a;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
+    '.ilb-btn{display:block;text-align:center;padding:0.5rem 0.75rem;border-radius:100px;font-size:0.8rem;font-weight:700;text-decoration:none;background:var(--ilb-color);color:var(--ilb-color-contrast);transition:opacity .15s;font-family:inherit;margin-top:auto}',
     '.ilb-btn:hover{opacity:0.88}',
     '.ilb-empty{text-align:center;padding:3rem 1rem;color:#8888a8;font-size:0.875rem}',
     '.ilb-footer{margin-top:1rem;text-align:right;font-size:0.7rem;color:#aaa}',
@@ -83,7 +74,6 @@
   ].join('');
   document.head.appendChild(style);
 
-  // Show loading state
   container.innerHTML = '<div style="padding:2rem;text-align:center;color:#8888a8;font-size:0.875rem">Loading experts...</div>';
 
   fetch(API)
@@ -95,7 +85,6 @@
     .catch(function(){ container.innerHTML = ''; });
 
   var _allExperts = [];
-  var _activeFilter = '';
   var _searchTerm = '';
   var _color = '#e6a820';
   var _contrast = '#1a1a2e';
@@ -108,8 +97,6 @@
     container.style.setProperty('--ilb-color', _color);
     container.style.setProperty('--ilb-color-contrast', _contrast);
 
-    var topics = data.topics || [];
-
     var html = '<div class="ilb-header">'
       + '<div class="ilb-title">Book an expert</div>'
       + '<div class="ilb-search">'
@@ -117,37 +104,52 @@
       + '<input type="text" placeholder="Search experts..." id="ilb-search-input" autocomplete="off">'
       + '</div></div>';
 
-    if (topics.length) {
-      html += '<div class="ilb-filters"><button class="ilb-filter active" data-topic="">All</button>'
-        + topics.map(function(t){ return '<button class="ilb-filter" data-topic="'+esc(t)+'">'+esc(t)+'</button>'; }).join('')
-        + '</div>';
-    }
-
     html += '<div class="ilb-grid" id="ilb-grid"></div>';
     html += '<div class="ilb-footer"><a href="https://www.introlinq.com" target="_blank" rel="noopener">Powered by IntroLinq</a></div>';
 
     container.innerHTML = html;
-
     renderGrid();
 
-    // Filter buttons
-    container.querySelectorAll('.ilb-filter').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        container.querySelectorAll('.ilb-filter').forEach(function(b){ b.classList.remove('active'); });
-        btn.classList.add('active');
-        _activeFilter = btn.getAttribute('data-topic');
-        renderGrid();
-      });
-    });
-
-    // Search input
     var searchInput = document.getElementById('ilb-search-input');
     if (searchInput) {
       searchInput.addEventListener('input', function() {
         _searchTerm = this.value.toLowerCase().trim();
         renderGrid();
       });
+      startPlaceholderCycle(searchInput);
     }
+  }
+
+  function startPlaceholderCycle(input) {
+    var words = ['Fundraising', 'Growth', 'GTM', 'Product', 'Leadership', 'Hiring', 'Sales', 'Marketing', 'Pitch deck', 'VC'];
+    var wi = 0;
+    var ti = null;
+
+    function type(word, pos, deleting) {
+      if (input.value || document.activeElement === input) {
+        ti = setTimeout(function() { type(word, pos, deleting); }, 400);
+        return;
+      }
+      if (!deleting) {
+        if (pos <= word.length) {
+          input.placeholder = 'Try "' + word.slice(0, pos) + (pos < word.length ? '|' : '"');
+          ti = setTimeout(function() { type(word, pos + 1, false); }, 95);
+        } else {
+          ti = setTimeout(function() { type(word, pos, true); }, 2200);
+        }
+      } else {
+        if (pos > 0) {
+          input.placeholder = pos > 1 ? 'Try "' + word.slice(0, pos - 1) + '|"' : 'Try "|"';
+          ti = setTimeout(function() { type(word, pos - 1, true); }, 55);
+        } else {
+          wi = (wi + 1) % words.length;
+          input.placeholder = 'Search experts...';
+          ti = setTimeout(function() { type(words[wi], 0, false); }, 700);
+        }
+      }
+    }
+
+    ti = setTimeout(function() { type(words[0], 0, false); }, 1800);
   }
 
   function renderGrid() {
@@ -155,11 +157,10 @@
     if (!grid) return;
 
     var filtered = _allExperts.filter(function(e) {
-      var topicMatch = !_activeFilter || (e.topics || []).some(function(t){ return t === _activeFilter; });
+      if (!_searchTerm) return true;
       var bioText = (e.headlines || {})[_lang] || (e.headlines || {})['en'] || e.bio || '';
-      var searchMatch = !_searchTerm || [e.name, e.position, e.company, bioText, (e.topics||[]).join(' ')]
+      return [e.name, e.position, e.company, bioText, (e.topics||[]).join(' ')]
         .filter(Boolean).join(' ').toLowerCase().indexOf(_searchTerm) !== -1;
-      return topicMatch && searchMatch;
     });
 
     if (!filtered.length) {
@@ -172,7 +173,7 @@
       var bio = (e.headlines || {})[_lang] || (e.headlines || {})['en'] || e.bio || '';
       var role = [e.position, e.company].filter(Boolean).join(' · ');
       var iso = countryToISO(e.location_country || '');
-      var flagHtml = iso ? '<img src="https://hatscripts.github.io/circle-flags/flags/'+iso.toLowerCase()+'.svg" style="width:13px;height:13px;border-radius:50%;vertical-align:middle;margin-left:5px" alt="">' : '';
+      var flagHtml = iso ? '<img src="https://hatscripts.github.io/circle-flags/flags/'+iso.toLowerCase()+'.svg" style="width:13px;height:13px;border-radius:50%;vertical-align:middle;margin-left:4px" alt="">' : '';
       var bookUrl = e.booking_url
         ? TRACK + '&pub=' + encodeURIComponent(PUB)
           + '&expert_id=' + encodeURIComponent(e.id || '')
@@ -183,9 +184,12 @@
         : '#';
 
       return '<div class="ilb-card">'
+        + '<div class="ilb-card-top">'
         + '<img class="ilb-photo" src="' + esc(e.photo_url || fallback) + '" onerror="this.src=\'' + fallback + '\'" alt="' + esc(e.name) + '">'
+        + '<div style="min-width:0">'
         + '<div class="ilb-name">' + esc(e.name) + flagHtml + '</div>'
         + (role ? '<div class="ilb-role">' + esc(role) + '</div>' : '')
+        + '</div></div>'
         + (bio ? '<div class="ilb-bio">' + esc(bio) + '</div>' : '')
         + (bookUrl !== '#' ? '<a class="ilb-btn" href="' + esc(bookUrl) + '" target="_blank" rel="noopener">' + BOOK_LABEL + '</a>' : '')
         + '</div>';
