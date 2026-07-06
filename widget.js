@@ -3,7 +3,7 @@
 
   var API = 'https://www.introlinq.com/api/match';
   var script = document.currentScript || document.querySelector('script[src*="widget.js"]');
-  var PUB = script && script.getAttribute('data-publisher');
+  var PUB = (script && script.getAttribute('data-publisher')) || window.IL_PUBLISHER_ID || null;
   if (!PUB) return;
 
   var _lang = (document.documentElement.lang || navigator.language || 'en').toLowerCase().slice(0, 2);
