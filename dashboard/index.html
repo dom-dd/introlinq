@@ -204,6 +204,71 @@ tr:last-child td{border-bottom:none}
 #not-found{display:none;align-items:center;justify-content:center;min-height:80vh;text-align:center}
 #not-found h2{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--ink);margin-bottom:0.5rem}
 #not-found p{font-size:0.9rem;color:var(--ink-muted)}
+
+/* ── Widget sub-tabs ── */
+.wtab-nav{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--white);margin-bottom:1.5rem;border-radius:var(--radius) var(--radius) 0 0;overflow:hidden;border:1px solid var(--border)}
+.wtab-btn{flex:1;padding:0.75rem 1rem;font-size:0.8125rem;font-weight:500;color:var(--ink-muted);border:none;background:none;cursor:pointer;font-family:'Inter',sans-serif;border-bottom:2px solid transparent;transition:all .15s;text-align:center}
+.wtab-btn+.wtab-btn{border-left:1px solid var(--border)}
+.wtab-btn:hover{color:var(--ink);background:var(--cream)}
+.wtab-btn.active{color:var(--ink);border-bottom-color:var(--gold);font-weight:600;background:var(--white)}
+.wtab-panel{display:none}
+.wtab-panel.active{display:block}
+
+/* ── Widget preview mockups ── */
+.wpreview{background:var(--cream);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:1.5rem;overflow:hidden;height:148px;display:flex;align-items:center;justify-content:center;position:relative}
+.wpreview-inner{pointer-events:none;user-select:none;width:100%}
+
+/* Text widget preview */
+.prev-line{height:8px;border-radius:4px;background:#e4e4ee;margin-bottom:7px}
+.prev-highlight{display:inline-block;border-bottom:2px solid var(--gold);color:var(--ink);font-size:0.72rem;font-weight:600;position:relative;padding:0 2px}
+@keyframes hl-glow{0%,100%{border-bottom-color:var(--gold);opacity:1}50%{border-bottom-color:#f5c842;opacity:.7}}
+.prev-highlight{animation:hl-glow 2s ease-in-out infinite}
+.prev-popup{position:absolute;right:1.5rem;top:50%;transform:translateY(-50%);background:var(--white);border:1px solid var(--border);border-radius:10px;padding:0.625rem 0.75rem;width:148px;box-shadow:0 4px 16px rgba(0,0,0,.10);display:flex;flex-direction:column;gap:0.375rem}
+@keyframes popup-float{0%,100%{opacity:0;transform:translateY(calc(-50% + 6px))}20%,80%{opacity:1;transform:translateY(-50%)}}
+.prev-popup{animation:popup-float 4s ease-in-out infinite}
+.prev-popup-row{display:flex;align-items:center;gap:0.5rem}
+.prev-avatar{width:28px;height:28px;border-radius:50%;background:var(--sage-light);flex-shrink:0}
+.prev-name-block{display:flex;flex-direction:column;gap:3px;flex:1}
+.prev-name-line{height:7px;border-radius:3px;background:#e4e4ee}
+.prev-role-line{height:5px;border-radius:3px;background:#eee;width:70%}
+.prev-book-btn{display:block;background:var(--gold);border-radius:100px;height:20px;width:100%}
+
+/* Carousel preview */
+@keyframes carousel-slide{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.prev-carousel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.625rem}
+.prev-carousel-label{font-size:0.6rem;font-weight:700;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.08em}
+.prev-carousel-arrows{display:flex;gap:3px}
+.prev-arrow{width:16px;height:16px;border-radius:50%;border:1px solid #e4e4ee;background:var(--white);display:flex;align-items:center;justify-content:center}
+.prev-track-wrap{overflow:hidden;width:100%}
+.prev-track{display:flex;gap:8px;animation:carousel-slide 12s linear infinite}
+.prev-card{flex:0 0 88px;border:1px solid #e4e4ee;border-radius:8px;background:var(--white);padding:0.5rem 0.4rem;display:flex;flex-direction:column;align-items:center;gap:4px}
+.prev-card-avatar{width:22px;height:22px;border-radius:50%;background:var(--sage-light)}
+.prev-card-line{height:5px;border-radius:3px;background:#e4e4ee;width:80%}
+.prev-card-line.short{width:55%}
+.prev-card-line.bio{background:#f0f0f8;width:95%}
+.prev-card-btn{height:14px;border-radius:100px;background:var(--gold);width:100%;margin-top:2px}
+
+/* ExpertBoard preview */
+@keyframes board-fadein{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+.prev-board-search{height:22px;border-radius:100px;border:1px solid #e4e4ee;background:var(--white);display:flex;align-items:center;padding:0 10px;gap:6px;margin-bottom:8px}
+.prev-board-search-icon{width:8px;height:8px;border-radius:50%;border:1.5px solid #ccc}
+.prev-board-search-bar{flex:1;height:5px;border-radius:3px;background:#eee}
+.prev-board-filters{display:flex;gap:4px;margin-bottom:8px}
+.prev-board-filter{height:14px;border-radius:100px;background:#f0f0f8;padding:0 8px;font-size:0}
+.prev-board-filter.active{background:var(--ink)}
+.prev-board-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.prev-board-card{border:1px solid #e4e4ee;border-radius:7px;background:var(--white);padding:7px;display:flex;flex-direction:column;gap:3px;opacity:0;animation:board-fadein .4s ease forwards}
+.prev-board-card:nth-child(1){animation-delay:.1s}
+.prev-board-card:nth-child(2){animation-delay:.25s}
+.prev-board-card:nth-child(3){animation-delay:.4s}
+.prev-board-card:nth-child(4){animation-delay:.55s}
+.prev-board-card:nth-child(5){animation-delay:.7s}
+.prev-board-card:nth-child(6){animation-delay:.85s}
+.prev-board-card-top{display:flex;align-items:center;gap:4px}
+.prev-board-avatar{width:16px;height:16px;border-radius:50%;background:var(--sage-light);flex-shrink:0}
+.prev-board-name{height:5px;border-radius:3px;background:#e4e4ee;flex:1}
+.prev-board-bio{height:4px;border-radius:3px;background:#f0f0f8}
+.prev-board-btn{height:11px;border-radius:100px;background:var(--gold);margin-top:1px}
 </style>
 </head>
 <body>
@@ -325,116 +390,215 @@ tr:last-child td{border-bottom:none}
 
     <!-- ── Widget ── -->
     <div class="tab-panel" id="tab-widget">
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Embed code</div>
-          <div class="section-sub">Paste this before the &lt;/body&gt; tag in your blog template - <a id="install-guide-link" href="/install" style="color:var(--sage);text-decoration:none;font-weight:500">installation guide →</a></div>
+
+      <div class="wtab-nav">
+        <button class="wtab-btn active" onclick="switchWidgetTab('text',this)">Text Widget</button>
+        <button class="wtab-btn" onclick="switchWidgetTab('carousel',this)">Expert Carousel</button>
+        <button class="wtab-btn" onclick="switchWidgetTab('board',this)">ExpertBoard</button>
+      </div>
+
+      <!-- TEXT WIDGET -->
+      <div class="wtab-panel active" id="wtab-text">
+        <!-- Preview -->
+        <div class="wpreview">
+          <div class="wpreview-inner" style="max-width:480px">
+            <div style="display:flex;gap:1.5rem;align-items:center">
+              <div style="flex:1">
+                <div class="prev-line" style="width:90%"></div>
+                <div class="prev-line" style="width:75%"></div>
+                <div style="margin-bottom:7px;font-size:0.72rem;color:var(--ink-muted)">
+                  Advice on <span class="prev-highlight">fundraising strategy</span> for your round
+                </div>
+                <div class="prev-line" style="width:85%"></div>
+                <div class="prev-line" style="width:60%"></div>
+              </div>
+              <div class="prev-popup" style="position:relative;right:auto;top:auto;transform:none;animation:popup-float 4s ease-in-out infinite">
+                <div class="prev-popup-row">
+                  <div class="prev-avatar"></div>
+                  <div class="prev-name-block">
+                    <div class="prev-name-line"></div>
+                    <div class="prev-role-line"></div>
+                  </div>
+                </div>
+                <div class="prev-book-btn"></div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="embed-box">
-          <div class="embed-code" id="embed-display"></div>
-          <button class="copy-btn" onclick="copyEmbed()">Copy code</button>
-        </div>
-        <div style="margin-top:1.25rem">
-          <div class="section-sub" style="margin-bottom:0.5rem;padding-left:1.5rem">Using Google Tag Manager? Use this instead - your widget settings still apply automatically.</div>
+        <!-- Embed -->
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Embed code</div>
+            <div class="section-sub">Paste this before the &lt;/body&gt; tag on your site — <a id="install-guide-link" href="/install" style="color:var(--sage);text-decoration:none;font-weight:500">installation guide →</a></div>
+          </div>
           <div class="embed-box">
-            <div class="embed-code" id="gtm-embed-display"></div>
-            <button class="copy-btn" onclick="copyGtmEmbed()">Copy code</button>
+            <div class="embed-code" id="embed-display"></div>
+            <button class="copy-btn" onclick="copyEmbed()">Copy</button>
+          </div>
+          <div style="margin-top:0.75rem">
+            <div class="section-sub" style="margin-bottom:0.5rem;padding-left:1.5rem">Using Google Tag Manager?</div>
+            <div class="embed-box" style="padding-top:0">
+              <div class="embed-code" id="gtm-embed-display"></div>
+              <button class="copy-btn" onclick="copyGtmEmbed()">Copy</button>
+            </div>
           </div>
         </div>
-      </div>
-
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Expert Carousel</div>
-          <div class="section-sub">A scrollable row of expert cards - drop it at the end of any article or page</div>
-        </div>
-        <div class="embed-box">
-          <div class="embed-code" id="carousel-embed-display"></div>
-          <button class="copy-btn" onclick="copyCarouselEmbed()">Copy code</button>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">ExpertBoard</div>
-          <div class="section-sub">A full browsable directory - ideal for a dedicated "Book an expert" page</div>
-        </div>
-        <div class="embed-box">
-          <div class="embed-code" id="board-embed-display"></div>
-          <button class="copy-btn" onclick="copyBoardEmbed()">Copy code</button>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Appearance &amp; behaviour</div>
-          <div class="section-sub">Changes save instantly</div>
-        </div>
-        <div class="settings-cols">
-          <div class="settings-col">
-            <div class="setting-block">
-              <div class="setting-title">Widget size</div>
-              <div class="setting-desc">Size of the expert popup card</div>
-              <div class="option-group" id="size-group">
-                <button class="opt-btn" data-val="small" onclick="pick('size',this)">Small</button>
-                <button class="opt-btn" data-val="medium" onclick="pick('size',this)">Medium</button>
-                <button class="opt-btn" data-val="large" onclick="pick('size',this)">Large</button>
-              </div>
-            </div>
-            <div class="setting-block">
-              <div class="setting-title">Expert limit</div>
-              <div class="setting-desc">Maximum experts shown per article (fewer may appear if fewer match)</div>
-              <div class="option-group" id="power-group">
-                <button class="opt-btn" data-val="light" onclick="pick('power',this)">Up to 2</button>
-                <button class="opt-btn" data-val="moderate" onclick="pick('power',this)">Up to 4</button>
-                <button class="opt-btn" data-val="heavy" onclick="pick('power',this)">Up to 10</button>
-                <button class="opt-btn" data-val="unlimited" onclick="pick('power',this)">Unlimited</button>
-              </div>
-            </div>
-            <div class="setting-block">
-              <div class="setting-title">Match sensitivity</div>
-              <div class="setting-desc">How closely a phrase must relate to an expert</div>
-              <div class="option-group" id="sensitivity-group">
-                <button class="opt-btn" data-val="strict" onclick="pick('sensitivity',this)">Strict</button>
-                <button class="opt-btn" data-val="balanced" onclick="pick('sensitivity',this)">Balanced</button>
-                <button class="opt-btn" data-val="open" onclick="pick('sensitivity',this)">Open</button>
-              </div>
-            </div>
+        <!-- Settings -->
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Appearance &amp; behaviour</div>
+            <div class="section-sub">Changes save instantly</div>
           </div>
-          <div class="settings-col settings-col-colors">
-            <div class="setting-block">
-              <div class="setting-title">Link colour</div>
-              <div class="setting-desc">Underline on highlighted phrases</div>
-              <div class="color-row">
-                <input type="color" class="color-picker" id="color-picker" oninput="onColorInput('color','widget_color',this.value)">
-                <input type="text" class="color-hex" id="color-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('color','widget_color','color-picker',this.value)">
-                <button class="color-reset" title="Reset to default" onclick="resetColor('color','widget_color')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+          <div class="settings-cols">
+            <div class="settings-col">
+              <div class="setting-block">
+                <div class="setting-title">Widget size</div>
+                <div class="setting-desc">Size of the expert popup card</div>
+                <div class="option-group" id="size-group">
+                  <button class="opt-btn" data-val="small" onclick="pick('size',this)">Small</button>
+                  <button class="opt-btn" data-val="medium" onclick="pick('size',this)">Medium</button>
+                  <button class="opt-btn" data-val="large" onclick="pick('size',this)">Large</button>
+                </div>
+              </div>
+              <div class="setting-block">
+                <div class="setting-title">Expert limit</div>
+                <div class="setting-desc">Maximum experts shown per article</div>
+                <div class="option-group" id="power-group">
+                  <button class="opt-btn" data-val="light" onclick="pick('power',this)">Up to 2</button>
+                  <button class="opt-btn" data-val="moderate" onclick="pick('power',this)">Up to 4</button>
+                  <button class="opt-btn" data-val="heavy" onclick="pick('power',this)">Up to 10</button>
+                  <button class="opt-btn" data-val="unlimited" onclick="pick('power',this)">Unlimited</button>
+                </div>
+              </div>
+              <div class="setting-block">
+                <div class="setting-title">Match sensitivity</div>
+                <div class="setting-desc">How closely a phrase must relate to an expert</div>
+                <div class="option-group" id="sensitivity-group">
+                  <button class="opt-btn" data-val="strict" onclick="pick('sensitivity',this)">Strict</button>
+                  <button class="opt-btn" data-val="balanced" onclick="pick('sensitivity',this)">Balanced</button>
+                  <button class="opt-btn" data-val="open" onclick="pick('sensitivity',this)">Open</button>
+                </div>
               </div>
             </div>
-            <div class="setting-block">
-              <div class="setting-title">Widget colour</div>
-              <div class="setting-desc">Button colour inside the popup</div>
-              <div class="color-row">
-                <input type="color" class="color-picker" id="accent-picker" oninput="onColorInput('accent','accent_color',this.value)">
-                <input type="text" class="color-hex" id="accent-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('accent','accent_color','accent-picker',this.value)">
-                <button class="color-reset" title="Reset to default" onclick="resetColor('accent','accent_color')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+            <div class="settings-col settings-col-colors">
+              <div class="setting-block">
+                <div class="setting-title">Link colour</div>
+                <div class="setting-desc">Underline on highlighted phrases</div>
+                <div class="color-row">
+                  <input type="color" class="color-picker" id="color-picker" oninput="onColorInput('color','widget_color',this.value)">
+                  <input type="text" class="color-hex" id="color-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('color','widget_color','color-picker',this.value)">
+                  <button class="color-reset" title="Reset" onclick="resetColor('color','widget_color')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+                </div>
+              </div>
+              <div class="setting-block">
+                <div class="setting-title">Widget colour</div>
+                <div class="setting-desc">Button colour inside the popup</div>
+                <div class="color-row">
+                  <input type="color" class="color-picker" id="accent-picker" oninput="onColorInput('accent','accent_color',this.value)">
+                  <input type="text" class="color-hex" id="accent-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('accent','accent_color','accent-picker',this.value)">
+                  <button class="color-reset" title="Reset" onclick="resetColor('accent','accent_color')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Carousel title</div>
-          <div class="section-sub">Heading shown above the expert carousel on your site</div>
+      <!-- EXPERT CAROUSEL -->
+      <div class="wtab-panel" id="wtab-carousel">
+        <!-- Preview -->
+        <div class="wpreview">
+          <div class="wpreview-inner">
+            <div class="prev-carousel-header">
+              <div class="prev-carousel-label">Suggested experts to speak to</div>
+              <div class="prev-carousel-arrows">
+                <div class="prev-arrow"><svg width="5" height="8" viewBox="0 0 6 10" fill="none" stroke="#aaa" stroke-width="1.5" stroke-linecap="round"><polyline points="5 1 1 5 5 9"/></svg></div>
+                <div class="prev-arrow"><svg width="5" height="8" viewBox="0 0 6 10" fill="none" stroke="#aaa" stroke-width="1.5" stroke-linecap="round"><polyline points="1 1 5 5 1 9"/></svg></div>
+              </div>
+            </div>
+            <div class="prev-track-wrap">
+              <div class="prev-track">
+                <!-- 6 cards duplicated for seamless loop -->
+                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                <!-- duplicate for seamless loop -->
+                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div style="padding:0 1.5rem 1.5rem;display:flex;gap:0.625rem;align-items:center;max-width:480px">
-          <input type="text" id="carousel-title-input" class="form-input" placeholder="Suggested experts to speak to" style="flex:1;padding:0.5rem 0.75rem;font-size:0.875rem">
-          <button class="btn btn-primary btn-sm" onclick="saveCarouselTitle()">Save</button>
+        <!-- Embed -->
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Embed code</div>
+            <div class="section-sub">Drop this at the bottom of any article or page</div>
+          </div>
+          <div class="embed-box">
+            <div class="embed-code" id="carousel-embed-display"></div>
+            <button class="copy-btn" onclick="copyCarouselEmbed()">Copy</button>
+          </div>
+        </div>
+        <!-- Carousel settings -->
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Carousel title</div>
+            <div class="section-sub">Heading shown above the carousel on your site</div>
+          </div>
+          <div style="padding:0 1.5rem 1.5rem;display:flex;gap:0.625rem;align-items:center;max-width:480px">
+            <input type="text" id="carousel-title-input" class="color-hex" style="flex:1;font-family:'Inter',sans-serif" placeholder="Suggested experts to speak to">
+            <button class="copy-btn" onclick="saveCarouselTitle()">Save</button>
+          </div>
         </div>
       </div>
 
+      <!-- EXPERTBOARD -->
+      <div class="wtab-panel" id="wtab-board">
+        <!-- Preview -->
+        <div class="wpreview">
+          <div class="wpreview-inner" style="max-width:420px">
+            <div class="prev-board-search">
+              <div class="prev-board-search-icon"></div>
+              <div class="prev-board-search-bar"></div>
+            </div>
+            <div class="prev-board-filters">
+              <div class="prev-board-filter active" style="width:28px"></div>
+              <div class="prev-board-filter" style="width:44px"></div>
+              <div class="prev-board-filter" style="width:38px"></div>
+              <div class="prev-board-filter" style="width:50px"></div>
+            </div>
+            <div class="prev-board-grid">
+              <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:70%"></div><div class="prev-board-btn"></div></div>
+              <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:60%"></div><div class="prev-board-btn"></div></div>
+              <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:80%"></div><div class="prev-board-btn"></div></div>
+              <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:65%"></div><div class="prev-board-btn"></div></div>
+              <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:75%"></div><div class="prev-board-btn"></div></div>
+              <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:55%"></div><div class="prev-board-btn"></div></div>
+            </div>
+          </div>
+        </div>
+        <!-- Embed -->
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Embed code</div>
+            <div class="section-sub">Best placed on a dedicated page — gives visitors a full browsable expert directory</div>
+          </div>
+          <div class="embed-box">
+            <div class="embed-code" id="board-embed-display"></div>
+            <button class="copy-btn" onclick="copyBoardEmbed()">Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expert networks — shared across all widgets -->
       <div class="section" id="partners-section" style="display:none">
         <div class="section-header">
           <div class="section-title">Expert networks</div>
@@ -734,6 +898,13 @@ async function saveSetting(field, value, activeEl) {
 async function saveCarouselTitle() {
   const val = document.getElementById('carousel-title-input').value.trim();
   await saveSetting('carousel_title', val || null);
+}
+
+function switchWidgetTab(name, btn) {
+  document.querySelectorAll('.wtab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.wtab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('wtab-' + name).classList.add('active');
 }
 
 async function savePaymentEmail() {
