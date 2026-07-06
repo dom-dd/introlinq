@@ -40,6 +40,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     <input type="text" id="pub-input" placeholder="e.g. little-green-agency">
     <button onclick="loadBoard()">Load</button>
   </div>
+  <div style="font-size:0.8125rem;font-weight:600;color:#4a4a6a;margin-bottom:0.75rem">Expert Carousel</div>
+  <div class="board-wrap" id="carousel-wrap" style="margin-bottom:2rem">
+    <div style="text-align:center;padding:2rem;color:#8888a8;font-size:0.875rem">Enter a publisher slug above and click Load.</div>
+  </div>
+  <div style="font-size:0.8125rem;font-weight:600;color:#4a4a6a;margin-bottom:0.75rem">ExpertBoard (full grid)</div>
   <div class="board-wrap" id="board-wrap">
     <div style="text-align:center;padding:3rem;color:#8888a8;font-size:0.875rem">Enter a publisher slug above and click Load.</div>
   </div>
@@ -54,23 +59,32 @@ function loadBoard() {
   var pub = document.getElementById('pub-input').value.trim();
   if (!pub) return;
   history.replaceState(null, '', '?pub=' + encodeURIComponent(pub));
+  var ts = Date.now();
 
-  // Remove existing board script if any
-  var old = document.getElementById('il-board-script');
-  if (old) old.remove();
-  var oldBoard = document.getElementById('il-board');
-  if (oldBoard) oldBoard.remove();
+  // Carousel
+  var oldC = document.getElementById('il-carousel-script');
+  if (oldC) oldC.remove();
+  var oldCt = document.getElementById('il-carousel-target');
+  if (oldCt) oldCt.remove();
+  document.getElementById('carousel-wrap').innerHTML = '<div id="il-carousel-target"></div>';
+  var cs = document.createElement('script');
+  cs.id = 'il-carousel-script';
+  cs.src = 'https://www.introlinq.com/carousel.js?v=' + ts;
+  cs.setAttribute('data-publisher', pub);
+  document.getElementById('carousel-wrap').appendChild(cs);
 
-  // Reset container
+  // Board grid
+  var oldB = document.getElementById('il-board-script');
+  if (oldB) oldB.remove();
+  var oldBt = document.getElementById('il-board-target');
+  if (oldBt) oldBt.remove();
   document.getElementById('board-wrap').innerHTML = '<div id="il-board-target"></div>';
-
-  // Inject fresh script
-  var s = document.createElement('script');
-  s.id = 'il-board-script';
-  s.src = 'https://www.introlinq.com/expertboard.js?v=' + Date.now();
-  s.setAttribute('data-publisher', pub);
-  s.setAttribute('data-container', 'il-board-target');
-  document.getElementById('board-wrap').appendChild(s);
+  var bs = document.createElement('script');
+  bs.id = 'il-board-script';
+  bs.src = 'https://www.introlinq.com/expertboard.js?v=' + ts;
+  bs.setAttribute('data-publisher', pub);
+  bs.setAttribute('data-container', 'il-board-target');
+  document.getElementById('board-wrap').appendChild(bs);
 }
 
 // Auto-load from URL param

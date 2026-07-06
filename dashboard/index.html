@@ -345,8 +345,19 @@ tr:last-child td{border-bottom:none}
 
       <div class="section">
         <div class="section-header">
+          <div class="section-title">Expert Carousel</div>
+          <div class="section-sub">A scrollable row of expert cards - drop it at the end of any article or page</div>
+        </div>
+        <div class="embed-box">
+          <div class="embed-code" id="carousel-embed-display"></div>
+          <button class="copy-btn" onclick="copyCarouselEmbed()">Copy code</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
           <div class="section-title">ExpertBoard</div>
-          <div class="section-sub">A browsable directory of your experts - paste anywhere on your site to let readers find and book directly</div>
+          <div class="section-sub">A full browsable directory - ideal for a dedicated "Book an expert" page</div>
         </div>
         <div class="embed-box">
           <div class="embed-code" id="board-embed-display"></div>
@@ -560,6 +571,8 @@ async function loadDashboard() {
   document.getElementById('embed-display').textContent = embedCode;
   const gtmCode = `<script>window.IL_PUBLISHER_ID = '${esc(d.publisher.slug)}';<\/script>\n<script src="https://www.introlinq.com/widget.js"><\/script>`;
   document.getElementById('gtm-embed-display').textContent = gtmCode;
+  const carouselCode = `<script src="https://www.introlinq.com/carousel.js" data-publisher="${esc(d.publisher.slug)}"><\/script>`;
+  document.getElementById('carousel-embed-display').textContent = carouselCode;
   const boardCode = `<script src="https://www.introlinq.com/expertboard.js" data-publisher="${esc(d.publisher.slug)}"><\/script>`;
   document.getElementById('board-embed-display').textContent = boardCode;
   document.getElementById('install-guide-link').href = `/install?pub=${encodeURIComponent(d.publisher.slug)}`;
@@ -727,6 +740,11 @@ function copyEmbed() {
 function copyGtmEmbed() {
   navigator.clipboard.writeText(document.getElementById('gtm-embed-display').textContent.trim());
   toast('GTM code copied!');
+}
+
+function copyCarouselEmbed() {
+  navigator.clipboard.writeText(document.getElementById('carousel-embed-display').textContent.trim());
+  toast('Carousel code copied!');
 }
 
 function copyBoardEmbed() {
