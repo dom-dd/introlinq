@@ -1366,11 +1366,12 @@ async function loadHeadlines() {
   _hlExperts = await res.json();
   if (!_hlExperts.length) { tbody.innerHTML = '<tr><td colspan="3" class="empty">No experts found.</td></tr>'; return; }
   tbody.innerHTML = _hlExperts.map(e => {
-    const hl = (e.headlines && e.headlines.en) || '';
+    const hl = (e.headlines && e.headlines.en) || e.bio || '';
+    const isManual = !!(e.headlines && e.headlines.en);
     const translated = e.headlines && Object.keys(e.headlines).length > 1;
     return `<tr id="hl-row-${e.id}">
       <td style="font-size:0.8125rem"><strong>${esc(e.name)}</strong><br><span style="font-size:0.75rem;color:var(--ink-muted)">${esc(e.position || '')}${e.company ? ' · ' + esc(e.company) : ''}</span></td>
-      <td><input class="form-input" style="padding:0.35rem 0.6rem;font-size:0.8rem" id="hl-input-${e.id}" value="${esc(hl)}" placeholder="e.g. £500m exit"></td>
+      <td><input class="form-input" style="padding:0.35rem 0.6rem;font-size:0.8rem;${isManual ? '' : 'color:var(--ink-muted)'}" id="hl-input-${e.id}" value="${esc(hl)}" placeholder="e.g. £500m exit" title="${isManual ? 'Manual headline' : 'From OpenIntro short description — save to customise'}"></td>
       <td style="white-space:nowrap;display:flex;gap:0.375rem;align-items:center">
         <button class="btn btn-primary btn-sm" onclick="saveOneHeadline(${e.id})">Save</button>
         <button class="btn btn-ghost btn-sm" onclick="autoHeadline(${e.id})" title="Auto-generate from bio">✨</button>
@@ -1417,7 +1418,8 @@ async function autoHeadline(expertId) {
 }
 
 async function generateMissingHeadlines() {
-  const missing = _hlExperts.filter(e => !e.headlines || !e.headlines.en);
+  // Only generate for experts with no manual headline AND no bio to fall back on
+  const missing = _hlExperts.filter(e => !e.headlines?.en && !e.bio);
   if (!missing.length) { toast('All experts already have headlines'); return; }
   const btn = document.getElementById('hl-generate-btn');
   btn.disabled = true;

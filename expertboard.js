@@ -171,7 +171,7 @@
 
     grid.innerHTML = filtered.map(function(e) {
       var fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=96&name=' + encodeURIComponent(e.name);
-      var headline = (e.headlines || {})[_lang] || (e.headlines || {})['en'] || '';
+      var headline = (e.headlines || {})[_lang] || (e.headlines || {})['en'] || e.bio || '';
       var role = [e.position, e.company].filter(Boolean).join(' · ');
       var topics = (e.topics || []).slice(0, 3);
       var iso = countryToISO(e.location_country || '');
