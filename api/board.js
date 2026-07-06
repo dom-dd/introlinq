@@ -11,6 +11,11 @@ export default async function handler(req, res) {
 
   if (!pub) return res.status(400).json({ error: 'pub required' });
 
+  await Promise.all([
+    sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS carousel_title TEXT`.catch(() => {}),
+    sql`ALTER TABLE experts ADD COLUMN IF NOT EXISTS headlines JSONB DEFAULT '{}'`.catch(() => {}),
+  ]);
+
   const [publisher] = await sql`
     SELECT name, widget_color, accent_color, carousel_title, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners
     FROM publishers WHERE slug = ${pub} AND active = true LIMIT 1
