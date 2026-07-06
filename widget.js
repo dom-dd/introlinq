@@ -67,7 +67,7 @@
       injectStyles(cfg);
       var popup = createPopup(cfg);
       var shown = highlightMatches(el, data.matches, popup, cfg);
-      if (shown === 0 && data.matches.length > 0) {
+      if (shown === 0 && data.matches.length > 0 && attempt < 2) {
         _started = false;
         setTimeout(function () { safeInit(); }, 1000);
       }
