@@ -215,8 +215,33 @@ tr:last-child td{border-bottom:none}
 .wtab-panel.active{display:block}
 
 /* ── Widget preview mockups ── */
-.wpreview{background:var(--cream);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:1.5rem;overflow:hidden;height:148px;display:flex;align-items:center;justify-content:center;position:relative}
+.wpreview{background:var(--cream);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:1.5rem;overflow:hidden;min-height:148px;height:auto;display:flex;gap:2rem;align-items:center;position:relative}
+.wpreview-desc{flex:0 0 190px;pointer-events:none;user-select:none;padding-right:0.5rem;border-right:1px solid var(--border)}
+.wpreview-desc-label{font-size:0.625rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-muted);margin-bottom:0.375rem}
+.wpreview-desc-text{font-size:0.8rem;color:var(--ink);line-height:1.55;font-weight:500;margin-bottom:0.3rem}
+.wpreview-desc-sub{font-size:0.72rem;color:var(--ink-muted);line-height:1.5}
+.wpreview-anim{flex:1;min-width:0;pointer-events:none;user-select:none}
 .wpreview-inner{pointer-events:none;user-select:none;width:100%}
+
+/* ── Embed tabs ── */
+.etab-group{padding:0 1.5rem 1.25rem}
+.etab-nav{display:flex;border:1px solid var(--border);border-radius:8px 8px 0 0;overflow:hidden;border-bottom:none}
+.etab-btn{flex:1;padding:0.55rem 1rem;font-size:0.8rem;font-weight:500;color:var(--ink-muted);border:none;background:var(--cream);cursor:pointer;font-family:'Inter',sans-serif;border-bottom:2px solid transparent;transition:all .15s;text-align:center}
+.etab-btn+.etab-btn{border-left:1px solid var(--border)}
+.etab-btn:hover{color:var(--ink);background:#fff}
+.etab-btn.active{color:var(--ink);background:var(--white);border-bottom-color:var(--gold);font-weight:600}
+.etab-panel{display:none;border:1px solid var(--border);border-radius:0 0 8px 8px;padding:0.875rem 1rem}
+.etab-panel.active{display:block}
+.etab-panel .embed-box{background:none;border:none;padding:0;box-shadow:none}
+.etab-panel .embed-code{background:#f6f6fa;border:1px solid var(--border);border-radius:6px;padding:0.625rem 0.75rem;font-size:0.72rem;color:var(--ink);white-space:pre-wrap;word-break:break-all;font-family:'Courier New',monospace;margin-bottom:0.5rem;line-height:1.5}
+.etab-panel .copy-btn{margin:0}
+
+/* ── Install guide row ── */
+.install-guide-row{display:flex;align-items:center;gap:0.875rem;padding:0.625rem 1.5rem 1.25rem;flex-wrap:wrap}
+.install-guide-label{font-size:0.72rem;color:var(--ink-muted);flex-shrink:0}
+.install-guide-icons{display:flex;gap:0.375rem;flex-wrap:wrap;align-items:center}
+.install-guide-icon{display:flex;align-items:center;gap:0.3rem;font-size:0.72rem;color:var(--ink-muted);text-decoration:none;padding:0.25rem 0.5rem;border-radius:6px;border:1px solid var(--border);background:var(--white);transition:all .15s;line-height:1}
+.install-guide-icon:hover{color:var(--ink);border-color:#ccc;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 
 /* Text widget preview */
 .prev-line{height:8px;border-radius:4px;background:#e4e4ee;margin-bottom:7px}
@@ -399,47 +424,68 @@ tr:last-child td{border-bottom:none}
 
       <!-- TEXT WIDGET -->
       <div class="wtab-panel active" id="wtab-text">
-        <!-- Preview -->
         <div class="wpreview">
-          <div class="wpreview-inner" style="max-width:480px">
-            <div style="display:flex;gap:1.5rem;align-items:center">
-              <div style="flex:1">
-                <div class="prev-line" style="width:90%"></div>
-                <div class="prev-line" style="width:75%"></div>
-                <div style="margin-bottom:7px;font-size:0.72rem;color:var(--ink-muted)">
-                  Advice on <span class="prev-highlight">fundraising strategy</span> for your round
+          <div class="wpreview-desc">
+            <div class="wpreview-desc-label">Text Widget</div>
+            <div class="wpreview-desc-text">Highlights phrases in your articles and shows a matching expert popup when readers hover.</div>
+            <div class="wpreview-desc-sub">Works automatically — no article edits needed. One snippet in your blog template is all it takes.</div>
+          </div>
+          <div class="wpreview-anim">
+            <div class="wpreview-inner">
+              <div style="display:flex;gap:1.25rem;align-items:center">
+                <div style="flex:1">
+                  <div class="prev-line" style="width:90%"></div>
+                  <div class="prev-line" style="width:75%"></div>
+                  <div style="margin-bottom:7px;font-size:0.72rem;color:var(--ink-muted)">Advice on <span class="prev-highlight">fundraising strategy</span> for your round</div>
+                  <div class="prev-line" style="width:85%"></div>
+                  <div class="prev-line" style="width:60%"></div>
                 </div>
-                <div class="prev-line" style="width:85%"></div>
-                <div class="prev-line" style="width:60%"></div>
-              </div>
-              <div class="prev-popup" style="position:relative;right:auto;top:auto;transform:none;animation:popup-float 4s ease-in-out infinite">
-                <div class="prev-popup-row">
-                  <div class="prev-avatar"></div>
-                  <div class="prev-name-block">
-                    <div class="prev-name-line"></div>
-                    <div class="prev-role-line"></div>
+                <div class="prev-popup" style="position:relative;right:auto;top:auto;transform:none;animation:popup-float 4s ease-in-out infinite;flex-shrink:0">
+                  <div class="prev-popup-row">
+                    <div class="prev-avatar"></div>
+                    <div class="prev-name-block">
+                      <div class="prev-name-line"></div>
+                      <div class="prev-role-line"></div>
+                    </div>
                   </div>
+                  <div class="prev-book-btn"></div>
                 </div>
-                <div class="prev-book-btn"></div>
               </div>
             </div>
           </div>
         </div>
-        <!-- Embed -->
+        <!-- Install -->
         <div class="section">
           <div class="section-header">
-            <div class="section-title">Embed code</div>
-            <div class="section-sub">Paste this before the &lt;/body&gt; tag on your site — <a id="install-guide-link" href="/install" style="color:var(--sage);text-decoration:none;font-weight:500">installation guide →</a></div>
+            <div class="section-title">Install</div>
+            <div class="section-sub">Add to your blog template once — works on every article automatically</div>
           </div>
-          <div class="embed-box">
-            <div class="embed-code" id="embed-display"></div>
-            <button class="copy-btn" onclick="copyEmbed()">Copy</button>
-          </div>
-          <div style="margin-top:0.75rem">
-            <div class="section-sub" style="margin-bottom:0.5rem;padding-left:1.5rem">Using Google Tag Manager?</div>
-            <div class="embed-box" style="padding-top:0">
+          <div class="etab-group">
+            <div class="etab-nav">
+              <button class="etab-btn active" onclick="switchEmbedTab('your-site',this)">Your site</button>
+              <button class="etab-btn" onclick="switchEmbedTab('tag-manager',this)">Google Tag Manager</button>
+            </div>
+            <div class="etab-panel active" data-etab="your-site">
+              <div class="section-sub" style="margin-bottom:0.625rem">Paste before the <code style="font-size:0.75rem;background:#f0f0f8;padding:1px 4px;border-radius:3px">&lt;/body&gt;</code> tag in your blog template</div>
+              <div class="embed-code" id="embed-display"></div>
+              <button class="copy-btn" onclick="copyEmbed()">Copy</button>
+            </div>
+            <div class="etab-panel" data-etab="tag-manager">
+              <div class="section-sub" style="margin-bottom:0.625rem">Add a Custom HTML tag in GTM — fire on All Pages</div>
               <div class="embed-code" id="gtm-embed-display"></div>
               <button class="copy-btn" onclick="copyGtmEmbed()">Copy</button>
+            </div>
+          </div>
+          <div class="install-guide-row">
+            <span class="install-guide-label">Guides:</span>
+            <div class="install-guide-icons">
+              <a class="install-guide-icon" id="install-guide-link" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#21759b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 14.5l-3-8.5h1.5l1.8 5.1 1.7-5.1h1.5l-3 8.5zm6.3 0h-1.5l-1.8-5.1-1.2 3.6.9 2.5H13l-1.2-3.3L13 9h1.5l1.8 5.1 1.5-5.1h1.5l-2.5 7.5z"/></svg> WordPress</a>
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#15171a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg> Ghost</a>
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#4353ff"><path d="M17.5 3h-11C4.67 3 3 4.67 3 6.5v11C3 19.33 4.67 21 6.5 21h11c1.83 0 3.5-1.67 3.5-3.5v-11C21 4.67 19.33 3 17.5 3zm-2.1 10.5l-2.4-4-1.6 2.7L10 10.5l-2.5 4.5h9.9l-2-1.5z"/></svg> Webflow</a>
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#000"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Squarespace</a>
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#FAAD4D"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg> Wix</a>
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#0055FF"><path d="M5 3h14v6h-7zm0 6h7l7 6H5zm0 6h7v6z"/></svg> Framer</a>
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Other</a>
             </div>
           </div>
         </div>
@@ -506,94 +552,202 @@ tr:last-child td{border-bottom:none}
 
       <!-- EXPERT CAROUSEL -->
       <div class="wtab-panel" id="wtab-carousel">
-        <!-- Preview -->
         <div class="wpreview">
-          <div class="wpreview-inner">
-            <div class="prev-carousel-header">
-              <div class="prev-carousel-label">Suggested experts to speak to</div>
-              <div class="prev-carousel-arrows">
-                <div class="prev-arrow"><svg width="5" height="8" viewBox="0 0 6 10" fill="none" stroke="#aaa" stroke-width="1.5" stroke-linecap="round"><polyline points="5 1 1 5 5 9"/></svg></div>
-                <div class="prev-arrow"><svg width="5" height="8" viewBox="0 0 6 10" fill="none" stroke="#aaa" stroke-width="1.5" stroke-linecap="round"><polyline points="1 1 5 5 1 9"/></svg></div>
+          <div class="wpreview-desc">
+            <div class="wpreview-desc-label">Expert Carousel</div>
+            <div class="wpreview-desc-text">A scrollable row of expert cards — drop it at the end of any article or page.</div>
+            <div class="wpreview-desc-sub">Readers can browse experts and book a call directly, without leaving your site.</div>
+          </div>
+          <div class="wpreview-anim">
+            <div class="wpreview-inner">
+              <div class="prev-carousel-header">
+                <div class="prev-carousel-label">Suggested experts to speak to</div>
+                <div class="prev-carousel-arrows">
+                  <div class="prev-arrow"><svg width="5" height="8" viewBox="0 0 6 10" fill="none" stroke="#aaa" stroke-width="1.5" stroke-linecap="round"><polyline points="5 1 1 5 5 9"/></svg></div>
+                  <div class="prev-arrow"><svg width="5" height="8" viewBox="0 0 6 10" fill="none" stroke="#aaa" stroke-width="1.5" stroke-linecap="round"><polyline points="1 1 5 5 1 9"/></svg></div>
+                </div>
               </div>
-            </div>
-            <div class="prev-track-wrap">
-              <div class="prev-track">
-                <!-- 6 cards duplicated for seamless loop -->
-                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                <!-- duplicate for seamless loop -->
-                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+              <div class="prev-track-wrap">
+                <div class="prev-track">
+                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-        <!-- Embed -->
+        <!-- Install -->
         <div class="section">
           <div class="section-header">
-            <div class="section-title">Embed code</div>
-            <div class="section-sub">Drop this at the bottom of any article or page</div>
+            <div class="section-title">Install</div>
+            <div class="section-sub">Paste once where you want the carousel to appear</div>
           </div>
-          <div class="embed-box">
-            <div class="embed-code" id="carousel-embed-display"></div>
-            <button class="copy-btn" onclick="copyCarouselEmbed()">Copy</button>
+          <div class="etab-group">
+            <div class="etab-nav">
+              <button class="etab-btn active" onclick="switchEmbedTab('your-site',this)">Your site</button>
+              <button class="etab-btn" onclick="switchEmbedTab('tag-manager',this)">Google Tag Manager</button>
+            </div>
+            <div class="etab-panel active" data-etab="your-site">
+              <div class="section-sub" style="margin-bottom:0.625rem">Paste in your HTML where you want the carousel to appear</div>
+              <div class="embed-code" id="carousel-embed-display"></div>
+              <button class="copy-btn" onclick="copyCarouselEmbed()">Copy</button>
+            </div>
+            <div class="etab-panel" data-etab="tag-manager">
+              <div class="section-sub" style="margin-bottom:0.625rem">Add a Custom HTML tag in GTM — fire on the pages where you want the carousel</div>
+              <div class="embed-code" id="carousel-gtm-display"></div>
+              <button class="copy-btn" onclick="copyCarouselGtm()">Copy</button>
+            </div>
+          </div>
+          <div class="install-guide-row">
+            <span class="install-guide-label">Guides:</span>
+            <div class="install-guide-icons">
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#21759b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 14.5l-3-8.5h1.5l1.8 5.1 1.7-5.1h1.5l-3 8.5zm6.3 0h-1.5l-1.8-5.1-1.2 3.6.9 2.5H13l-1.2-3.3L13 9h1.5l1.8 5.1 1.5-5.1h1.5l-2.5 7.5z"/></svg> WordPress</a>
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#15171a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg> Ghost</a>
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#4353ff"><path d="M17.5 3h-11C4.67 3 3 4.67 3 6.5v11C3 19.33 4.67 21 6.5 21h11c1.83 0 3.5-1.67 3.5-3.5v-11C21 4.67 19.33 3 17.5 3zm-2.1 10.5l-2.4-4-1.6 2.7L10 10.5l-2.5 4.5h9.9l-2-1.5z"/></svg> Webflow</a>
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#000"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Squarespace</a>
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#FAAD4D"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg> Wix</a>
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#0055FF"><path d="M5 3h14v6h-7zm0 6h7l7 6H5zm0 6h7v6z"/></svg> Framer</a>
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Other</a>
+            </div>
           </div>
         </div>
-        <!-- Carousel settings -->
+        <!-- Settings -->
         <div class="section">
           <div class="section-header">
-            <div class="section-title">Carousel title</div>
-            <div class="section-sub">Heading shown above the carousel on your site</div>
+            <div class="section-title">Appearance</div>
+            <div class="section-sub">Changes save instantly — applies to all widgets</div>
           </div>
-          <div style="padding:0 1.5rem 1.5rem;display:flex;gap:0.625rem;align-items:center;max-width:480px">
-            <input type="text" id="carousel-title-input" class="color-hex" style="flex:1;font-family:'Inter',sans-serif" placeholder="Suggested experts to speak to">
-            <button class="copy-btn" onclick="saveCarouselTitle()">Save</button>
+          <div class="settings-cols">
+            <div class="settings-col settings-col-colors">
+              <div class="setting-block">
+                <div class="setting-title">Carousel title</div>
+                <div class="setting-desc">Heading shown above the carousel on your site</div>
+                <div style="display:flex;gap:0.5rem;align-items:center;max-width:360px;margin-top:0.375rem">
+                  <input type="text" id="carousel-title-input" class="color-hex" style="flex:1;font-family:'Inter',sans-serif" placeholder="Suggested experts to speak to">
+                  <button class="copy-btn" onclick="saveCarouselTitle()">Save</button>
+                </div>
+              </div>
+            </div>
+            <div class="settings-col settings-col-colors">
+              <div class="setting-block">
+                <div class="setting-title">Button colour</div>
+                <div class="setting-desc">Book button colour on carousel cards</div>
+                <div class="color-row">
+                  <input type="color" class="color-picker" id="c-accent-picker" oninput="onColorInput('accent','accent_color',this.value)">
+                  <input type="text" class="color-hex" id="c-accent-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('accent','accent_color','c-accent-picker',this.value)">
+                  <button class="color-reset" title="Reset" onclick="resetColor('accent','accent_color')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- EXPERTBOARD -->
       <div class="wtab-panel" id="wtab-board">
-        <!-- Preview -->
         <div class="wpreview">
-          <div class="wpreview-inner" style="max-width:420px">
-            <div class="prev-board-search">
-              <div class="prev-board-search-icon"></div>
-              <div class="prev-board-search-bar"></div>
-            </div>
-            <div class="prev-board-filters">
-              <div class="prev-board-filter active" style="width:28px"></div>
-              <div class="prev-board-filter" style="width:44px"></div>
-              <div class="prev-board-filter" style="width:38px"></div>
-              <div class="prev-board-filter" style="width:50px"></div>
-            </div>
-            <div class="prev-board-grid">
-              <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:70%"></div><div class="prev-board-btn"></div></div>
-              <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:60%"></div><div class="prev-board-btn"></div></div>
-              <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:80%"></div><div class="prev-board-btn"></div></div>
-              <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:65%"></div><div class="prev-board-btn"></div></div>
-              <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:75%"></div><div class="prev-board-btn"></div></div>
-              <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:55%"></div><div class="prev-board-btn"></div></div>
+          <div class="wpreview-desc">
+            <div class="wpreview-desc-label">ExpertBoard</div>
+            <div class="wpreview-desc-text">A full browsable expert directory with search and topic filters.</div>
+            <div class="wpreview-desc-sub">Ideal for a dedicated "Meet our experts" page — lets readers find and book the right person.</div>
+          </div>
+          <div class="wpreview-anim">
+            <div class="wpreview-inner">
+              <div class="prev-board-search">
+                <div class="prev-board-search-icon"></div>
+                <div class="prev-board-search-bar"></div>
+              </div>
+              <div class="prev-board-filters">
+                <div class="prev-board-filter active" style="width:28px"></div>
+                <div class="prev-board-filter" style="width:44px"></div>
+                <div class="prev-board-filter" style="width:38px"></div>
+                <div class="prev-board-filter" style="width:50px"></div>
+              </div>
+              <div class="prev-board-grid">
+                <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:70%"></div><div class="prev-board-btn"></div></div>
+                <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:60%"></div><div class="prev-board-btn"></div></div>
+                <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:80%"></div><div class="prev-board-btn"></div></div>
+                <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:65%"></div><div class="prev-board-btn"></div></div>
+                <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:75%"></div><div class="prev-board-btn"></div></div>
+                <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:55%"></div><div class="prev-board-btn"></div></div>
+              </div>
             </div>
           </div>
         </div>
-        <!-- Embed -->
+        <!-- Install -->
         <div class="section">
           <div class="section-header">
-            <div class="section-title">Embed code</div>
+            <div class="section-title">Install</div>
             <div class="section-sub">Best placed on a dedicated page — gives visitors a full browsable expert directory</div>
           </div>
-          <div class="embed-box">
-            <div class="embed-code" id="board-embed-display"></div>
-            <button class="copy-btn" onclick="copyBoardEmbed()">Copy</button>
+          <div class="etab-group">
+            <div class="etab-nav">
+              <button class="etab-btn active" onclick="switchEmbedTab('your-site',this)">Your site</button>
+              <button class="etab-btn" onclick="switchEmbedTab('tag-manager',this)">Google Tag Manager</button>
+            </div>
+            <div class="etab-panel active" data-etab="your-site">
+              <div class="section-sub" style="margin-bottom:0.625rem">Paste in the page where you want the expert directory to appear</div>
+              <div class="embed-code" id="board-embed-display"></div>
+              <button class="copy-btn" onclick="copyBoardEmbed()">Copy</button>
+            </div>
+            <div class="etab-panel" data-etab="tag-manager">
+              <div class="section-sub" style="margin-bottom:0.625rem">Add a Custom HTML tag in GTM — fire on the page where you want the directory</div>
+              <div class="embed-code" id="board-gtm-display"></div>
+              <button class="copy-btn" onclick="copyBoardGtm()">Copy</button>
+            </div>
+          </div>
+          <div class="install-guide-row">
+            <span class="install-guide-label">Guides:</span>
+            <div class="install-guide-icons">
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#21759b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 14.5l-3-8.5h1.5l1.8 5.1 1.7-5.1h1.5l-3 8.5zm6.3 0h-1.5l-1.8-5.1-1.2 3.6.9 2.5H13l-1.2-3.3L13 9h1.5l1.8 5.1 1.5-5.1h1.5l-2.5 7.5z"/></svg> WordPress</a>
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#15171a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg> Ghost</a>
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#4353ff"><path d="M17.5 3h-11C4.67 3 3 4.67 3 6.5v11C3 19.33 4.67 21 6.5 21h11c1.83 0 3.5-1.67 3.5-3.5v-11C21 4.67 19.33 3 17.5 3zm-2.1 10.5l-2.4-4-1.6 2.7L10 10.5l-2.5 4.5h9.9l-2-1.5z"/></svg> Webflow</a>
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#000"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Squarespace</a>
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#FAAD4D"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg> Wix</a>
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#0055FF"><path d="M5 3h14v6h-7zm0 6h7l7 6H5zm0 6h7v6z"/></svg> Framer</a>
+              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Other</a>
+            </div>
+          </div>
+        </div>
+        <!-- Settings -->
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Appearance</div>
+            <div class="section-sub">Changes save instantly — applies to all widgets</div>
+          </div>
+          <div class="settings-cols">
+            <div class="settings-col settings-col-colors">
+              <div class="setting-block">
+                <div class="setting-title">Link colour</div>
+                <div class="setting-desc">Highlight colour used on topic filters</div>
+                <div class="color-row">
+                  <input type="color" class="color-picker" id="b-color-picker" oninput="onColorInput('color','widget_color',this.value)">
+                  <input type="text" class="color-hex" id="b-color-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('color','widget_color','b-color-picker',this.value)">
+                  <button class="color-reset" title="Reset" onclick="resetColor('color','widget_color')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+                </div>
+              </div>
+            </div>
+            <div class="settings-col settings-col-colors">
+              <div class="setting-block">
+                <div class="setting-title">Button colour</div>
+                <div class="setting-desc">Book button colour on expert cards</div>
+                <div class="color-row">
+                  <input type="color" class="color-picker" id="b-accent-picker" oninput="onColorInput('accent','accent_color',this.value)">
+                  <input type="text" class="color-hex" id="b-accent-hex" maxlength="7" placeholder="#e6a820" oninput="onHexInput('accent','accent_color','b-accent-picker',this.value)">
+                  <button class="color-reset" title="Reset" onclick="resetColor('accent','accent_color')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -743,14 +897,22 @@ async function loadDashboard() {
   }
 
   // Widget tab
+  const pubSlug = esc(d.publisher.slug);
   document.getElementById('embed-display').textContent = embedCode;
-  const gtmCode = `<script>window.IL_PUBLISHER_ID = '${esc(d.publisher.slug)}';<\/script>\n<script src="https://www.introlinq.com/widget.js"><\/script>`;
+  const gtmCode = `<script>window.IL_PUBLISHER_ID = '${pubSlug}';<\/script>\n<script src="https://www.introlinq.com/widget.js"><\/script>`;
   document.getElementById('gtm-embed-display').textContent = gtmCode;
-  const carouselCode = `<script src="https://www.introlinq.com/carousel.js" data-publisher="${esc(d.publisher.slug)}"><\/script>`;
+  const carouselCode = `<script src="https://www.introlinq.com/carousel.js" data-publisher="${pubSlug}"><\/script>`;
   document.getElementById('carousel-embed-display').textContent = carouselCode;
-  const boardCode = `<script src="https://www.introlinq.com/expertboard.js" data-publisher="${esc(d.publisher.slug)}"><\/script>`;
+  const carouselGtmCode = `<script>window.IL_CAROUSEL_PUBLISHER = '${pubSlug}';<\/script>\n<script src="https://www.introlinq.com/carousel.js"><\/script>`;
+  document.getElementById('carousel-gtm-display').textContent = carouselGtmCode;
+  const boardCode = `<script src="https://www.introlinq.com/expertboard.js" data-publisher="${pubSlug}"><\/script>`;
   document.getElementById('board-embed-display').textContent = boardCode;
-  document.getElementById('install-guide-link').href = `/install?pub=${encodeURIComponent(d.publisher.slug)}`;
+  const boardGtmCode = `<script>window.IL_BOARD_PUBLISHER = '${pubSlug}';<\/script>\n<script src="https://www.introlinq.com/expertboard.js"><\/script>`;
+  document.getElementById('board-gtm-display').textContent = boardGtmCode;
+  const installUrl = `/install?pub=${encodeURIComponent(d.publisher.slug)}`;
+  document.querySelectorAll('.install-guide-icon, #install-guide-link').forEach(function(a) {
+    if ((a.getAttribute('href') || '').includes('/install')) a.href = installUrl;
+  });
   const p = d.publisher;
   settings.color = p.widget_color || '#e6a820';
   settings.accent = p.accent_color || '#e6a820';
@@ -820,11 +982,21 @@ function renderBookingHistory(bk) {
 
 // ── Settings ────────────────────────────────────────────────────────────────
 
+function syncColorPickers(settingKey, value) {
+  var pairs = settingKey === 'color'
+    ? [['color-picker','color-hex'],['b-color-picker','b-color-hex']]
+    : [['accent-picker','accent-hex'],['c-accent-picker','c-accent-hex'],['b-accent-picker','b-accent-hex']];
+  pairs.forEach(function(ids) {
+    var p = document.getElementById(ids[0]);
+    var h = document.getElementById(ids[1]);
+    if (p) p.value = value;
+    if (h) h.value = value;
+  });
+}
+
 function renderSettings() {
-  document.getElementById('color-picker').value = settings.color;
-  document.getElementById('color-hex').value = settings.color;
-  document.getElementById('accent-picker').value = settings.accent;
-  document.getElementById('accent-hex').value = settings.accent;
+  syncColorPickers('color', settings.color);
+  syncColorPickers('accent', settings.accent);
   setActive('size-group', settings.size);
   setActive('power-group', settings.power);
   setActive('sensitivity-group', settings.sensitivity);
@@ -846,25 +1018,21 @@ function pick(type, el) {
 const DEFAULT_COLOR = '#e6a820';
 
 function resetColor(settingKey, field) {
-  const pickerId = settingKey === 'color' ? 'color-picker' : 'accent-picker';
-  const hexId = settingKey === 'color' ? 'color-hex' : 'accent-hex';
   settings[settingKey] = DEFAULT_COLOR;
-  document.getElementById(pickerId).value = DEFAULT_COLOR;
-  document.getElementById(hexId).value = DEFAULT_COLOR;
+  syncColorPickers(settingKey, DEFAULT_COLOR);
   saveSetting(field, DEFAULT_COLOR, null);
 }
 
 function onColorInput(settingKey, field, value) {
   settings[settingKey] = value;
-  const hexId = settingKey === 'color' ? 'color-hex' : 'accent-hex';
-  document.getElementById(hexId).value = value;
+  syncColorPickers(settingKey, value);
   saveSetting(field, value);
 }
 
 function onHexInput(settingKey, field, pickerId, value) {
   if (!/^#[0-9a-fA-F]{6}$/.test(value)) return;
   settings[settingKey] = value;
-  document.getElementById(pickerId).value = value;
+  syncColorPickers(settingKey, value);
   saveSetting(field, value);
 }
 
@@ -905,6 +1073,24 @@ function switchWidgetTab(name, btn) {
   document.querySelectorAll('.wtab-panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('wtab-' + name).classList.add('active');
+}
+
+function switchEmbedTab(name, btn) {
+  var group = btn.closest('.etab-group');
+  group.querySelectorAll('.etab-btn').forEach(function(b) { b.classList.remove('active'); });
+  group.querySelectorAll('.etab-panel').forEach(function(p) { p.classList.remove('active'); });
+  btn.classList.add('active');
+  group.querySelector('[data-etab="' + name + '"]').classList.add('active');
+}
+
+function copyCarouselGtm() {
+  navigator.clipboard.writeText(document.getElementById('carousel-gtm-display').textContent.trim());
+  toast('Carousel GTM code copied!');
+}
+
+function copyBoardGtm() {
+  navigator.clipboard.writeText(document.getElementById('board-gtm-display').textContent.trim());
+  toast('ExpertBoard GTM code copied!');
 }
 
 async function savePaymentEmail() {
