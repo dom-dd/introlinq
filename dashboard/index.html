@@ -424,6 +424,17 @@ tr:last-child td{border-bottom:none}
         </div>
       </div>
 
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Carousel title</div>
+          <div class="section-sub">Heading shown above the expert carousel on your site</div>
+        </div>
+        <div style="padding:0 1.5rem 1.5rem;display:flex;gap:0.625rem;align-items:center;max-width:480px">
+          <input type="text" id="carousel-title-input" class="form-input" placeholder="Suggested experts to speak to" style="flex:1;padding:0.5rem 0.75rem;font-size:0.875rem">
+          <button class="btn btn-primary btn-sm" onclick="saveCarouselTitle()">Save</button>
+        </div>
+      </div>
+
       <div class="section" id="partners-section" style="display:none">
         <div class="section-header">
           <div class="section-title">Expert networks</div>
@@ -583,6 +594,7 @@ async function loadDashboard() {
   settings.power = p.match_power || 'moderate';
   settings.sensitivity = p.match_sensitivity || 'balanced';
   renderSettings();
+  document.getElementById('carousel-title-input').value = p.carousel_title || '';
 
   if (d.partners && d.partners.length) {
     document.getElementById('partners-section').style.display = 'block';
@@ -717,6 +729,11 @@ async function saveSetting(field, value, activeEl) {
     if (res.status === 401) { window.location.href = '/login'; return; }
     if (res.ok) toast('Saved');
   }
+}
+
+async function saveCarouselTitle() {
+  const val = document.getElementById('carousel-title-input').value.trim();
+  await saveSetting('carousel_title', val || null);
 }
 
 async function savePaymentEmail() {

@@ -60,7 +60,6 @@
     '#'+uid+' .ilc-tag{font-size:0.55rem;padding:0.125rem 0.35rem;border-radius:100px;background:#f0f0f8;color:#6a6a8a;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}',
     '#'+uid+' .ilc-btn{display:block;width:100%;text-align:center;padding:0.45rem 0.5rem;border-radius:100px;font-size:0.72rem;font-weight:700;text-decoration:none;background:var(--ilc-color);color:var(--ilc-color-contrast);transition:opacity .15s;font-family:inherit;margin-top:auto}',
     '#'+uid+' .ilc-btn:hover{opacity:0.85}',
-    '#'+uid+' .ilc-price{font-size:0.65rem;color:#888;margin-top:0.125rem}',
     '#'+uid+' .ilc-footer{margin-top:0.625rem;text-align:right;font-size:0.675rem;color:#ccc}',
     '#'+uid+' .ilc-footer a{color:#ccc;text-decoration:none}',
     '#'+uid+' .ilc-footer a:hover{color:#aaa}',
@@ -91,7 +90,6 @@
       var fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=96&name=' + encodeURIComponent(e.name);
       var iso = countryToISO(e.location_country || '');
       var flagHtml = iso ? '<img src="https://hatscripts.github.io/circle-flags/flags/'+iso.toLowerCase()+'.svg" style="width:11px;height:11px;border-radius:50%;vertical-align:middle;margin-left:6px" alt="">' : '';
-      var price = e.price_from ? 'From '+(e.price_currency||'USD')+' '+e.price_from : '';
       var tags = (e.topics || []).slice(0, 2);
       var role = [e.position, e.company].filter(Boolean).join(' · ');
       var bio = (e.headlines || {})[_lang] || (e.headlines || {})['en'] || e.bio || '';
@@ -110,7 +108,6 @@
         +(bio?'<div class="ilc-bio">'+esc(bio)+'</div>':'')
         +(tags.length?'<div class="ilc-tags">'+tags.map(function(t){return '<span class="ilc-tag">'+esc(t)+'</span>';}).join('')+'</div>':'')
         +(bookUrl!=='#'?'<a class="ilc-btn" href="'+esc(bookUrl)+'" target="_blank" rel="noopener">'+BOOK_LABEL+'</a>':'')
-        +(price?'<div class="ilc-price">'+esc(price)+'</div>':'')
         +'</div>';
     }).join('');
 
@@ -118,7 +115,7 @@
     var nextId = uid+'-next';
     container.innerHTML = '<div class="ilc-wrap">'
       +'<div class="ilc-header">'
-      +'<div class="ilc-label">Talk to an expert</div>'
+      +'<div class="ilc-label">'+(data.config.carousel_title||'Suggested experts to speak to')+'</div>'
       +'<div class="ilc-arrows">'
       +'<button class="ilc-arrow" id="'+prevId+'" aria-label="Previous">'
       +'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>'

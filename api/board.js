@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   if (!pub) return res.status(400).json({ error: 'pub required' });
 
   const [publisher] = await sql`
-    SELECT name, widget_color, accent_color, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners
+    SELECT name, widget_color, accent_color, carousel_title, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners
     FROM publishers WHERE slug = ${pub} AND active = true LIMIT 1
   `;
   if (!publisher) return res.status(404).json({ error: 'Publisher not found' });
@@ -42,6 +42,7 @@ export default async function handler(req, res) {
     config: {
       color: publisher.widget_color || '#e6a820',
       accent: publisher.accent_color || publisher.widget_color || '#e6a820',
+      carousel_title: publisher.carousel_title || null,
     }
   });
 }
