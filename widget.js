@@ -68,8 +68,8 @@
       var popup = createPopup(cfg);
       var shown = highlightMatches(el, data.matches, popup, cfg);
       if (shown === 0 && data.matches.length > 0) {
-        // Phrases not found in DOM - retry with fresh content
         _started = false;
+        setTimeout(function () { safeInit(); }, 1000);
       }
     })
     .catch(function () {});
@@ -164,13 +164,14 @@
     p.innerHTML =
       '<div style="display:flex;gap:12px;align-items:center;margin-bottom:' + (isSmall ? '8' : '10') + 'px">' +
         '<img id="il-ph" style="width:' + photoSize + 'px!important;height:' + photoSize + 'px!important;min-width:' + photoSize + 'px!important;min-height:' + photoSize + 'px!important;max-width:' + photoSize + 'px!important;max-height:' + photoSize + 'px!important;border-radius:50%!important;object-fit:cover!important;flex-shrink:0!important;background:#edf5f0!important;display:block!important" src="" alt="">' +
-        '<div>' +
+        '<div style="flex:1;min-width:0">' +
           '<div style="display:flex;align-items:center;gap:6px">' +
             '<div id="il-nm" style="font-weight:600;font-size:' + nameSize + ';color:#1a1a2e;line-height:1.25"></div>' +
             '<span id="il-fl" style="font-size:13px;line-height:1;flex-shrink:0"></span>' +
           '</div>' +
           '<div id="il-rl" style="font-size:11.5px;color:#4a4a6a;margin-top:2px;line-height:1.3"></div>' +
         '</div>' +
+        '<button id="il-cl" style="display:none;flex-shrink:0;background:none;border:none;cursor:pointer;color:#8888a8;font-size:18px;line-height:1;padding:0 0 0 4px;align-self:flex-start" aria-label="Close">&times;</button>' +
       '</div>' +
       (isSmall ? '' : '<div id="il-rs" style="font-size:' + (isLarge ? '13px' : '12.5px') + ';color:#4a4a6a;line-height:1.6;margin-bottom:12px;font-style:italic;border-left:2px solid ' + hexToRgba(accent, 0.3) + ';padding-left:10px"></div>') +
       '<a id="il-bk" href="#" target="_blank" rel="noopener" style="display:block;background:' + accent + ';color:' + getContrastColor(accent) + ';text-align:center;padding:' + (isSmall ? '7' : '9') + 'px;border-radius:100px;font-size:13px;font-weight:700;text-decoration:none">' + BOOK_LABEL + '</a>' +
@@ -179,6 +180,11 @@
     p.addEventListener('mouseenter', function () { clearTimeout(hideTimer); });
     p.addEventListener('mouseleave', function () { scheduleHide(p); });
     if ('ontouchstart' in window) {
+      var cl = document.getElementById('il-cl');
+      if (cl) {
+        cl.style.display = 'block';
+        cl.addEventListener('click', function (ev) { ev.stopPropagation(); p.classList.remove('il-on'); });
+      }
       p.addEventListener('click', function (ev) { ev.stopPropagation(); });
       document.addEventListener('click', function () { p.classList.remove('il-on'); });
     }
@@ -302,6 +308,7 @@
 
   function fillPopup(popup, match, cfg) {
     var e = match.expert;
+    if (!e) return;
     var img = document.getElementById('il-ph');
     var fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=88&name=' + encodeURIComponent(e.name);
     img.src = fallback;
