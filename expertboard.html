@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ExpertBoard Preview — IntroLinq</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#f8f8fc;color:#1a1a2e;min-height:100vh}
+.banner{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);color:#fff;padding:0.875rem 2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.banner-left{display:flex;align-items:center;gap:0.875rem}
+.banner-logo{height:26px}
+.banner-divider{width:1px;height:18px;background:rgba(255,255,255,0.25)}
+.banner-name{color:#fff;font-size:0.9rem;font-weight:600}
+.badge{background:#e6a820;color:#1a1a2e;font-size:0.6875rem;font-weight:700;padding:0.25rem 0.625rem;border-radius:100px;letter-spacing:0.05em;text-transform:uppercase}
+.container{max-width:960px;margin:0 auto;padding:2.5rem 1.5rem 4rem}
+.pub-switcher{background:#fff;border:1px solid #e4e4ee;border-radius:10px;padding:1rem 1.25rem;margin-bottom:2rem;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap}
+.pub-switcher label{font-size:0.8125rem;font-weight:600;color:#4a4a6a;white-space:nowrap}
+.pub-switcher input{flex:1;min-width:200px;padding:0.45rem 0.75rem;border:1.5px solid #e4e4ee;border-radius:8px;font-size:0.8125rem;font-family:inherit;outline:none;color:#1a1a2e}
+.pub-switcher input:focus{border-color:#e6a820}
+.pub-switcher button{padding:0.45rem 1rem;background:#1a1a2e;color:#fff;border:none;border-radius:8px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.pub-switcher button:hover{opacity:0.85}
+.board-wrap{background:#fff;border:1px solid #e4e4ee;border-radius:14px;padding:2rem}
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <div class="banner-left">
+    <img src="https://www.introlinq.com/favicon.svg" class="banner-logo" alt="IntroLinq">
+    <div class="banner-divider"></div>
+    <div class="banner-name">ExpertBoard Preview</div>
+  </div>
+  <span class="badge">Admin</span>
+</div>
+
+<div class="container">
+  <div class="pub-switcher">
+    <label>Publisher slug</label>
+    <input type="text" id="pub-input" placeholder="e.g. little-green-agency">
+    <button onclick="loadBoard()">Load</button>
+  </div>
+  <div class="board-wrap" id="board-wrap">
+    <div style="text-align:center;padding:3rem;color:#8888a8;font-size:0.875rem">Enter a publisher slug above and click Load.</div>
+  </div>
+</div>
+
+<script>
+function getParam(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+function loadBoard() {
+  var pub = document.getElementById('pub-input').value.trim();
+  if (!pub) return;
+  history.replaceState(null, '', '?pub=' + encodeURIComponent(pub));
+
+  // Remove existing board script if any
+  var old = document.getElementById('il-board-script');
+  if (old) old.remove();
+  var oldBoard = document.getElementById('il-board');
+  if (oldBoard) oldBoard.remove();
+
+  // Reset container
+  document.getElementById('board-wrap').innerHTML = '<div id="il-board-target"></div>';
+
+  // Inject fresh script
+  var s = document.createElement('script');
+  s.id = 'il-board-script';
+  s.src = 'https://www.introlinq.com/expertboard.js?v=' + Date.now();
+  s.setAttribute('data-publisher', pub);
+  s.setAttribute('data-container', 'il-board-target');
+  document.getElementById('board-wrap').appendChild(s);
+}
+
+// Auto-load from URL param
+var pub = getParam('pub');
+if (pub) {
+  document.getElementById('pub-input').value = pub;
+  loadBoard();
+}
+</script>
+</body>
+</html>
