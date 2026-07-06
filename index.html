@@ -272,7 +272,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 <nav>
   <a class="nav-logo" href="/">Intro<span>Linq</span></a>
   <span class="nav-tagline">Free for publishers · No setup required</span>
-  <button class="nav-cta" onclick="document.getElementById('signup-form').scrollIntoView({behavior:'smooth'})">Add earnings to my blog</button>
+  <button class="nav-cta" onclick="document.getElementById('signup-form').scrollIntoView({behavior:'smooth'})">Add earnings to my site</button>
 </nav>
 
 <div class="page-wrap">
@@ -355,7 +355,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
         <div class="carousel-label" style="margin-bottom:0.75rem">Enter any article URL - we'll fetch it and show which experts IntroLinq would surface for your readers</div>
         <div class="t-url-row">
           <div class="t-url-shine" id="t-url-shine">
-            <input type="url" class="t-url-input" id="t-url" placeholder="https://yourblog.com/any-article" onkeydown="if(event.key==='Enter')tFetchUrl()" onfocus="document.getElementById('t-url-shine').classList.add('done')">
+            <input type="url" class="t-url-input" id="t-url" placeholder="https://yoursite.com/any-article" onkeydown="if(event.key==='Enter')tFetchUrl()" onfocus="document.getElementById('t-url-shine').classList.add('done')">
           </div>
           <button class="t-url-btn" id="t-url-btn" onclick="tFetchUrl()">Analyse →</button>
         </div>
@@ -397,7 +397,7 @@ The honest summary: talk to customers early, stay lean, get to revenue as fast a
           <form onsubmit="handleLpSubmit(event)">
             <input class="form-input" type="text" name="name" placeholder="Your name" required>
             <input class="form-input" type="email" name="email" placeholder="Your email" required>
-            <input class="form-input" type="text" name="blog" placeholder="Your blog URL" required>
+            <input class="form-input" type="text" name="blog" placeholder="Your site URL" required>
             <button class="form-submit" type="submit">Save my spot</button>
           </form>
           <p class="form-trust">Register your interest now for the best rate when we launch</p>
@@ -589,11 +589,11 @@ The honest summary: talk to customers early, stay lean, get to revenue as fast a
   <div class="snippet-zone">
     <p class="snippet-label">Setup</p>
     <p class="snippet-heading">One line of code. That's it.</p>
-    <p class="snippet-note">Paste this once into your blog's <code style="background:var(--sage-light);color:var(--sage);padding:0.1em 0.3em;border-radius:3px;font-size:0.8em">&lt;head&gt;</code> and IntroLinq runs on every article - past and future.</p>
+    <p class="snippet-note">Paste this once into your site's <code style="background:var(--sage-light);color:var(--sage);padding:0.1em 0.3em;border-radius:3px;font-size:0.8em">&lt;head&gt;</code> and IntroLinq runs on every article - past and future.</p>
     <div class="code-block-light">
-      <button class="copy-btn-light" onclick="this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000);navigator.clipboard.writeText('<script src=\'https://cdn.introlinq.com/widget.js\' data-blog=\'YOUR_ID\'><\/script>')">Copy</button>
+      <button class="copy-btn-light" onclick="this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000);navigator.clipboard.writeText('<script src=\'https://cdn.introlinq.com/widget.js\' data-site=\'YOUR_ID\'><\/script>')">Copy</button>
       <span class="code-line"><span class="code-comment">&lt;!-- Paste once into your &lt;head&gt; --&gt;</span></span>
-      <span class="code-line"><span class="code-tag">&lt;script</span> <span class="code-attr">src</span>=<span class="code-val">"https://cdn.introlinq.com/widget.js"</span> <span class="code-attr">data-blog</span>=<span class="code-val">"YOUR_ID"</span><span class="code-tag">&gt;&lt;/script&gt;</span></span>
+      <span class="code-line"><span class="code-tag">&lt;script</span> <span class="code-attr">src</span>=<span class="code-val">"https://cdn.introlinq.com/widget.js"</span> <span class="code-attr">data-site</span>=<span class="code-val">"YOUR_ID"</span><span class="code-tag">&gt;&lt;/script&gt;</span></span>
     </div>
   </div>
 
