@@ -588,9 +588,12 @@ tr:last-child td{border-bottom:none}
         </div>
         <!-- Install -->
         <div class="section">
-          <div class="section-header">
-            <div class="section-title">Install</div>
-            <div class="section-sub">Paste once where you want the carousel to appear</div>
+          <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
+            <div>
+              <div class="section-title">Install</div>
+              <div class="section-sub">Paste once where you want the carousel to appear</div>
+            </div>
+            <a id="carousel-preview-link" href="#" target="_blank" rel="noopener" style="font-size:0.8rem;font-weight:600;color:var(--sage);text-decoration:none;white-space:nowrap;flex-shrink:0">Preview live →</a>
           </div>
           <div class="etab-group">
             <div class="etab-nav">
@@ -686,9 +689,12 @@ tr:last-child td{border-bottom:none}
         </div>
         <!-- Install -->
         <div class="section">
-          <div class="section-header">
-            <div class="section-title">Install</div>
-            <div class="section-sub">Best placed on a dedicated page — gives visitors a full browsable expert directory</div>
+          <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
+            <div>
+              <div class="section-title">Install</div>
+              <div class="section-sub">Best placed on a dedicated page — gives visitors a full browsable expert directory</div>
+            </div>
+            <a id="board-preview-link" href="#" target="_blank" rel="noopener" style="font-size:0.8rem;font-weight:600;color:var(--sage);text-decoration:none;white-space:nowrap;flex-shrink:0">Preview live →</a>
           </div>
           <div class="etab-group">
             <div class="etab-nav">
@@ -913,6 +919,9 @@ async function loadDashboard() {
   document.querySelectorAll('.install-guide-icon, #install-guide-link').forEach(function(a) {
     if ((a.getAttribute('href') || '').includes('/install')) a.href = installUrl;
   });
+  const previewUrl = `/expertboard?pub=${encodeURIComponent(d.publisher.slug)}`;
+  document.getElementById('carousel-preview-link').href = previewUrl;
+  document.getElementById('board-preview-link').href = previewUrl;
   const p = d.publisher;
   settings.color = p.widget_color || '#e6a820';
   settings.accent = p.accent_color || '#e6a820';
