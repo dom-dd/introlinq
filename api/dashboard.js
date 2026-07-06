@@ -197,8 +197,11 @@ export default async function handler(req, res) {
     // Expert list for a specific provider
     if (provider) {
       const experts = await sql`
-        SELECT id, name, position, company, topics, photo_url, booking_url, price_from, location_country
-        FROM experts WHERE active = true ORDER BY name ASC
+        SELECT e.id, e.name, e.position, e.company, e.topics, e.photo_url, e.booking_url, e.price_from, e.location_country
+        FROM experts e
+        JOIN providers p ON p.id = e.provider_id
+        WHERE e.active = true AND p.slug = ${provider} AND p.is_demo IS NOT TRUE
+        ORDER BY e.name ASC
       `;
       return res.status(200).json({ experts });
     }
