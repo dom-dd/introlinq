@@ -58,7 +58,7 @@
     '#'+uid+' .ilc-photo{width:52px!important;height:52px!important;min-width:52px;border-radius:50%!important;object-fit:cover;background:#edf5f0;flex-shrink:0}',
     '#'+uid+' .ilc-name{font-weight:600;font-size:0.8rem;color:#1a1a2e;line-height:1.3;width:100%}',
     '#'+uid+' .ilc-role{font-size:0.68rem;color:#8888a8;line-height:1.3;width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}',
-    '#'+uid+' .ilc-bio{font-size:0.6rem;color:#4a4a6a;line-height:1.4;width:100%;text-align:center;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}',
+    '#'+uid+' .ilc-bio{font-size:0.6rem;color:#4a4a6a;line-height:1.4;width:100%;text-align:center;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:0.5rem;text-wrap:balance}',
     '#'+uid+' .ilc-btn{display:block;width:100%;text-align:center;padding:0.45rem 0.5rem;border-radius:100px;font-size:0.72rem;font-weight:700;text-decoration:none;background:var(--ilc-color);color:var(--ilc-color-contrast);transition:opacity .15s;font-family:inherit;margin-top:auto}',
     '#'+uid+' .ilc-btn:hover{opacity:0.85}',
   ].join('');
