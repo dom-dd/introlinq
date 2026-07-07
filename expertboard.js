@@ -90,7 +90,7 @@
   var _expanded = false;
   var _color = '#e6a820';
   var _contrast = '#1a1a2e';
-  var PAGE_SIZE = 12; // 4 cols × 3 rows
+  var PAGE_SIZE = 8; // 4 cols × 2 rows
 
   function render(data) {
     _allExperts = data.experts || [];
@@ -192,7 +192,7 @@
     if (expandBtn) {
       if (hasMore) {
         expandBtn.style.display = 'block';
-        expandBtn.textContent = 'Show all ' + filtered.length + ' experts ↓';
+        expandBtn.textContent = 'Show more ↓';
       } else if (_expanded && filtered.length > PAGE_SIZE) {
         expandBtn.style.display = 'block';
         expandBtn.textContent = 'Show less ↑';
