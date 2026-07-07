@@ -258,6 +258,24 @@ export default async function handler(req, res) {
     }
   }
 
+  // One-time: fix missing location_country for specific experts
+  if (resource === 'fix-expert-locations' && req.method === 'POST') {
+    const fixes = [
+      { name: 'John Foy', country: 'Kuwait' },
+      { name: 'Qasim Qazi', country: 'Saudi Arabia' },
+    ];
+    const results = [];
+    for (const { name, country } of fixes) {
+      const updated = await sql`
+        UPDATE experts SET location_country = ${country}
+        WHERE name = ${name} AND (location_country IS NULL OR location_country = '')
+        RETURNING id, name, location_country
+      `.catch(() => []);
+      results.push(...updated);
+    }
+    return res.status(200).json({ updated: results });
+  }
+
   // One-time: flag French-speaking experts by country + name
   if (resource === 'migrate-languages' && req.method === 'POST') {
     const namedExperts = ['Dominic Gagnon', 'Judith Fetzer', 'Andrew Lockhead', 'Philippe Therrien'];
