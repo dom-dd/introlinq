@@ -44,8 +44,9 @@
     '#'+uid+' .ilc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.875rem}',
     '#'+uid+' .ilc-header-left{display:flex;align-items:baseline;gap:0.5rem}',
     '#'+uid+' .ilc-label{font-size:0.8125rem;font-weight:700;color:#8888a8;text-transform:uppercase;letter-spacing:0.06em}',
-    '#'+uid+' .ilc-powered{font-size:0.65rem;color:#ccc;text-decoration:none;white-space:nowrap}',
-    '#'+uid+' .ilc-powered:hover{color:#aaa}',
+    '#'+uid+' .ilc-powered{font-size:0.62rem;color:#bbb;text-decoration:none;white-space:nowrap}',
+    '#'+uid+' .ilc-powered a{color:#bbb;text-decoration:none}',
+    '#'+uid+' .ilc-powered a:hover{color:#888}',
     '#'+uid+' .ilc-arrows{display:flex;gap:0.375rem}',
     '#'+uid+' .ilc-arrow{width:28px;height:28px;border-radius:50%;border:1.5px solid #e4e4ee;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#4a4a6a;transition:all .15s;flex-shrink:0}',
     '#'+uid+' .ilc-arrow:hover{border-color:var(--ilc-color);color:var(--ilc-color)}',
@@ -113,7 +114,7 @@
       +'<div class="ilc-header">'
       +'<div class="ilc-header-left">'
       +'<div class="ilc-label">'+(data.config.carousel_title||'Suggested experts to speak to')+'</div>'
-      +'<a class="ilc-powered" href="https://www.introlinq.com" target="_blank" rel="noopener">by IntroLinq</a>'
+      +'<span class="ilc-powered">powered by <a href="https://www.introlinq.com" target="_blank" rel="noopener">IntroLinq</a> in partnership with <a href="https://www.open-intro.com" target="_blank" rel="noopener">OpenIntro</a></span>'
       +'</div>'
       +'<div class="ilc-arrows">'
       +'<button class="ilc-arrow" id="'+prevId+'" aria-label="Previous">'

@@ -50,7 +50,13 @@
     '#il-board{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;box-sizing:border-box;color:#1a1a2e;line-height:normal}',
     '#il-board *{box-sizing:border-box}',
     '.ilb-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;margin-bottom:1.25rem}',
+    '.ilb-title-block{display:flex;flex-direction:column;gap:0.2rem}',
     '.ilb-title{font-size:1.125rem;font-weight:700;color:#1a1a2e}',
+    '.ilb-powered{font-size:0.68rem;color:#bbb}',
+    '.ilb-powered a{color:#bbb;text-decoration:none}',
+    '.ilb-powered a:hover{color:#888}',
+    '.ilb-expand{display:block;width:100%;margin-top:0.875rem;padding:0.6rem 1rem;border:1.5px dashed #e4e4ee;border-radius:10px;background:none;font-size:0.8125rem;color:#8888a8;cursor:pointer;font-family:inherit;text-align:center;transition:all .15s}',
+    '.ilb-expand:hover{border-color:var(--ilb-color);color:var(--ilb-color)}',
     '.ilb-search{flex:1;min-width:180px;max-width:320px;position:relative}',
     '.ilb-search input{width:100%;padding:0.5rem 0.75rem 0.5rem 2rem;border:1.5px solid #e4e4ee;border-radius:100px;font-size:0.8125rem;font-family:inherit;outline:none;color:#1a1a2e;transition:border-color .15s;background:#fff}',
     '.ilb-search input:focus{border-color:var(--ilb-color)}',
@@ -66,9 +72,6 @@
     '.ilb-btn{display:block;width:100%;text-align:center;padding:0.45rem 0.5rem;border-radius:100px;font-size:0.72rem;font-weight:700;text-decoration:none;background:var(--ilb-color);color:var(--ilb-color-contrast);transition:opacity .15s;font-family:inherit;margin-top:auto}',
     '.ilb-btn:hover{opacity:0.88}',
     '.ilb-empty{text-align:center;padding:3rem 1rem;color:#8888a8;font-size:0.875rem}',
-    '.ilb-footer{margin-top:1rem;text-align:right;font-size:0.7rem;color:#aaa}',
-    '.ilb-footer a{color:#aaa;text-decoration:none}',
-    '.ilb-footer a:hover{color:#888}',
   ].join('');
   document.head.appendChild(style);
 
@@ -84,8 +87,10 @@
 
   var _allExperts = [];
   var _searchTerm = '';
+  var _expanded = false;
   var _color = '#e6a820';
   var _contrast = '#1a1a2e';
+  var PAGE_SIZE = 12; // 4 cols × 3 rows
 
   function render(data) {
     _allExperts = data.experts || [];
@@ -96,22 +101,35 @@
     container.style.setProperty('--ilb-color-contrast', _contrast);
 
     var html = '<div class="ilb-header">'
+      + '<div class="ilb-title-block">'
       + '<div class="ilb-title">Book an expert</div>'
+      + '<div class="ilb-powered">powered by <a href="https://www.introlinq.com" target="_blank" rel="noopener">IntroLinq</a> in partnership with <a href="https://www.open-intro.com" target="_blank" rel="noopener">OpenIntro</a></div>'
+      + '</div>'
       + '<div class="ilb-search">'
       + '<svg class="ilb-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>'
       + '<input type="text" placeholder="Search experts or tags..." id="ilb-search-input" autocomplete="off">'
       + '</div></div>';
 
     html += '<div class="ilb-grid" id="ilb-grid"></div>';
-    html += '<div class="ilb-footer"><a href="https://www.introlinq.com" target="_blank" rel="noopener">Powered by IntroLinq</a></div>';
+    html += '<button class="ilb-expand" id="ilb-expand-btn" style="display:none"></button>';
 
+    _expanded = false;
     container.innerHTML = html;
     renderGrid();
+
+    var expandBtn = document.getElementById('ilb-expand-btn');
+    if (expandBtn) {
+      expandBtn.addEventListener('click', function() {
+        _expanded = !_expanded;
+        renderGrid();
+      });
+    }
 
     var searchInput = document.getElementById('ilb-search-input');
     if (searchInput) {
       searchInput.addEventListener('input', function() {
         _searchTerm = this.value.toLowerCase().trim();
+        _expanded = false;
         renderGrid();
       });
       startPlaceholderCycle(searchInput);
@@ -152,6 +170,7 @@
 
   function renderGrid() {
     var grid = document.getElementById('ilb-grid');
+    var expandBtn = document.getElementById('ilb-expand-btn');
     if (!grid) return;
 
     var filtered = _allExperts.filter(function(e) {
@@ -163,10 +182,26 @@
 
     if (!filtered.length) {
       grid.innerHTML = '<div class="ilb-empty" style="grid-column:1/-1">No experts found.</div>';
+      if (expandBtn) expandBtn.style.display = 'none';
       return;
     }
 
-    grid.innerHTML = filtered.map(function(e) {
+    var visible = (_expanded || filtered.length <= PAGE_SIZE) ? filtered : filtered.slice(0, PAGE_SIZE);
+    var hasMore = !_expanded && filtered.length > PAGE_SIZE;
+
+    if (expandBtn) {
+      if (hasMore) {
+        expandBtn.style.display = 'block';
+        expandBtn.textContent = 'Show all ' + filtered.length + ' experts ↓';
+      } else if (_expanded && filtered.length > PAGE_SIZE) {
+        expandBtn.style.display = 'block';
+        expandBtn.textContent = 'Show less ↑';
+      } else {
+        expandBtn.style.display = 'none';
+      }
+    }
+
+    grid.innerHTML = visible.map(function(e) {
       var fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=96&name=' + encodeURIComponent(e.name);
       var bio = (e.headlines || {})[_lang] || (e.headlines || {})['en'] || e.bio || '';
       var role = [e.position, e.company].filter(Boolean).join(' · ');
