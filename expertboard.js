@@ -192,7 +192,7 @@
     if (expandBtn) {
       if (remaining > 0) {
         expandBtn.style.display = 'block';
-        expandBtn.textContent = 'Show ' + Math.min(remaining, PAGE_SIZE) + ' more ↓';
+        expandBtn.textContent = 'Show more ↓';
       } else {
         expandBtn.style.display = 'none';
       }
