@@ -87,7 +87,7 @@
 
   var _allExperts = [];
   var _searchTerm = '';
-  var _expanded = false;
+  var _visibleCount = 8;
   var _color = '#e6a820';
   var _contrast = '#1a1a2e';
   var PAGE_SIZE = 8; // 4 cols × 2 rows
@@ -113,14 +113,14 @@
     html += '<div class="ilb-grid" id="ilb-grid"></div>';
     html += '<button class="ilb-expand" id="ilb-expand-btn" style="display:none"></button>';
 
-    _expanded = false;
+    _visibleCount = PAGE_SIZE;
     container.innerHTML = html;
     renderGrid();
 
     var expandBtn = document.getElementById('ilb-expand-btn');
     if (expandBtn) {
       expandBtn.addEventListener('click', function() {
-        _expanded = !_expanded;
+        _visibleCount += PAGE_SIZE;
         renderGrid();
       });
     }
@@ -129,7 +129,7 @@
     if (searchInput) {
       searchInput.addEventListener('input', function() {
         _searchTerm = this.value.toLowerCase().trim();
-        _expanded = false;
+        _visibleCount = PAGE_SIZE;
         renderGrid();
       });
       startPlaceholderCycle(searchInput);
@@ -186,16 +186,13 @@
       return;
     }
 
-    var visible = (_expanded || filtered.length <= PAGE_SIZE) ? filtered : filtered.slice(0, PAGE_SIZE);
-    var hasMore = !_expanded && filtered.length > PAGE_SIZE;
+    var visible = filtered.slice(0, _visibleCount);
+    var remaining = filtered.length - _visibleCount;
 
     if (expandBtn) {
-      if (hasMore) {
+      if (remaining > 0) {
         expandBtn.style.display = 'block';
-        expandBtn.textContent = 'Show more ↓';
-      } else if (_expanded && filtered.length > PAGE_SIZE) {
-        expandBtn.style.display = 'block';
-        expandBtn.textContent = 'Show less ↑';
+        expandBtn.textContent = 'Show ' + Math.min(remaining, PAGE_SIZE) + ' more ↓';
       } else {
         expandBtn.style.display = 'none';
       }
