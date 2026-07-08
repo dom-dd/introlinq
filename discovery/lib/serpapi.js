@@ -50,7 +50,10 @@ const LISTICLE_PATTERNS = [
   /\b\d+\s+(best|top|great|essential|favorite|favourite|inspiring|must-read|amazing|useful|awesome|leading)\b.*\b(blogs?|sites?)\b/i,
   /\b(best|top)\s+\d+\b.*\b(blogs?|sites?)\b/i,
   /\d+\s+.*\bblog\s+examples\b/i,
-  /\b(blogs?|sites?)\s+(to\s+follow|to\s+read|you\s+should\s+follow|worth\s+reading)\b/i
+  /\b(blogs?|sites?)\s+(to\s+follow|to\s+read|you\s+should\s+follow|worth\s+reading)\b/i,
+  // Bare "N Blogs/Sites [that/to/for/you]..." - almost always a roundup
+  // article even without an adjective like "best"/"top" in front.
+  /\b\d+\s+(blogs?|sites?|newsletters?|podcasts?)\s+(that|to|for|you|worth)\b/i
 ];
 function isListicleTitle(title) {
   if (!title) return false;

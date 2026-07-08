@@ -11,6 +11,8 @@
 import { sql } from './lib/db.js';
 
 const BATCH_SIZE = 15;
+const VALID_LEAD_TYPES = new Set(['publisher', 'vendor', 'competitor', 'unclear']);
+const VALID_TEAM_SIZES = new Set(['solo', 'small-team', 'large-team', 'unclear']);
 
 async function ensureColumns() {
   await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS lead_type TEXT`;
@@ -28,7 +30,7 @@ async function classifyBatch(rows) {
 For each business website below, classify it as a lead:
 - "publisher": an independent blog, magazine, or content site whose main purpose is publishing articles for readers. Good candidate to embed IntroLinq's widget as a publisher partner.
 - "vendor": a company selling a specific product or service (SaaS tool, agency, consultancy, software) where the blog exists primarily to market that product/service. Not a great publisher partner, but the company's founder/team could be a good EXPERT to list on IntroLinq instead.
-- "competitor": the company's own core business IS connecting people with experts, mentors, coaches, or advisors (a marketplace/matching platform) - e.g. a mentor marketplace, coaching platform, expert-booking site. This is a competitor to IntroLinq, NOT a lead - exclude regardless of how good the content looks.
+- "competitor": ONLY for companies whose PRIMARY product is a marketplace/platform for booking or connecting with experts/mentors/coaches on a per-session or subscription basis - similar to Clarity.fm, GrowthMentor, MentorCruise. Do NOT classify accelerators (e.g. Y Combinator), VC funds, investment platforms, or general startup media/publications as competitors just because they discuss mentorship, advisors, or funding - their core business is investment or content, not a booking marketplace. When in doubt, this is NOT a competitor.
 - "unclear": genuinely can't tell from the title/snippet given.
 
 Note: many "write for us" pages could theoretically be paid guest-post/backlink-selling operations rather than real publications - but that distinction needs actual page content (pricing, Domain Authority mentions) that isn't reliably visible in a short search snippet. Do NOT guess at this from title/snippet alone - classify as "publisher" unless you have strong specific evidence otherwise.
@@ -44,6 +46,8 @@ This is a rough guess from limited text, not a confident read - best-effort only
 
 Sites:
 ${list}
+
+"lead_type" must be EXACTLY one of these four words, nothing else: publisher, vendor, competitor, unclear. Never put a team_size value like "solo" in the lead_type field.
 
 Return ONLY valid JSON, no other text, in the same order as listed:
 {"results":[{"domain":"...","lead_type":"publisher|vendor|competitor|unclear","service_keyword":"..."|null,"team_size":"solo|small-team|large-team|unclear"}]}`;
@@ -103,9 +107,25 @@ async function main() {
       for (const res of results) {
         const row = byDomain[res.domain];
         if (!row) continue;
+
+        let leadType = res.lead_type;
+        let teamSize = res.team_size;
+        // Guard against the model writing a team_size word into lead_type
+        // (seen with very obviously personal blogs, e.g. lead_type: "solo").
+        if (!VALID_LEAD_TYPES.has(leadType)) {
+          console.warn(`  WARN: invalid lead_type "${leadType}" for ${res.domain}, correcting`);
+          if (VALID_TEAM_SIZES.has(leadType)) {
+            teamSize = teamSize && VALID_TEAM_SIZES.has(teamSize) ? teamSize : leadType;
+            leadType = 'publisher';
+          } else {
+            leadType = 'unclear';
+          }
+        }
+        if (!VALID_TEAM_SIZES.has(teamSize)) teamSize = 'unclear';
+
         await sql`
           UPDATE candidate_publishers
-          SET lead_type = ${res.lead_type || 'unclear'}, service_keyword = ${res.service_keyword || null}, team_size = ${res.team_size || 'unclear'}
+          SET lead_type = ${leadType}, service_keyword = ${res.service_keyword || null}, team_size = ${teamSize}
           WHERE id = ${row.id}
         `;
         done++;
