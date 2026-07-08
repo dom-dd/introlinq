@@ -167,7 +167,7 @@ Available experts:
 ${expertsList}
 
 Article:
-${article.slice(0, 4000)}
+${article.slice(0, 10000)}
 
 Return only valid JSON, no other text:
 {"matches":[{"phrase":"exact substring from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person - e.g. 'If you want to raise your first round without giving away too much equity, Phil has backed 200+ startups and can walk you through the process.'"}],"no_match_reason":"Only include this field when matches is empty. One short phrase explaining why - e.g. 'News article', 'Product announcement', 'Company profile / press release', 'No actionable reader challenge identified', 'Pure statistics reporting'"}}`;
