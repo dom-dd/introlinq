@@ -32,6 +32,18 @@ function isInstitutionalDomain(domain) {
   return labels.includes('gov') || labels.includes('mil') || labels.includes('edu') || labels.includes('ac');
 }
 
+// Matches the blacklist on the domain itself or any parent domain, so a
+// subdomain (aws.amazon.com, sites.google.com) is caught even if only the
+// apex domain (amazon.com, google.com) is listed.
+function isBlacklistedDomain(domain) {
+  if (DOMAIN_BLACKLIST.has(domain)) return true;
+  const labels = domain.split('.');
+  for (let i = 1; i < labels.length - 1; i++) {
+    if (DOMAIN_BLACKLIST.has(labels.slice(i).join('.'))) return true;
+  }
+  return false;
+}
+
 // "50 Best Business Blogs of 2026" / "Top 12 Write For Us Guest Post Sites"
 // are roundup articles ABOUT other blogs, not a blog you can pitch directly.
 const LISTICLE_PATTERNS = [
@@ -80,7 +92,7 @@ export function extractCandidates(organicResults) {
     }
     const domain = url.hostname.replace(/^www\./, '').toLowerCase();
     if (!domain || seen.has(domain)) continue;
-    if (DOMAIN_BLACKLIST.has(domain) || isInstitutionalDomain(domain)) continue;
+    if (isBlacklistedDomain(domain) || isInstitutionalDomain(domain)) continue;
     if (isListicleTitle(r.title)) continue;
     seen.add(domain);
     candidates.push({

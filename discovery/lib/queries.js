@@ -7,12 +7,18 @@
 // Broad head terms like "business blog" or "business news" get dominated by
 // Google's highest-authority results - CNN, Forbes, Bloomberg, government
 // resource pages, "50 best blogs" roundup listicles - none of which are
-// independent blogs you can actually pitch. Two things counter that:
-//   1. Niche, long-tail topics instead of single broad words - specific
-//      subjects don't have the same big-media competition for search rank.
-//   2. Intent priority - "write for us" / "guest post" queries inherently
-//      surface sites soliciting outside contributors (i.e. real, reachable
-//      blogs), so those run before broader intents like "articles"/"news".
+// independent blogs you can actually pitch. Countered by using niche,
+// long-tail topics instead of single broad words.
+//
+// Two distinct discovery tracks, interleaved so a run samples both:
+//   - "write for us" style: surfaces sites that explicitly solicit outside
+//     contributors - reliably reachable, but this selects for openness to
+//     guest content, not for being small/independent. Some of these turn
+//     out to be content-marketing operations running guest-post programs.
+//   - plain "blog" style: a broader net that has a better chance of
+//     surfacing solo/small-team bloggers who write everything themselves
+//     and never bothered with a "submit an article" page. Noisier - relies
+//     more on the domain blacklist and classify.js to filter out junk.
 
 export const TOPICS = [
   'business', 'startup', 'finance', 'marketing', 'leadership', 'accounting',
@@ -31,28 +37,44 @@ export const TOPICS = [
   'construction business', 'agency management', 'small business finance'
 ];
 
-// Tier A: reliably surfaces independent blogs actively seeking outside
-// contributors - the actual reachable leads. Run first.
-export const PRIORITY_INTENTS = [
+// Track A: reliably surfaces reachable blogs open to outside contributors.
+export const GUEST_POST_INTENTS = [
   'write for us', 'guest post', 'submit article', 'guest author', 'contribute', 'guest blogger'
 ];
-// Tier B: broader and useful, but more likely to surface big media brands
-// or institutional resource pages. Run after Tier A is exhausted.
-export const SECONDARY_INTENTS = [
-  'blog', 'insights', 'guides', 'tips', 'articles', 'resources'
-];
+// Track B: direct "is this a blog" signal - better chance of surfacing
+// solo/small-team blogs, at the cost of more noise.
+export const DIRECT_BLOG_INTENTS = ['blog'];
+// Track C: broadest and most noise-prone - runs only after A and B are
+// exhausted (rarely reached at small --target values).
+export const SECONDARY_INTENTS = ['insights', 'guides', 'tips', 'articles', 'resources'];
 
-export function generateQueries({ topics = TOPICS, priorityIntents = PRIORITY_INTENTS, secondaryIntents = SECONDARY_INTENTS } = {}) {
-  const queries = [];
-  for (const intent of priorityIntents) {
-    for (const topic of topics) {
-      queries.push(`${topic} ${intent}`);
-    }
+export function generateQueries({
+  topics = TOPICS,
+  guestPostIntents = GUEST_POST_INTENTS,
+  directBlogIntents = DIRECT_BLOG_INTENTS,
+  secondaryIntents = SECONDARY_INTENTS
+} = {}) {
+  const guestPost = [];
+  for (const intent of guestPostIntents) {
+    for (const topic of topics) guestPost.push(`${topic} ${intent}`);
   }
+  const directBlog = [];
+  for (const intent of directBlogIntents) {
+    for (const topic of topics) directBlog.push(`${topic} ${intent}`);
+  }
+  const secondary = [];
   for (const intent of secondaryIntents) {
-    for (const topic of topics) {
-      queries.push(`${topic} ${intent}`);
-    }
+    for (const topic of topics) secondary.push(`${topic} ${intent}`);
   }
-  return queries;
+
+  // Interleave A and B so even a small --target run samples both tracks
+  // instead of exhausting "write for us" before ever trying plain "blog".
+  const interleaved = [];
+  const maxLen = Math.max(guestPost.length, directBlog.length);
+  for (let i = 0; i < maxLen; i++) {
+    if (guestPost[i]) interleaved.push(guestPost[i]);
+    if (directBlog[i]) interleaved.push(directBlog[i]);
+  }
+
+  return [...interleaved, ...secondary];
 }

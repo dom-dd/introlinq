@@ -15,6 +15,7 @@ const BATCH_SIZE = 15;
 async function ensureColumns() {
   await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS lead_type TEXT`;
   await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS service_keyword TEXT`;
+  await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS team_size TEXT`;
 }
 
 async function classifyBatch(rows) {
@@ -31,11 +32,18 @@ For each business website below, classify it as a lead:
 
 If "vendor", also give a "service_keyword": ONE short word or hyphenated term for what they sell (e.g. SEO, CRM, automation, accounting-software, marketing-agency, web-hosting, recruiting, legal-services, insurance, email-marketing). Use null for "publisher" or "unclear".
 
+Also estimate "team_size" from the title/snippet wording:
+- "solo": phrasing suggests one person writing (first-person "I/my", a personal name as the brand, freelancer/consultant voice)
+- "small-team": phrasing suggests a small team or boutique operation (a few named people, small agency, small company blog)
+- "large-team": phrasing suggests a media brand, large company, or large editorial team
+- "unclear": genuinely can't tell from the title/snippet alone
+This is a rough guess from limited text, not a confident read - best-effort only.
+
 Sites:
 ${list}
 
 Return ONLY valid JSON, no other text, in the same order as listed:
-{"results":[{"domain":"...","lead_type":"publisher|vendor|unclear","service_keyword":"..."|null}]}`;
+{"results":[{"domain":"...","lead_type":"publisher|vendor|unclear","service_keyword":"..."|null,"team_size":"solo|small-team|large-team|unclear"}]}`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -94,7 +102,7 @@ async function main() {
         if (!row) continue;
         await sql`
           UPDATE candidate_publishers
-          SET lead_type = ${res.lead_type || 'unclear'}, service_keyword = ${res.service_keyword || null}
+          SET lead_type = ${res.lead_type || 'unclear'}, service_keyword = ${res.service_keyword || null}, team_size = ${res.team_size || 'unclear'}
           WHERE id = ${row.id}
         `;
         done++;

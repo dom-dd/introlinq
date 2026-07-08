@@ -16,13 +16,13 @@ async function main() {
   const outPath = process.argv[2] || 'discovery/candidates.csv';
 
   const rows = await sql`
-    SELECT domain, homepage_url, title, snippet, lead_type, service_keyword, status,
+    SELECT domain, homepage_url, title, snippet, lead_type, service_keyword, team_size, status,
            priority_score, estimated_monthly_visits, country, language, discovery_query, created_at
     FROM candidate_publishers
     ORDER BY lead_type NULLS LAST, priority_score DESC NULLS LAST, created_at DESC
   `;
 
-  const headers = ['domain', 'homepage_url', 'title', 'snippet', 'lead_type', 'service_keyword', 'status', 'priority_score', 'estimated_monthly_visits', 'country', 'language', 'discovery_query', 'created_at'];
+  const headers = ['domain', 'homepage_url', 'title', 'snippet', 'lead_type', 'service_keyword', 'team_size', 'status', 'priority_score', 'estimated_monthly_visits', 'country', 'language', 'discovery_query', 'created_at'];
   const lines = [headers.join(',')];
   for (const r of rows) {
     lines.push(headers.map((h) => csvEscape(r[h])).join(','));
