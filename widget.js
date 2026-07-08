@@ -90,11 +90,11 @@
     .then(function (data) { applyMatches(data, true); })
     .catch(function () {});
 
-    // Full: 6000 chars with caching — adds remaining experts
+    // Full: whole article (up to 10k chars) with caching — adds remaining experts
     fetch(API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ article: text.slice(0, 6000), publisher: PUB, page_url: window.location.href, page_title: document.title })
+      body: JSON.stringify({ article: text.slice(0, 10000), publisher: PUB, page_url: window.location.href, page_title: document.title })
     })
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (data) { applyMatches(data, false); })
@@ -144,7 +144,7 @@
     var n;
     while ((n = walker.nextNode())) {
       var t = n.textContent.replace(/\s+/g, ' ').trim();
-      if (t.length > 4) parts.push(t);
+      if (t) parts.push(t);
     }
     return parts.join(' ');
   }
@@ -261,20 +261,7 @@
     return (r * 299 + g * 587 + b * 114) / 1000 > 128 ? '#1a1a2e' : '#ffffff';
   }
 
-  function findBestPhrase(nodes, phrase) {
-    var norm = function(s) { return s.replace(/\s+/g, ' ').trim(); };
-    var allText = norm(nodes.map(function(n){ return n.textContent; }).join(' '));
-    var normPhrase = norm(phrase);
-    if (allText.indexOf(normPhrase) !== -1) return normPhrase;
-    var words = normPhrase.split(' ');
-    for (var len = Math.floor(words.length * 0.75); len >= 4; len--) {
-      var shorter = words.slice(0, len).join(' ');
-      if (allText.indexOf(shorter) !== -1) return shorter;
-    }
-    return null;
-  }
-
-  function highlightMatches(container, matches, popup, cfg) {
+  function collectTextNodes(container) {
     var walker = document.createTreeWalker(
       container,
       NodeFilter.SHOW_TEXT,
@@ -291,60 +278,93 @@
         }
       }
     );
-
     var nodes = [];
     var n;
     while ((n = walker.nextNode())) nodes.push(n);
+    return nodes;
+  }
 
+  function attachSpanEvents(sp, m, popup, cfg) {
+    if ('ontouchstart' in window) {
+      sp.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        clearTimeout(hideTimer);
+        fillPopup(popup, m, cfg);
+        positionPopup(popup, sp, cfg);
+        popup.classList.add('il-on');
+        closeOnScroll(popup);
+      });
+    } else {
+      sp.addEventListener('mouseenter', function () {
+        clearTimeout(hideTimer);
+        fillPopup(popup, m, cfg);
+        positionPopup(popup, sp, cfg);
+        popup.classList.add('il-on');
+      });
+      sp.addEventListener('mouseleave', function () { scheduleHide(popup); });
+    }
+  }
+
+  function highlightMatches(container, matches, popup, cfg) {
     var highlighted = 0;
     matches.forEach(function (match) {
-      var phrase = findBestPhrase(nodes, match.phrase);
-      if (!phrase) return;
-      var re = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+'));
-      for (var i = 0; i < nodes.length; i++) {
-        var node = nodes[i];
-        var text = node.textContent;
-        var rm = re.exec(text);
-        if (!rm) continue;
-
-        var span = document.createElement('span');
-        span.className = 'il-hl';
-        span.textContent = rm[0];
-
-        ;(function (sp, m) {
-          if ('ontouchstart' in window) {
-            sp.addEventListener('click', function (ev) {
-              ev.stopPropagation();
-              clearTimeout(hideTimer);
-              fillPopup(popup, m, cfg);
-              positionPopup(popup, sp, cfg);
-              popup.classList.add('il-on');
-              closeOnScroll(popup);
-            });
-          } else {
-            sp.addEventListener('mouseenter', function () {
-              clearTimeout(hideTimer);
-              fillPopup(popup, m, cfg);
-              positionPopup(popup, sp, cfg);
-              popup.classList.add('il-on');
-            });
-            sp.addEventListener('mouseleave', function () { scheduleHide(popup); });
-          }
-        })(span, match);
-
-        var parent = node.parentNode;
-        var before = text.slice(0, rm.index);
-        var after = text.slice(rm.index + rm[0].length);
-        if (before) parent.insertBefore(document.createTextNode(before), node);
-        parent.insertBefore(span, node);
-        if (after) parent.insertBefore(document.createTextNode(after), node);
-        parent.removeChild(node);
-        nodes.splice(i, 1);
-        highlighted++;
-        break;
-      }
+      if (highlightOnePhrase(container, match, popup, cfg)) highlighted++;
     });
     return highlighted;
+  }
+
+  function highlightOnePhrase(container, match, popup, cfg) {
+    // Re-collect on every phrase: earlier highlights split text nodes
+    var nodes = collectTextNodes(container);
+    var combined = '';
+    var offsets = [];
+    for (var i = 0; i < nodes.length; i++) {
+      offsets.push(combined.length);
+      combined += nodes[i].textContent;
+    }
+
+    var words = (match.phrase || '').replace(/\s+/g, ' ').trim().split(' ');
+    if (!words[0]) return false;
+    // Whitespace-flexible regex; \s* joiner tolerates node boundaries with no space
+    var minLen = Math.min(4, words.length);
+    for (var len = words.length; len >= minLen; len--) {
+      var candidate = words.slice(0, len).join(' ');
+      var re = new RegExp(candidate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '\\s*'));
+      var m = re.exec(combined);
+      if (m && m[0].trim()) {
+        return wrapCombinedRange(nodes, offsets, m.index, m.index + m[0].length, match, popup, cfg);
+      }
+    }
+    return false;
+  }
+
+  function wrapCombinedRange(nodes, offsets, start, end, match, popup, cfg) {
+    var wrapped = 0;
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+      var text = node.textContent;
+      var nodeStart = offsets[i];
+      var nodeEnd = nodeStart + text.length;
+      if (nodeEnd <= start || nodeStart >= end) continue;
+      var parent = node.parentNode;
+      if (!parent) continue;
+      if (parent.closest && parent.closest('.il-hl')) continue;
+      var from = Math.max(0, start - nodeStart);
+      var to = Math.min(text.length, end - nodeStart);
+      if (to <= from || !text.slice(from, to).trim()) continue;
+
+      var span = document.createElement('span');
+      span.className = 'il-hl';
+      span.textContent = text.slice(from, to);
+      attachSpanEvents(span, match, popup, cfg);
+
+      if (from > 0) parent.insertBefore(document.createTextNode(text.slice(0, from)), node);
+      parent.insertBefore(span, node);
+      if (to < text.length) parent.insertBefore(document.createTextNode(text.slice(to)), node);
+      parent.removeChild(node);
+      wrapped++;
+    }
+    return wrapped > 0;
   }
 
   function fillPopup(popup, match, cfg) {

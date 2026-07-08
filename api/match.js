@@ -51,6 +51,10 @@ export default async function handler(req, res) {
       enabledPartners = pub.enabled_partners || ['openintro'];
     }
 
+    // Quick pass scans only the article intro for a fast first paint; cap matches so the
+    // small token budget can't truncate the JSON. The full pass delivers the rest.
+    if (quick) maxMatches = Math.min(maxMatches, 3);
+
     const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
     const cacheCountry = readerCountry || 'XX'; // 'XX' = unknown country, avoids empty-string NULL issue in cache
 
@@ -168,7 +172,7 @@ Available experts:
 ${expertsList}
 
 Article:
-${article.slice(0, 6000)}
+${article.slice(0, 10000)}
 
 Return only valid JSON, no other text:
 {"matches":[{"phrase":"exact substring from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person - e.g. 'If you want to raise your first round without giving away too much equity, Phil has backed 200+ startups and can walk you through the process.'"}],"no_match_reason":"Only include this field when matches is empty. One short phrase explaining why - e.g. 'News article', 'Product announcement', 'Company profile / press release', 'No actionable reader challenge identified', 'Pure statistics reporting'"}}`;
@@ -182,7 +186,7 @@ Return only valid JSON, no other text:
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: quick ? 512 : (maxMatches <= 4 ? 1024 : maxMatches <= 10 ? 1536 : 2048),
+        max_tokens: quick ? 512 : (maxMatches <= 4 ? 1024 : maxMatches <= 10 ? 2048 : 3072),
         messages: [{ role: 'user', content: prompt }]
       })
     });
@@ -204,7 +208,11 @@ Return only valid JSON, no other text:
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { matches: [] };
       } catch {
-        parsed = { matches: [] };
+        // Output was truncated mid-JSON: salvage the complete match objects
+        const objs = [...text.matchAll(/\{[^{}]*"phrase"[^{}]*\}/g)]
+          .map(m => { try { return JSON.parse(m[0]); } catch { return null; } })
+          .filter(Boolean);
+        parsed = { matches: objs };
       }
     }
 
