@@ -344,6 +344,8 @@ NEVER match:
 
 IMPORTANT: ${languageInstruction}
 
+Vary each "reason" sentence's structure and opening. Do NOT start multiple reasons with the same phrase or pattern (e.g. do not open several with "As a first-time founder..." or "If you are a first-time founder..." just because that's the article's general topic). Open with the specific challenge, decision, or moment from that exact phrase instead of restating who the reader is in general.
+
 Available experts:
 ${expertsList}
 
@@ -351,7 +353,7 @@ Article:
 ${article.slice(0, 10000)}
 
 Return only valid JSON, no other text:
-{"matches":[{"phrase":"exact substring from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person - e.g. 'If you want to raise your first round without giving away too much equity, Phil has backed 200+ startups and can walk you through the process.'"}],"no_match_reason":"Only include this field when matches is empty. One short phrase explaining why - e.g. 'News article', 'Product announcement', 'Company profile / press release', 'No actionable reader challenge identified', 'Pure statistics reporting'"}}`;
+{"matches":[{"phrase":"exact substring from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person, opening with the specific challenge rather than a generic reader description - e.g. 'Negotiating your first term sheet without giving away too much equity is tricky - Phil has backed 200+ startups and can walk you through it.'"}],"no_match_reason":"Only include this field when matches is empty. One short phrase explaining why - e.g. 'News article', 'Product announcement', 'Company profile / press release', 'No actionable reader challenge identified', 'Pure statistics reporting'"}}`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -363,7 +365,7 @@ Return only valid JSON, no other text:
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: quick ? 512 : (maxMatches <= 4 ? 1024 : maxMatches <= 10 ? 2048 : 3072),
-        temperature: 0,
+        temperature: 0.7,
         messages: [{ role: 'user', content: prompt }]
       })
     });
