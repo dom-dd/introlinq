@@ -128,11 +128,24 @@
   }
 
   function extractParagraphText(el) {
+    var walker = document.createTreeWalker(
+      el,
+      NodeFilter.SHOW_TEXT,
+      { acceptNode: function (node) {
+        var p = node.parentElement;
+        while (p && p !== el) {
+          if (/^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA|INPUT|CODE|PRE|A|H1|H2|H3|H4|H5|H6)$/.test(p.tagName)) return NodeFilter.FILTER_REJECT;
+          p = p.parentElement;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }}
+    );
     var parts = [];
-    el.querySelectorAll('p, li').forEach(function (node) {
-      var t = (node.innerText || node.textContent || '').replace(/\s+/g, ' ').trim();
-      if (t.length > 20) parts.push(t);
-    });
+    var n;
+    while ((n = walker.nextNode())) {
+      var t = n.textContent.replace(/\s+/g, ' ').trim();
+      if (t.length > 4) parts.push(t);
+    }
     return parts.join(' ');
   }
 
