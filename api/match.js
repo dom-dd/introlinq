@@ -1,6 +1,7 @@
 ﻿import { neon } from '@neondatabase/serverless';
 
 let tableReady = false;
+let cacheTableReady = false;
 let expertsCache = null;
 let expertsCacheTime = 0;
 const EXPERTS_TTL = 5 * 60 * 1000;
@@ -55,20 +56,22 @@ export default async function handler(req, res) {
 
     // Check match cache (keyed by page_url + country, valid until last expert sync)
     if (page_url) {
-      await sql`CREATE TABLE IF NOT EXISTS match_cache (
-        id SERIAL PRIMARY KEY,
-        page_url TEXT NOT NULL,
-        country_code TEXT NOT NULL DEFAULT '',
-        publisher TEXT NOT NULL DEFAULT '',
-        result JSONB NOT NULL,
-        has_match BOOLEAN NOT NULL,
-        cached_at TIMESTAMPTZ DEFAULT NOW()
-      )`.catch(() => {});
-      await sql`ALTER TABLE match_cache ADD COLUMN IF NOT EXISTS publisher TEXT NOT NULL DEFAULT ''`.catch(() => {});
-      // Ensure correct unique constraint exists (drop old one if needed)
-      await sql`ALTER TABLE match_cache DROP CONSTRAINT IF EXISTS match_cache_page_url_country_code_key`.catch(() => {});
-      await sql`ALTER TABLE match_cache DROP CONSTRAINT IF EXISTS match_cache_page_url_country_code_publisher_key`.catch(() => {});
-      await sql`CREATE UNIQUE INDEX IF NOT EXISTS match_cache_unique ON match_cache(page_url, country_code, publisher)`.catch(() => {});
+      if (!cacheTableReady) {
+        await sql`CREATE TABLE IF NOT EXISTS match_cache (
+          id SERIAL PRIMARY KEY,
+          page_url TEXT NOT NULL,
+          country_code TEXT NOT NULL DEFAULT '',
+          publisher TEXT NOT NULL DEFAULT '',
+          result JSONB NOT NULL,
+          has_match BOOLEAN NOT NULL,
+          cached_at TIMESTAMPTZ DEFAULT NOW()
+        )`.catch(() => {});
+        await sql`ALTER TABLE match_cache ADD COLUMN IF NOT EXISTS publisher TEXT NOT NULL DEFAULT ''`.catch(() => {});
+        await sql`ALTER TABLE match_cache DROP CONSTRAINT IF EXISTS match_cache_page_url_country_code_key`.catch(() => {});
+        await sql`ALTER TABLE match_cache DROP CONSTRAINT IF EXISTS match_cache_page_url_country_code_publisher_key`.catch(() => {});
+        await sql`CREATE UNIQUE INDEX IF NOT EXISTS match_cache_unique ON match_cache(page_url, country_code, publisher)`.catch(() => {});
+        cacheTableReady = true;
+      }
 
       const [lastSync] = await sql`SELECT last_synced_at FROM providers WHERE slug = 'openintro' LIMIT 1`.catch(() => [null]);
       const lastSyncedAt = lastSync?.last_synced_at || new Date(0);
@@ -177,7 +180,7 @@ Return only valid JSON, no other text:
         'content-type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
         messages: [{ role: 'user', content: prompt }]
       })
