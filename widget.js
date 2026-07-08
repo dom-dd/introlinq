@@ -49,7 +49,7 @@
         preloadPhotos(pre.matches);
         injectStyles(pcfg);
         var ppopup = createPopup(pcfg);
-        highlightMatches(el, pre.matches, ppopup, pcfg);
+        highlightMatches(el, pre.matches, ppopup, pcfg, []);
       }
       return;
     }
@@ -57,6 +57,7 @@
     var seenExpertIds = {};
     var sharedCfg = null;
     var sharedPopup = null;
+    var usedRanges = [];
 
     function applyMatches(data, isQuick) {
       if (!data || !data.matches || !data.matches.length) return;
@@ -73,7 +74,7 @@
       });
       if (!newMatches.length) return;
       preloadPhotos(newMatches);
-      var shown = highlightMatches(el, newMatches, sharedPopup, sharedCfg);
+      var shown = highlightMatches(el, newMatches, sharedPopup, sharedCfg, usedRanges);
       if (!isQuick && shown === 0 && newMatches.length > 0 && attempt < 2) {
         _started = false;
         setTimeout(function () { safeInit(); }, 1000);
@@ -305,15 +306,26 @@
     }
   }
 
-  function highlightMatches(container, matches, popup, cfg) {
+  function highlightMatches(container, matches, popup, cfg, usedRanges) {
     var highlighted = 0;
     matches.forEach(function (match) {
-      if (highlightOnePhrase(container, match, popup, cfg)) highlighted++;
+      if (highlightOnePhrase(container, match, popup, cfg, usedRanges)) highlighted++;
     });
     return highlighted;
   }
 
-  function highlightOnePhrase(container, match, popup, cfg) {
+  // Prevents two different experts' highlights from overlapping or touching,
+  // which made hovering across the boundary appear to randomly switch experts.
+  var RANGE_GAP = 2;
+  function rangesConflict(usedRanges, start, end) {
+    for (var i = 0; i < usedRanges.length; i++) {
+      var r = usedRanges[i];
+      if (start < r[1] + RANGE_GAP && end > r[0] - RANGE_GAP) return true;
+    }
+    return false;
+  }
+
+  function highlightOnePhrase(container, match, popup, cfg, usedRanges) {
     // Re-collect on every phrase: earlier highlights split text nodes
     var nodes = collectTextNodes(container);
     var combined = '';
@@ -332,7 +344,10 @@
       var re = new RegExp(candidate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '\\s*'));
       var m = re.exec(combined);
       if (m && m[0].trim()) {
-        return wrapCombinedRange(nodes, offsets, m.index, m.index + m[0].length, match, popup, cfg);
+        var start = m.index, end = m.index + m[0].length;
+        if (rangesConflict(usedRanges, start, end)) continue;
+        var ok = wrapCombinedRange(nodes, offsets, start, end, match, popup, cfg);
+        if (ok) { usedRanges.push([start, end]); return true; }
       }
     }
     return false;
