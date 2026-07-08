@@ -8,7 +8,7 @@
   var API = 'https://www.introlinq.com/api/board?pub=' + encodeURIComponent(PUB);
   var TRACK = 'https://www.introlinq.com/api/dashboard?action=out';
 
-  var _lang = (document.documentElement.lang || navigator.language || 'en').toLowerCase().slice(0, 2);
+  var _lang = (document.documentElement.lang || 'en').toLowerCase().slice(0, 2);
   var _bookLabels = {
     fr: 'Réserver →', es: 'Reservar →', de: 'Buchen →', it: 'Prenota →',
     pt: 'Agendar →', nl: 'Boeken →', pl: 'Umów →', sv: 'Boka →'

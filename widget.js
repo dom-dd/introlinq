@@ -6,7 +6,7 @@
   var PUB = (script && (script.getAttribute('data-publisher') || script.getAttribute('data-site'))) || window.IL_PUBLISHER_ID || null;
   if (!PUB) return;
 
-  var _lang = (document.documentElement.lang || navigator.language || 'en').toLowerCase().slice(0, 2);
+  var _lang = (document.documentElement.lang || 'en').toLowerCase().slice(0, 2);
   var _bookLabels = {
     fr: 'Réserver un appel →', es: 'Reservar una llamada →', de: 'Gespräch buchen →',
     it: 'Prenota una chiamata →', pt: 'Agendar uma chamada →', nl: 'Gesprek boeken →',
