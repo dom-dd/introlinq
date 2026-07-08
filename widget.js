@@ -6,7 +6,6 @@
   var PUB = (script && (script.getAttribute('data-publisher') || script.getAttribute('data-site'))) || window.IL_PUBLISHER_ID || null;
   if (!PUB) return;
 
-  var _lang = (document.documentElement.lang || 'en').toLowerCase().slice(0, 2);
   var _bookLabels = {
     fr: 'Réserver un appel →', es: 'Reservar una llamada →', de: 'Gespräch buchen →',
     it: 'Prenota una chiamata →', pt: 'Agendar uma chamada →', nl: 'Gesprek boeken →',
@@ -15,7 +14,46 @@
     tr: 'Görüşme rezerve et →', ar: 'احجز مكالمة →', zh: '预约通话 →',
     ja: '通話を予約する →', ko: '통화 예약하기 →'
   };
+  // Defaults for the IL_PRELOADED_MATCHES path (no article text to detect from yet).
+  // The normal flow overrides these from the article's own text once extracted.
+  var _lang = (document.documentElement.lang || 'en').toLowerCase().slice(0, 2);
   var BOOK_LABEL = _bookLabels[_lang] || 'Book a call →';
+
+  // Detects language from the article's own text rather than trusting the page's
+  // <html lang> (often misconfigured on CMS sites) or the visitor's browser locale.
+  var LANG_STOPWORDS = {
+    fr: [' le ',' la ',' les ',' des ',' une ',' est ',' pour ',' avec ',' dans ',' vous ',' votre ',' nous ',' sur ',' qui ',' que ',' pas ',' plus ',' ces ',' cette '],
+    es: [' el ',' la ',' los ',' las ',' de ',' que ',' para ',' con ',' una ',' es ',' por ',' su ',' este ',' esta ',' del '],
+    de: [' der ',' die ',' das ',' und ',' ist ',' für ',' mit ',' den ',' sie ',' auf ',' nicht ',' ein ',' eine ',' des '],
+    it: [' il ',' la ',' di ',' che ',' per ',' con ',' una ',' non ',' sono ',' questo ',' questa ',' del ',' della '],
+    pt: [' o ',' a ',' que ',' de ',' para ',' com ',' uma ',' não ',' este ',' esta ',' dos ',' das '],
+    nl: [' de ',' het ',' een ',' van ',' voor ',' met ',' niet ',' dat ',' dit ',' zijn ',' worden '],
+    pl: [' i ',' w ',' na ',' do ',' z ',' że ',' jest ',' dla ',' nie ',' się '],
+    sv: [' och ',' att ',' det ',' som ',' för ',' med ',' inte ',' den ',' är '],
+    no: [' og ',' det ',' som ',' for ',' med ',' ikke ',' den ',' er '],
+    da: [' og ',' det ',' som ',' for ',' med ',' ikke ',' den ',' er '],
+    fi: [' ja ',' on ',' ei ',' se ',' että ',' ovat ',' tämä '],
+    ro: [' și ',' este ',' pentru ',' care ',' din ',' pe ',' cu ',' nu ']
+  };
+  function detectLanguage(articleText) {
+    if (/[؀-ۿ]/.test(articleText)) return 'ar';
+    if (/[぀-ヿｦ-ﾟ]/.test(articleText)) return 'ja';
+    if (/[가-힯]/.test(articleText)) return 'ko';
+    if (/[一-鿿]/.test(articleText)) return 'zh';
+
+    var s = ' ' + articleText.slice(0, 3000).toLowerCase() + ' ';
+    var bestLang = 'en', bestScore = 0;
+    for (var lang in LANG_STOPWORDS) {
+      var words = LANG_STOPWORDS[lang];
+      var score = 0;
+      for (var i = 0; i < words.length; i++) {
+        if (s.indexOf(words[i]) !== -1) score++;
+      }
+      if (score > bestScore) { bestScore = score; bestLang = lang; }
+    }
+    // Require a minimum signal before trusting a non-English detection
+    return bestScore >= 3 ? bestLang : 'en';
+  }
 
   var _started = false;
   function safeInit() {
@@ -41,6 +79,9 @@
     }
 
     if (!el || text.length < 150) return;
+
+    _lang = detectLanguage(text);
+    BOOK_LABEL = _bookLabels[_lang] || 'Book a call →';
 
     if (window.IL_PRELOADED_MATCHES) {
       var pre = window.IL_PRELOADED_MATCHES;
