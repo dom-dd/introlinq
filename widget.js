@@ -59,7 +59,7 @@
     var sharedPopup = null;
     var usedRanges = [];
 
-    function applyMatches(data, isQuick) {
+    function applyMatches(data) {
       if (!data || !data.matches || !data.matches.length) return;
       sharedCfg = sharedCfg || data.config || {};
       if (!sharedPopup) {
@@ -74,32 +74,92 @@
       });
       if (!newMatches.length) return;
       preloadPhotos(newMatches);
-      var shown = highlightMatches(el, newMatches, sharedPopup, sharedCfg, usedRanges);
-      if (!isQuick && shown === 0 && newMatches.length > 0 && attempt < 2) {
-        _started = false;
-        setTimeout(function () { safeInit(); }, 1000);
-      }
+      highlightMatches(el, newMatches, sharedPopup, sharedCfg, usedRanges);
+      return newMatches;
     }
 
-    // Quick: first 1500 chars, no cache — shows first experts fast
+    // Fast pre-check: if this page was already scanned, apply the cached result
+    // directly and skip the AI scan (and its cost) entirely.
     fetch(API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ article: text.slice(0, 1500), publisher: PUB, page_title: document.title, quick: true })
+      body: JSON.stringify({ checkCache: true, publisher: PUB, page_url: window.location.href })
     })
     .then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (data) { applyMatches(data, true); })
-    .catch(function () {});
+    .then(function (data) {
+      if (data && data.cacheHit) {
+        applyMatches(data);
+        return;
+      }
+      runFullScan();
+    })
+    .catch(runFullScan);
 
-    // Full: whole article (up to 10k chars) with caching — adds remaining experts
-    fetch(API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ article: text.slice(0, 10000), publisher: PUB, page_url: window.location.href, page_title: document.title })
-    })
-    .then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (data) { applyMatches(data, false); })
-    .catch(function () {});
+    function runFullScan() {
+      var reportMatches = [];
+      var gotAnyResponse = false;
+
+      function collect(data) {
+        if (data) gotAnyResponse = true;
+        var newMatches = applyMatches(data);
+        if (newMatches) reportMatches = reportMatches.concat(newMatches);
+      }
+
+      // Reads the article in chunks so any length is covered without one oversized,
+      // slow request: each chunk resolves and shows its experts as soon as it's ready.
+      var CHUNK_SIZE = 9000;
+      var CHUNK_OVERLAP = 300;
+      var chunkTexts = [];
+      if (text.length <= CHUNK_SIZE) {
+        chunkTexts.push(text);
+      } else {
+        var step = CHUNK_SIZE - CHUNK_OVERLAP;
+        for (var pos = 0; pos < text.length; pos += step) {
+          chunkTexts.push(text.slice(pos, pos + CHUNK_SIZE));
+          if (pos + CHUNK_SIZE >= text.length) break;
+        }
+      }
+
+      var pending = [];
+
+      // Quick: first 1500 chars, capped — shows the first experts fast
+      pending.push(
+        fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ article: text.slice(0, 1500), publisher: PUB, page_title: document.title, quick: true })
+        })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(collect)
+        .catch(function () {})
+      );
+
+      // Each chunk covers the rest of the article; all fire in parallel, each adding
+      // experts to the page as soon as it resolves
+      chunkTexts.forEach(function (chunkText) {
+        pending.push(
+          fetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ article: chunkText, publisher: PUB, page_title: document.title, chunk: true })
+          })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(collect)
+          .catch(function () {})
+        );
+      });
+
+      // Once every chunk has resolved, report the merged, deduplicated result once —
+      // this is what gets cached, logged, and posted to Slack
+      Promise.all(pending.map(function (p) { return p.catch(function () {}); })).then(function () {
+        if (!gotAnyResponse) return;
+        fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ report: true, publisher: PUB, page_url: window.location.href, page_title: document.title, matches: reportMatches })
+        }).catch(function () {});
+      });
+    }
   }
 
   function findArticle() {

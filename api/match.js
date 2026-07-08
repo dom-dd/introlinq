@@ -6,6 +6,135 @@ let expertsCache = null;
 let expertsCacheTime = 0;
 const EXPERTS_TTL = 5 * 60 * 1000;
 
+const COUNTRY_NAMES = { AF:'Afghanistan',AL:'Albania',DZ:'Algeria',AR:'Argentina',AU:'Australia',AT:'Austria',BE:'Belgium',BR:'Brazil',CA:'Canada',CL:'Chile',CN:'China',CO:'Colombia',HR:'Croatia',CZ:'Czechia',DK:'Denmark',EG:'Egypt',FI:'Finland',FR:'France',DE:'Germany',GH:'Ghana',GR:'Greece',HK:'Hong Kong',HU:'Hungary',IN:'India',ID:'Indonesia',IE:'Ireland',IL:'Israel',IT:'Italy',JP:'Japan',KE:'Kenya',MY:'Malaysia',MX:'Mexico',MA:'Morocco',NL:'Netherlands',NZ:'New Zealand',NG:'Nigeria',NO:'Norway',PK:'Pakistan',PH:'Philippines',PL:'Poland',PT:'Portugal',RO:'Romania',RU:'Russia',SA:'Saudi Arabia',SG:'Singapore',ZA:'South Africa',KR:'South Korea',ES:'Spain',SE:'Sweden',CH:'Switzerland',TW:'Taiwan',TH:'Thailand',TR:'Turkey',UA:'Ukraine',AE:'UAE',GB:'United Kingdom',US:'United States',VN:'Vietnam' };
+
+async function ensureCacheTable(sql) {
+  if (cacheTableReady) return;
+  await sql`CREATE TABLE IF NOT EXISTS match_cache (
+    id SERIAL PRIMARY KEY,
+    page_url TEXT NOT NULL,
+    country_code TEXT NOT NULL DEFAULT '',
+    publisher TEXT NOT NULL DEFAULT '',
+    result JSONB NOT NULL,
+    has_match BOOLEAN NOT NULL,
+    cached_at TIMESTAMPTZ DEFAULT NOW()
+  )`.catch(() => {});
+  await sql`ALTER TABLE match_cache ADD COLUMN IF NOT EXISTS publisher TEXT NOT NULL DEFAULT ''`.catch(() => {});
+  await sql`ALTER TABLE match_cache DROP CONSTRAINT IF EXISTS match_cache_page_url_country_code_key`.catch(() => {});
+  await sql`ALTER TABLE match_cache DROP CONSTRAINT IF EXISTS match_cache_page_url_country_code_publisher_key`.catch(() => {});
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS match_cache_unique ON match_cache(page_url, country_code, publisher)`.catch(() => {});
+  cacheTableReady = true;
+}
+
+// Fast pre-check so already-scanned pages skip the quick+chunk AI scan entirely
+async function handleCheckCache(req, res) {
+  const { publisher, page_url } = req.body;
+  if (!page_url) return res.status(200).json({ cacheHit: false });
+  try {
+    const sql = neon(process.env.DATABASE_URL);
+    let pubConfig = { color: '#e6a820', accent: '#e6a820', size: 'medium' };
+    if (publisher) {
+      const [pub] = await sql`SELECT widget_color, accent_color, widget_size FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null]);
+      if (!pub) return res.status(200).json({ cacheHit: false });
+      pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium' };
+    }
+
+    await ensureCacheTable(sql);
+
+    const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
+    const cacheCountry = readerCountry || 'XX';
+    const [lastSync] = await sql`SELECT last_synced_at FROM providers WHERE slug = 'openintro' LIMIT 1`.catch(() => [null]);
+    const lastSyncedAt = lastSync?.last_synced_at || new Date(0);
+
+    const [cached] = await sql`
+      SELECT result FROM match_cache
+      WHERE page_url = ${page_url}
+        AND country_code = ${cacheCountry}
+        AND publisher = ${publisher || ''}
+        AND (has_match = false OR cached_at > ${lastSyncedAt})
+        AND cached_at > NOW() - INTERVAL '1 year'
+      LIMIT 1
+    `.catch(() => [null]);
+
+    if (!cached) return res.status(200).json({ cacheHit: false });
+
+    const cachedMatches = cached.result.matches || [];
+    const phrases = cachedMatches.map(m => m.phrase);
+    const expertNames = cachedMatches.map(m => m.expert?.name).filter(Boolean);
+    const expertBookingUrls = cachedMatches.map(m => m.expert?.booking_url || null);
+    sql`INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, country_code)
+      VALUES (${publisher || null}, '[cached]', ${phrases}, ${expertNames}, ${expertBookingUrls}, ${cachedMatches.length}, ${page_url}, ${readerCountry || null})
+    `.catch(() => {});
+
+    return res.status(200).json({ cacheHit: true, matches: cachedMatches, config: pubConfig });
+  } catch (err) {
+    console.error(err);
+    return res.status(200).json({ cacheHit: false });
+  }
+}
+
+// Client has already merged results from the quick pass + all article chunks.
+// Persist the final set (cache + log + Slack) without any further AI calls.
+async function handleReport(req, res) {
+  const { publisher, page_url, page_title, matches } = req.body;
+  if (!page_url || !Array.isArray(matches)) {
+    return res.status(400).json({ error: 'Missing page_url or matches' });
+  }
+  try {
+    const sql = neon(process.env.DATABASE_URL);
+    const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
+    const cacheCountry = readerCountry || 'XX';
+
+    await ensureCacheTable(sql);
+
+    await sql`
+      INSERT INTO match_cache (page_url, country_code, publisher, result, has_match)
+      VALUES (${page_url}, ${cacheCountry}, ${publisher || ''}, ${JSON.stringify({ matches })}, ${matches.length > 0})
+      ON CONFLICT (page_url, country_code, publisher) DO UPDATE SET result = EXCLUDED.result, has_match = EXCLUDED.has_match, cached_at = NOW()
+    `.catch(() => {});
+
+    if (!tableReady) {
+      await sql`CREATE TABLE IF NOT EXISTS match_logs (id SERIAL PRIMARY KEY, publisher TEXT, article_preview TEXT, phrases TEXT[], expert_names TEXT[], match_count INT, created_at TIMESTAMPTZ DEFAULT NOW())`;
+      tableReady = true;
+    }
+    await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS page_url TEXT`.catch(() => {});
+    await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS expert_booking_urls TEXT[]`.catch(() => {});
+    await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS no_match_reason TEXT`.catch(() => {});
+    await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS country_code TEXT`.catch(() => {});
+
+    const phrases = matches.map(m => m.phrase);
+    const expertNames = matches.map(m => m.expert?.name).filter(Boolean);
+    const expertBookingUrls = matches.map(m => m.expert?.booking_url || null);
+    const preview = (page_title || page_url || '').slice(0, 120);
+
+    await sql`
+      INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, country_code)
+      VALUES (${publisher || null}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${matches.length === 0 ? 'No matches found across article' : null}, ${readerCountry || null})
+    `.catch(() => {});
+
+    if (process.env.SLACK_WEBHOOK_URL && matches.length > 0) {
+      let pubName = publisher || '/app';
+      if (publisher) {
+        const [pubRow] = await sql`SELECT name FROM publishers WHERE slug = ${publisher} LIMIT 1`.catch(() => [null]);
+        if (pubRow?.name) pubName = pubRow.name;
+      }
+      const countryLabel = readerCountry ? (COUNTRY_NAMES[readerCountry] || readerCountry) : 'Unknown';
+      const title = page_title ? page_title.slice(0, 80) : page_url.slice(0, 80);
+      const urlLine = (!publisher && page_url) ? `\n${page_url}` : '';
+      await fetch(process.env.SLACK_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: `🔍 *${pubName}* · *${matches.length} expert${matches.length !== 1 ? 's' : ''} found* · 🌍 ${countryLabel}\n_${title}_${urlLine}` })
+      }).catch(() => {});
+    }
+
+    return res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(200).json({ ok: false });
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -16,7 +145,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { article, page_url, page_title, quick } = req.body;
+  if (req.body && req.body.report === true) {
+    return handleReport(req, res);
+  }
+  if (req.body && req.body.checkCache === true) {
+    return handleCheckCache(req, res);
+  }
+
+  const { article, page_url, page_title, quick, chunk } = req.body;
   if (!article || article.trim().length < 50) {
     return res.status(400).json({ error: 'Article text is too short' });
   }
@@ -52,30 +188,16 @@ export default async function handler(req, res) {
     }
 
     // Quick pass scans only the article intro for a fast first paint; cap matches so the
-    // small token budget can't truncate the JSON. The full pass delivers the rest.
-    if (quick) maxMatches = Math.min(maxMatches, 3);
+    // small token budget can't truncate the JSON. Chunk passes cover the rest of the
+    // article at full match budget; the client merges everything and reports it once.
+    if (quick && !chunk) maxMatches = Math.min(maxMatches, 3);
 
     const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
     const cacheCountry = readerCountry || 'XX'; // 'XX' = unknown country, avoids empty-string NULL issue in cache
 
     // Check match cache (keyed by page_url + country, valid until last expert sync)
-    if (page_url && !quick) {
-      if (!cacheTableReady) {
-        await sql`CREATE TABLE IF NOT EXISTS match_cache (
-          id SERIAL PRIMARY KEY,
-          page_url TEXT NOT NULL,
-          country_code TEXT NOT NULL DEFAULT '',
-          publisher TEXT NOT NULL DEFAULT '',
-          result JSONB NOT NULL,
-          has_match BOOLEAN NOT NULL,
-          cached_at TIMESTAMPTZ DEFAULT NOW()
-        )`.catch(() => {});
-        await sql`ALTER TABLE match_cache ADD COLUMN IF NOT EXISTS publisher TEXT NOT NULL DEFAULT ''`.catch(() => {});
-        await sql`ALTER TABLE match_cache DROP CONSTRAINT IF EXISTS match_cache_page_url_country_code_key`.catch(() => {});
-        await sql`ALTER TABLE match_cache DROP CONSTRAINT IF EXISTS match_cache_page_url_country_code_publisher_key`.catch(() => {});
-        await sql`CREATE UNIQUE INDEX IF NOT EXISTS match_cache_unique ON match_cache(page_url, country_code, publisher)`.catch(() => {});
-        cacheTableReady = true;
-      }
+    if (page_url && !quick && !chunk) {
+      await ensureCacheTable(sql);
 
       const [lastSync] = await sql`SELECT last_synced_at FROM providers WHERE slug = 'openintro' LIMIT 1`.catch(() => [null]);
       const lastSyncedAt = lastSync?.last_synced_at || new Date(0);
@@ -236,10 +358,14 @@ Return only valid JSON, no other text:
     // Respond immediately — client gets result now; function stays alive to finish background work
     res.status(200).json({ matches: enriched, config: pubConfig, no_match_reason: noMatchReason || undefined });
 
+    // Quick and chunk requests skip all of this — the client merges every chunk's
+    // results and sends one consolidated report (cache/log/Slack) at the end.
+    if (quick || chunk) return;
+
     // Await keeps the Vercel function alive until DB writes and Slack complete
     await Promise.allSettled([
       (async () => {
-        if (!page_url || quick) return;
+        if (!page_url) return;
         await sql`
           INSERT INTO match_cache (page_url, country_code, publisher, result, has_match)
           VALUES (${page_url}, ${cacheCountry}, ${publisher || ''}, ${JSON.stringify({ matches: enriched })}, ${enriched.length > 0})
@@ -247,7 +373,6 @@ Return only valid JSON, no other text:
         `.catch(() => {});
       })(),
       (async () => {
-        if (quick) return;
         if (!tableReady) {
           await sql`CREATE TABLE IF NOT EXISTS match_logs (id SERIAL PRIMARY KEY, publisher TEXT, article_preview TEXT, phrases TEXT[], expert_names TEXT[], match_count INT, created_at TIMESTAMPTZ DEFAULT NOW())`;
           tableReady = true;
@@ -262,14 +387,13 @@ Return only valid JSON, no other text:
         `;
       })(),
       (async () => {
-        if (!process.env.SLACK_WEBHOOK_URL || enriched.length === 0 || quick) return;
+        if (!process.env.SLACK_WEBHOOK_URL || enriched.length === 0) return;
         let pubName = publisher || '/app';
         if (publisher) {
           const [pubRow] = await sql`SELECT name FROM publishers WHERE slug = ${publisher} LIMIT 1`.catch(() => [null]);
           if (pubRow?.name) pubName = pubRow.name;
         }
-        const countryNames = { AF:'Afghanistan',AL:'Albania',DZ:'Algeria',AR:'Argentina',AU:'Australia',AT:'Austria',BE:'Belgium',BR:'Brazil',CA:'Canada',CL:'Chile',CN:'China',CO:'Colombia',HR:'Croatia',CZ:'Czechia',DK:'Denmark',EG:'Egypt',FI:'Finland',FR:'France',DE:'Germany',GH:'Ghana',GR:'Greece',HK:'Hong Kong',HU:'Hungary',IN:'India',ID:'Indonesia',IE:'Ireland',IL:'Israel',IT:'Italy',JP:'Japan',KE:'Kenya',MY:'Malaysia',MX:'Mexico',MA:'Morocco',NL:'Netherlands',NZ:'New Zealand',NG:'Nigeria',NO:'Norway',PK:'Pakistan',PH:'Philippines',PL:'Poland',PT:'Portugal',RO:'Romania',RU:'Russia',SA:'Saudi Arabia',SG:'Singapore',ZA:'South Africa',KR:'South Korea',ES:'Spain',SE:'Sweden',CH:'Switzerland',TW:'Taiwan',TH:'Thailand',TR:'Turkey',UA:'Ukraine',AE:'UAE',GB:'United Kingdom',US:'United States',VN:'Vietnam' };
-        const countryLabel = readerCountry ? (countryNames[readerCountry] || readerCountry) : 'Unknown';
+        const countryLabel = readerCountry ? (COUNTRY_NAMES[readerCountry] || readerCountry) : 'Unknown';
         const title = page_title ? page_title.slice(0, 80) : (page_url ? page_url.slice(0, 80) : 'homepage demo');
         const urlLine = (!publisher && page_url) ? `\n${page_url}` : '';
         await fetch(process.env.SLACK_WEBHOOK_URL, {
