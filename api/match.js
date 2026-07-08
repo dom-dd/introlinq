@@ -9,39 +9,46 @@ const EXPERTS_TTL = 5 * 60 * 1000;
 const COUNTRY_NAMES = { AF:'Afghanistan',AL:'Albania',DZ:'Algeria',AR:'Argentina',AU:'Australia',AT:'Austria',BE:'Belgium',BR:'Brazil',CA:'Canada',CL:'Chile',CN:'China',CO:'Colombia',HR:'Croatia',CZ:'Czechia',DK:'Denmark',EG:'Egypt',FI:'Finland',FR:'France',DE:'Germany',GH:'Ghana',GR:'Greece',HK:'Hong Kong',HU:'Hungary',IN:'India',ID:'Indonesia',IE:'Ireland',IL:'Israel',IT:'Italy',JP:'Japan',KE:'Kenya',MY:'Malaysia',MX:'Mexico',MA:'Morocco',NL:'Netherlands',NZ:'New Zealand',NG:'Nigeria',NO:'Norway',PK:'Pakistan',PH:'Philippines',PL:'Poland',PT:'Portugal',RO:'Romania',RU:'Russia',SA:'Saudi Arabia',SG:'Singapore',ZA:'South Africa',KR:'South Korea',ES:'Spain',SE:'Sweden',CH:'Switzerland',TW:'Taiwan',TH:'Thailand',TR:'Turkey',UA:'Ukraine',AE:'UAE',GB:'United Kingdom',US:'United States',VN:'Vietnam' };
 
 const LANG_NAMES = { en:'English', fr:'French', es:'Spanish', de:'German', it:'Italian', pt:'Portuguese', nl:'Dutch', pl:'Polish', sv:'Swedish', no:'Norwegian', da:'Danish', fi:'Finnish', ro:'Romanian', tr:'Turkish', ar:'Arabic', zh:'Chinese', ja:'Japanese', ko:'Korean' };
-const LANG_STOPWORDS = {
-  fr: [' le ',' la ',' les ',' des ',' une ',' est ',' pour ',' avec ',' dans ',' vous ',' votre ',' nous ',' sur ',' qui ',' que ',' pas ',' plus ',' ces ',' cette '],
-  es: [' el ',' la ',' los ',' las ',' de ',' que ',' para ',' con ',' una ',' es ',' por ',' su ',' este ',' esta ',' del '],
-  de: [' der ',' die ',' das ',' und ',' ist ',' für ',' mit ',' den ',' sie ',' auf ',' nicht ',' ein ',' eine ',' des '],
-  it: [' il ',' la ',' di ',' che ',' per ',' con ',' una ',' non ',' sono ',' questo ',' questa ',' del ',' della '],
-  pt: [' o ',' a ',' que ',' de ',' para ',' com ',' uma ',' não ',' este ',' esta ',' dos ',' das '],
-  nl: [' de ',' het ',' een ',' van ',' voor ',' met ',' niet ',' dat ',' dit ',' zijn ',' worden '],
-  pl: [' i ',' w ',' na ',' do ',' z ',' że ',' jest ',' dla ',' nie ',' się '],
-  sv: [' och ',' att ',' det ',' som ',' för ',' med ',' inte ',' den ',' är '],
-  no: [' og ',' det ',' som ',' for ',' med ',' ikke ',' den ',' er '],
-  da: [' og ',' det ',' som ',' for ',' med ',' ikke ',' den ',' er '],
-  fi: [' ja ',' on ',' ei ',' se ',' että ',' ovat ',' tämä '],
-  ro: [' și ',' este ',' pentru ',' care ',' din ',' pe ',' cu ',' nu ']
+// Counts total function-word occurrences per language, with English competing
+// directly, so the article's dominant language wins even if fragments of another
+// language (e.g. a French expert bio quoted on the page) appear in the text.
+const LANG_WORDS = {
+  en: ['the','and','of','to','is','in','that','for','with','you','your','are','this','have','from','will','not','but','they','was','can','what','how','which','their','has','been','were','would','about','when','more','other','into','than','them','then','some','also','because','through'],
+  fr: ['le','la','les','des','une','est','et','pour','avec','dans','vous','votre','nous','sur','qui','que','pas','plus','cette','du','au','par','mais','ont','leur','aux','ce','ses','vos','elle','son','sa','comme','tout','aussi','bien','faire','peut','être','très','sans','même'],
+  es: ['el','los','las','que','para','con','una','es','por','su','este','esta','del','se','más','como','pero','sus','al','lo','tiene','también','puede','hacer','todo','cuando','muy','sin','sobre','entre','ya','hay','desde','está','cada'],
+  de: ['der','die','das','und','ist','für','mit','den','sie','auf','nicht','ein','eine','des','im','dem','zu','von','werden','auch','sich','bei','oder','wir','aber','wenn','kann','haben','mehr','wie','nach','über','nur','aus','durch','einen','einer','zum','zur','sind'],
+  it: ['il','di','che','per','con','una','non','sono','questo','della','del','le','si','più','come','anche','alla','nel','gli','dei','delle','essere','hanno','questa','tra','ma','dal','ai','sul','nella'],
+  pt: ['os','um','uma','não','com','para','por','mais','como','seu','sua','dos','das','em','ao','pelo','isso','você','tem','ser','foi','pela','são','muito','quando','também','já','ou','na','da'],
+  nl: ['de','het','een','van','voor','met','niet','dat','dit','zijn','worden','ook','naar','maar','bij','uit','deze','wordt','heeft','hebben','kan','meer','als','dan','wat','onze','je'],
+  pl: ['nie','się','jest','dla','na','że','ale','jak','po','przez','tego','być','są','oraz','tym','przy','czy','może','tylko','już','bardzo'],
+  sv: ['och','att','det','som','för','med','inte','den','är','av','på','har','till','ett','om','ska','kan','från','vi','du','eller','men','efter','vid'],
+  no: ['og','det','som','ikke','den','er','av','på','har','til','et','om','skal','kan','fra','vi','du','eller','men','etter','ved','også'],
+  da: ['og','det','som','ikke','den','er','af','på','har','til','et','om','skal','kan','fra','vi','du','eller','men','efter','ved','også'],
+  fi: ['ja','on','ei','se','että','ovat','tämä','mutta','kun','myös','voi','ole','sen','joka','niin','kuin','jos','vain','mitä'],
+  ro: ['și','este','pentru','care','din','pe','cu','nu','mai','sau','sunt','această','acest','dar','după','până','fost','poate','fiecare']
 };
-// Detects the reader-facing language from the article text itself, so the AI
-// gets an explicit instruction instead of guessing (it was getting confused
-// by French-sounding expert/company names in the prompt and answering in French).
+const LANG_SETS = Object.fromEntries(
+  Object.entries(LANG_WORDS).map(([lang, words]) => [lang, new Set(words)])
+);
 function detectArticleLanguage(articleText) {
   if (/[؀-ۿ]/.test(articleText)) return 'ar';
   if (/[぀-ヿｦ-ﾟ]/.test(articleText)) return 'ja';
   if (/[가-힯]/.test(articleText)) return 'ko';
   if (/[一-鿿]/.test(articleText)) return 'zh';
 
-  const s = ' ' + articleText.slice(0, 3000).toLowerCase() + ' ';
-  let bestLang = 'en', bestScore = 0;
-  for (const lang in LANG_STOPWORDS) {
-    let score = 0;
-    for (const word of LANG_STOPWORDS[lang]) {
-      if (s.indexOf(word) !== -1) score++;
+  const words = articleText.slice(0, 20000).toLowerCase().split(/[^a-zß-ÿĀ-ſȘ-ț]+/);
+  let best = 'en', bestN = 0;
+  for (const lang in LANG_SETS) {
+    const set = LANG_SETS[lang];
+    let n = 0;
+    for (const w of words) {
+      if (set.has(w)) n++;
     }
-    if (score > bestScore) { bestScore = score; bestLang = lang; }
+    if (n > bestN) { bestN = n; best = lang; }
   }
-  return bestScore >= 3 ? bestLang : 'en';
+  // Weak signal (very short or mixed text): default to English
+  if (best !== 'en' && bestN < 10) return 'en';
+  return best;
 }
 
 async function ensureCacheTable(sql) {

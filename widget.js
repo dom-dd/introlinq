@@ -21,38 +21,51 @@
 
   // Detects language from the article's own text rather than trusting the page's
   // <html lang> (often misconfigured on CMS sites) or the visitor's browser locale.
-  var LANG_STOPWORDS = {
-    fr: [' le ',' la ',' les ',' des ',' une ',' est ',' pour ',' avec ',' dans ',' vous ',' votre ',' nous ',' sur ',' qui ',' que ',' pas ',' plus ',' ces ',' cette '],
-    es: [' el ',' la ',' los ',' las ',' de ',' que ',' para ',' con ',' una ',' es ',' por ',' su ',' este ',' esta ',' del '],
-    de: [' der ',' die ',' das ',' und ',' ist ',' für ',' mit ',' den ',' sie ',' auf ',' nicht ',' ein ',' eine ',' des '],
-    it: [' il ',' la ',' di ',' che ',' per ',' con ',' una ',' non ',' sono ',' questo ',' questa ',' del ',' della '],
-    pt: [' o ',' a ',' que ',' de ',' para ',' com ',' uma ',' não ',' este ',' esta ',' dos ',' das '],
-    nl: [' de ',' het ',' een ',' van ',' voor ',' met ',' niet ',' dat ',' dit ',' zijn ',' worden '],
-    pl: [' i ',' w ',' na ',' do ',' z ',' że ',' jest ',' dla ',' nie ',' się '],
-    sv: [' och ',' att ',' det ',' som ',' för ',' med ',' inte ',' den ',' är '],
-    no: [' og ',' det ',' som ',' for ',' med ',' ikke ',' den ',' er '],
-    da: [' og ',' det ',' som ',' for ',' med ',' ikke ',' den ',' er '],
-    fi: [' ja ',' on ',' ei ',' se ',' että ',' ovat ',' tämä '],
-    ro: [' și ',' este ',' pentru ',' care ',' din ',' pe ',' cu ',' nu ']
+  // Counts total function-word occurrences per language, with English competing
+  // directly, so the article's dominant language wins even if fragments of another
+  // language (e.g. a French expert bio or testimonial) appear on the page.
+  var LANG_WORDS = {
+    en: ['the','and','of','to','is','in','that','for','with','you','your','are','this','have','from','will','not','but','they','was','can','what','how','which','their','has','been','were','would','about','when','more','other','into','than','them','then','some','also','because','through'],
+    fr: ['le','la','les','des','une','est','et','pour','avec','dans','vous','votre','nous','sur','qui','que','pas','plus','cette','du','au','par','mais','ont','leur','aux','ce','ses','vos','elle','son','sa','comme','tout','aussi','bien','faire','peut','être','très','sans','même'],
+    es: ['el','los','las','que','para','con','una','es','por','su','este','esta','del','se','más','como','pero','sus','al','lo','tiene','también','puede','hacer','todo','cuando','muy','sin','sobre','entre','ya','hay','desde','está','cada'],
+    de: ['der','die','das','und','ist','für','mit','den','sie','auf','nicht','ein','eine','des','im','dem','zu','von','werden','auch','sich','bei','oder','wir','aber','wenn','kann','haben','mehr','wie','nach','über','nur','aus','durch','einen','einer','zum','zur','sind'],
+    it: ['il','di','che','per','con','una','non','sono','questo','della','del','le','si','più','come','anche','alla','nel','gli','dei','delle','essere','hanno','questa','tra','ma','dal','ai','sul','nella'],
+    pt: ['os','um','uma','não','com','para','por','mais','como','seu','sua','dos','das','em','ao','pelo','isso','você','tem','ser','foi','pela','são','muito','quando','também','já','ou','na','da'],
+    nl: ['de','het','een','van','voor','met','niet','dat','dit','zijn','worden','ook','naar','maar','bij','uit','deze','wordt','heeft','hebben','kan','meer','als','dan','wat','onze','je'],
+    pl: ['nie','się','jest','dla','na','że','ale','jak','po','przez','tego','być','są','oraz','tym','przy','czy','może','tylko','już','bardzo'],
+    sv: ['och','att','det','som','för','med','inte','den','är','av','på','har','till','ett','om','ska','kan','från','vi','du','eller','men','efter','vid'],
+    no: ['og','det','som','ikke','den','er','av','på','har','til','et','om','skal','kan','fra','vi','du','eller','men','etter','ved','også'],
+    da: ['og','det','som','ikke','den','er','af','på','har','til','et','om','skal','kan','fra','vi','du','eller','men','efter','ved','også'],
+    fi: ['ja','on','ei','se','että','ovat','tämä','mutta','kun','myös','voi','ole','sen','joka','niin','kuin','jos','vain','mitä'],
+    ro: ['și','este','pentru','care','din','pe','cu','nu','mai','sau','sunt','această','acest','dar','după','până','fost','poate','fiecare']
   };
+  var LANG_SETS = {};
+  (function () {
+    for (var l in LANG_WORDS) {
+      var set = {};
+      for (var i = 0; i < LANG_WORDS[l].length; i++) set[LANG_WORDS[l][i]] = 1;
+      LANG_SETS[l] = set;
+    }
+  })();
   function detectLanguage(articleText) {
     if (/[؀-ۿ]/.test(articleText)) return 'ar';
     if (/[぀-ヿｦ-ﾟ]/.test(articleText)) return 'ja';
     if (/[가-힯]/.test(articleText)) return 'ko';
     if (/[一-鿿]/.test(articleText)) return 'zh';
 
-    var s = ' ' + articleText.slice(0, 3000).toLowerCase() + ' ';
-    var bestLang = 'en', bestScore = 0;
-    for (var lang in LANG_STOPWORDS) {
-      var words = LANG_STOPWORDS[lang];
-      var score = 0;
+    var words = articleText.slice(0, 20000).toLowerCase().split(/[^a-zß-ÿĀ-ſȘ-ț]+/);
+    var best = 'en', bestN = 0;
+    for (var lang in LANG_SETS) {
+      var set = LANG_SETS[lang];
+      var n = 0;
       for (var i = 0; i < words.length; i++) {
-        if (s.indexOf(words[i]) !== -1) score++;
+        if (set[words[i]]) n++;
       }
-      if (score > bestScore) { bestScore = score; bestLang = lang; }
+      if (n > bestN) { bestN = n; best = lang; }
     }
-    // Require a minimum signal before trusting a non-English detection
-    return bestScore >= 3 ? bestLang : 'en';
+    // Weak signal (very short or mixed text): default to English
+    if (best !== 'en' && bestN < 10) return 'en';
+    return best;
   }
 
   var _started = false;
@@ -229,6 +242,18 @@
     return null;
   }
 
+  // True for IntroLinq's own UI (carousel ilc-, expertboard ilb-/il-board, widget
+  // popup il-pop) — their text (often French expert bios) must never be treated
+  // as article content or the language detection and AI matching go wrong.
+  // il-hl highlight spans are NOT excluded: they wrap real article text, and
+  // removing them would shift combined-string offsets between highlight passes.
+  function isOwnWidget(p) {
+    var id = p.id || '';
+    var cls = (typeof p.className === 'string' ? p.className : '');
+    if (/(^|\s)il-hl(\s|$)/.test(cls)) return false;
+    return /^il[bc]?-/.test(id) || /(^|\s)il[bc]?-/.test(cls);
+  }
+
   function extractParagraphText(el) {
     var walker = document.createTreeWalker(
       el,
@@ -237,6 +262,7 @@
         var p = node.parentElement;
         while (p && p !== el) {
           if (/^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA|INPUT|CODE|PRE|A|H1|H2|H3|H4|H5|H6)$/.test(p.tagName)) return NodeFilter.FILTER_REJECT;
+          if (isOwnWidget(p)) return NodeFilter.FILTER_REJECT;
           p = p.parentElement;
         }
         return NodeFilter.FILTER_ACCEPT;
@@ -374,6 +400,7 @@
             if (/^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA|INPUT|CODE|PRE|A|H1|H2|H3|H4|H5|H6)$/.test(el.tagName)) {
               return NodeFilter.FILTER_REJECT;
             }
+            if (isOwnWidget(el)) return NodeFilter.FILTER_REJECT;
             el = el.parentElement;
           }
           return NodeFilter.FILTER_ACCEPT;
