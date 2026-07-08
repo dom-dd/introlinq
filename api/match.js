@@ -9,6 +9,51 @@ const EXPERTS_TTL = 5 * 60 * 1000;
 const COUNTRY_NAMES = { AF:'Afghanistan',AL:'Albania',DZ:'Algeria',AR:'Argentina',AU:'Australia',AT:'Austria',BE:'Belgium',BR:'Brazil',CA:'Canada',CL:'Chile',CN:'China',CO:'Colombia',HR:'Croatia',CZ:'Czechia',DK:'Denmark',EG:'Egypt',FI:'Finland',FR:'France',DE:'Germany',GH:'Ghana',GR:'Greece',HK:'Hong Kong',HU:'Hungary',IN:'India',ID:'Indonesia',IE:'Ireland',IL:'Israel',IT:'Italy',JP:'Japan',KE:'Kenya',MY:'Malaysia',MX:'Mexico',MA:'Morocco',NL:'Netherlands',NZ:'New Zealand',NG:'Nigeria',NO:'Norway',PK:'Pakistan',PH:'Philippines',PL:'Poland',PT:'Portugal',RO:'Romania',RU:'Russia',SA:'Saudi Arabia',SG:'Singapore',ZA:'South Africa',KR:'South Korea',ES:'Spain',SE:'Sweden',CH:'Switzerland',TW:'Taiwan',TH:'Thailand',TR:'Turkey',UA:'Ukraine',AE:'UAE',GB:'United Kingdom',US:'United States',VN:'Vietnam' };
 
 const LANG_NAMES = { en:'English', fr:'French', es:'Spanish', de:'German', it:'Italian', pt:'Portuguese', nl:'Dutch', pl:'Polish', sv:'Swedish', no:'Norwegian', da:'Danish', fi:'Finnish', ro:'Romanian', tr:'Turkish', ar:'Arabic', zh:'Chinese', ja:'Japanese', ko:'Korean' };
+
+// Structural approaches for opening the "reason" sentence. A random subset is
+// picked per request and assigned one-per-match, so reasons never fall into
+// the same "As a first-time founder..." template every time.
+const REASON_OPENERS = [
+  'Open with a direct question about the reader\'s current challenge',
+  'Open by naming the expert\'s most striking credential or number first',
+  'Open with a short, blunt imperative telling the reader what to do',
+  'Open by naming the specific mistake people often make in this situation',
+  'Open with an "It\'s not enough to just X - you also need Y" contrast',
+  'Open by referencing the exact decision point from the article phrase',
+  'Open with the expert\'s name plus one concrete fact about their track record',
+  'Open with "If you\'re stuck on X, ..."',
+  'Open by describing what happens if this is gotten wrong',
+  'Open with a brief empathetic acknowledgment of the difficulty, then pivot',
+  'Open by contrasting reading about it versus actually doing it',
+  'Open using the expert\'s company or background as social proof',
+  'Open with a rhetorical question about the outcome the reader wants',
+  'Open by citing a specific number from the expert\'s experience',
+  'Open with "Before you [next logical step], ..."',
+  'Open by describing what a 1:1 call unlocks that reading alone can\'t',
+  'Open with a comparison to generic advice versus this expert\'s specific help',
+  'Open by naming the reader\'s likely internal doubt or hesitation',
+  'Open with an action-verb command',
+  'Open by naming the specific tactical skill this expert brings',
+  'Open with "Getting this right early saves trouble later"',
+  'Open with a brief observation about the article\'s point, then bridge to the expert',
+  'Open by highlighting a common failure mode this expert has seen repeatedly',
+  'Open with what makes this expert\'s angle different from typical advice',
+  'Open by acknowledging time pressure founders/readers face here',
+  'Open with a specific outcome the expert has delivered for others before',
+  'Open by directly referencing the exact topic or phrase from the article',
+  'Open with "Most people underestimate..." then pivot to the expert',
+  'Open by mentioning the risk of skipping this step entirely',
+  'Open by citing the expert\'s years of experience or number of people helped',
+  'Open by describing a scenario the reader might recognize themselves in',
+  'Open with "One overlooked factor here is..." then pivot to the expert',
+  'Open by contrasting generic advice with personalized 1:1 guidance',
+  'Open with the specific outcome or goal the reader is chasing',
+  'Open by stating plainly why this expert, specifically, and not just anyone'
+];
+function pickReasonOpeners(n) {
+  const shuffled = [...REASON_OPENERS].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, Math.min(n, shuffled.length));
+}
 // Counts total function-word occurrences per language, with English competing
 // directly, so the article's dominant language wins even if fragments of another
 // language (e.g. a French expert bio quoted on the page) appear in the text.
@@ -344,7 +389,8 @@ NEVER match:
 
 IMPORTANT: ${languageInstruction}
 
-Vary each "reason" sentence's structure and opening. Do NOT start multiple reasons with the same phrase or pattern (e.g. do not open several with "As a first-time founder..." or "If you are a first-time founder..." just because that's the article's general topic). Open with the specific challenge, decision, or moment from that exact phrase instead of restating who the reader is in general.
+For each match's "reason", use a DIFFERENT one of these opening approaches — assign them in order to the matches you return (first match uses approach 1, second uses approach 2, etc.), and never reuse an approach or fall back to a generic "As a first-time founder..." opener regardless of what these approaches say:
+${pickReasonOpeners(Math.max(maxMatches, 6)).map((o, i) => `${i + 1}. ${o}`).join('\n')}
 
 Available experts:
 ${expertsList}
