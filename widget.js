@@ -168,7 +168,7 @@
         fetch(API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ article: text.slice(0, 1500), publisher: PUB, page_title: document.title, quick: true })
+          body: JSON.stringify({ article: text.slice(0, 1500), publisher: PUB, page_title: document.title, quick: true, lang: _lang })
         })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(collect)
@@ -182,7 +182,7 @@
           fetch(API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ article: chunkText, publisher: PUB, page_title: document.title, chunk: true })
+            body: JSON.stringify({ article: chunkText, publisher: PUB, page_title: document.title, chunk: true, lang: _lang })
           })
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(collect)

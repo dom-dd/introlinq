@@ -188,7 +188,7 @@ export default async function handler(req, res) {
     return handleCheckCache(req, res);
   }
 
-  const { article, page_url, page_title, quick, chunk } = req.body;
+  const { article, page_url, page_title, quick, chunk, lang } = req.body;
   if (!article || article.trim().length < 50) {
     return res.status(400).json({ error: 'Article text is too short' });
   }
@@ -303,7 +303,10 @@ export default async function handler(req, res) {
       return `ID:${e.id} | ${e.name}${role ? ` (${role})` : ''} | Languages: ${langs} | From £${e.price_from}/session | About: ${desc.slice(0, 150)} | Services: ${services}`;
     }).join('\n\n');
 
-    const articleLangCode = detectArticleLanguage(article);
+    // Trust the widget's language detection (run once on the full article) when
+    // provided, so every chunk request agrees — otherwise detect per-request
+    // (used by the homepage demo, which doesn't send a pre-detected lang).
+    const articleLangCode = (lang && LANG_NAMES[lang]) ? lang : detectArticleLanguage(article);
     const articleLangName = LANG_NAMES[articleLangCode] || 'English';
 
     const prompt = `You are the matching engine for IntroLinq, a platform that connects blog READERS with experts they can book a 1:1 call with.
