@@ -316,6 +316,13 @@ export default async function handler(req, res) {
     const articleLangCode = (lang && LANG_NAMES[lang]) ? lang : detectArticleLanguage(article);
     const articleLangName = LANG_NAMES[articleLangCode] || 'English';
 
+    // Only mention other languages when the article is actually non-English:
+    // naming "vous/Sie" in the prompt for English articles made the model
+    // occasionally swap words ("If vous need...") or answer in French/German.
+    const languageInstruction = articleLangCode === 'en'
+      ? 'The article is in English. Write every "reason" field entirely in natural English. Expert names, company names, or bios may be in other languages - ignore that; the reason must be 100% English.'
+      : `The article is in ${articleLangName}. Strongly prioritise experts who speak ${articleLangName}. Write every "reason" field entirely in ${articleLangName} - never mix languages within a sentence. Use formal address, never informal.`;
+
     const prompt = `You are the matching engine for IntroLinq, a platform that connects blog READERS with experts they can book a 1:1 call with.
 
 Your job: identify moments in the article where a reader - someone trying to learn, make a decision, or solve a problem - would benefit from a personal consultation with a specific expert. ${sensitivityInstruction}
@@ -335,9 +342,7 @@ NEVER match:
 - Phrases where a company describes what it is doing (not what the reader needs to do)
 - Vague keyword overlap where the expert's services don't clearly fit the specific moment
 
-The article's language is ${articleLangName}. If not English, strongly prioritise experts who speak that language.
-
-IMPORTANT: Always write the "reason" field in ${articleLangName}, regardless of what language expert names, company names, or bios below are written in — those are irrelevant to the reason's language. The reason must feel native to the reader. Always use formal address (vous in French, usted in Spanish, Sie in German) - never informal (tu, tú, du).
+IMPORTANT: ${languageInstruction}
 
 Available experts:
 ${expertsList}
@@ -358,6 +363,7 @@ Return only valid JSON, no other text:
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: quick ? 512 : (maxMatches <= 4 ? 1024 : maxMatches <= 10 ? 2048 : 3072),
+        temperature: 0,
         messages: [{ role: 'user', content: prompt }]
       })
     });
