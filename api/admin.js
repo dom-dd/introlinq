@@ -81,7 +81,7 @@ export default async function handler(req, res) {
   // Stats
   if (resource === 'stats') {
     const [publishers, experts, subscribers, lastSync] = await Promise.all([
-      sql`SELECT COUNT(*)::int AS count FROM publishers WHERE active = true`,
+      sql`SELECT COUNT(*)::int AS count FROM publishers WHERE active = true AND slug NOT LIKE 'demo-%'`,
       sql`SELECT COUNT(*)::int AS count FROM experts WHERE active = true`,
       sql`SELECT COUNT(*)::int AS count FROM subscribers`,
       sql`SELECT last_synced_at FROM providers WHERE slug = 'openintro'`,
@@ -121,7 +121,10 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS payment_email TEXT`;
 
     if (req.method === 'GET') {
-      const publishers = await sql`SELECT * FROM publishers ORDER BY created_at DESC`;
+      // Demo publisher accounts (power the /demo/*.html showcase pages' widgets)
+      // are excluded from this list - they're not real customers, and are
+      // already visible under the Experts tab's Groups table.
+      const publishers = await sql`SELECT * FROM publishers WHERE slug NOT LIKE 'demo-%' ORDER BY created_at DESC`;
       const [matchStats, clickStats] = await Promise.all([
         sql`SELECT publisher, COUNT(*)::int AS impressions FROM match_logs WHERE match_count > 0 GROUP BY publisher`.catch(() => []),
         sql`SELECT publisher, COUNT(*)::int AS clicks FROM click_logs GROUP BY publisher`.catch(() => []),
