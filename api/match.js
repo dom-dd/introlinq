@@ -182,7 +182,7 @@ Return only valid JSON, no other text:
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2048,
+        max_tokens: maxMatches <= 4 ? 1024 : maxMatches <= 10 ? 1536 : 2048,
         messages: [{ role: 'user', content: prompt }]
       })
     });
@@ -225,11 +225,11 @@ Return only valid JSON, no other text:
     const expertBookingUrls = enriched.map(m => m.expert.booking_url || null);
     const noMatchReason = enriched.length === 0 ? (parsed.no_match_reason || null) : null;
 
-    // Respond immediately — logging and caching happen in the background
+    // Respond immediately — client gets result now; function stays alive to finish background work
     res.status(200).json({ matches: enriched, config: pubConfig, no_match_reason: noMatchReason || undefined });
 
-    // Background: cache + log + Slack (non-blocking)
-    Promise.allSettled([
+    // Await keeps the Vercel function alive until DB writes and Slack complete
+    await Promise.allSettled([
       (async () => {
         if (!page_url) return;
         await sql`
