@@ -54,6 +54,29 @@ function pickReasonOpeners(n) {
   const shuffled = [...REASON_OPENERS].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, Math.min(n, shuffled.length));
 }
+
+// Em/en dashes are banned from output; always use a plain hyphen instead.
+function stripEmDash(text) {
+  if (!text) return text;
+  return text.replace(/[—–]/g, ' - ').replace(/\s{2,}/g, ' ').trim();
+}
+
+// Defends against the AI naming the wrong expert in the reason text (it can
+// confuse two similar experts from the list): if the correct expert's first
+// name is missing but another expert's first name appears instead, swap it.
+function fixReasonName(reason, correctExpert, allExperts) {
+  if (!reason || !correctExpert?.name) return reason;
+  const correctFirst = correctExpert.name.split(' ')[0];
+  if (!correctFirst || reason.includes(correctFirst)) return reason;
+  for (const e of allExperts) {
+    if (e.id === correctExpert.id) continue;
+    const otherFirst = (e.name || '').split(' ')[0];
+    if (!otherFirst || otherFirst.length < 3) continue;
+    const re = new RegExp(`\\b${otherFirst.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+    if (re.test(reason)) return reason.replace(re, correctFirst);
+  }
+  return reason;
+}
 // Counts total function-word occurrences per language, with English competing
 // directly, so the article's dominant language wins even if fragments of another
 // language (e.g. a French expert bio quoted on the page) appear in the text.
@@ -389,6 +412,10 @@ NEVER match:
 
 IMPORTANT: ${languageInstruction}
 
+IMPORTANT: Never use an em dash (—) or en dash (–) anywhere in the "reason" text. Use a plain hyphen with spaces ( - ) instead, or just rephrase as separate sentences.
+
+IMPORTANT: The name you write inside each "reason" MUST be the exact same expert whose ID you put in "expert_id" for that match. Double-check you are not naming a different expert from the list by mistake.
+
 For each match's "reason", use a DIFFERENT one of these opening approaches — assign them in order to the matches you return (first match uses approach 1, second uses approach 2, etc.), and never reuse an approach or fall back to a generic "As a first-time founder..." opener regardless of what these approaches say:
 ${pickReasonOpeners(Math.max(maxMatches, 6)).map((o, i) => `${i + 1}. ${o}`).join('\n')}
 
@@ -446,11 +473,11 @@ Return only valid JSON, no other text:
     const enriched = (parsed.matches || [])
       .filter(m => m.phrase && expertMap[m.expert_id])
       .filter(m => { if (seenExperts.has(m.expert_id)) return false; seenExperts.add(m.expert_id); return true; })
-      .map(m => ({
-        phrase: m.phrase,
-        reason: m.reason,
-        expert: expertMap[m.expert_id]
-      }));
+      .map(m => {
+        const expert = expertMap[m.expert_id];
+        const reason = stripEmDash(fixReasonName(m.reason, expert, experts));
+        return { phrase: m.phrase, reason, expert };
+      });
 
     const preview = article.slice(0, 120).replace(/\s+/g, ' ');
     const phrases = enriched.map(m => m.phrase);
