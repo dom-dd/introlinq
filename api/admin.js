@@ -331,6 +331,14 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, deleted: result.length });
   }
 
+  // Clear all match cache for a publisher - use after changing match settings
+  if (resource === 'clear-publisher-cache' && req.method === 'POST') {
+    const { publisher } = req.body;
+    if (!publisher) return res.status(400).json({ error: 'publisher required' });
+    const result = await sql`DELETE FROM match_cache WHERE publisher = ${publisher} RETURNING id`.catch(() => []);
+    return res.status(200).json({ ok: true, deleted: result.length });
+  }
+
   // Groups (demo providers)
   if (resource === 'groups') {
     await sql`ALTER TABLE providers ADD COLUMN IF NOT EXISTS name TEXT`.catch(() => {});

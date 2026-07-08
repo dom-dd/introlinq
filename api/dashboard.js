@@ -192,6 +192,10 @@ export default async function handler(req, res) {
       WHERE slug = ${pub} AND active = true
       RETURNING match_power, match_sensitivity, widget_color, accent_color, widget_size, enabled_partners, payment_email, active, carousel_title
     `;
+    // Clear match cache if matching settings changed so new settings take effect immediately
+    if (match_power != null || match_sensitivity != null || enabled_partners != null) {
+      await sql`DELETE FROM match_cache WHERE publisher = ${pub}`.catch(() => {});
+    }
     return res.status(200).json(updated);
   }
 
