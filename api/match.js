@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { article, page_url, page_title } = req.body;
+  const { article, page_url, page_title, quick } = req.body;
   if (!article || article.trim().length < 50) {
     return res.status(400).json({ error: 'Article text is too short' });
   }
@@ -55,7 +55,7 @@ export default async function handler(req, res) {
     const cacheCountry = readerCountry || 'XX'; // 'XX' = unknown country, avoids empty-string NULL issue in cache
 
     // Check match cache (keyed by page_url + country, valid until last expert sync)
-    if (page_url) {
+    if (page_url && !quick) {
       if (!cacheTableReady) {
         await sql`CREATE TABLE IF NOT EXISTS match_cache (
           id SERIAL PRIMARY KEY,
@@ -182,7 +182,7 @@ Return only valid JSON, no other text:
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: maxMatches <= 4 ? 1024 : maxMatches <= 10 ? 1536 : 2048,
+        max_tokens: quick ? 512 : (maxMatches <= 4 ? 1024 : maxMatches <= 10 ? 1536 : 2048),
         messages: [{ role: 'user', content: prompt }]
       })
     });
@@ -231,7 +231,7 @@ Return only valid JSON, no other text:
     // Await keeps the Vercel function alive until DB writes and Slack complete
     await Promise.allSettled([
       (async () => {
-        if (!page_url) return;
+        if (!page_url || quick) return;
         await sql`
           INSERT INTO match_cache (page_url, country_code, publisher, result, has_match)
           VALUES (${page_url}, ${cacheCountry}, ${publisher || ''}, ${JSON.stringify({ matches: enriched })}, ${enriched.length > 0})
@@ -239,6 +239,7 @@ Return only valid JSON, no other text:
         `.catch(() => {});
       })(),
       (async () => {
+        if (quick) return;
         if (!tableReady) {
           await sql`CREATE TABLE IF NOT EXISTS match_logs (id SERIAL PRIMARY KEY, publisher TEXT, article_preview TEXT, phrases TEXT[], expert_names TEXT[], match_count INT, created_at TIMESTAMPTZ DEFAULT NOW())`;
           tableReady = true;
@@ -253,7 +254,7 @@ Return only valid JSON, no other text:
         `;
       })(),
       (async () => {
-        if (!process.env.SLACK_WEBHOOK_URL || enriched.length === 0) return;
+        if (!process.env.SLACK_WEBHOOK_URL || enriched.length === 0 || quick) return;
         let pubName = publisher || '/app';
         if (publisher) {
           const [pubRow] = await sql`SELECT name FROM publishers WHERE slug = ${publisher} LIMIT 1`.catch(() => [null]);

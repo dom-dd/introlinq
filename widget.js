@@ -54,24 +54,50 @@
       return;
     }
 
+    var seenExpertIds = {};
+    var sharedCfg = null;
+    var sharedPopup = null;
+
+    function applyMatches(data, isQuick) {
+      if (!data || !data.matches || !data.matches.length) return;
+      sharedCfg = sharedCfg || data.config || {};
+      if (!sharedPopup) {
+        injectStyles(sharedCfg);
+        sharedPopup = createPopup(sharedCfg);
+      }
+      var newMatches = data.matches.filter(function (m) {
+        var id = m.expert && m.expert.id;
+        if (!id || seenExpertIds[id]) return false;
+        seenExpertIds[id] = true;
+        return true;
+      });
+      if (!newMatches.length) return;
+      preloadPhotos(newMatches);
+      var shown = highlightMatches(el, newMatches, sharedPopup, sharedCfg);
+      if (!isQuick && shown === 0 && newMatches.length > 0 && attempt < 2) {
+        _started = false;
+        setTimeout(function () { safeInit(); }, 1000);
+      }
+    }
+
+    // Quick: first 1500 chars, no cache — shows first experts fast
+    fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ article: text.slice(0, 1500), publisher: PUB, page_title: document.title, quick: true })
+    })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (data) { applyMatches(data, true); })
+    .catch(function () {});
+
+    // Full: 6000 chars with caching — adds remaining experts
     fetch(API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ article: text.slice(0, 6000), publisher: PUB, page_url: window.location.href, page_title: document.title })
     })
     .then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (data) {
-      if (!data || !data.matches || !data.matches.length) return;
-      var cfg = data.config || {};
-      preloadPhotos(data.matches);
-      injectStyles(cfg);
-      var popup = createPopup(cfg);
-      var shown = highlightMatches(el, data.matches, popup, cfg);
-      if (shown === 0 && data.matches.length > 0 && attempt < 2) {
-        _started = false;
-        setTimeout(function () { safeInit(); }, 1000);
-      }
-    })
+    .then(function (data) { applyMatches(data, false); })
     .catch(function () {});
   }
 
