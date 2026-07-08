@@ -8,6 +8,42 @@ const EXPERTS_TTL = 5 * 60 * 1000;
 
 const COUNTRY_NAMES = { AF:'Afghanistan',AL:'Albania',DZ:'Algeria',AR:'Argentina',AU:'Australia',AT:'Austria',BE:'Belgium',BR:'Brazil',CA:'Canada',CL:'Chile',CN:'China',CO:'Colombia',HR:'Croatia',CZ:'Czechia',DK:'Denmark',EG:'Egypt',FI:'Finland',FR:'France',DE:'Germany',GH:'Ghana',GR:'Greece',HK:'Hong Kong',HU:'Hungary',IN:'India',ID:'Indonesia',IE:'Ireland',IL:'Israel',IT:'Italy',JP:'Japan',KE:'Kenya',MY:'Malaysia',MX:'Mexico',MA:'Morocco',NL:'Netherlands',NZ:'New Zealand',NG:'Nigeria',NO:'Norway',PK:'Pakistan',PH:'Philippines',PL:'Poland',PT:'Portugal',RO:'Romania',RU:'Russia',SA:'Saudi Arabia',SG:'Singapore',ZA:'South Africa',KR:'South Korea',ES:'Spain',SE:'Sweden',CH:'Switzerland',TW:'Taiwan',TH:'Thailand',TR:'Turkey',UA:'Ukraine',AE:'UAE',GB:'United Kingdom',US:'United States',VN:'Vietnam' };
 
+const LANG_NAMES = { en:'English', fr:'French', es:'Spanish', de:'German', it:'Italian', pt:'Portuguese', nl:'Dutch', pl:'Polish', sv:'Swedish', no:'Norwegian', da:'Danish', fi:'Finnish', ro:'Romanian', tr:'Turkish', ar:'Arabic', zh:'Chinese', ja:'Japanese', ko:'Korean' };
+const LANG_STOPWORDS = {
+  fr: [' le ',' la ',' les ',' des ',' une ',' est ',' pour ',' avec ',' dans ',' vous ',' votre ',' nous ',' sur ',' qui ',' que ',' pas ',' plus ',' ces ',' cette '],
+  es: [' el ',' la ',' los ',' las ',' de ',' que ',' para ',' con ',' una ',' es ',' por ',' su ',' este ',' esta ',' del '],
+  de: [' der ',' die ',' das ',' und ',' ist ',' für ',' mit ',' den ',' sie ',' auf ',' nicht ',' ein ',' eine ',' des '],
+  it: [' il ',' la ',' di ',' che ',' per ',' con ',' una ',' non ',' sono ',' questo ',' questa ',' del ',' della '],
+  pt: [' o ',' a ',' que ',' de ',' para ',' com ',' uma ',' não ',' este ',' esta ',' dos ',' das '],
+  nl: [' de ',' het ',' een ',' van ',' voor ',' met ',' niet ',' dat ',' dit ',' zijn ',' worden '],
+  pl: [' i ',' w ',' na ',' do ',' z ',' że ',' jest ',' dla ',' nie ',' się '],
+  sv: [' och ',' att ',' det ',' som ',' för ',' med ',' inte ',' den ',' är '],
+  no: [' og ',' det ',' som ',' for ',' med ',' ikke ',' den ',' er '],
+  da: [' og ',' det ',' som ',' for ',' med ',' ikke ',' den ',' er '],
+  fi: [' ja ',' on ',' ei ',' se ',' että ',' ovat ',' tämä '],
+  ro: [' și ',' este ',' pentru ',' care ',' din ',' pe ',' cu ',' nu ']
+};
+// Detects the reader-facing language from the article text itself, so the AI
+// gets an explicit instruction instead of guessing (it was getting confused
+// by French-sounding expert/company names in the prompt and answering in French).
+function detectArticleLanguage(articleText) {
+  if (/[؀-ۿ]/.test(articleText)) return 'ar';
+  if (/[぀-ヿｦ-ﾟ]/.test(articleText)) return 'ja';
+  if (/[가-힯]/.test(articleText)) return 'ko';
+  if (/[一-鿿]/.test(articleText)) return 'zh';
+
+  const s = ' ' + articleText.slice(0, 3000).toLowerCase() + ' ';
+  let bestLang = 'en', bestScore = 0;
+  for (const lang in LANG_STOPWORDS) {
+    let score = 0;
+    for (const word of LANG_STOPWORDS[lang]) {
+      if (s.indexOf(word) !== -1) score++;
+    }
+    if (score > bestScore) { bestScore = score; bestLang = lang; }
+  }
+  return bestScore >= 3 ? bestLang : 'en';
+}
+
 async function ensureCacheTable(sql) {
   if (cacheTableReady) return;
   await sql`CREATE TABLE IF NOT EXISTS match_cache (
@@ -267,6 +303,9 @@ export default async function handler(req, res) {
       return `ID:${e.id} | ${e.name}${role ? ` (${role})` : ''} | Languages: ${langs} | From £${e.price_from}/session | About: ${desc.slice(0, 150)} | Services: ${services}`;
     }).join('\n\n');
 
+    const articleLangCode = detectArticleLanguage(article);
+    const articleLangName = LANG_NAMES[articleLangCode] || 'English';
+
     const prompt = `You are the matching engine for IntroLinq, a platform that connects blog READERS with experts they can book a 1:1 call with.
 
 Your job: identify moments in the article where a reader - someone trying to learn, make a decision, or solve a problem - would benefit from a personal consultation with a specific expert. ${sensitivityInstruction}
@@ -286,9 +325,9 @@ NEVER match:
 - Phrases where a company describes what it is doing (not what the reader needs to do)
 - Vague keyword overlap where the expert's services don't clearly fit the specific moment
 
-Detect the article language. If not English, strongly prioritise experts who speak that language.
+The article's language is ${articleLangName}. If not English, strongly prioritise experts who speak that language.
 
-IMPORTANT: Always write the "reason" field in the same language as the article. If the article is in French, write the reason in French. If Spanish, write in Spanish. The reason must feel native to the reader. Always use formal address (vous in French, usted in Spanish, Sie in German) - never informal (tu, tú, du).
+IMPORTANT: Always write the "reason" field in ${articleLangName}, regardless of what language expert names, company names, or bios below are written in — those are irrelevant to the reason's language. The reason must feel native to the reader. Always use formal address (vous in French, usted in Spanish, Sie in German) - never informal (tu, tú, du).
 
 Available experts:
 ${expertsList}
