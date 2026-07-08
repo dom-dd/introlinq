@@ -182,7 +182,7 @@ Return only valid JSON, no other text:
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1024,
+        max_tokens: 2048,
         messages: [{ role: 'user', content: prompt }]
       })
     });
@@ -200,8 +200,12 @@ Return only valid JSON, no other text:
     try {
       parsed = JSON.parse(text);
     } catch {
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { matches: [] };
+      try {
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { matches: [] };
+      } catch {
+        parsed = { matches: [] };
+      }
     }
 
     const expertMap = Object.fromEntries(experts.map(e => [e.id, e]));
@@ -268,6 +272,6 @@ Return only valid JSON, no other text:
     ]).catch(() => {});
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: err?.message || 'Something went wrong' });
+    return res.status(500).json({ error: 'Something went wrong' });
   }
 }
