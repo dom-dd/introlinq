@@ -268,6 +268,6 @@ Return only valid JSON, no other text:
     ]).catch(() => {});
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'Something went wrong' });
+    return res.status(500).json({ error: err?.message || 'Something went wrong' });
   }
 }
