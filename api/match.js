@@ -167,7 +167,7 @@ Available experts:
 ${expertsList}
 
 Article:
-${article.slice(0, 10000)}
+${article.slice(0, 6000)}
 
 Return only valid JSON, no other text:
 {"matches":[{"phrase":"exact substring from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person - e.g. 'If you want to raise your first round without giving away too much equity, Phil has backed 200+ startups and can walk you through the process.'"}],"no_match_reason":"Only include this field when matches is empty. One short phrase explaining why - e.g. 'News article', 'Product announcement', 'Company profile / press release', 'No actionable reader challenge identified', 'Pure statistics reporting'"}}`;
@@ -220,8 +220,11 @@ Return only valid JSON, no other text:
     const expertBookingUrls = enriched.map(m => m.expert.booking_url || null);
     const noMatchReason = enriched.length === 0 ? (parsed.no_match_reason || null) : null;
 
-    await Promise.allSettled([
-      // Store in match cache (per page_url + country)
+    // Respond immediately — logging and caching happen in the background
+    res.status(200).json({ matches: enriched, config: pubConfig, no_match_reason: noMatchReason || undefined });
+
+    // Background: cache + log + Slack (non-blocking)
+    Promise.allSettled([
       (async () => {
         if (!page_url) return;
         await sql`
@@ -230,21 +233,9 @@ Return only valid JSON, no other text:
           ON CONFLICT (page_url, country_code, publisher) DO UPDATE SET result = EXCLUDED.result, has_match = EXCLUDED.has_match, cached_at = NOW()
         `.catch(() => {});
       })(),
-
-      // Log to DB
       (async () => {
         if (!tableReady) {
-          await sql`
-            CREATE TABLE IF NOT EXISTS match_logs (
-              id SERIAL PRIMARY KEY,
-              publisher TEXT,
-              article_preview TEXT,
-              phrases TEXT[],
-              expert_names TEXT[],
-              match_count INT,
-              created_at TIMESTAMPTZ DEFAULT NOW()
-            )
-          `;
+          await sql`CREATE TABLE IF NOT EXISTS match_logs (id SERIAL PRIMARY KEY, publisher TEXT, article_preview TEXT, phrases TEXT[], expert_names TEXT[], match_count INT, created_at TIMESTAMPTZ DEFAULT NOW())`;
           tableReady = true;
         }
         await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS page_url TEXT`.catch(() => {});
@@ -256,39 +247,24 @@ Return only valid JSON, no other text:
           VALUES (${publisher}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${enriched.length}, ${page_url || null}, ${noMatchReason}, ${readerCountry || null})
         `;
       })(),
-
-      // Slack notification
       (async () => {
-        if (!process.env.SLACK_WEBHOOK_URL) return;
-
-        // Resolve publisher display name
+        if (!process.env.SLACK_WEBHOOK_URL || enriched.length === 0) return;
         let pubName = publisher || '/app';
         if (publisher) {
           const [pubRow] = await sql`SELECT name FROM publishers WHERE slug = ${publisher} LIMIT 1`.catch(() => [null]);
           if (pubRow?.name) pubName = pubRow.name;
         }
-
-        // Resolve country name from ISO code
         const countryNames = { AF:'Afghanistan',AL:'Albania',DZ:'Algeria',AR:'Argentina',AU:'Australia',AT:'Austria',BE:'Belgium',BR:'Brazil',CA:'Canada',CL:'Chile',CN:'China',CO:'Colombia',HR:'Croatia',CZ:'Czechia',DK:'Denmark',EG:'Egypt',FI:'Finland',FR:'France',DE:'Germany',GH:'Ghana',GR:'Greece',HK:'Hong Kong',HU:'Hungary',IN:'India',ID:'Indonesia',IE:'Ireland',IL:'Israel',IT:'Italy',JP:'Japan',KE:'Kenya',MY:'Malaysia',MX:'Mexico',MA:'Morocco',NL:'Netherlands',NZ:'New Zealand',NG:'Nigeria',NO:'Norway',PK:'Pakistan',PH:'Philippines',PL:'Poland',PT:'Portugal',RO:'Romania',RU:'Russia',SA:'Saudi Arabia',SG:'Singapore',ZA:'South Africa',KR:'South Korea',ES:'Spain',SE:'Sweden',CH:'Switzerland',TW:'Taiwan',TH:'Thailand',TR:'Turkey',UA:'Ukraine',AE:'UAE',GB:'United Kingdom',US:'United States',VN:'Vietnam' };
         const countryLabel = readerCountry ? (countryNames[readerCountry] || readerCountry) : 'Unknown';
-
         const title = page_title ? page_title.slice(0, 80) : (page_url ? page_url.slice(0, 80) : 'homepage demo');
         const urlLine = (!publisher && page_url) ? `\n${page_url}` : '';
-        const header = `*${pubName}* · *${enriched.length} expert${enriched.length !== 1 ? 's' : ''} found* · 🌍 ${countryLabel}\n_${title}_${urlLine}`;
-
-        if (enriched.length === 0) return; // don't ping Slack for no-match results
-
-        const msg = `🔍 ${header}`;
         await fetch(process.env.SLACK_WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: msg })
+          body: JSON.stringify({ text: `🔍 *${pubName}* · *${enriched.length} expert${enriched.length !== 1 ? 's' : ''} found* · 🌍 ${countryLabel}\n_${title}_${urlLine}` })
         });
       })()
-    ]);
-
-    // Send response after logging and Slack are done
-    res.status(200).json({ matches: enriched, config: pubConfig, no_match_reason: noMatchReason || undefined });
+    ]).catch(() => {});
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Something went wrong' });
