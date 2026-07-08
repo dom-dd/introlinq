@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     let enabledPartners = null; // null = homepage demo
 
     if (publisher) {
-      const [pub] = await sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`;
+      const [pub] = await sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null]);
       if (!pub) {
         // Publisher deactivated or unknown - don't serve the widget
         return res.status(200).json({ matches: [] });
@@ -111,9 +111,10 @@ export default async function handler(req, res) {
         LEFT JOIN providers p ON p.id = e.provider_id
         WHERE e.active = true
         ORDER BY RANDOM()
-      `;
+      `.catch(() => null);
       expertsCacheTime = now;
     }
+    if (!expertsCache) return res.status(200).json({ matches: [], config: pubConfig });
     // Filter by group: real publishers see their enabled providers only; homepage demo sees non-demo experts
     let experts = [...expertsCache].filter(e =>
       enabledPartners
@@ -180,7 +181,7 @@ Return only valid JSON, no other text:
         'content-type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1024,
         messages: [{ role: 'user', content: prompt }]
       })
