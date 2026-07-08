@@ -20,21 +20,23 @@
 //     and never bothered with a "submit an article" page. Noisier - relies
 //     more on the domain blacklist and classify.js to filter out junk.
 
+// Deliberately narrow to the startup/founder journey - matching what
+// IntroLinq's expert network actually covers - rather than generic business
+// categories. A wide net ("finance", "business coaching", "legal") pulled in
+// unrelated industries (payday loan companies via "finance") and even direct
+// competitors (mentor/coaching marketplaces via "business coaching").
 export const TOPICS = [
-  'business', 'startup', 'finance', 'marketing', 'leadership', 'accounting',
-  'consulting', 'manufacturing', 'small business', 'legal', 'technology',
-  'entrepreneurship', 'sales', 'e-commerce', 'HR', 'operations', 'logistics',
-  'real estate', 'venture capital', 'product management', 'branding',
-  'SaaS', 'SaaS marketing', 'B2B sales', 'B2B marketing', 'digital marketing agency',
-  'freelancing', 'business coaching', 'executive coaching', 'bookkeeping',
-  'tax planning', 'supply chain', 'procurement', 'project management',
-  'recruiting', 'talent acquisition', 'workplace culture', 'remote work',
-  'fintech', 'proptech', 'edtech', 'insurtech', 'healthtech',
-  'restaurant management', 'retail management', 'hospitality management',
-  'nonprofit management', 'franchise business', 'career development',
-  'personal finance for entrepreneurs', 'customer success', 'growth marketing',
-  'e-commerce logistics', 'supply chain management', 'manufacturing operations',
-  'construction business', 'agency management', 'small business finance'
+  'startup', 'startup founder', 'first-time founder', 'entrepreneurship',
+  'venture capital', 'fundraising', 'seed funding', 'series A funding',
+  'startup growth', 'product-market fit', 'go-to-market strategy',
+  'SaaS startup', 'B2B SaaS', 'tech startup', 'bootstrapping',
+  'startup leadership', 'startup hiring', 'startup team building',
+  'startup marketing', 'growth marketing', 'startup sales',
+  'customer acquisition', 'startup branding', 'startup operations',
+  'solopreneur', 'indie hacker', 'startup culture', 'remote startup team',
+  'startup finance', 'cap table', 'startup pitch deck', 'startup exit',
+  'scaling a startup', 'founder wellbeing', 'startup community',
+  'small business growth', 'small business owner'
 ];
 
 // Track A: reliably surfaces reachable blogs open to outside contributors.

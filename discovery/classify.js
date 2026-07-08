@@ -23,14 +23,17 @@ async function classifyBatch(rows) {
     `${i + 1}. domain: ${r.domain} | title: "${(r.title || '').slice(0, 150)}" | snippet: "${(r.snippet || '').slice(0, 200)}"`
   ).join('\n');
 
-  const prompt = `You are classifying leads for a blog outreach campaign for IntroLinq, a platform that lets blog readers book 1:1 calls with experts.
+  const prompt = `You are classifying leads for a blog outreach campaign for IntroLinq, a platform that lets blog readers book 1:1 calls with startup/business experts.
 
 For each business website below, classify it as a lead:
 - "publisher": an independent blog, magazine, or content site whose main purpose is publishing articles for readers. Good candidate to embed IntroLinq's widget as a publisher partner.
 - "vendor": a company selling a specific product or service (SaaS tool, agency, consultancy, software) where the blog exists primarily to market that product/service. Not a great publisher partner, but the company's founder/team could be a good EXPERT to list on IntroLinq instead.
+- "competitor": the company's own core business IS connecting people with experts, mentors, coaches, or advisors (a marketplace/matching platform) - e.g. a mentor marketplace, coaching platform, expert-booking site. This is a competitor to IntroLinq, NOT a lead - exclude regardless of how good the content looks.
 - "unclear": genuinely can't tell from the title/snippet given.
 
-If "vendor", also give a "service_keyword": ONE short word or hyphenated term for what they sell (e.g. SEO, CRM, automation, accounting-software, marketing-agency, web-hosting, recruiting, legal-services, insurance, email-marketing). Use null for "publisher" or "unclear".
+Note: many "write for us" pages could theoretically be paid guest-post/backlink-selling operations rather than real publications - but that distinction needs actual page content (pricing, Domain Authority mentions) that isn't reliably visible in a short search snippet. Do NOT guess at this from title/snippet alone - classify as "publisher" unless you have strong specific evidence otherwise.
+
+If "vendor", also give a "service_keyword": ONE short word or hyphenated term for what they sell (e.g. SEO, CRM, automation, accounting-software, marketing-agency, web-hosting, recruiting, legal-services, insurance, email-marketing). Use null otherwise.
 
 Also estimate "team_size" from the title/snippet wording:
 - "solo": phrasing suggests one person writing (first-person "I/my", a personal name as the brand, freelancer/consultant voice)
@@ -43,7 +46,7 @@ Sites:
 ${list}
 
 Return ONLY valid JSON, no other text, in the same order as listed:
-{"results":[{"domain":"...","lead_type":"publisher|vendor|unclear","service_keyword":"..."|null,"team_size":"solo|small-team|large-team|unclear"}]}`;
+{"results":[{"domain":"...","lead_type":"publisher|vendor|competitor|unclear","service_keyword":"..."|null,"team_size":"solo|small-team|large-team|unclear"}]}`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
