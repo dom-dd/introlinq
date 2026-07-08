@@ -223,10 +223,11 @@
   }
 
   function findBestPhrase(nodes, phrase) {
-    var allText = nodes.map(function(n){ return n.textContent; }).join('\n');
-    if (allText.indexOf(phrase) !== -1) return phrase;
-    // Trim progressively from the end until we find a match in the DOM
-    var words = phrase.split(' ');
+    var norm = function(s) { return s.replace(/\s+/g, ' ').trim(); };
+    var allText = norm(nodes.map(function(n){ return n.textContent; }).join(' '));
+    var normPhrase = norm(phrase);
+    if (allText.indexOf(normPhrase) !== -1) return normPhrase;
+    var words = normPhrase.split(' ');
     for (var len = Math.floor(words.length * 0.75); len >= 4; len--) {
       var shorter = words.slice(0, len).join(' ');
       if (allText.indexOf(shorter) !== -1) return shorter;
@@ -260,15 +261,16 @@
     matches.forEach(function (match) {
       var phrase = findBestPhrase(nodes, match.phrase);
       if (!phrase) return;
+      var re = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+'));
       for (var i = 0; i < nodes.length; i++) {
         var node = nodes[i];
         var text = node.textContent;
-        var pos = text.indexOf(phrase);
-        if (pos === -1) continue;
+        var rm = re.exec(text);
+        if (!rm) continue;
 
         var span = document.createElement('span');
         span.className = 'il-hl';
-        span.textContent = phrase;
+        span.textContent = rm[0];
 
         ;(function (sp, m) {
           if ('ontouchstart' in window) {
@@ -292,8 +294,8 @@
         })(span, match);
 
         var parent = node.parentNode;
-        var before = text.slice(0, pos);
-        var after = text.slice(pos + phrase.length);
+        var before = text.slice(0, rm.index);
+        var after = text.slice(rm.index + rm[0].length);
         if (before) parent.insertBefore(document.createTextNode(before), node);
         parent.insertBefore(span, node);
         if (after) parent.insertBefore(document.createTextNode(after), node);
