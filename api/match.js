@@ -442,7 +442,7 @@ IMPORTANT: ${languageInstruction}
 
 IMPORTANT: Never use an em dash (—) or en dash (–) anywhere in the "reason" text. Use a plain hyphen with spaces ( - ) instead, or just rephrase as separate sentences.
 
-IMPORTANT: Keep each "reason" to ONE sentence of at most 25 words. Punchy beats thorough - name the challenge, name the expert's relevant strength, stop.
+IMPORTANT: Keep each "reason" to ONE sentence of at most 25 words. This is a length limit only - the STYLE of each reason must follow its assigned opening approach from the numbered list below.
 
 IMPORTANT: The name you write inside each "reason" MUST be the exact same expert whose ID you put in "expert_id" for that match. Double-check you are not naming a different expert from the list by mistake.
 
