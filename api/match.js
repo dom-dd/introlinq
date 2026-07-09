@@ -201,10 +201,11 @@ async function handleReport(req, res) {
     // A 0-match result only means "no experts here" if every chunk actually ran -
     // if some chunk requests failed (a transient API error, a timeout), 0 matches
     // is a partial-failure artifact. Caching that as has_match:false would wrongly
-    // freeze the page as a permanent non-match, since negative cache entries never
-    // expire (see the cache lookup below). `complete` defaults to true for older
-    // cached widget.js clients that don't send it yet.
-    const scanWasComplete = complete !== false;
+    // freeze the page as a permanent non-match. `complete` must be EXPLICITLY true:
+    // older cached widget.js clients don't send it at all, and their zero-match
+    // reports can't distinguish failure from no-match, so they never get to write
+    // a negative cache entry (their positive results still cache fine).
+    const scanWasComplete = complete === true;
     if (matches.length > 0 || scanWasComplete) {
       await sql`
         INSERT INTO match_cache (page_url, country_code, publisher, result, has_match)
@@ -313,8 +314,13 @@ export default async function handler(req, res) {
 
     // Quick pass scans only the article intro for a fast first paint; cap matches so the
     // small token budget can't truncate the JSON. Chunk passes cover the rest of the
-    // article at full match budget; the client merges everything and reports it once.
+    // article; the client merges everything and reports it once.
     if (quick && !chunk) maxMatches = Math.min(maxMatches, 3);
+    // Cap per-chunk matches: generation time scales with output tokens, and an
+    // uncapped "unlimited" (15) budget made single chunks take 17-19s. Several
+    // chunks each contributing up to 8 still yields 20+ unique experts after the
+    // client dedupes, at roughly half the per-request latency.
+    if (chunk) maxMatches = Math.min(maxMatches, 8);
 
     const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
     const cacheCountry = readerCountry || 'XX'; // 'XX' = unknown country, avoids empty-string NULL issue in cache
@@ -435,6 +441,8 @@ NEVER match:
 IMPORTANT: ${languageInstruction}
 
 IMPORTANT: Never use an em dash (—) or en dash (–) anywhere in the "reason" text. Use a plain hyphen with spaces ( - ) instead, or just rephrase as separate sentences.
+
+IMPORTANT: Keep each "reason" to ONE sentence of at most 25 words. Punchy beats thorough - name the challenge, name the expert's relevant strength, stop.
 
 IMPORTANT: The name you write inside each "reason" MUST be the exact same expert whose ID you put in "expert_id" for that match. Double-check you are not naming a different expert from the list by mistake.
 

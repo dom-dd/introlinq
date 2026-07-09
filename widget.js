@@ -176,33 +176,38 @@
         }
       }
 
+      // POSTs one scan request, retrying once after a short delay on any
+      // failure — a fresh deploy cold-starts every serverless function, and a
+      // page load right then can see its parallel requests transiently fail.
+      // Only counts toward failedCount when the retry also fails.
+      function postScan(body) {
+        function attempt() {
+          return fetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          }).then(function (r) { return r.ok ? r.json() : null; });
+        }
+        return attempt()
+          .catch(function () { return null; })
+          .then(function (data) {
+            if (data) return data;
+            return new Promise(function (resolve) { setTimeout(resolve, 1500); })
+              .then(attempt)
+              .catch(function () { return null; });
+          })
+          .then(collect);
+      }
+
       var pending = [];
 
       // Quick: first 1500 chars, capped — shows the first experts fast
-      pending.push(
-        fetch(API, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ article: text.slice(0, 1500), publisher: PUB, page_title: document.title, quick: true, lang: _lang })
-        })
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(collect)
-        .catch(function () { failedCount++; })
-      );
+      pending.push(postScan({ article: text.slice(0, 1500), publisher: PUB, page_title: document.title, quick: true, lang: _lang }));
 
       // Each chunk covers the rest of the article; all fire in parallel, each adding
       // experts to the page as soon as it resolves
       chunkTexts.forEach(function (chunkText) {
-        pending.push(
-          fetch(API, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ article: chunkText, publisher: PUB, page_title: document.title, chunk: true, lang: _lang })
-          })
-          .then(function (r) { return r.ok ? r.json() : null; })
-          .then(collect)
-          .catch(function () { failedCount++; })
-        );
+        pending.push(postScan({ article: chunkText, publisher: PUB, page_title: document.title, chunk: true, lang: _lang }));
       });
 
       // Once every chunk has resolved, report the merged, deduplicated result once —
