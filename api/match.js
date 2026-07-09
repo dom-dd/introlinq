@@ -55,6 +55,31 @@ function pickReasonOpeners(n) {
   return shuffled.slice(0, Math.min(n, shuffled.length));
 }
 
+// Each reason ends with a soft call-to-action nudging the reader toward the
+// booking button. Varied per-match the same way as the openers - a single
+// fixed instruction ("end with a CTA") converges on identical "We suggest
+// talking to X" closers on every card.
+const REASON_CLOSERS = [
+  'Close by suggesting a quick call with the expert before the reader\'s next step',
+  'Close with "worth a chat with [first name] before you commit" style phrasing',
+  'Close by noting the expert can walk the reader through it 1:1',
+  'Close with "we\'d suggest talking to [first name] about this" style phrasing',
+  'Close by inviting the reader to bring their specific situation to the expert',
+  'Close by noting this is exactly the kind of problem the expert solves on calls',
+  'Close with a "20 minutes with [first name] could save you..." style nudge',
+  'Close by suggesting the reader get the expert\'s take before deciding',
+  'Close with "if you have time, [first name] is the person to ask" style phrasing',
+  'Close by framing a call as the faster path than figuring it out alone',
+  'Close by suggesting the reader run their plan past the expert first',
+  'Close with a simple, direct "talk to [first name]" style invitation',
+  'Close by noting the expert has helped others through this exact situation',
+  'Close by inviting the reader to ask the expert their hardest question about this'
+];
+function pickReasonClosers(n) {
+  const shuffled = [...REASON_CLOSERS].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, Math.min(n, shuffled.length));
+}
+
 // Em/en dashes are banned from output; always use a plain hyphen instead.
 function stripEmDash(text) {
   if (!text) return text;
@@ -442,12 +467,15 @@ IMPORTANT: ${languageInstruction}
 
 IMPORTANT: Never use an em dash (—) or en dash (–) anywhere in the "reason" text. Use a plain hyphen with spaces ( - ) instead, or just rephrase as separate sentences.
 
-IMPORTANT: Keep each "reason" to ONE sentence of at most 25 words. This is a length limit only - the STYLE of each reason must follow its assigned opening approach from the numbered list below.
+IMPORTANT: Keep each "reason" to at most 30 words (one or two short sentences). This is a length limit only - the STYLE of each reason must follow its assigned opening approach and closing approach from the numbered lists below.
 
 IMPORTANT: The name you write inside each "reason" MUST be the exact same expert whose ID you put in "expert_id" for that match. Double-check you are not naming a different expert from the list by mistake.
 
 For each match's "reason", use a DIFFERENT one of these opening approaches — assign them in order to the matches you return (first match uses approach 1, second uses approach 2, etc.), and never reuse an approach or fall back to a generic "As a first-time founder..." opener regardless of what these approaches say:
 ${pickReasonOpeners(Math.max(maxMatches, 6)).map((o, i) => `${i + 1}. ${o}`).join('\n')}
+
+Each "reason" must also END with a soft call-to-action inviting the reader to actually talk to the expert - assign these closing approaches in order the same way (first match uses closer 1, second uses closer 2, etc.), never reusing one or defaulting to the same "We suggest talking to..." on every match:
+${pickReasonClosers(Math.max(maxMatches, 6)).map((c, i) => `${i + 1}. ${c}`).join('\n')}
 
 Available experts:
 ${expertsList}
