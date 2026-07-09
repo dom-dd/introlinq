@@ -162,7 +162,7 @@ async function handleCheckCache(req, res) {
       WHERE page_url = ${page_url}
         AND country_code = ${cacheCountry}
         AND publisher = ${publisher || ''}
-        AND (has_match = false OR cached_at > ${lastSyncedAt})
+        AND ((has_match = false AND cached_at > NOW() - INTERVAL '7 days') OR cached_at > ${lastSyncedAt})
         AND cached_at > NOW() - INTERVAL '1 year'
       LIMIT 1
     `.catch(() => [null]);
@@ -187,7 +187,7 @@ async function handleCheckCache(req, res) {
 // Client has already merged results from the quick pass + all article chunks.
 // Persist the final set (cache + log + Slack) without any further AI calls.
 async function handleReport(req, res) {
-  const { publisher, page_url, page_title, matches } = req.body;
+  const { publisher, page_url, page_title, matches, complete } = req.body;
   if (!page_url || !Array.isArray(matches)) {
     return res.status(400).json({ error: 'Missing page_url or matches' });
   }
@@ -198,11 +198,20 @@ async function handleReport(req, res) {
 
     await ensureCacheTable(sql);
 
-    await sql`
-      INSERT INTO match_cache (page_url, country_code, publisher, result, has_match)
-      VALUES (${page_url}, ${cacheCountry}, ${publisher || ''}, ${JSON.stringify({ matches })}, ${matches.length > 0})
-      ON CONFLICT (page_url, country_code, publisher) DO UPDATE SET result = EXCLUDED.result, has_match = EXCLUDED.has_match, cached_at = NOW()
-    `.catch(() => {});
+    // A 0-match result only means "no experts here" if every chunk actually ran -
+    // if some chunk requests failed (a transient API error, a timeout), 0 matches
+    // is a partial-failure artifact. Caching that as has_match:false would wrongly
+    // freeze the page as a permanent non-match, since negative cache entries never
+    // expire (see the cache lookup below). `complete` defaults to true for older
+    // cached widget.js clients that don't send it yet.
+    const scanWasComplete = complete !== false;
+    if (matches.length > 0 || scanWasComplete) {
+      await sql`
+        INSERT INTO match_cache (page_url, country_code, publisher, result, has_match)
+        VALUES (${page_url}, ${cacheCountry}, ${publisher || ''}, ${JSON.stringify({ matches })}, ${matches.length > 0})
+        ON CONFLICT (page_url, country_code, publisher) DO UPDATE SET result = EXCLUDED.result, has_match = EXCLUDED.has_match, cached_at = NOW()
+      `.catch(() => {});
+    }
 
     if (!tableReady) {
       await sql`CREATE TABLE IF NOT EXISTS match_logs (id SERIAL PRIMARY KEY, publisher TEXT, article_preview TEXT, phrases TEXT[], expert_names TEXT[], match_count INT, created_at TIMESTAMPTZ DEFAULT NOW())`;
@@ -218,9 +227,13 @@ async function handleReport(req, res) {
     const expertBookingUrls = matches.map(m => m.expert?.booking_url || null);
     const preview = (page_title || page_url || '').slice(0, 120);
 
+    const noMatchLogReason = matches.length === 0
+      ? (scanWasComplete ? 'No matches found across article' : 'Partial scan failure - some chunks did not respond, not cached')
+      : null;
+
     await sql`
       INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, country_code)
-      VALUES (${publisher || null}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${matches.length === 0 ? 'No matches found across article' : null}, ${readerCountry || null})
+      VALUES (${publisher || null}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${noMatchLogReason}, ${readerCountry || null})
     `.catch(() => {});
 
     if (process.env.SLACK_WEBHOOK_URL && matches.length > 0) {
@@ -318,7 +331,7 @@ export default async function handler(req, res) {
         WHERE page_url = ${page_url}
           AND country_code = ${cacheCountry}
           AND publisher = ${publisher || ''}
-          AND (has_match = false OR cached_at > ${lastSyncedAt})
+          AND ((has_match = false AND cached_at > NOW() - INTERVAL '7 days') OR cached_at > ${lastSyncedAt})
           AND cached_at > NOW() - INTERVAL '1 year'
         LIMIT 1
       `.catch(() => [null]);

@@ -152,9 +152,11 @@
     function runFullScan() {
       var reportMatches = [];
       var gotAnyResponse = false;
+      var failedCount = 0;
 
       function collect(data) {
         if (data) gotAnyResponse = true;
+        else failedCount++;
         var newMatches = applyMatches(data);
         if (newMatches) reportMatches = reportMatches.concat(newMatches);
       }
@@ -185,7 +187,7 @@
         })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(collect)
-        .catch(function () {})
+        .catch(function () { failedCount++; })
       );
 
       // Each chunk covers the rest of the article; all fire in parallel, each adding
@@ -199,18 +201,21 @@
           })
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(collect)
-          .catch(function () {})
+          .catch(function () { failedCount++; })
         );
       });
 
       // Once every chunk has resolved, report the merged, deduplicated result once —
-      // this is what gets cached, logged, and posted to Slack
+      // this is what gets cached, logged, and posted to Slack. `complete` tells the
+      // server whether every chunk actually succeeded - if some failed (a transient
+      // API error, a timeout), a 0-match result is a partial-failure artifact, not a
+      // real "no experts here" verdict, and must not be cached as one.
       Promise.all(pending.map(function (p) { return p.catch(function () {}); })).then(function () {
         if (!gotAnyResponse) return;
         fetch(API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ report: true, publisher: PUB, page_url: window.location.href, page_title: document.title, matches: reportMatches })
+          body: JSON.stringify({ report: true, publisher: PUB, page_url: window.location.href, page_title: document.title, matches: reportMatches, complete: failedCount === 0 })
         }).catch(function () {});
       });
     }
