@@ -362,9 +362,18 @@ export default async function handler(req, res) {
         WHERE e.active = true
         ORDER BY RANDOM()
       `.catch(() => null);
-      expertsCacheTime = now;
+      // Only remember a *successful* fetch's timestamp - if the query failed,
+      // leave expertsCacheTime alone so the very next request retries the DB
+      // instead of being stuck treating this transient failure as fresh for TTL.
+      if (expertsCache) expertsCacheTime = now;
     }
-    if (!expertsCache) return res.status(200).json({ matches: [], config: pubConfig });
+    if (!expertsCache) {
+      // A DB hiccup here must look like a failure to the client, not a
+      // successful empty result - otherwise it's indistinguishable from a
+      // genuine "no experts matched" and can poison the match cache with a
+      // false negative (see widget.js's `complete` tracking in handleReport).
+      return res.status(503).json({ error: 'Experts data temporarily unavailable' });
+    }
     // Filter by group: real publishers see their enabled providers only; homepage demo sees non-demo experts
     let experts = [...expertsCache].filter(e =>
       enabledPartners
