@@ -360,6 +360,7 @@
         '</div>' +
         '<button id="il-cl" style="display:none;flex-shrink:0;background:none;border:none;cursor:pointer;color:#8888a8;font-size:18px;line-height:1;padding:0 0 0 4px;align-self:flex-start" aria-label="Close">&times;</button>' +
       '</div>' +
+      (isSmall ? '' : '<div id="il-bio" style="display:none;font-size:' + (isLarge ? '12px' : '11.5px') + ';color:#1a1a2e;font-weight:500;line-height:1.45;margin-bottom:8px"></div>') +
       (isSmall ? '' : '<div id="il-rs" style="font-size:' + (isLarge ? '13px' : '12.5px') + ';color:#4a4a6a;line-height:1.6;margin-bottom:12px;font-style:italic;border-left:2px solid ' + hexToRgba(accent, 0.3) + ';padding-left:10px"></div>') +
       '<a id="il-bk" href="#" target="_blank" rel="noopener" style="display:block;background:' + accent + ';color:' + getContrastColor(accent) + ';text-align:center;padding:' + (isSmall ? '7' : '9') + 'px;border-radius:100px;font-size:13px;font-weight:700;text-decoration:none">' + BOOK_LABEL + '</a>' +
       '<div id="il-pv" style="font-size:8.5px;color:#8888a8;text-align:center;margin-top:6px;letter-spacing:.02em"></div>';
@@ -564,6 +565,21 @@
     var rl = document.getElementById('il-rl');
     var showCompany = !e.is_demo_provider;
     rl.innerHTML = [e.position ? '<span>' + e.position.replace(/</g,'&lt;') + '</span>' : '', showCompany && e.company ? '<span style="color:#8888a8">' + e.company.replace(/</g,'&lt;') + '</span>' : ''].filter(Boolean).join('<br>');
+    // Credential line: the expert's curated one-line track record ("Raised
+    // £200m", "3 exits", "2200 employees") - the strongest trust signal we
+    // have, previously never shown anywhere on the card. Long-form bios get
+    // clipped at a word boundary so the card stays tidy.
+    var bo = document.getElementById('il-bio');
+    if (bo) {
+      var bioText = (e.bio || '').replace(/\s+/g, ' ').trim();
+      if (bioText.length > 160) {
+        var cut = bioText.slice(0, 160);
+        var sp = cut.lastIndexOf(' ');
+        bioText = (sp > 0 ? cut.slice(0, sp) : cut) + '…';
+      }
+      if (bioText) { bo.textContent = bioText; bo.style.display = 'block'; }
+      else bo.style.display = 'none';
+    }
     var rs = document.getElementById('il-rs');
     if (rs) rs.textContent = match.reason;
     var bk = document.getElementById('il-bk');
