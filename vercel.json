@@ -9,5 +9,8 @@
       "path": "/api/cron/weekly-stats",
       "schedule": "0 9 * * 1"
     }
-  ]
+  ],
+  "functions": {
+    "api/admin.js": { "maxDuration": 60 }
+  }
 }

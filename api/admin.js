@@ -15,6 +15,110 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: auth(req) });
   }
 
+  // Daily publisher discovery - authenticated via CRON_SECRET, triggered by
+  // a GitHub Actions schedule (see .github/workflows/discovery-cron.yml)
+  // rather than Vercel's own Cron Jobs, since Hobby caps both cron jobs (2)
+  // and serverless functions (12) per deployment - this reuses the existing
+  // api/admin.js function instead of adding a 13th file. Finds up to 50 new
+  // candidate domains via SerpAPI using the same logic/tables as the manual
+  // discovery/discover.js script. Deliberately does not run classify.js or
+  // enrich.js - those cost Anthropic/Apollo credits per lead and stay a
+  // manual, deliberate spend.
+  if (resource === 'run-discovery') {
+    if (req.headers['authorization'] !== `Bearer ${process.env.CRON_SECRET}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const { generateQueries } = await import('../discovery/lib/queries.js');
+    const { serpSearch, extractCandidates } = await import('../discovery/lib/serpapi.js');
+
+    const sql = neon(process.env.DATABASE_URL);
+    const started = Date.now();
+    const DAILY_TARGET = 50;
+    const TIME_BUDGET_MS = 45000;
+
+    await sql`CREATE TABLE IF NOT EXISTS candidate_publishers (
+      id SERIAL PRIMARY KEY,
+      domain TEXT UNIQUE NOT NULL,
+      homepage_url TEXT NOT NULL,
+      title TEXT,
+      snippet TEXT,
+      discovery_query TEXT,
+      discovery_source TEXT NOT NULL DEFAULT 'serpapi',
+      status TEXT NOT NULL DEFAULT 'discovered',
+      priority_score NUMERIC,
+      estimated_monthly_visits BIGINT,
+      country TEXT,
+      language TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`;
+    await sql`CREATE TABLE IF NOT EXISTS discovery_queries (
+      id SERIAL PRIMARY KEY,
+      query TEXT UNIQUE NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      results_count INT,
+      new_domains_count INT,
+      error TEXT,
+      run_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`;
+
+    const queries = generateQueries();
+    const [{ count: seededCount }] = await sql`SELECT COUNT(*)::int AS count FROM discovery_queries`;
+    if (seededCount < queries.length) {
+      for (const q of queries) {
+        await sql`INSERT INTO discovery_queries (query) VALUES (${q}) ON CONFLICT (query) DO NOTHING`;
+      }
+    }
+
+    let added = 0;
+    let queriesRun = 0;
+    let stopReason = 'daily target reached';
+
+    while (added < DAILY_TARGET) {
+      if (Date.now() - started > TIME_BUDGET_MS) { stopReason = 'time budget reached'; break; }
+
+      const [query] = await sql`
+        SELECT id, query FROM discovery_queries
+        WHERE status = 'pending'
+        ORDER BY id ASC
+        LIMIT 1
+      `;
+      if (!query) { stopReason = 'query pool exhausted'; break; }
+
+      try {
+        const results = await serpSearch(query.query);
+        const candidates = extractCandidates(results);
+        let newCount = 0;
+        for (const c of candidates) {
+          const result = await sql`
+            INSERT INTO candidate_publishers (domain, homepage_url, title, snippet, discovery_query)
+            VALUES (${c.domain}, ${c.homepage_url}, ${c.title}, ${c.snippet}, ${query.query})
+            ON CONFLICT (domain) DO NOTHING
+            RETURNING id
+          `;
+          if (result.length > 0) newCount++;
+        }
+        await sql`
+          UPDATE discovery_queries
+          SET status = 'done', results_count = ${results.length}, new_domains_count = ${newCount}, run_at = NOW()
+          WHERE id = ${query.id}
+        `;
+        added += newCount;
+      } catch (err) {
+        await sql`
+          UPDATE discovery_queries
+          SET status = 'failed', error = ${String(err.message || err).slice(0, 500)}, run_at = NOW()
+          WHERE id = ${query.id}
+        `;
+      }
+      queriesRun++;
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    return res.status(200).json({ ok: true, added, queriesRun, stopReason, elapsedMs: Date.now() - started });
+  }
+
   // Bookings webhook - authenticated via secret header, not IP
   if (resource === 'bookings' && req.method === 'POST') {
     if (req.headers['x-webhook-secret'] !== process.env.BOOKINGS_WEBHOOK_SECRET) {

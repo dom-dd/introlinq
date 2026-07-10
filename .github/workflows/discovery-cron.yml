@@ -1,9 +1,11 @@
 name: Daily publisher discovery
 
 # Vercel's Hobby plan caps native Cron Jobs at 2 per account (already used
-# by api/sync/openintro and api/cron/weekly-stats), so this daily trigger
-# lives here instead - same endpoint, same auth, just triggered by GitHub
-# Actions' free scheduler rather than Vercel's.
+# by api/sync/openintro and api/cron/weekly-stats) AND caps Serverless
+# Functions at 12 per deployment (already at the limit), so this daily
+# trigger lives here instead - the discovery logic runs inside the existing
+# api/admin.js function (resource=run-discovery) rather than a new file,
+# triggered by GitHub Actions' free scheduler rather than Vercel's own cron.
 on:
   schedule:
     - cron: '0 6 * * *'
@@ -13,10 +15,10 @@ jobs:
   trigger-discovery:
     runs-on: ubuntu-latest
     steps:
-      - name: Call discovery cron endpoint
+      - name: Call discovery endpoint
         run: |
           status=$(curl -s -o response.json -w "%{http_code}" \
-            -X GET "https://www.introlinq.com/api/cron/discovery" \
+            -X GET "https://www.introlinq.com/api/admin?resource=run-discovery" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
           echo "HTTP status: $status"
           cat response.json
