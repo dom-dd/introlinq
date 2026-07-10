@@ -113,6 +113,13 @@
     var sharedPopup = null;
     var usedRanges = [];
 
+    // Attempts to highlight each match and returns only the ones that
+    // actually rendered. Matches whose phrase can't be found in the DOM (the
+    // AI paraphrased instead of quoting, or the range collided with an
+    // earlier highlight) are excluded - and critically, NOT marked as seen,
+    // so the same expert gets another chance if a later chunk finds them at
+    // a different phrase. Only what the reader can actually see gets
+    // reported and cached; invisible matches used to get cached forever.
     function applyMatches(data) {
       if (!data || !data.matches || !data.matches.length) return;
       sharedCfg = sharedCfg || data.config || {};
@@ -120,59 +127,58 @@
         injectStyles(sharedCfg);
         sharedPopup = createPopup(sharedCfg);
       }
-      var newMatches = data.matches.filter(function (m) {
+      var shown = [];
+      data.matches.forEach(function (m) {
         var id = m.expert && m.expert.id;
-        if (!id || seenExpertIds[id]) return false;
-        seenExpertIds[id] = true;
-        return true;
+        if (!id || seenExpertIds[id]) return;
+        if (highlightOnePhrase(el, m, sharedPopup, sharedCfg, usedRanges)) {
+          seenExpertIds[id] = true;
+          shown.push(m);
+        }
       });
-      if (!newMatches.length) return;
-      preloadPhotos(newMatches);
-      highlightMatches(el, newMatches, sharedPopup, sharedCfg, usedRanges);
-      return newMatches;
+      if (!shown.length) return;
+      preloadPhotos(shown);
+      return shown;
     }
 
-    // Fast pre-check: if this page was already scanned, apply the cached result
-    // directly and skip the AI scan (and its cost) entirely.
-    fetch(API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ checkCache: true, publisher: PUB, page_url: window.location.href })
-    })
-    .then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (data) {
-      if (data && data.cacheHit) {
-        applyMatches(data);
-        return;
-      }
-      runFullScan();
-    })
-    .catch(runFullScan);
+    // No cache pre-flight round trip: the scan requests below carry page_url
+    // and the server short-circuits each one from the match cache directly
+    // (flagged cached:true in the response). Cached pages cost one round
+    // trip instead of two; uncached pages start their AI scan ~0.5-1s sooner.
+    runFullScan();
 
     function runFullScan() {
       var reportMatches = [];
       var gotAnyResponse = false;
       var failedCount = 0;
+      var sawCached = false;
 
       function collect(data) {
         if (data) gotAnyResponse = true;
         else failedCount++;
+        if (data && data.cached) sawCached = true;
         var newMatches = applyMatches(data);
         if (newMatches) reportMatches = reportMatches.concat(newMatches);
       }
 
       // Reads the article in chunks so any length is covered without one oversized,
       // slow request: each chunk resolves and shows its experts as soon as it's ready.
+      // Chunks start where the quick pass ends (minus the usual overlap) instead of
+      // at 0 - the intro was being scanned twice on every page. Very short articles
+      // still get one full chunk: quick is capped at 3 matches, so the chunk pass is
+      // what lets a short page reach the publisher's full match budget.
+      var QUICK_LEN = 1500;
       var CHUNK_SIZE = 9000;
       var CHUNK_OVERLAP = 300;
+      var chunkSource = text.length <= QUICK_LEN ? text : text.slice(QUICK_LEN - CHUNK_OVERLAP);
       var chunkTexts = [];
-      if (text.length <= CHUNK_SIZE) {
-        chunkTexts.push(text);
+      if (chunkSource.length <= CHUNK_SIZE) {
+        chunkTexts.push(chunkSource);
       } else {
         var step = CHUNK_SIZE - CHUNK_OVERLAP;
-        for (var pos = 0; pos < text.length; pos += step) {
-          chunkTexts.push(text.slice(pos, pos + CHUNK_SIZE));
-          if (pos + CHUNK_SIZE >= text.length) break;
+        for (var pos = 0; pos < chunkSource.length; pos += step) {
+          chunkTexts.push(chunkSource.slice(pos, pos + CHUNK_SIZE));
+          if (pos + CHUNK_SIZE >= chunkSource.length) break;
         }
       }
 
@@ -200,27 +206,31 @@
       }
 
       var pending = [];
+      var pageUrl = window.location.href;
 
-      // Quick: first 1500 chars, capped — shows the first experts fast
-      pending.push(postScan({ article: text.slice(0, 1500), publisher: PUB, page_title: document.title, quick: true, lang: _lang }));
+      // Quick: article intro, capped — shows the first experts fast. page_url
+      // lets the server serve the whole thing from cache when available.
+      pending.push(postScan({ article: text.slice(0, QUICK_LEN), publisher: PUB, page_url: pageUrl, page_title: document.title, quick: true, lang: _lang }));
 
       // Each chunk covers the rest of the article; all fire in parallel, each adding
       // experts to the page as soon as it resolves
       chunkTexts.forEach(function (chunkText) {
-        pending.push(postScan({ article: chunkText, publisher: PUB, page_title: document.title, chunk: true, lang: _lang }));
+        pending.push(postScan({ article: chunkText, publisher: PUB, page_url: pageUrl, page_title: document.title, chunk: true, lang: _lang }));
       });
 
       // Once every chunk has resolved, report the merged, deduplicated result once —
       // this is what gets cached, logged, and posted to Slack. `complete` tells the
       // server whether every chunk actually succeeded - if some failed (a transient
       // API error, a timeout), a 0-match result is a partial-failure artifact, not a
-      // real "no experts here" verdict, and must not be cached as one.
+      // real "no experts here" verdict, and must not be cached as one. When the
+      // responses came from the server's cache there's nothing new to persist —
+      // reporting would just rewrite the same entry (and Slack already notified).
       Promise.all(pending.map(function (p) { return p.catch(function () {}); })).then(function () {
-        if (!gotAnyResponse) return;
+        if (!gotAnyResponse || sawCached) return;
         fetch(API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ report: true, publisher: PUB, page_url: window.location.href, page_title: document.title, matches: reportMatches, complete: failedCount === 0 })
+          body: JSON.stringify({ report: true, publisher: PUB, page_url: pageUrl, page_title: document.title, matches: reportMatches, complete: failedCount === 0 })
         }).catch(function () {});
       });
     }

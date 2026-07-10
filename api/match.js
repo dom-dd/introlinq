@@ -173,6 +173,20 @@ function normalizePageUrl(raw) {
   }
 }
 
+// Truncates at the last full sentence within maxLen, so expert descriptions
+// in the prompt never cut off mid-word/mid-thought. Falls back to a word
+// boundary when the text is one long sentence.
+function truncateAtSentence(text, maxLen) {
+  if (!text) return '';
+  const clean = String(text).replace(/\s+/g, ' ').trim();
+  if (clean.length <= maxLen) return clean;
+  const slice = clean.slice(0, maxLen);
+  const lastEnd = Math.max(slice.lastIndexOf('. '), slice.lastIndexOf('! '), slice.lastIndexOf('? '));
+  if (lastEnd > maxLen * 0.4) return slice.slice(0, lastEnd + 1);
+  const lastSpace = slice.lastIndexOf(' ');
+  return (lastSpace > 0 ? slice.slice(0, lastSpace) : slice) + '...';
+}
+
 // Posts a Slack notification for a page that showed experts to a reader -
 // either from a fresh AI scan (🔍, costs tokens) or served straight from
 // cache (⚡, free) - so cost and cache health are both visible in one feed.
@@ -264,24 +278,21 @@ async function handleCheckCache(req, res) {
 
     const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
     const cacheCountry = readerCountry || 'XX';
-    const [lastSync] = await sql`SELECT last_synced_at FROM providers WHERE slug = 'openintro' LIMIT 1`.catch(() => [null]);
-    const lastSyncedAt = lastSync?.last_synced_at || new Date(0);
 
     // Positive entries are per-country (expert selection/ordering can differ)
-    // and invalidated by an expert re-sync. Negative entries hit for EVERY
-    // country - a "no match" verdict doesn't depend on where the reader is -
-    // and are trusted for 24h unconfirmed, or permanently once confirmed by
-    // a second negative scan (see upsertCacheResult). Permanent no-match
-    // caching is what keeps AI cost flat on news-heavy sites where most
-    // pages legitimately never match, while the confirmation step stops one
-    // unlucky AI roll from permanently hiding a page.
+    // and invalidated by an expert re-sync on ANY provider - with multiple
+    // partners supplying experts, a second partner's sync must refresh
+    // cached matches too, not just openintro's. Negative entries hit for
+    // EVERY country - a "no match" verdict doesn't depend on where the
+    // reader is - and are trusted for 24h unconfirmed, or permanently once
+    // confirmed by a second negative scan (see upsertCacheResult).
     const [cached] = await sql`
       SELECT result FROM match_cache
       WHERE page_url = ${page_url}
         AND publisher = ${publisher || ''}
         AND (country_code = ${cacheCountry} OR has_match = false)
         AND (
-          (has_match = true AND cached_at > ${lastSyncedAt})
+          (has_match = true AND cached_at > (SELECT COALESCE(MAX(last_synced_at), 'epoch'::timestamptz) FROM providers))
           OR (has_match = false AND (confirmed = true OR cached_at > NOW() - INTERVAL '24 hours'))
         )
         AND cached_at > NOW() - INTERVAL '1 year'
@@ -392,21 +403,57 @@ export default async function handler(req, res) {
   try {
     const sql = neon(process.env.DATABASE_URL);
 
-    // Look up publisher settings if a publisher slug was provided
     const { publisher } = req.body;
+    const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
+    const cacheCountry = readerCountry || 'XX'; // 'XX' = unknown country, avoids empty-string NULL issue in cache
+
+    if (page_url) await ensureCacheTable(sql);
+
+    // Publisher config and cache lookup have no data dependency - run them in
+    // parallel to cut a serial DB round trip from every scan request. The
+    // cache check now runs for quick/chunk requests too (the widget sends
+    // page_url on those since the checkCache pre-flight was removed): on a
+    // cached page every parallel scan request short-circuits to the stored
+    // result for the cost of one DB read, no AI call.
+    //
+    // Cache rules: positives are per-country and invalidated by an expert
+    // re-sync on ANY provider (MAX(last_synced_at) - a second partner's sync
+    // must refresh matches too, not just openintro's). Negatives are
+    // country-agnostic; unconfirmed ones are trusted 24h, confirmed ones are
+    // permanent until an admin recrawls the publisher.
+    const [pubRows, cachedRows] = await Promise.all([
+      publisher
+        ? sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null])
+        : Promise.resolve([null]),
+      page_url
+        ? sql`
+            SELECT result FROM match_cache
+            WHERE page_url = ${page_url}
+              AND publisher = ${publisher || ''}
+              AND (country_code = ${cacheCountry} OR has_match = false)
+              AND (
+                (has_match = true AND cached_at > (SELECT COALESCE(MAX(last_synced_at), 'epoch'::timestamptz) FROM providers))
+                OR (has_match = false AND (confirmed = true OR cached_at > NOW() - INTERVAL '24 hours'))
+              )
+              AND cached_at > NOW() - INTERVAL '1 year'
+            ORDER BY has_match DESC
+            LIMIT 1
+          `.catch(() => [null])
+        : Promise.resolve([null]),
+    ]);
+
+    const pub = pubRows[0];
+    if (publisher && !pub) {
+      // Publisher deactivated or unknown - don't serve the widget
+      return res.status(200).json({ matches: [] });
+    }
+
     let maxMatches = 3;
     let sensitivityInstruction = 'Match on broader topic overlap. If the expert\'s field is relevant to the section, include them. Prefer more matches over fewer.';
-
     let pubConfig = { color: '#e6a820', accent: '#e6a820', size: 'medium' };
-
     let enabledPartners = null; // null = homepage demo
 
-    if (publisher) {
-      const [pub] = await sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null]);
-      if (!pub) {
-        // Publisher deactivated or unknown - don't serve the widget
-        return res.status(200).json({ matches: [] });
-      }
+    if (pub) {
       const powerMap = { light: 2, moderate: 4, heavy: 10, unlimited: 15 };
       maxMatches = powerMap[pub.match_power] ?? 4;
       const sensitivityMap = {
@@ -419,6 +466,25 @@ export default async function handler(req, res) {
       enabledPartners = pub.enabled_partners || ['openintro'];
     }
 
+    const cached = cachedRows[0];
+    if (cached) {
+      const cachedMatches = cached.result.matches || [];
+      // A page-view fans out into one quick + N chunk requests that ALL hit
+      // this cache path - only the quick (or a legacy full scan) logs and
+      // notifies, so a cached page-view produces exactly one impression log
+      // and one Slack message instead of one per parallel request.
+      if (!chunk) {
+        const phrases = cachedMatches.map(m => m.phrase);
+        const expertNames = cachedMatches.map(m => m.expert?.name).filter(Boolean);
+        const expertBookingUrls = cachedMatches.map(m => m.expert?.booking_url || null);
+        sql`INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, country_code)
+          VALUES (${publisher}, '[cached]', ${phrases}, ${expertNames}, ${expertBookingUrls}, ${cachedMatches.length}, ${page_url}, ${readerCountry || null})
+        `.catch(() => {});
+        postSlackNotification(sql, { publisher, page_url, page_title, matchCount: cachedMatches.length, readerCountry, cached: true }).catch(() => {});
+      }
+      return res.status(200).json({ matches: cachedMatches, config: pubConfig, cached: true });
+    }
+
     // Quick pass scans only the article intro for a fast first paint; cap matches so the
     // small token budget can't truncate the JSON. Chunk passes cover the rest of the
     // article; the client merges everything and reports it once.
@@ -429,48 +495,14 @@ export default async function handler(req, res) {
     // client dedupes, at roughly half the per-request latency.
     if (chunk) maxMatches = Math.min(maxMatches, 8);
 
-    const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
-    const cacheCountry = readerCountry || 'XX'; // 'XX' = unknown country, avoids empty-string NULL issue in cache
-
-    // Check match cache. Same rules as handleCheckCache: positives per-country
-    // and invalidated by expert re-sync; negatives country-agnostic and
-    // permanent until an admin recrawls the publisher.
-    if (page_url && !quick && !chunk) {
-      await ensureCacheTable(sql);
-
-      const [lastSync] = await sql`SELECT last_synced_at FROM providers WHERE slug = 'openintro' LIMIT 1`.catch(() => [null]);
-      const lastSyncedAt = lastSync?.last_synced_at || new Date(0);
-
-      const [cached] = await sql`
-        SELECT result FROM match_cache
-        WHERE page_url = ${page_url}
-          AND publisher = ${publisher || ''}
-          AND (country_code = ${cacheCountry} OR has_match = false)
-          AND (
-            (has_match = true AND cached_at > ${lastSyncedAt})
-            OR (has_match = false AND (confirmed = true OR cached_at > NOW() - INTERVAL '24 hours'))
-          )
-          AND cached_at > NOW() - INTERVAL '1 year'
-        ORDER BY has_match DESC
-        LIMIT 1
-      `.catch(() => [null]);
-
-      if (cached) {
-        const cachedMatches = cached.result.matches || [];
-        // Still log impression even on cache hit
-        const phrases = cachedMatches.map(m => m.phrase);
-        const expertNames = cachedMatches.map(m => m.expert?.name).filter(Boolean);
-        const expertBookingUrls = cachedMatches.map(m => m.expert?.booking_url || null);
-        sql`INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, country_code)
-          VALUES (${publisher}, '[cached]', ${phrases}, ${expertNames}, ${expertBookingUrls}, ${cachedMatches.length}, ${page_url}, ${readerCountry || null})
-        `.catch(() => {});
-        postSlackNotification(sql, { publisher, page_url, page_title, matchCount: cachedMatches.length, readerCountry, cached: true }).catch(() => {});
-        return res.status(200).json({ matches: cachedMatches, config: pubConfig, cached: true });
-      }
-    }
-
     const now = Date.now();
     if (!expertsCache || now - expertsCacheTime > EXPERTS_TTL) {
+      // Stable order, NOT random: the experts block is the bulk of every AI
+      // prompt, and Anthropic prompt caching only hits when the prefix is
+      // byte-identical across requests. Random per-instance ordering meant no
+      // two serverless instances ever shared a cache entry (and the same page
+      // could match differently depending on which instance served it).
+      // Fairness is handled by a deterministic daily rotation further down.
       expertsCache = await sql`
         SELECT e.id, e.name, e.bio, e.description_long, e.photo_url, e.position, e.company,
                e.topics, e.services, e.languages, e.price_from, e.price_currency,
@@ -480,7 +512,7 @@ export default async function handler(req, res) {
         FROM experts e
         LEFT JOIN providers p ON p.id = e.provider_id
         WHERE e.active = true
-        ORDER BY RANDOM()
+        ORDER BY e.id
       `.catch(() => null);
       // Only remember a *successful* fetch's timestamp - if the query failed,
       // leave expertsCacheTime alone so the very next request retries the DB
@@ -501,23 +533,33 @@ export default async function handler(req, res) {
         : !e.is_demo_provider
     );
 
-    // Sort experts: same country first
-    experts = experts.sort((a, b) => {
-      const aMatch = readerCountry && (a.location_country || '').toUpperCase().includes(readerCountry) ? 0 : 1;
-      const bMatch = readerCountry && (b.location_country || '').toUpperCase().includes(readerCountry) ? 0 : 1;
-      return aMatch - bMatch;
-    });
-
     if (experts.length === 0) {
       return res.status(200).json({ matches: [] });
     }
 
+    // Fairness without randomness: rotate the (id-ordered) list by a daily
+    // offset, so no expert permanently owns the top positions the model
+    // attends to most - but within any given day the order is identical
+    // across all requests/instances, keeping the prompt prefix cacheable.
+    // (The old same-country-first sort is gone: it silently reordered the
+    // list per reader, defeating caching, without ever telling the model
+    // that order mattered. The reader's country is now stated explicitly in
+    // the prompt instead.)
+    const rotation = Math.floor(Date.now() / 86400000) % experts.length;
+    experts = experts.slice(rotation).concat(experts.slice(0, rotation));
+
+    // bio is a hand-crafted credential one-liner (dense signal); the old
+    // description_long.slice(0,150) usually cut off mid-word before reaching
+    // any credentials. Include both: bio + description truncated at a
+    // sentence boundary. Price dropped - it never informs the match decision
+    // and cost tokens on every expert.
     const expertsList = experts.map(e => {
       const role = [e.position, e.company].filter(Boolean).join(' at ');
       const langs = (e.languages || []).join(', ');
-      const desc = e.description_long || e.bio || '';
+      const desc = truncateAtSentence(e.description_long || '', 400);
       const services = (e.services || []).slice(0, 3).join('; ');
-      return `ID:${e.id} | ${e.name}${role ? ` (${role})` : ''} | Languages: ${langs} | From £${e.price_from}/session | About: ${desc.slice(0, 150)} | Services: ${services}`;
+      const about = [e.bio, desc].filter(Boolean).join(' - ');
+      return `ID:${e.id} | ${e.name}${role ? ` (${role})` : ''} | Languages: ${langs} | About: ${about} | Services: ${services}`;
     }).join('\n\n');
 
     // Trust the widget's language detection (run once on the full article) when
@@ -533,7 +575,16 @@ export default async function handler(req, res) {
       ? 'The article is in English. Write every "reason" field entirely in natural English. Expert names, company names, or bios may be in other languages - ignore that; the reason must be 100% English.'
       : `The article is in ${articleLangName}. Strongly prioritise experts who speak ${articleLangName}. Write every "reason" field entirely in ${articleLangName} - never mix languages within a sentence. Use formal address, never informal.`;
 
-    const prompt = `You are the matching engine for IntroLinq, a platform that connects blog READERS with experts they can book a 1:1 call with.
+    // The prompt is split into two blocks so Anthropic prompt caching can
+    // work: the static block (instructions + the full experts list - the
+    // vast bulk of the tokens) is byte-identical for every request of the
+    // same publisher on the same day, so it's cached and re-billed at ~10%
+    // after the first request. Everything per-request (article text, its
+    // language, the reader's country, match count, the shuffled opener/
+    // closer styles) lives in the dynamic block AFTER the cache breakpoint.
+    // Anything added to the static block must be stable per publisher+day
+    // or it silently kills the cache hit rate.
+    const staticPrompt = `You are the matching engine for IntroLinq, a platform that connects blog READERS with experts they can book a 1:1 call with.
 
 Your job: identify moments in the article where a reader - someone trying to learn, make a decision, or solve a problem - would benefit from a personal consultation with a specific expert. ${sensitivityInstruction}
 
@@ -542,7 +593,7 @@ Criteria for a valid match:
 2. The expert's expertise is a clear fit for that challenge (not just the same broad field)
 3. A 1:1 call with this expert would genuinely help the reader take action
 
-Return up to ${maxMatches} matches for how-to articles, guides, and educational content where the reader is actively trying to do something. Return 0 for pure news, press releases, or company announcements where the reader is passively informed.
+Match how-to articles, guides, and educational content where the reader is actively trying to do something. Return 0 matches for pure news, press releases, or company announcements where the reader is passively informed.
 
 NEVER match:
 - News articles, press releases, or company announcements
@@ -552,22 +603,29 @@ NEVER match:
 - Phrases where a company describes what it is doing (not what the reader needs to do)
 - Vague keyword overlap where the expert's services don't clearly fit the specific moment
 
-IMPORTANT: ${languageInstruction}
-
 IMPORTANT: Never use an em dash (—) or en dash (–) anywhere in the "reason" text. Use a plain hyphen with spaces ( - ) instead, or just rephrase as separate sentences.
 
-IMPORTANT: Keep each "reason" to at most 30 words (one or two short sentences). This is a length limit only - the STYLE of each reason must follow its assigned opening approach and closing approach from the numbered lists below.
+IMPORTANT: Keep each "reason" to at most 30 words (one or two short sentences). This is a length limit only - the STYLE of each reason must follow its assigned opening approach and closing approach from the numbered lists provided with the article.
 
 IMPORTANT: The name you write inside each "reason" MUST be the exact same expert whose ID you put in "expert_id" for that match. Double-check you are not naming a different expert from the list by mistake.
+
+Available experts:
+${expertsList}`;
+
+    const countryLine = readerCountry && COUNTRY_NAMES[readerCountry]
+      ? `The reader is browsing from ${COUNTRY_NAMES[readerCountry]}. When two experts fit a challenge equally well, prefer the one based in the reader's country.\n\n`
+      : '';
+    const titleLine = page_title ? `Article title: ${String(page_title).slice(0, 150)}\n\n` : '';
+
+    const dynamicPrompt = `IMPORTANT: ${languageInstruction}
+
+${countryLine}${titleLine}Return up to ${maxMatches} matches.
 
 For each match's "reason", use a DIFFERENT one of these opening approaches — assign them in order to the matches you return (first match uses approach 1, second uses approach 2, etc.), and never reuse an approach or fall back to a generic "As a first-time founder..." opener regardless of what these approaches say:
 ${pickReasonOpeners(Math.max(maxMatches, 6)).map((o, i) => `${i + 1}. ${o}`).join('\n')}
 
 Each "reason" must also END with a soft call-to-action inviting the reader to actually talk to the expert - assign these closing approaches in order the same way (first match uses closer 1, second uses closer 2, etc.), never reusing one or defaulting to the same "We suggest talking to..." on every match:
 ${pickReasonClosers(Math.max(maxMatches, 6)).map((c, i) => `${i + 1}. ${c}`).join('\n')}
-
-Available experts:
-${expertsList}
 
 Article:
 ${article.slice(0, 10000)}
@@ -593,7 +651,13 @@ Return only valid JSON, no other text:
         // 19 matches to 0 between runs. Lowered for a more consistent verdict
         // while keeping enough variation that phrasing doesn't feel robotic.
         temperature: 0.3,
-        messages: [{ role: 'user', content: prompt }]
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: staticPrompt, cache_control: { type: 'ephemeral' } },
+            { type: 'text', text: dynamicPrompt }
+          ]
+        }]
       })
     });
 
@@ -604,6 +668,11 @@ Return only valid JSON, no other text:
     }
 
     const aiResult = await response.json();
+    // Cache effectiveness is invisible without this: cache_read_input_tokens
+    // should be large (the whole static block) on all but the first request
+    // of a publisher+day. If it's persistently 0, something reintroduced
+    // per-request bytes into the static block.
+    console.log('[ai-usage]', quick ? 'quick' : chunk ? 'chunk' : 'full', JSON.stringify(aiResult.usage || {}));
     const text = aiResult.content?.[0]?.text || '{"matches":[]}';
 
     let parsed;
