@@ -9,8 +9,10 @@ widget/API.
 ## Setup
 
 1. `cp discovery/.env.local.example discovery/.env.local`
-2. Fill in `DATABASE_URL` (same one the main app uses - check Vercel env vars)
-   and `SERPAPI_KEY` (from https://serpapi.com/manage-api-key)
+2. Fill in `DATABASE_URL` (same one the main app uses - check Vercel env vars),
+   `SERPAPI_KEY` (from https://serpapi.com/manage-api-key), `ANTHROPIC_API_KEY`
+   (for classify.js), and `APOLLO_API_KEY` (from https://developer.apollo.io,
+   for enrich.js)
 3. From the repo root: `npm install` (adds `dotenv`, already in root `package.json`)
 
 ## Run
@@ -69,12 +71,55 @@ the architecture:
   `{ domain, homepage_url, title, snippet }` shape `insertCandidates`
   expects - `discover.js` doesn't need to change
 
+## Classifying leads
+
+```
+node discovery/classify.js
+```
+
+Uses Claude (Haiku) to read each candidate's title/snippet and classify it
+as `publisher` (good widget partner), `vendor` (better fit as a listed
+expert than a partner), `competitor` (booking/mentor-matching platforms -
+kept in the table for visibility, not deleted), or `unclear`. Also assigns
+a rough `team_size` (`solo` / `small-team` / `large-team` / `unclear`),
+which `enrich.js` uses to pick which job title to search for.
+
+Well-known brands (e.g. Y Combinator) are occasionally misclassified as
+`competitor` because the model draws on background knowledge about the
+brand rather than judging from the snippet alone - spot-check famous names
+manually.
+
+## Finding contacts (Apollo)
+
+```
+node discovery/enrich.js --dry-run       # preview matches, no credits spent
+node discovery/enrich.js --limit 20      # enrich a small batch first
+node discovery/enrich.js --limit 500     # scale up once you trust it
+```
+
+Only enriches `lead_type: 'publisher'` leads - vendor/competitor/unclear are
+skipped, since the outreach pitch (embed the widget) only applies to
+publishers. For each one, searches Apollo for a person at that domain
+matching a role-appropriate title based on `team_size` (see `titlesForRow`
+in `discovery/lib/apollo.js`):
+
+- `team_size: solo` -> Founder/Owner/Editor/Writer
+- `team_size: large-team` -> Editor in Chief/Content Lead/Editor
+- small-team/unclear -> Editor/Content Manager/Founder/CEO
+
+People Search itself is free. Only the follow-up email-reveal call spends
+an Apollo credit, and only runs when a person was actually found - so
+`--dry-run` lets you sanity-check title/domain matches before spending
+anything. Resumable like the rest of the pipeline: only rows with
+`contact_status IS NULL` are processed, so re-running picks up where you
+left off.
+
+`competitor` and `unclear` leads are skipped - not worth enrichment credits.
+
 ## What's NOT built yet
 
-This is discovery only - finding and storing candidate domains. Not yet
-built: crawling each site for metadata, contact discovery (emails, names,
-roles), AI classification, traffic/priority scoring, or syncing to a Google
-Sheet. Those come next once this step is proven out.
+Crawling each site for deeper metadata, traffic/priority scoring, or
+syncing to a Google Sheet. Those come next if/when needed.
 
 ## Schema
 
@@ -83,6 +128,12 @@ Sheet. Those come next once this step is proven out.
   `classified`, `contacted`, `rejected`, `promoted`
 - `priority_score` / `estimated_monthly_visits`: placeholder columns for
   when a traffic-data source (SimilarWeb, Ahrefs, etc.) is wired in later
+
+Added by `classify.js`: `lead_type`, `service_keyword`, `team_size`.
+
+Added by `enrich.js`: `contact_first_name`, `contact_last_name`,
+`contact_email`, `contact_title`, `contact_status` (`found` / `no_email` /
+`not_found` / `error`).
 
 `discovery_queries` - tracks every generated search query and its status
 (`pending` / `done` / `failed`), so runs are resumable and queries are never

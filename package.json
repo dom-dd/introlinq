@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "discover": "node discovery/discover.js"
+    "discover": "node discovery/discover.js",
+    "classify": "node discovery/classify.js",
+    "enrich": "node discovery/enrich.js",
+    "export": "node discovery/export.js"
   },
   "repository": {
     "type": "git",

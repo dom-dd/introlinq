@@ -1,4 +1,4 @@
-// Exports candidate_publishers (and, once built, their contacts) to a CSV
+// Exports candidate_publishers (and their enriched contacts) to a CSV
 // file you can open in Excel/Sheets or import into Google Sheets manually.
 //
 // Usage: node discovery/export.js [output-path]
@@ -16,13 +16,14 @@ async function main() {
   const outPath = process.argv[2] || 'discovery/candidates.csv';
 
   const rows = await sql`
-    SELECT domain, homepage_url, title, snippet, lead_type, service_keyword, team_size, status,
-           priority_score, estimated_monthly_visits, country, language, discovery_query, created_at
+    SELECT domain, homepage_url, title, snippet, lead_type, service_keyword, team_size,
+           contact_first_name, contact_last_name, contact_email, contact_title, contact_status,
+           status, priority_score, estimated_monthly_visits, country, language, discovery_query, created_at
     FROM candidate_publishers
     ORDER BY lead_type NULLS LAST, priority_score DESC NULLS LAST, created_at DESC
   `;
 
-  const headers = ['domain', 'homepage_url', 'title', 'snippet', 'lead_type', 'service_keyword', 'team_size', 'status', 'priority_score', 'estimated_monthly_visits', 'country', 'language', 'discovery_query', 'created_at'];
+  const headers = ['domain', 'homepage_url', 'title', 'snippet', 'lead_type', 'service_keyword', 'team_size', 'contact_first_name', 'contact_last_name', 'contact_email', 'contact_title', 'contact_status', 'status', 'priority_score', 'estimated_monthly_visits', 'country', 'language', 'discovery_query', 'created_at'];
   const lines = [headers.join(',')];
   for (const r of rows) {
     lines.push(headers.map((h) => csvEscape(r[h])).join(','));
