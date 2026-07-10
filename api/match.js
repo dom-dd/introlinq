@@ -173,6 +173,30 @@ function normalizePageUrl(raw) {
   }
 }
 
+// Posts a Slack notification for a page that showed experts to a reader -
+// either from a fresh AI scan (🔍, costs tokens) or served straight from
+// cache (⚡, free) - so cost and cache health are both visible in one feed.
+// Only called when matches were actually shown; silent on 0-match events
+// to avoid spamming the channel with every no-match news article.
+async function postSlackNotification(sql, { publisher, page_url, page_title, matchCount, readerCountry, cached }) {
+  if (!process.env.SLACK_WEBHOOK_URL || matchCount === 0) return;
+  let pubName = publisher || '/app';
+  if (publisher) {
+    const [pubRow] = await sql`SELECT name FROM publishers WHERE slug = ${publisher} LIMIT 1`.catch(() => [null]);
+    if (pubRow?.name) pubName = pubRow.name;
+  }
+  const countryLabel = readerCountry ? (COUNTRY_NAMES[readerCountry] || readerCountry) : 'Unknown';
+  const title = page_title ? page_title.slice(0, 80) : (page_url ? page_url.slice(0, 80) : 'homepage demo');
+  const urlLine = (!publisher && page_url) ? `\n${page_url}` : '';
+  const icon = cached ? '⚡' : '🔍';
+  const costLabel = cached ? 'from cache, no AI cost' : 'fresh scan';
+  await fetch(process.env.SLACK_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: `${icon} *${pubName}* · *${matchCount} expert${matchCount !== 1 ? 's' : ''} found* (${costLabel}) · 🌍 ${countryLabel}\n_${title}_${urlLine}` })
+  }).catch(() => {});
+}
+
 // Upserts a scan result. `confirmed` follows a small state machine (see the
 // column comment in ensureCacheTable): a positive result is always trusted
 // immediately; a negative result only becomes permanent on its second
@@ -274,6 +298,7 @@ async function handleCheckCache(req, res) {
     sql`INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, country_code)
       VALUES (${publisher || null}, '[cached]', ${phrases}, ${expertNames}, ${expertBookingUrls}, ${cachedMatches.length}, ${page_url}, ${readerCountry || null})
     `.catch(() => {});
+    postSlackNotification(sql, { publisher, page_url, page_title: null, matchCount: cachedMatches.length, readerCountry, cached: true }).catch(() => {});
 
     return res.status(200).json({ cacheHit: true, matches: cachedMatches, config: pubConfig });
   } catch (err) {
@@ -332,21 +357,7 @@ async function handleReport(req, res) {
       VALUES (${publisher || null}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${noMatchLogReason}, ${readerCountry || null})
     `.catch(() => {});
 
-    if (process.env.SLACK_WEBHOOK_URL && matches.length > 0) {
-      let pubName = publisher || '/app';
-      if (publisher) {
-        const [pubRow] = await sql`SELECT name FROM publishers WHERE slug = ${publisher} LIMIT 1`.catch(() => [null]);
-        if (pubRow?.name) pubName = pubRow.name;
-      }
-      const countryLabel = readerCountry ? (COUNTRY_NAMES[readerCountry] || readerCountry) : 'Unknown';
-      const title = page_title ? page_title.slice(0, 80) : page_url.slice(0, 80);
-      const urlLine = (!publisher && page_url) ? `\n${page_url}` : '';
-      await fetch(process.env.SLACK_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: `🔍 *${pubName}* · *${matches.length} expert${matches.length !== 1 ? 's' : ''} found* · 🌍 ${countryLabel}\n_${title}_${urlLine}` })
-      }).catch(() => {});
-    }
+    await postSlackNotification(sql, { publisher, page_url, page_title, matchCount: matches.length, readerCountry, cached: false });
 
     return res.status(200).json({ ok: true });
   } catch (err) {
@@ -453,6 +464,7 @@ export default async function handler(req, res) {
         sql`INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, country_code)
           VALUES (${publisher}, '[cached]', ${phrases}, ${expertNames}, ${expertBookingUrls}, ${cachedMatches.length}, ${page_url}, ${readerCountry || null})
         `.catch(() => {});
+        postSlackNotification(sql, { publisher, page_url, page_title, matchCount: cachedMatches.length, readerCountry, cached: true }).catch(() => {});
         return res.status(200).json({ matches: cachedMatches, config: pubConfig, cached: true });
       }
     }
@@ -647,22 +659,7 @@ Return only valid JSON, no other text:
           VALUES (${publisher}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${enriched.length}, ${page_url || null}, ${noMatchReason}, ${readerCountry || null})
         `;
       })(),
-      (async () => {
-        if (!process.env.SLACK_WEBHOOK_URL || enriched.length === 0) return;
-        let pubName = publisher || '/app';
-        if (publisher) {
-          const [pubRow] = await sql`SELECT name FROM publishers WHERE slug = ${publisher} LIMIT 1`.catch(() => [null]);
-          if (pubRow?.name) pubName = pubRow.name;
-        }
-        const countryLabel = readerCountry ? (COUNTRY_NAMES[readerCountry] || readerCountry) : 'Unknown';
-        const title = page_title ? page_title.slice(0, 80) : (page_url ? page_url.slice(0, 80) : 'homepage demo');
-        const urlLine = (!publisher && page_url) ? `\n${page_url}` : '';
-        await fetch(process.env.SLACK_WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: `🔍 *${pubName}* · *${enriched.length} expert${enriched.length !== 1 ? 's' : ''} found* · 🌍 ${countryLabel}\n_${title}_${urlLine}` })
-        });
-      })()
+      postSlackNotification(sql, { publisher, page_url, page_title, matchCount: enriched.length, readerCountry, cached: false })
     ]).catch(() => {});
   } catch (err) {
     console.error(err);
