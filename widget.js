@@ -463,6 +463,19 @@
     return false;
   }
 
+  // The AI is asked to copy an "exact substring from article," but often
+  // normalizes typographic quotes/apostrophes (curly -> straight) even when
+  // told not to - e.g. writing d'orchestrer for the source's d'orchestrer.
+  // That single-character mismatch broke exact-match highlighting right at
+  // that point, and the shrinking-window fallback below would silently
+  // settle for whatever shorter prefix DID match, visibly cutting the
+  // highlight off mid-sentence. Normalizing both sides before matching fixes
+  // this - every substitution is one codepoint for one codepoint, so string
+  // positions stay valid for wrapCombinedRange's offset math.
+  function normalizeQuotes(s) {
+    return s.replace(/[‘’‚ʼ´′]/g, "'").replace(/[“”„″]/g, '"');
+  }
+
   function highlightOnePhrase(container, match, popup, cfg, usedRanges) {
     // Re-collect on every phrase: earlier highlights split text nodes
     var nodes = collectTextNodes(container);
@@ -472,8 +485,9 @@
       offsets.push(combined.length);
       combined += nodes[i].textContent;
     }
+    combined = normalizeQuotes(combined);
 
-    var words = (match.phrase || '').replace(/\s+/g, ' ').trim().split(' ');
+    var words = normalizeQuotes(match.phrase || '').replace(/\s+/g, ' ').trim().split(' ');
     if (!words[0]) return false;
     // Whitespace-flexible regex; \s* joiner tolerates node boundaries with no space
     var minLen = Math.min(4, words.length);
