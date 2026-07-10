@@ -190,23 +190,11 @@ async function postSlackNotification(sql, { publisher, page_url, page_title, mat
   const urlLine = (!publisher && page_url) ? `\n${page_url}` : '';
   const icon = cached ? '⚡' : '🔍';
   const costLabel = cached ? 'from cache, no AI cost' : 'fresh scan';
-  try {
-    const res = await fetch(process.env.SLACK_WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: `${icon} *${pubName}* · *${matchCount} expert${matchCount !== 1 ? 's' : ''} found* (${costLabel}) · 🌍 ${countryLabel}\n_${title}_${urlLine}` })
-    });
-    // TEMP diagnostic logging - remove once the Slack silence is root-caused.
-    // Never logs the webhook URL itself, only Slack's response.
-    if (!res.ok) {
-      const body = await res.text().catch(() => '');
-      console.error(`[slack] webhook returned ${res.status}: ${body.slice(0, 300)}`);
-    } else {
-      console.log('[slack] webhook post succeeded');
-    }
-  } catch (err) {
-    console.error(`[slack] webhook fetch threw: ${err.message}`);
-  }
+  await fetch(process.env.SLACK_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: `${icon} *${pubName}* · *${matchCount} expert${matchCount !== 1 ? 's' : ''} found* (${costLabel}) · 🌍 ${countryLabel}\n_${title}_${urlLine}` })
+  }).catch(() => {});
 }
 
 // Upserts a scan result. `confirmed` follows a small state machine (see the
