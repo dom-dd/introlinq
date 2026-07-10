@@ -8,6 +8,13 @@
     {
       "path": "/api/cron/weekly-stats",
       "schedule": "0 9 * * 1"
+    },
+    {
+      "path": "/api/cron/discovery",
+      "schedule": "0 6 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "api/cron/discovery.js": { "maxDuration": 60 }
+  }
 }
