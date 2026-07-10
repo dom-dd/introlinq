@@ -335,11 +335,28 @@ export default async function handler(req, res) {
   }
 
   // Clear all match cache for a publisher - use after changing match settings
+  // or to force a full recrawl of their pages (next visit re-scans each page)
   if (resource === 'clear-publisher-cache' && req.method === 'POST') {
     const { publisher } = req.body;
     if (!publisher) return res.status(400).json({ error: 'publisher required' });
     const result = await sql`DELETE FROM match_cache WHERE publisher = ${publisher} RETURNING id`.catch(() => []);
     return res.status(200).json({ ok: true, deleted: result.length });
+  }
+
+  // List cached pages (page + country -> stored match result), newest first
+  if (resource === 'cache' && req.method === 'GET') {
+    const entries = await sql`
+      SELECT publisher, page_url, country_code, has_match, cached_at
+      FROM match_cache
+      ORDER BY cached_at DESC
+      LIMIT 1000
+    `.catch(() => []);
+    const [counts] = await sql`
+      SELECT COUNT(*)::int AS total,
+             COUNT(*) FILTER (WHERE has_match)::int AS matched
+      FROM match_cache
+    `.catch(() => [{ total: 0, matched: 0 }]);
+    return res.status(200).json({ total: counts.total, matched: counts.matched, entries });
   }
 
   // Groups (demo providers)

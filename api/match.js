@@ -144,6 +144,35 @@ function detectArticleLanguage(articleText) {
   return best;
 }
 
+// Cache keys must not fragment on marketing/tracking query params: every Google
+// Ads click mints a unique ?gclid=..., and newsletter links add utm_* - each
+// variant was getting its own full AI scan of identical page content (one page
+// was scanned 8 times in a day this way). Also drops valueless params like
+// Planet Fintech's "?com" comment-view suffix, and the #fragment. Remaining
+// real params (e.g. WordPress ?p=123 routing) are kept, sorted for stability.
+const TRACKING_PARAM_EXACT = new Set([
+  'gclid', 'fbclid', 'msclkid', 'yclid', 'dclid', 'twclid', 'igshid',
+  'gbraid', 'wbraid', 'ref', 'ref_src', 's_kwcid', 'mkt_tok', '_hsenc', '_hsmi'
+]);
+function normalizePageUrl(raw) {
+  if (!raw || typeof raw !== 'string') return raw;
+  try {
+    const u = new URL(raw);
+    u.hash = '';
+    const keep = [];
+    for (const [k, v] of u.searchParams.entries()) {
+      if (/^(utm_|mc_|pk_|piwik_)/i.test(k) || TRACKING_PARAM_EXACT.has(k.toLowerCase())) continue;
+      if (v === '') continue;
+      keep.push([k, v]);
+    }
+    keep.sort((a, b) => (a[0] < b[0] ? -1 : 1));
+    u.search = keep.length ? '?' + keep.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&') : '';
+    return u.toString();
+  } catch {
+    return raw;
+  }
+}
+
 async function ensureCacheTable(sql) {
   if (cacheTableReady) return;
   await sql`CREATE TABLE IF NOT EXISTS match_cache (
@@ -164,7 +193,8 @@ async function ensureCacheTable(sql) {
 
 // Fast pre-check so already-scanned pages skip the quick+chunk AI scan entirely
 async function handleCheckCache(req, res) {
-  const { publisher, page_url } = req.body;
+  const { publisher } = req.body;
+  const page_url = normalizePageUrl(req.body.page_url);
   if (!page_url) return res.status(200).json({ cacheHit: false });
   try {
     const sql = neon(process.env.DATABASE_URL);
@@ -182,13 +212,21 @@ async function handleCheckCache(req, res) {
     const [lastSync] = await sql`SELECT last_synced_at FROM providers WHERE slug = 'openintro' LIMIT 1`.catch(() => [null]);
     const lastSyncedAt = lastSync?.last_synced_at || new Date(0);
 
+    // Positive entries are per-country (expert selection/ordering can differ)
+    // and invalidated by an expert re-sync. Negative entries hit for EVERY
+    // country - a "no match" verdict doesn't depend on where the reader is -
+    // and are permanent until an admin recrawls the publisher: they can only
+    // be written by a verified-complete scan, so they're trustworthy, and
+    // permanent no-match caching is what keeps AI cost flat on news-heavy
+    // sites where most pages legitimately never match.
     const [cached] = await sql`
       SELECT result FROM match_cache
       WHERE page_url = ${page_url}
-        AND country_code = ${cacheCountry}
         AND publisher = ${publisher || ''}
-        AND ((has_match = false AND cached_at > NOW() - INTERVAL '7 days') OR cached_at > ${lastSyncedAt})
+        AND (country_code = ${cacheCountry} OR has_match = false)
+        AND (has_match = false OR cached_at > ${lastSyncedAt})
         AND cached_at > NOW() - INTERVAL '1 year'
+      ORDER BY has_match DESC
       LIMIT 1
     `.catch(() => [null]);
 
@@ -212,7 +250,8 @@ async function handleCheckCache(req, res) {
 // Client has already merged results from the quick pass + all article chunks.
 // Persist the final set (cache + log + Slack) without any further AI calls.
 async function handleReport(req, res) {
-  const { publisher, page_url, page_title, matches, complete } = req.body;
+  const { publisher, page_title, matches, complete } = req.body;
+  const page_url = normalizePageUrl(req.body.page_url);
   if (!page_url || !Array.isArray(matches)) {
     return res.status(400).json({ error: 'Missing page_url or matches' });
   }
@@ -302,7 +341,8 @@ export default async function handler(req, res) {
     return handleCheckCache(req, res);
   }
 
-  const { article, page_url, page_title, quick, chunk, lang } = req.body;
+  const { article, page_title, quick, chunk, lang } = req.body;
+  const page_url = normalizePageUrl(req.body.page_url);
   if (!article || article.trim().length < 50) {
     return res.status(400).json({ error: 'Article text is too short' });
   }
@@ -350,7 +390,9 @@ export default async function handler(req, res) {
     const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
     const cacheCountry = readerCountry || 'XX'; // 'XX' = unknown country, avoids empty-string NULL issue in cache
 
-    // Check match cache (keyed by page_url + country, valid until last expert sync)
+    // Check match cache. Same rules as handleCheckCache: positives per-country
+    // and invalidated by expert re-sync; negatives country-agnostic and
+    // permanent until an admin recrawls the publisher.
     if (page_url && !quick && !chunk) {
       await ensureCacheTable(sql);
 
@@ -360,10 +402,11 @@ export default async function handler(req, res) {
       const [cached] = await sql`
         SELECT result FROM match_cache
         WHERE page_url = ${page_url}
-          AND country_code = ${cacheCountry}
           AND publisher = ${publisher || ''}
-          AND ((has_match = false AND cached_at > NOW() - INTERVAL '7 days') OR cached_at > ${lastSyncedAt})
+          AND (country_code = ${cacheCountry} OR has_match = false)
+          AND (has_match = false OR cached_at > ${lastSyncedAt})
           AND cached_at > NOW() - INTERVAL '1 year'
+        ORDER BY has_match DESC
         LIMIT 1
       `.catch(() => [null]);
 

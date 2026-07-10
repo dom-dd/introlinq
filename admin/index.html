@@ -144,6 +144,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
     <button class="tab-btn active" onclick="switchTab('publishers',this)">Publishers</button>
     <button class="tab-btn" onclick="switchTab('bookings',this)">Bookings</button>
     <button class="tab-btn" onclick="switchTab('logs',this)">Logs</button>
+    <button class="tab-btn" onclick="switchTab('cache',this)">Cache</button>
     <button class="tab-btn" onclick="switchTab('experts',this)">Experts</button>
     <button class="tab-btn" onclick="switchTab('tools',this)">Tools</button>
   </div>
@@ -359,6 +360,42 @@ tr:hover td{background:rgba(0,0,0,0.01)}
               </tr>
             </thead>
             <tbody id="global-logs-tbody">
+              <tr><td colspan="5" class="empty">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cache tab -->
+    <div class="tab-panel" id="tab-cache">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Cached pages</div>
+          <span style="font-size:0.8125rem;color:var(--ink-muted)" id="cache-summary">Loading...</span>
+        </div>
+        <div class="section-body">
+          <div style="margin-bottom:0.75rem;font-size:0.8125rem;color:var(--ink-muted)">
+            Each entry is a page whose scan result is stored - repeat visits serve it from here at zero AI cost.
+            "Match" entries are per-country; "No match" entries apply to every country and stay until you hit
+            Recrawl on that publisher (Publishers tab).
+          </div>
+          <div style="margin-bottom:0.75rem">
+            <select id="cache-filter" onchange="renderCache()" style="padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:0.8125rem;background:var(--white)">
+              <option value="">All publishers</option>
+            </select>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Publisher</th>
+                <th>Page</th>
+                <th>Country</th>
+                <th>Result</th>
+                <th>Cached</th>
+              </tr>
+            </thead>
+            <tbody id="cache-tbody">
               <tr><td colspan="5" class="empty">Loading...</td></tr>
             </tbody>
           </table>
@@ -582,6 +619,68 @@ function switchTab(name, btn) {
   btn.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
   if (name === 'experts') loadHeadlines();
+  if (name === 'cache') loadCache();
+}
+
+let cacheEntries = [];
+const countryName = (code) => {
+  if (!code || code === 'XX') return 'Unknown';
+  try { return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) || code; } catch { return code; }
+};
+
+async function loadCache() {
+  const res = await fetch('/api/admin?resource=cache');
+  const data = await res.json();
+  cacheEntries = data.entries || [];
+  document.getElementById('cache-summary').textContent =
+    `${data.total} cached page${data.total !== 1 ? 's' : ''} · ${data.matched} with matches · ${data.total - data.matched} no-match` +
+    (cacheEntries.length < data.total ? ` · showing latest ${cacheEntries.length}` : '');
+
+  // Rebuild publisher filter options, keeping the current selection
+  const filter = document.getElementById('cache-filter');
+  const current = filter.value;
+  const pubs = [...new Set(cacheEntries.map(e => e.publisher || '/app'))].sort();
+  filter.innerHTML = '<option value="">All publishers</option>' + pubs.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+  if (pubs.includes(current)) filter.value = current;
+  renderCache();
+}
+
+function renderCache() {
+  const tbody = document.getElementById('cache-tbody');
+  const filter = document.getElementById('cache-filter').value;
+  const list = filter ? cacheEntries.filter(e => (e.publisher || '/app') === filter) : cacheEntries;
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty">No cached pages yet</td></tr>'; return; }
+  tbody.innerHTML = list.map(e => {
+    const page = (e.page_url || '').replace(/^https?:\/\//, '');
+    const pageShort = page.length > 60 ? page.slice(0, 60) + '…' : page;
+    const dt = new Date(e.cached_at);
+    const when = dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ' ' + dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const result = e.has_match
+      ? '<span class="badge badge-active">Match</span>'
+      : '<span class="badge badge-inactive">No match</span>';
+    const country = e.has_match ? countryName(e.country_code) : 'All countries';
+    return `<tr>
+      <td class="td-name">${esc(e.publisher || '/app')}</td>
+      <td style="font-size:0.8rem;color:var(--ink-muted)" title="${esc(e.page_url || '')}">${esc(pageShort)}</td>
+      <td style="font-size:0.8rem">${esc(country)}</td>
+      <td>${result}</td>
+      <td style="white-space:nowrap;color:var(--ink-muted);font-size:0.8rem">${when}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function recrawlPublisher(slug) {
+  const pub = (window._publishers || []).find(x => x.slug === slug);
+  const name = pub ? pub.name : slug;
+  if (!confirm(`Recrawl all pages for "${name}"?\n\nThis clears their entire page cache - every page runs a fresh AI scan on its next visit, which uses tokens per page. Do this after adding experts or changing match settings.`)) return;
+  const res = await fetch('/api/admin?resource=clear-publisher-cache', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify({ publisher: slug })
+  });
+  const data = await res.json();
+  toast(`Cache cleared for ${name} - ${data.deleted || 0} page${data.deleted !== 1 ? 's' : ''} will recrawl on next visit`);
+  if (document.getElementById('tab-cache').classList.contains('active')) loadCache();
 }
 
 async function loadGlobalLogs() {
@@ -625,6 +724,7 @@ async function loadStats() {
 async function loadPublishers() {
   const res = await fetch('/api/admin?resource=publishers', {});
   const list = await res.json();
+  window._publishers = list;
   const tbody = document.getElementById('publishers-tbody');
 
   if (!list.length) {
@@ -667,6 +767,9 @@ async function loadPublishers() {
       <td>${new Date(p.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</td>
       <td>
         <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end">
+          <button onclick="recrawlPublisher('${esc(p.slug)}')" title="Recrawl - clear this publisher's page cache so every page re-scans on next visit" style="background:#fff7e6;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#e6a820" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          </button>
           <button onclick="viewPublisherBookings('${esc(p.slug)}')" title="View bookings" style="background:#f4f0ff;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
           </button>
