@@ -1,0 +1,26 @@
+name: Daily publisher discovery
+
+# Vercel's Hobby plan caps native Cron Jobs at 2 per account (already used
+# by api/sync/openintro and api/cron/weekly-stats), so this daily trigger
+# lives here instead - same endpoint, same auth, just triggered by GitHub
+# Actions' free scheduler rather than Vercel's.
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch: {} # allows a manual "Run workflow" trigger from the Actions tab
+
+jobs:
+  trigger-discovery:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call discovery cron endpoint
+        run: |
+          status=$(curl -s -o response.json -w "%{http_code}" \
+            -X GET "https://www.introlinq.com/api/cron/discovery" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          echo "HTTP status: $status"
+          cat response.json
+          if [ "$status" -ne 200 ]; then
+            echo "Discovery cron failed"
+            exit 1
+          fi
