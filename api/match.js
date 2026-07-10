@@ -161,7 +161,7 @@ function normalizePageUrl(raw) {
     u.hash = '';
     const keep = [];
     for (const [k, v] of u.searchParams.entries()) {
-      if (/^(utm_|mc_|pk_|piwik_)/i.test(k) || TRACKING_PARAM_EXACT.has(k.toLowerCase())) continue;
+      if (/^(utm_|mc_|pk_|piwik_|gad_)/i.test(k) || TRACKING_PARAM_EXACT.has(k.toLowerCase())) continue;
       if (v === '') continue;
       keep.push([k, v]);
     }
