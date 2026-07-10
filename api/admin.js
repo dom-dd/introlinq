@@ -346,17 +346,18 @@ export default async function handler(req, res) {
   // List cached pages (page + country -> stored match result), newest first
   if (resource === 'cache' && req.method === 'GET') {
     const entries = await sql`
-      SELECT publisher, page_url, country_code, has_match, cached_at
+      SELECT publisher, page_url, country_code, has_match, confirmed, cached_at
       FROM match_cache
       ORDER BY cached_at DESC
       LIMIT 1000
     `.catch(() => []);
     const [counts] = await sql`
       SELECT COUNT(*)::int AS total,
-             COUNT(*) FILTER (WHERE has_match)::int AS matched
+             COUNT(*) FILTER (WHERE has_match)::int AS matched,
+             COUNT(*) FILTER (WHERE NOT has_match AND NOT confirmed)::int AS pending
       FROM match_cache
-    `.catch(() => [{ total: 0, matched: 0 }]);
-    return res.status(200).json({ total: counts.total, matched: counts.matched, entries });
+    `.catch(() => [{ total: 0, matched: 0, pending: 0 }]);
+    return res.status(200).json({ total: counts.total, matched: counts.matched, pending: counts.pending, entries });
   }
 
   // Groups (demo providers)

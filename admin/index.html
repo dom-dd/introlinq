@@ -377,8 +377,9 @@ tr:hover td{background:rgba(0,0,0,0.01)}
         <div class="section-body">
           <div style="margin-bottom:0.75rem;font-size:0.8125rem;color:var(--ink-muted)">
             Each entry is a page whose scan result is stored - repeat visits serve it from here at zero AI cost.
-            "Match" entries are per-country; "No match" entries apply to every country and stay until you hit
-            Recrawl on that publisher (Publishers tab).
+            "Match" entries are per-country. "No match" entries apply to every country: the first negative scan
+            is marked "pending" and re-checked once after 24h - if that confirms it, it becomes permanent until
+            you hit Recrawl on that publisher (Publishers tab).
           </div>
           <div style="margin-bottom:0.75rem">
             <select id="cache-filter" onchange="renderCache()" style="padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:0.8125rem;background:var(--white)">
@@ -632,8 +633,9 @@ async function loadCache() {
   const res = await fetch('/api/admin?resource=cache');
   const data = await res.json();
   cacheEntries = data.entries || [];
+  const confirmedNoMatch = data.total - data.matched - data.pending;
   document.getElementById('cache-summary').textContent =
-    `${data.total} cached page${data.total !== 1 ? 's' : ''} · ${data.matched} with matches · ${data.total - data.matched} no-match` +
+    `${data.total} cached page${data.total !== 1 ? 's' : ''} · ${data.matched} with matches · ${confirmedNoMatch} confirmed no-match · ${data.pending} pending (first negative scan, re-checks after 24h)` +
     (cacheEntries.length < data.total ? ` · showing latest ${cacheEntries.length}` : '');
 
   // Rebuild publisher filter options, keeping the current selection
@@ -657,7 +659,9 @@ function renderCache() {
     const when = dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ' ' + dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     const result = e.has_match
       ? '<span class="badge badge-active">Match</span>'
-      : '<span class="badge badge-inactive">No match</span>';
+      : (e.confirmed
+          ? '<span class="badge badge-inactive">No match</span>'
+          : '<span class="badge badge-inactive" style="opacity:.6" title="First negative scan - re-checks once after 24h before becoming permanent">No match (pending)</span>');
     const country = e.has_match ? countryName(e.country_code) : 'All countries';
     return `<tr>
       <td class="td-name">${esc(e.publisher || '/app')}</td>

@@ -173,6 +173,28 @@ function normalizePageUrl(raw) {
   }
 }
 
+// Upserts a scan result. `confirmed` follows a small state machine (see the
+// column comment in ensureCacheTable): a positive result is always trusted
+// immediately; a negative result only becomes permanent on its second
+// negative scan, 24h+ after the first.
+async function upsertCacheResult(sql, { pageUrl, countryCode, publisher, matches }) {
+  const hasMatch = matches.length > 0;
+  await sql`
+    INSERT INTO match_cache (page_url, country_code, publisher, result, has_match, confirmed)
+    VALUES (${pageUrl}, ${countryCode}, ${publisher || ''}, ${JSON.stringify({ matches })}, ${hasMatch}, ${hasMatch})
+    ON CONFLICT (page_url, country_code, publisher) DO UPDATE SET
+      result = EXCLUDED.result,
+      has_match = EXCLUDED.has_match,
+      confirmed = CASE
+        WHEN EXCLUDED.has_match = true THEN true
+        WHEN match_cache.has_match = false AND match_cache.confirmed = true THEN true
+        WHEN match_cache.has_match = false AND match_cache.confirmed = false AND match_cache.cached_at <= NOW() - INTERVAL '24 hours' THEN true
+        ELSE false
+      END,
+      cached_at = NOW()
+  `.catch(() => {});
+}
+
 async function ensureCacheTable(sql) {
   if (cacheTableReady) return;
   await sql`CREATE TABLE IF NOT EXISTS match_cache (
@@ -185,6 +207,15 @@ async function ensureCacheTable(sql) {
     cached_at TIMESTAMPTZ DEFAULT NOW()
   )`.catch(() => {});
   await sql`ALTER TABLE match_cache ADD COLUMN IF NOT EXISTS publisher TEXT NOT NULL DEFAULT ''`.catch(() => {});
+  // A "no match" verdict is trusted at temperature 0.7, which can occasionally
+  // land on 0 matches for a page that reliably matched many times before - a
+  // single scan shouldn't permanently hide a page over one AI roll. The FIRST
+  // negative scan is cached but unconfirmed (still served for 24h, so repeat
+  // traffic doesn't cause repeat scans); only a SECOND negative scan after
+  // that 24h window promotes it to permanent. DEFAULT true so existing rows
+  // (written before this column existed) keep their current behavior exactly
+  // as-is rather than all re-triggering re-scans at once.
+  await sql`ALTER TABLE match_cache ADD COLUMN IF NOT EXISTS confirmed BOOLEAN NOT NULL DEFAULT true`.catch(() => {});
   await sql`ALTER TABLE match_cache DROP CONSTRAINT IF EXISTS match_cache_page_url_country_code_key`.catch(() => {});
   await sql`ALTER TABLE match_cache DROP CONSTRAINT IF EXISTS match_cache_page_url_country_code_publisher_key`.catch(() => {});
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS match_cache_unique ON match_cache(page_url, country_code, publisher)`.catch(() => {});
@@ -215,16 +246,20 @@ async function handleCheckCache(req, res) {
     // Positive entries are per-country (expert selection/ordering can differ)
     // and invalidated by an expert re-sync. Negative entries hit for EVERY
     // country - a "no match" verdict doesn't depend on where the reader is -
-    // and are permanent until an admin recrawls the publisher: they can only
-    // be written by a verified-complete scan, so they're trustworthy, and
-    // permanent no-match caching is what keeps AI cost flat on news-heavy
-    // sites where most pages legitimately never match.
+    // and are trusted for 24h unconfirmed, or permanently once confirmed by
+    // a second negative scan (see upsertCacheResult). Permanent no-match
+    // caching is what keeps AI cost flat on news-heavy sites where most
+    // pages legitimately never match, while the confirmation step stops one
+    // unlucky AI roll from permanently hiding a page.
     const [cached] = await sql`
       SELECT result FROM match_cache
       WHERE page_url = ${page_url}
         AND publisher = ${publisher || ''}
         AND (country_code = ${cacheCountry} OR has_match = false)
-        AND (has_match = false OR cached_at > ${lastSyncedAt})
+        AND (
+          (has_match = true AND cached_at > ${lastSyncedAt})
+          OR (has_match = false AND (confirmed = true OR cached_at > NOW() - INTERVAL '24 hours'))
+        )
         AND cached_at > NOW() - INTERVAL '1 year'
       ORDER BY has_match DESC
       LIMIT 1
@@ -271,11 +306,7 @@ async function handleReport(req, res) {
     // a negative cache entry (their positive results still cache fine).
     const scanWasComplete = complete === true;
     if (matches.length > 0 || scanWasComplete) {
-      await sql`
-        INSERT INTO match_cache (page_url, country_code, publisher, result, has_match)
-        VALUES (${page_url}, ${cacheCountry}, ${publisher || ''}, ${JSON.stringify({ matches })}, ${matches.length > 0})
-        ON CONFLICT (page_url, country_code, publisher) DO UPDATE SET result = EXCLUDED.result, has_match = EXCLUDED.has_match, cached_at = NOW()
-      `.catch(() => {});
+      await upsertCacheResult(sql, { pageUrl: page_url, countryCode: cacheCountry, publisher, matches });
     }
 
     if (!tableReady) {
@@ -404,7 +435,10 @@ export default async function handler(req, res) {
         WHERE page_url = ${page_url}
           AND publisher = ${publisher || ''}
           AND (country_code = ${cacheCountry} OR has_match = false)
-          AND (has_match = false OR cached_at > ${lastSyncedAt})
+          AND (
+            (has_match = true AND cached_at > ${lastSyncedAt})
+            OR (has_match = false AND (confirmed = true OR cached_at > NOW() - INTERVAL '24 hours'))
+          )
           AND cached_at > NOW() - INTERVAL '1 year'
         ORDER BY has_match DESC
         LIMIT 1
@@ -597,11 +631,7 @@ Return only valid JSON, no other text:
     await Promise.allSettled([
       (async () => {
         if (!page_url) return;
-        await sql`
-          INSERT INTO match_cache (page_url, country_code, publisher, result, has_match)
-          VALUES (${page_url}, ${cacheCountry}, ${publisher || ''}, ${JSON.stringify({ matches: enriched })}, ${enriched.length > 0})
-          ON CONFLICT (page_url, country_code, publisher) DO UPDATE SET result = EXCLUDED.result, has_match = EXCLUDED.has_match, cached_at = NOW()
-        `.catch(() => {});
+        await upsertCacheResult(sql, { pageUrl: page_url, countryCode: cacheCountry, publisher, matches: enriched });
       })(),
       (async () => {
         if (!tableReady) {
