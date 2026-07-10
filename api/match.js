@@ -1,10 +1,36 @@
 ﻿import { neon } from '@neondatabase/serverless';
 
-let tableReady = false;
+let logTableReady = false;
 let cacheTableReady = false;
 let expertsCache = null;
 let expertsCacheTime = 0;
 const EXPERTS_TTL = 5 * 60 * 1000;
+
+// One-time-per-instance schema check for match_logs. The ALTER TABLE
+// statements used to run on EVERY report request (they sat outside the
+// ready-flag guard) - four wasted sequential DB round trips per page view.
+async function ensureLogTable(sql) {
+  if (logTableReady) return;
+  await sql`CREATE TABLE IF NOT EXISTS match_logs (id SERIAL PRIMARY KEY, publisher TEXT, article_preview TEXT, phrases TEXT[], expert_names TEXT[], match_count INT, created_at TIMESTAMPTZ DEFAULT NOW())`;
+  await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS page_url TEXT`.catch(() => {});
+  await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS expert_booking_urls TEXT[]`.catch(() => {});
+  await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS no_match_reason TEXT`.catch(() => {});
+  await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS country_code TEXT`.catch(() => {});
+  logTableReady = true;
+}
+
+// A cache hit still counts as an impression (log) and, when it actually
+// showed experts, a Slack ping. Shared by every cache-serving path - this
+// block used to be copy-pasted three times with drifting details.
+function logCachedImpression(sql, { publisher, page_url, page_title, matches, readerCountry }) {
+  const phrases = matches.map(m => m.phrase);
+  const expertNames = matches.map(m => m.expert?.name).filter(Boolean);
+  const expertBookingUrls = matches.map(m => m.expert?.booking_url || null);
+  sql`INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, country_code)
+    VALUES (${publisher || null}, '[cached]', ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${readerCountry || null})
+  `.catch(() => {});
+  postSlackNotification(sql, { publisher, page_url, page_title, matchCount: matches.length, readerCountry, cached: true }).catch(() => {});
+}
 
 const COUNTRY_NAMES = { AF:'Afghanistan',AL:'Albania',DZ:'Algeria',AR:'Argentina',AU:'Australia',AT:'Austria',BE:'Belgium',BR:'Brazil',CA:'Canada',CL:'Chile',CN:'China',CO:'Colombia',HR:'Croatia',CZ:'Czechia',DK:'Denmark',EG:'Egypt',FI:'Finland',FR:'France',DE:'Germany',GH:'Ghana',GR:'Greece',HK:'Hong Kong',HU:'Hungary',IN:'India',ID:'Indonesia',IE:'Ireland',IL:'Israel',IT:'Italy',JP:'Japan',KE:'Kenya',MY:'Malaysia',MX:'Mexico',MA:'Morocco',NL:'Netherlands',NZ:'New Zealand',NG:'Nigeria',NO:'Norway',PK:'Pakistan',PH:'Philippines',PL:'Poland',PT:'Portugal',RO:'Romania',RU:'Russia',SA:'Saudi Arabia',SG:'Singapore',ZA:'South Africa',KR:'South Korea',ES:'Spain',SE:'Sweden',CH:'Switzerland',TW:'Taiwan',TH:'Thailand',TR:'Turkey',UA:'Ukraine',AE:'UAE',GB:'United Kingdom',US:'United States',VN:'Vietnam' };
 
@@ -303,13 +329,7 @@ async function handleCheckCache(req, res) {
     if (!cached) return res.status(200).json({ cacheHit: false });
 
     const cachedMatches = cached.result.matches || [];
-    const phrases = cachedMatches.map(m => m.phrase);
-    const expertNames = cachedMatches.map(m => m.expert?.name).filter(Boolean);
-    const expertBookingUrls = cachedMatches.map(m => m.expert?.booking_url || null);
-    sql`INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, country_code)
-      VALUES (${publisher || null}, '[cached]', ${phrases}, ${expertNames}, ${expertBookingUrls}, ${cachedMatches.length}, ${page_url}, ${readerCountry || null})
-    `.catch(() => {});
-    postSlackNotification(sql, { publisher, page_url, page_title: null, matchCount: cachedMatches.length, readerCountry, cached: true }).catch(() => {});
+    logCachedImpression(sql, { publisher, page_url, page_title: null, matches: cachedMatches, readerCountry });
 
     return res.status(200).json({ cacheHit: true, matches: cachedMatches, config: pubConfig });
   } catch (err) {
@@ -345,14 +365,7 @@ async function handleReport(req, res) {
       await upsertCacheResult(sql, { pageUrl: page_url, countryCode: cacheCountry, publisher, matches });
     }
 
-    if (!tableReady) {
-      await sql`CREATE TABLE IF NOT EXISTS match_logs (id SERIAL PRIMARY KEY, publisher TEXT, article_preview TEXT, phrases TEXT[], expert_names TEXT[], match_count INT, created_at TIMESTAMPTZ DEFAULT NOW())`;
-      tableReady = true;
-    }
-    await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS page_url TEXT`.catch(() => {});
-    await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS expert_booking_urls TEXT[]`.catch(() => {});
-    await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS no_match_reason TEXT`.catch(() => {});
-    await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS country_code TEXT`.catch(() => {});
+    await ensureLogTable(sql);
 
     const phrases = matches.map(m => m.phrase);
     const expertNames = matches.map(m => m.expert?.name).filter(Boolean);
@@ -473,15 +486,7 @@ export default async function handler(req, res) {
       // this cache path - only the quick (or a legacy full scan) logs and
       // notifies, so a cached page-view produces exactly one impression log
       // and one Slack message instead of one per parallel request.
-      if (!chunk) {
-        const phrases = cachedMatches.map(m => m.phrase);
-        const expertNames = cachedMatches.map(m => m.expert?.name).filter(Boolean);
-        const expertBookingUrls = cachedMatches.map(m => m.expert?.booking_url || null);
-        sql`INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, country_code)
-          VALUES (${publisher}, '[cached]', ${phrases}, ${expertNames}, ${expertBookingUrls}, ${cachedMatches.length}, ${page_url}, ${readerCountry || null})
-        `.catch(() => {});
-        postSlackNotification(sql, { publisher, page_url, page_title, matchCount: cachedMatches.length, readerCountry, cached: true }).catch(() => {});
-      }
+      if (!chunk) logCachedImpression(sql, { publisher, page_url, page_title, matches: cachedMatches, readerCountry });
       return res.status(200).json({ matches: cachedMatches, config: pubConfig, cached: true });
     }
 
@@ -724,14 +729,7 @@ Return only valid JSON, no other text:
         await upsertCacheResult(sql, { pageUrl: page_url, countryCode: cacheCountry, publisher, matches: enriched });
       })(),
       (async () => {
-        if (!tableReady) {
-          await sql`CREATE TABLE IF NOT EXISTS match_logs (id SERIAL PRIMARY KEY, publisher TEXT, article_preview TEXT, phrases TEXT[], expert_names TEXT[], match_count INT, created_at TIMESTAMPTZ DEFAULT NOW())`;
-          tableReady = true;
-        }
-        await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS page_url TEXT`.catch(() => {});
-        await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS expert_booking_urls TEXT[]`.catch(() => {});
-        await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS no_match_reason TEXT`.catch(() => {});
-        await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS country_code TEXT`.catch(() => {});
+        await ensureLogTable(sql);
         await sql`
           INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, country_code)
           VALUES (${publisher}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${enriched.length}, ${page_url || null}, ${noMatchReason}, ${readerCountry || null})
