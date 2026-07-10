@@ -585,7 +585,14 @@ Return only valid JSON, no other text:
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: quick ? 512 : (maxMatches <= 4 ? 1024 : maxMatches <= 10 ? 2048 : 3072),
-        temperature: 0.7,
+        // 0.7 was set to fix repetitive "As a first-time founder..." openers,
+        // before REASON_OPENERS/REASON_CLOSERS existed to assign style
+        // deterministically per match. That variety no longer depends on
+        // temperature, so high temperature was only adding noise to the
+        // match/no-match judgment itself - the same article could swing from
+        // 19 matches to 0 between runs. Lowered for a more consistent verdict
+        // while keeping enough variation that phrasing doesn't feel robotic.
+        temperature: 0.3,
         messages: [{ role: 'user', content: prompt }]
       })
     });
