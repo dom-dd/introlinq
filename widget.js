@@ -567,11 +567,13 @@
     rl.innerHTML = [e.position ? '<span>' + e.position.replace(/</g,'&lt;') + '</span>' : '', showCompany && e.company ? '<span style="color:#8888a8">' + e.company.replace(/</g,'&lt;') + '</span>' : ''].filter(Boolean).join('<br>');
     // Credential line: the expert's curated one-line track record ("Raised
     // £200m", "3 exits", "2200 employees") - the strongest trust signal we
-    // have, previously never shown anywhere on the card. Long-form bios get
-    // clipped at a word boundary so the card stays tidy.
+    // have, previously never shown anywhere on the card. For non-English
+    // articles the server sends a translated version (match.credential) so
+    // this line matches the reason's language; the stored bio (English) is
+    // the fallback. Long-form text gets clipped at a word boundary.
     var bo = document.getElementById('il-bio');
     if (bo) {
-      var bioText = (e.bio || '').replace(/\s+/g, ' ').trim();
+      var bioText = (match.credential || e.bio || '').replace(/\s+/g, ' ').trim();
       if (bioText.length > 160) {
         var cut = bioText.slice(0, 160);
         var sp = cut.lastIndexOf(' ');

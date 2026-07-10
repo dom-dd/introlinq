@@ -624,8 +624,21 @@ ${expertsList}`;
       : '';
     const titleLine = page_title ? `Article title: ${String(page_title).slice(0, 150)}\n\n` : '';
 
-    const dynamicPrompt = `IMPORTANT: ${languageInstruction}
+    // The card shows the expert's credential one-liner above the reason. For
+    // non-English articles it would appear in English next to a translated
+    // reason, so the model translates it per match; English articles skip
+    // this entirely and the widget falls back to the stored bio (no extra
+    // output tokens for the common case).
+    const wantsCredential = articleLangCode !== 'en';
+    const credentialInstruction = wantsCredential
+      ? `\nFor each match, also include a "credential" field: the expert's one-line track record (the first sentence of their About) faithfully translated into ${articleLangName}. Keep all numbers, currency amounts, and company names exactly as they are. Translate only - no embellishment, no additions.\n`
+      : '';
+    const credentialSchema = wantsCredential
+      ? `,"credential":"the expert's one-line track record translated into ${articleLangName}"`
+      : '';
 
+    const dynamicPrompt = `IMPORTANT: ${languageInstruction}
+${credentialInstruction}
 ${countryLine}${titleLine}Return up to ${maxMatches} matches.
 
 For each match's "reason", use a DIFFERENT one of these opening approaches — assign them in order to the matches you return (first match uses approach 1, second uses approach 2, etc.), and never reuse an approach or fall back to a generic "As a first-time founder..." opener regardless of what these approaches say:
@@ -638,7 +651,7 @@ Article:
 ${article.slice(0, 10000)}
 
 Return only valid JSON, no other text:
-{"matches":[{"phrase":"exact substring from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person, opening with the specific challenge rather than a generic reader description - e.g. 'Negotiating your first term sheet without giving away too much equity is tricky - Phil has backed 200+ startups and can walk you through it.'"}],"no_match_reason":"Only include this field when matches is empty. One short phrase explaining why - e.g. 'News article', 'Product announcement', 'Company profile / press release', 'No actionable reader challenge identified', 'Pure statistics reporting'"}}`;
+{"matches":[{"phrase":"exact substring from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person, opening with the specific challenge rather than a generic reader description - e.g. 'Negotiating your first term sheet without giving away too much equity is tricky - Phil has backed 200+ startups and can walk you through it.'"${credentialSchema}}],"no_match_reason":"Only include this field when matches is empty. One short phrase explaining why - e.g. 'News article', 'Product announcement', 'Company profile / press release', 'No actionable reader challenge identified', 'Pure statistics reporting'"}}`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -706,7 +719,15 @@ Return only valid JSON, no other text:
       .map(m => {
         const expert = expertMap[m.expert_id];
         const reason = stripEmDash(fixReasonName(m.reason, expert, experts));
-        return { phrase: m.phrase, reason, expert };
+        const out = { phrase: m.phrase, reason, expert };
+        // Translated credential line for non-English articles (see
+        // credentialInstruction). Flows through report -> cache -> widget
+        // alongside the reason; the widget falls back to the stored English
+        // bio when absent (English articles, old cache entries).
+        if (typeof m.credential === 'string' && m.credential.trim()) {
+          out.credential = stripEmDash(m.credential.trim()).slice(0, 220);
+        }
+        return out;
       });
 
     const preview = article.slice(0, 120).replace(/\s+/g, ' ');
