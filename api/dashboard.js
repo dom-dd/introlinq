@@ -122,6 +122,7 @@ export default async function handler(req, res) {
     `.catch(() => {});
 
     // Build partner URL with full attribution params
+    let destUrl;
     try {
       const dest = new URL(decodeURIComponent(expert_url));
       dest.searchParams.set('ref', 'introlinq');
@@ -129,10 +130,28 @@ export default async function handler(req, res) {
       dest.searchParams.set('click_id', click_id);
       if (lang) dest.searchParams.set('lang', lang);
       if (article) dest.searchParams.set('campaign', decodeURIComponent(article).slice(0, 200));
-      return res.redirect(302, dest.toString());
+      destUrl = dest.toString();
     } catch {
-      return res.redirect(302, decodeURIComponent(expert_url));
+      destUrl = decodeURIComponent(expert_url);
     }
+    // Redirect immediately - the reader is actively waiting to reach the
+    // booking page, so nothing below this line should add latency to it.
+    res.redirect(302, destUrl);
+
+    // Slack notification for the click, fired after the redirect response is
+    // already sent. Vercel keeps this invocation alive until the awaited
+    // work below finishes, same background-work pattern used in api/match.js.
+    if (process.env.SLACK_WEBHOOK_URL) {
+      const [publisherRow] = await sql`SELECT name FROM publishers WHERE slug = ${pub} LIMIT 1`.catch(() => [null]);
+      const pubName = publisherRow?.name || pub;
+      const articleTitle = title ? String(title).slice(0, 80) : null;
+      await fetch(process.env.SLACK_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: `👉 *Expert link clicked* - ${expert_name || 'an expert'} · ${pubName}${articleTitle ? ` · _${articleTitle}_` : ''}` }),
+      }).catch(() => {});
+    }
+    return;
   }
 
   // CORS for widget click tracking (cross-origin POST)
