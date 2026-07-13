@@ -6,6 +6,22 @@ let expertsCache = null;
 let expertsCacheTime = 0;
 const EXPERTS_TTL = 5 * 60 * 1000;
 
+// Claude Haiku 4.5 pricing ($/token, from Anthropic's published rates) - only
+// used to print a rough per-scan cost estimate in Slack, not for billing.
+const HAIKU_PRICE_PER_TOKEN = { input: 1.00e-6, output: 5.00e-6, cacheWrite: 1.25e-6, cacheRead: 0.10e-6 };
+// Static USD->GBP rate for the Slack estimate - a live FX call would add
+// latency for a figure that's already an order-of-magnitude estimate.
+const USD_TO_GBP = 0.79;
+
+function usageCostUSD(usage) {
+  if (!usage) return 0;
+  const p = HAIKU_PRICE_PER_TOKEN;
+  return (usage.input_tokens || 0) * p.input
+    + (usage.output_tokens || 0) * p.output
+    + (usage.cache_creation_input_tokens || 0) * p.cacheWrite
+    + (usage.cache_read_input_tokens || 0) * p.cacheRead;
+}
+
 // One-time-per-instance schema check for match_logs. The ALTER TABLE
 // statements used to run on EVERY report request (they sat outside the
 // ready-flag guard) - four wasted sequential DB round trips per page view.
@@ -218,7 +234,7 @@ function truncateAtSentence(text, maxLen) {
 // cache (⚡, free) - so cost and cache health are both visible in one feed.
 // Only called when matches were actually shown; silent on 0-match events
 // to avoid spamming the channel with every no-match news article.
-async function postSlackNotification(sql, { publisher, page_url, page_title, matchCount, readerCountry, cached }) {
+async function postSlackNotification(sql, { publisher, page_url, page_title, matchCount, readerCountry, cached, costUsd }) {
   if (!process.env.SLACK_WEBHOOK_URL || matchCount === 0) return;
   let pubName = publisher || '/app';
   if (publisher) {
@@ -229,7 +245,9 @@ async function postSlackNotification(sql, { publisher, page_url, page_title, mat
   const title = page_title ? page_title.slice(0, 80) : (page_url ? page_url.slice(0, 80) : 'homepage demo');
   const urlLine = (!publisher && page_url) ? `\n${page_url}` : '';
   const icon = cached ? '⚡' : '🔍';
-  const costLabel = cached ? 'from cache, no AI cost' : 'fresh scan';
+  const costLabel = cached
+    ? 'from cache, no AI cost'
+    : (costUsd > 0 ? `fresh scan, ~£${(costUsd * USD_TO_GBP).toFixed(4)}` : 'fresh scan');
   await fetch(process.env.SLACK_WEBHOOK_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -341,7 +359,7 @@ async function handleCheckCache(req, res) {
 // Client has already merged results from the quick pass + all article chunks.
 // Persist the final set (cache + log + Slack) without any further AI calls.
 async function handleReport(req, res) {
-  const { publisher, page_title, matches, complete } = req.body;
+  const { publisher, page_title, matches, complete, cost_usd } = req.body;
   const page_url = normalizePageUrl(req.body.page_url);
   if (!page_url || !Array.isArray(matches)) {
     return res.status(400).json({ error: 'Missing page_url or matches' });
@@ -381,7 +399,7 @@ async function handleReport(req, res) {
       VALUES (${publisher || null}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${noMatchLogReason}, ${readerCountry || null})
     `.catch(() => {});
 
-    await postSlackNotification(sql, { publisher, page_url, page_title, matchCount: matches.length, readerCountry, cached: false });
+    await postSlackNotification(sql, { publisher, page_url, page_title, matchCount: matches.length, readerCountry, cached: false, costUsd: typeof cost_usd === 'number' ? cost_usd : 0 });
 
     return res.status(200).json({ ok: true });
   } catch (err) {
@@ -736,8 +754,10 @@ Return only valid JSON, no other text:
     const expertBookingUrls = enriched.map(m => m.expert.booking_url || null);
     const noMatchReason = enriched.length === 0 ? (parsed.no_match_reason || null) : null;
 
+    const costUsd = usageCostUSD(aiResult.usage);
+
     // Respond immediately — client gets result now; function stays alive to finish background work
-    res.status(200).json({ matches: enriched, config: pubConfig, no_match_reason: noMatchReason || undefined });
+    res.status(200).json({ matches: enriched, config: pubConfig, no_match_reason: noMatchReason || undefined, cost_usd: costUsd });
 
     // Quick and chunk requests skip all of this — the client merges every chunk's
     // results and sends one consolidated report (cache/log/Slack) at the end.
@@ -756,7 +776,7 @@ Return only valid JSON, no other text:
           VALUES (${publisher}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${enriched.length}, ${page_url || null}, ${noMatchReason}, ${readerCountry || null})
         `;
       })(),
-      postSlackNotification(sql, { publisher, page_url, page_title, matchCount: enriched.length, readerCountry, cached: false })
+      postSlackNotification(sql, { publisher, page_url, page_title, matchCount: enriched.length, readerCountry, cached: false, costUsd })
     ]).catch(() => {});
   } catch (err) {
     console.error(err);

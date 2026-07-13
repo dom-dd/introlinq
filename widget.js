@@ -152,11 +152,13 @@
       var gotAnyResponse = false;
       var failedCount = 0;
       var sawCached = false;
+      var totalCostUsd = 0;
 
       function collect(data) {
         if (data) gotAnyResponse = true;
         else failedCount++;
         if (data && data.cached) sawCached = true;
+        if (data && typeof data.cost_usd === 'number') totalCostUsd += data.cost_usd;
         var newMatches = applyMatches(data);
         if (newMatches) reportMatches = reportMatches.concat(newMatches);
       }
@@ -230,7 +232,7 @@
         fetch(API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ report: true, publisher: PUB, page_url: pageUrl, page_title: document.title, matches: reportMatches, complete: failedCount === 0 })
+          body: JSON.stringify({ report: true, publisher: PUB, page_url: pageUrl, page_title: document.title, matches: reportMatches, complete: failedCount === 0, cost_usd: totalCostUsd })
         }).catch(function () {});
       });
     }
