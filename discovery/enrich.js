@@ -11,7 +11,12 @@
 // Resumable: only processes rows where contact_status IS NULL, so re-running
 // picks up where the last run left off. --dry-run never writes to the
 // database, so it's always safe to preview before spending credits.
+//
+// Also imported by classify.js, which calls enrichPendingPublishers() itself
+// right after classifying a batch - so a lead getting marked "publisher"
+// automatically cascades into enrichment without a second manual step.
 
+import { pathToFileURL } from 'node:url';
 import { sql } from './lib/db.js';
 import { searchPerson, revealEmail, isRealEmail, isRedactedName, titlesForRow } from './lib/apollo.js';
 
@@ -28,7 +33,7 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function ensureColumns() {
+export async function ensureColumns() {
   await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_first_name TEXT`;
   await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_last_name TEXT`;
   await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_email TEXT`;
@@ -36,9 +41,10 @@ async function ensureColumns() {
   await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_status TEXT`;
 }
 
-async function main() {
-  const { limit, dryRun } = parseArgs(process.argv.slice(2));
-
+// Core enrichment pass, shared by the CLI below and by classify.js's
+// auto-cascade. Always scoped to lead_type='publisher' - vendor/competitor/
+// unclear leads are never worth an Apollo credit for this campaign.
+export async function enrichPendingPublishers({ limit = 20, dryRun = false } = {}) {
   await ensureColumns();
 
   const rows = await sql`
@@ -49,11 +55,10 @@ async function main() {
   `;
 
   if (rows.length === 0) {
-    console.log('Nothing to enrich - all classified publisher/vendor leads already have a contact_status.');
-    return;
+    return { found: 0, notFound: 0, noEmail: 0, processed: 0 };
   }
 
-  console.log(`${dryRun ? 'Previewing (dry-run, no credits spent)' : 'Enriching'} ${rows.length} lead(s)...`);
+  console.log(`${dryRun ? 'Previewing (dry-run, no credits spent)' : 'Enriching'} ${rows.length} publisher lead(s)...`);
 
   let found = 0;
   let notFound = 0;
@@ -129,6 +134,18 @@ async function main() {
     await sleep(300);
   }
 
+  return { found, notFound, noEmail, processed: rows.length };
+}
+
+async function main() {
+  const { limit, dryRun } = parseArgs(process.argv.slice(2));
+  const { found, notFound, noEmail, processed } = await enrichPendingPublishers({ limit, dryRun });
+
+  if (processed === 0) {
+    console.log('Nothing to enrich - all classified publisher leads already have a contact_status.');
+    return;
+  }
+
   if (dryRun) {
     console.log(`\nDry-run done. Re-run without --dry-run to actually reveal emails (uses credits).`);
   } else {
@@ -141,7 +158,11 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-main().catch((err) => {
-  console.error('Fatal error:', err);
-  process.exit(1);
-});
+// Only auto-run when executed directly (`node discovery/enrich.js`), not when
+// imported by classify.js for the auto-cascade.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((err) => {
+    console.error('Fatal error:', err);
+    process.exit(1);
+  });
+}

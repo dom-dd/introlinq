@@ -9,8 +9,14 @@
 // Usage: node discovery/classify.js
 
 import { sql } from './lib/db.js';
+import { enrichPendingPublishers } from './enrich.js';
 
 const BATCH_SIZE = 15;
+// Apollo credits are real money per lead. This caps the auto-cascade below so
+// a large classify run (or a large pre-existing backlog) can't spend an
+// unbounded number of credits in one go - re-run classify.js again to pick up
+// any publisher leads left over past this cap.
+const ENRICH_LIMIT = 500;
 const VALID_LEAD_TYPES = new Set(['publisher', 'vendor', 'competitor', 'unclear']);
 const VALID_TEAM_SIZES = new Set(['solo', 'small-team', 'large-team', 'unclear']);
 
@@ -137,6 +143,14 @@ async function main() {
   }
 
   console.log(`\nDone. ${done}/${rows.length} candidates classified.`);
+
+  console.log('\nCascading into Apollo enrichment for publisher leads...');
+  const { found, notFound, noEmail, processed } = await enrichPendingPublishers({ limit: ENRICH_LIMIT });
+  if (processed === 0) {
+    console.log('Nothing pending enrichment.');
+  } else {
+    console.log(`Enrichment done. ${found} found, ${noEmail} matched but no email, ${notFound} no person found.`);
+  }
 }
 
 main().catch((err) => {

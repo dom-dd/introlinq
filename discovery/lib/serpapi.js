@@ -70,7 +70,11 @@ export async function serpSearch(query, { num = 10 } = {}) {
   url.searchParams.set('num', String(num));
   url.searchParams.set('api_key', apiKey);
 
-  const res = await fetch(url.toString());
+  // No timeout here previously meant one slow SerpAPI response could hang past
+  // the caller's own time-budget check (which only runs between iterations,
+  // not during a request) and push the whole admin.js function past Vercel's
+  // maxDuration - killing it with a 504 instead of failing this one query.
+  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(10000) });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     throw new Error(`SerpAPI error ${res.status}: ${body.slice(0, 300)}`);

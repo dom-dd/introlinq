@@ -34,7 +34,11 @@ export default async function handler(req, res) {
     const sql = neon(process.env.DATABASE_URL);
     const started = Date.now();
     const DAILY_TARGET = 50;
-    const TIME_BUDGET_MS = 45000;
+    // api/admin.js is capped at maxDuration:60 (vercel.json). Each SerpAPI call
+    // now times out at 10s (see serpapi.js), so budget stays low enough that
+    // one more in-flight query after the check trips still finishes with
+    // margin to spare before Vercel kills the function.
+    const TIME_BUDGET_MS = 35000;
 
     await sql`CREATE TABLE IF NOT EXISTS candidate_publishers (
       id SERIAL PRIMARY KEY,
@@ -67,6 +71,10 @@ export default async function handler(req, res) {
     const [{ count: seededCount }] = await sql`SELECT COUNT(*)::int AS count FROM discovery_queries`;
     if (seededCount < queries.length) {
       for (const q of queries) {
+        // Seeding is otherwise unbounded - a large jump in queries.length (e.g.
+        // TOPICS growing) shouldn't be able to eat the whole time budget itself
+        // and leave nothing for the actual discovery loop below.
+        if (Date.now() - started > TIME_BUDGET_MS) break;
         await sql`INSERT INTO discovery_queries (query) VALUES (${q}) ON CONFLICT (query) DO NOTHING`;
       }
     }
