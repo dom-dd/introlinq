@@ -29,8 +29,22 @@ function deckPasswordForm(showError) {
   body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#12141F;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
   form{background:#1C1E2B;border-radius:14px;padding:2.2rem 2.4rem;width:min(320px,88vw);box-shadow:0 16px 48px rgba(0,0,0,.4);box-sizing:border-box}
   h1{color:#F2EEE2;font-size:1.05rem;font-weight:600;margin:0 0 1.4rem}
-  input{width:100%;box-sizing:border-box;padding:.75rem .9rem;border-radius:8px;border:1px solid #2B2D3C;background:#15161F;color:#ECE9DE;font-size:.95rem;margin-bottom:.9rem}
+  input{width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none;padding:.75rem .9rem;border-radius:8px;border:1px solid #2B2D3C;background:#15161F;color:#ECE9DE;font-size:.95rem;margin-bottom:.9rem}
+  input::placeholder{color:#7B7F94}
   input:focus{outline:2px solid #F0B93A}
+  /* Browser autofill (very common on a password field) silently overrides
+     background/color with its own white/yellow styling, ignoring the rules
+     above - this is the standard fix: paint over it with an inset shadow
+     and force the text color via the -webkit-only text-fill property. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #ECE9DE;
+    -webkit-box-shadow: 0 0 0px 1000px #15161F inset;
+    box-shadow: 0 0 0px 1000px #15161F inset;
+    caret-color: #ECE9DE;
+    transition: background-color 5000s ease-in-out 0s;
+  }
   button{width:100%;padding:.75rem;border-radius:8px;border:none;background:#F0B93A;color:#15161F;font-weight:600;font-size:.9rem;cursor:pointer}
   .err{color:#F0B93A;font-size:.82rem;margin:-.6rem 0 .9rem}
 </style>
