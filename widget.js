@@ -141,6 +141,21 @@
       return shown;
     }
 
+    // FNV-1a hash of the article text, sent with every scan/report request so
+    // the server can detect an article that was EDITED at the same URL (the
+    // cached result no longer describes this text and must be rescanned).
+    // Whitespace is collapsed first so formatting churn doesn't read as a
+    // content change.
+    function hashText(s) {
+      var str = s.replace(/\s+/g, ' ');
+      var h = 0x811c9dc5;
+      for (var i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 0x01000193) >>> 0;
+      }
+      return h.toString(16);
+    }
+
     // No cache pre-flight round trip: the scan requests below carry page_url
     // and the server short-circuits each one from the match cache directly
     // (flagged cached:true in the response). Cached pages cost one round
@@ -209,15 +224,19 @@
 
       var pending = [];
       var pageUrl = window.location.href;
+      // One hash of the FULL text for the whole page-view: quick, every chunk
+      // and the report must all carry the SAME value or the server would see
+      // a mismatch against the cached row and rescan on every visit.
+      var contentHash = hashText(text);
 
       // Quick: article intro, capped — shows the first experts fast. page_url
       // lets the server serve the whole thing from cache when available.
-      pending.push(postScan({ article: text.slice(0, QUICK_LEN), publisher: PUB, page_url: pageUrl, page_title: document.title, quick: true, lang: _lang }));
+      pending.push(postScan({ article: text.slice(0, QUICK_LEN), publisher: PUB, page_url: pageUrl, page_title: document.title, quick: true, lang: _lang, content_hash: contentHash }));
 
       // Each chunk covers the rest of the article; all fire in parallel, each adding
       // experts to the page as soon as it resolves
       chunkTexts.forEach(function (chunkText) {
-        pending.push(postScan({ article: chunkText, publisher: PUB, page_url: pageUrl, page_title: document.title, chunk: true, lang: _lang }));
+        pending.push(postScan({ article: chunkText, publisher: PUB, page_url: pageUrl, page_title: document.title, chunk: true, lang: _lang, content_hash: contentHash }));
       });
 
       // Once every chunk has resolved, report the merged, deduplicated result once —
@@ -232,7 +251,7 @@
         fetch(API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ report: true, publisher: PUB, page_url: pageUrl, page_title: document.title, matches: reportMatches, complete: failedCount === 0, cost_usd: totalCostUsd })
+          body: JSON.stringify({ report: true, publisher: PUB, page_url: pageUrl, page_title: document.title, matches: reportMatches, complete: failedCount === 0, cost_usd: totalCostUsd, content_hash: contentHash })
         }).catch(function () {});
       });
     }

@@ -6,6 +6,110 @@ let expertsCache = null;
 let expertsCacheTime = 0;
 const EXPERTS_TTL = 5 * 60 * 1000;
 
+// Loads the full active-experts list (module-cached for EXPERTS_TTL). Used by
+// BOTH the fresh-scan path (to build the AI prompt) and the cache-hit path
+// (to hydrate slim cached matches with each expert's CURRENT details - see
+// hydrateMatches). Returns null on a DB failure with no usable cached copy,
+// so callers can distinguish "no experts" from "couldn't fetch experts".
+async function loadExperts(sql) {
+  const now = Date.now();
+  if (!expertsCache || now - expertsCacheTime > EXPERTS_TTL) {
+    // Stable order, NOT random: the experts block is the bulk of every AI
+    // prompt, and Anthropic prompt caching only hits when the prefix is
+    // byte-identical across requests. Random per-instance ordering meant no
+    // two serverless instances ever shared a cache entry (and the same page
+    // could match differently depending on which instance served it).
+    // Fairness is handled by a deterministic daily rotation in the handler.
+    const rows = await sql`
+      SELECT e.id, e.name, e.bio, e.description_long, e.photo_url, e.position, e.company,
+             e.topics, e.services, e.languages, e.price_from, e.price_currency,
+             e.booking_url, e.location_country,
+             p.name AS provider_name, p.slug AS provider_slug, p.logo_url AS provider_logo_url, p.website_url AS provider_website_url,
+             COALESCE(p.is_demo, false) AS is_demo_provider
+      FROM experts e
+      LEFT JOIN providers p ON p.id = e.provider_id
+      WHERE e.active = true
+      ORDER BY e.id
+    `.catch(() => null);
+    // Only remember a *successful* fetch's timestamp - if the query failed,
+    // leave expertsCacheTime alone so the very next request retries the DB
+    // instead of being stuck treating this transient failure as fresh for TTL.
+    if (rows) {
+      expertsCache = rows;
+      expertsCacheTime = now;
+    }
+  }
+  return expertsCache;
+}
+
+// Cache writes store only what can't be recomputed later: which experts
+// matched (ids) and the page-specific reason/credential sentences. Everything
+// else about the expert (name, bio, booking_url, photo...) is hydrated LIVE
+// at serve time, so profile edits, changed booking links and unpublished
+// experts never require re-scanning a page. Each entry keeps the primary
+// match plus its interchangeable `alts` candidates (serve-time rotation
+// shows one per visit). Accepts both fresh-scan matches ({...m, expert:
+// {...}}) and already-slim entries (re-reporting a cached result), and
+// drops anything without a resolvable expert id.
+function slimMatches(matches) {
+  return (matches || [])
+    .map(m => {
+      const expertId = m.expert_id ?? m.expert?.id;
+      if (!m.phrase || expertId == null) return null;
+      const out = { phrase: m.phrase, reason: m.reason || '', expert_id: expertId };
+      if (typeof m.credential === 'string' && m.credential.trim()) out.credential = m.credential;
+      const alts = (Array.isArray(m.alts) ? m.alts : [])
+        .filter(a => a && a.expert_id != null && a.expert_id !== expertId && typeof a.reason === 'string')
+        .slice(0, 2)
+        .map(a => {
+          const altOut = { expert_id: a.expert_id, reason: a.reason };
+          if (typeof a.credential === 'string' && a.credential.trim()) altOut.credential = a.credential;
+          return altOut;
+        });
+      if (alts.length > 0) out.alts = alts;
+      return out;
+    })
+    .filter(Boolean);
+}
+
+// Rebuilds full matches from a cached entry using the CURRENT experts list.
+// Each entry's candidates (primary + alts) are filtered down to experts who
+// are still published AND visible to this publisher (partner enabled) AND
+// not already picked for another phrase on this page - then ONE surviving
+// candidate is chosen at random per phrase, so repeat visits rotate through
+// equally-fitting experts instead of always showing the same one. Removal
+// is pure subtraction and never needs an AI call; a phrase only disappears
+// when every one of its candidates is gone. Handles legacy cache rows that
+// still contain full expert snapshots (hydrates by their id; never serves
+// the stale snapshot itself).
+function hydrateMatches(cachedMatches, experts, enabledPartners) {
+  const byId = new Map(experts.map(e => [e.id, e]));
+  const seen = new Set();
+  const out = [];
+  for (const m of cachedMatches || []) {
+    const primaryId = m.expert_id ?? m.expert?.id;
+    if (primaryId == null) continue;
+    const candidates = [
+      { expert_id: primaryId, reason: m.reason, credential: m.credential },
+      ...(Array.isArray(m.alts) ? m.alts : [])
+    ].filter(c => {
+      if (c.expert_id == null || seen.has(c.expert_id)) return false;
+      const expert = byId.get(c.expert_id);
+      if (!expert) return false; // unpublished or deactivated since the scan
+      return enabledPartners
+        ? enabledPartners.includes(expert.provider_slug || 'openintro')
+        : !expert.is_demo_provider; // null = homepage demo: hide demo-partner experts
+    });
+    if (candidates.length === 0) continue;
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    seen.add(pick.expert_id);
+    const hydrated = { phrase: m.phrase, reason: pick.reason, expert: byId.get(pick.expert_id) };
+    if (typeof pick.credential === 'string' && pick.credential.trim()) hydrated.credential = pick.credential;
+    out.push(hydrated);
+  }
+  return out;
+}
+
 // Claude Haiku 4.5 pricing ($/token, from Anthropic's published rates) - only
 // used to print a rough per-scan cost estimate in Slack, not for billing.
 const HAIKU_PRICE_PER_TOKEN = { input: 1.00e-6, output: 5.00e-6, cacheWrite: 1.25e-6, cacheRead: 0.10e-6 };
@@ -258,15 +362,24 @@ async function postSlackNotification(sql, { publisher, page_url, page_title, mat
 // Upserts a scan result. `confirmed` follows a small state machine (see the
 // column comment in ensureCacheTable): a positive result is always trusted
 // immediately; a negative result only becomes permanent on its second
-// negative scan, 24h+ after the first.
-async function upsertCacheResult(sql, { pageUrl, countryCode, publisher, matches }) {
+// negative scan, 24h+ after the first. Matches are slimmed to
+// {phrase, reason, credential?, expert_id} - expert details are hydrated
+// live at serve time (see hydrateMatches), never stored.
+async function upsertCacheResult(sql, { pageUrl, countryCode, publisher, matches, contentHash }) {
+  const slim = slimMatches(matches);
   const hasMatch = matches.length > 0;
+  // A positive result whose entries couldn't be slimmed (no expert ids -
+  // shouldn't happen) is unusable: stored as-is it would hydrate to zero on
+  // every read and trigger a re-scan loop, and stored as a negative it would
+  // be a false "no experts fit this page" verdict. Skip the write entirely.
+  if (hasMatch && slim.length === 0) return;
   await sql`
-    INSERT INTO match_cache (page_url, country_code, publisher, result, has_match, confirmed)
-    VALUES (${pageUrl}, ${countryCode}, ${publisher || ''}, ${JSON.stringify({ matches })}, ${hasMatch}, ${hasMatch})
+    INSERT INTO match_cache (page_url, country_code, publisher, result, has_match, confirmed, content_hash)
+    VALUES (${pageUrl}, ${countryCode}, ${publisher || ''}, ${JSON.stringify({ matches: slim })}, ${hasMatch}, ${hasMatch}, ${contentHash || null})
     ON CONFLICT (page_url, country_code, publisher) DO UPDATE SET
       result = EXCLUDED.result,
       has_match = EXCLUDED.has_match,
+      content_hash = EXCLUDED.content_hash,
       confirmed = CASE
         WHEN EXCLUDED.has_match = true THEN true
         WHEN match_cache.has_match = false AND match_cache.confirmed = true THEN true
@@ -298,6 +411,11 @@ async function ensureCacheTable(sql) {
   // (written before this column existed) keep their current behavior exactly
   // as-is rather than all re-triggering re-scans at once.
   await sql`ALTER TABLE match_cache ADD COLUMN IF NOT EXISTS confirmed BOOLEAN NOT NULL DEFAULT true`.catch(() => {});
+  // Hash of the article text the cached result was computed FROM (sent by the
+  // widget). Lets an edited article at the same URL invalidate itself: a
+  // mismatch is treated as a cache miss and rescanned. NULL (old rows, old
+  // widget copies that don't send a hash) means "no check possible" - serve.
+  await sql`ALTER TABLE match_cache ADD COLUMN IF NOT EXISTS content_hash TEXT`.catch(() => {});
   await sql`ALTER TABLE match_cache DROP CONSTRAINT IF EXISTS match_cache_page_url_country_code_key`.catch(() => {});
   await sql`ALTER TABLE match_cache DROP CONSTRAINT IF EXISTS match_cache_page_url_country_code_publisher_key`.catch(() => {});
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS match_cache_unique ON match_cache(page_url, country_code, publisher)`.catch(() => {});
@@ -312,10 +430,12 @@ async function handleCheckCache(req, res) {
   try {
     const sql = neon(process.env.DATABASE_URL);
     let pubConfig = { color: '#e6a820', accent: '#e6a820', size: 'medium' };
+    let enabledPartners = null; // null = homepage demo
     if (publisher) {
-      const [pub] = await sql`SELECT widget_color, accent_color, widget_size FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null]);
+      const [pub] = await sql`SELECT widget_color, accent_color, widget_size, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null]);
       if (!pub) return res.status(200).json({ cacheHit: false });
       pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium' };
+      enabledPartners = pub.enabled_partners || ['openintro'];
     }
 
     await ensureCacheTable(sql);
@@ -324,19 +444,19 @@ async function handleCheckCache(req, res) {
     const cacheCountry = readerCountry || 'XX';
 
     // Positive entries are per-country (expert selection/ordering can differ)
-    // and invalidated by an expert re-sync on ANY provider - with multiple
-    // partners supplying experts, a second partner's sync must refresh
-    // cached matches too, not just openintro's. Negative entries hit for
-    // EVERY country - a "no match" verdict doesn't depend on where the
-    // reader is - and are trusted for 24h unconfirmed, or permanently once
-    // confirmed by a second negative scan (see upsertCacheResult).
+    // and served with live-hydrated expert details - an expert re-sync does
+    // NOT invalidate them (see the cache-rules comment in the main handler).
+    // Negative entries hit for EVERY country - a "no match" verdict doesn't
+    // depend on where the reader is - and are trusted for 24h unconfirmed,
+    // or permanently once confirmed by a second negative scan (see
+    // upsertCacheResult).
     const [cached] = await sql`
-      SELECT result FROM match_cache
+      SELECT result, has_match FROM match_cache
       WHERE page_url = ${page_url}
         AND publisher = ${publisher || ''}
         AND (country_code = ${cacheCountry} OR has_match = false)
         AND (
-          (has_match = true AND cached_at > (SELECT COALESCE(MAX(last_synced_at), 'epoch'::timestamptz) FROM providers))
+          has_match = true
           OR (has_match = false AND (confirmed = true OR cached_at > NOW() - INTERVAL '24 hours'))
         )
         AND cached_at > NOW() - INTERVAL '1 year'
@@ -346,10 +466,17 @@ async function handleCheckCache(req, res) {
 
     if (!cached) return res.status(200).json({ cacheHit: false });
 
-    const cachedMatches = cached.result.matches || [];
-    logCachedImpression(sql, { publisher, page_url, page_title: null, matches: cachedMatches, readerCountry });
+    const allExperts = await loadExperts(sql);
+    if (!allExperts) return res.status(200).json({ cacheHit: false });
 
-    return res.status(200).json({ cacheHit: true, matches: cachedMatches, config: pubConfig });
+    const hydrated = hydrateMatches(cached.result.matches, allExperts, enabledPartners);
+    // Positive entry whose experts have all vanished: report a miss so the
+    // caller runs a fresh scan (mirrors the main handler's emptiedPositive).
+    if (cached.has_match && hydrated.length === 0) return res.status(200).json({ cacheHit: false });
+
+    logCachedImpression(sql, { publisher, page_url, page_title: null, matches: hydrated, readerCountry });
+
+    return res.status(200).json({ cacheHit: true, matches: hydrated, config: pubConfig });
   } catch (err) {
     console.error(err);
     return res.status(200).json({ cacheHit: false });
@@ -361,6 +488,7 @@ async function handleCheckCache(req, res) {
 async function handleReport(req, res) {
   const { publisher, page_title, matches, complete, cost_usd } = req.body;
   const page_url = normalizePageUrl(req.body.page_url);
+  const contentHash = typeof req.body.content_hash === 'string' ? req.body.content_hash.slice(0, 64) : null;
   if (!page_url || !Array.isArray(matches)) {
     return res.status(400).json({ error: 'Missing page_url or matches' });
   }
@@ -380,7 +508,7 @@ async function handleReport(req, res) {
     // a negative cache entry (their positive results still cache fine).
     const scanWasComplete = complete === true;
     if (matches.length > 0 || scanWasComplete) {
-      await upsertCacheResult(sql, { pageUrl: page_url, countryCode: cacheCountry, publisher, matches });
+      await upsertCacheResult(sql, { pageUrl: page_url, countryCode: cacheCountry, publisher, matches, contentHash });
     }
 
     await ensureLogTable(sql);
@@ -427,6 +555,11 @@ export default async function handler(req, res) {
 
   const { article, page_title, quick, chunk, lang } = req.body;
   const page_url = normalizePageUrl(req.body.page_url);
+  // Hash of the FULL article text, computed once by the widget and sent with
+  // every request of the page-view (quick, chunks and the final report all
+  // carry the same value). Compared against the hash stored with the cached
+  // result - see the mismatch check below.
+  const contentHash = typeof req.body.content_hash === 'string' ? req.body.content_hash.slice(0, 64) : null;
   if (!article || article.trim().length < 50) {
     return res.status(400).json({ error: 'Article text is too short' });
   }
@@ -440,30 +573,34 @@ export default async function handler(req, res) {
 
     if (page_url) await ensureCacheTable(sql);
 
-    // Publisher config and cache lookup have no data dependency - run them in
-    // parallel to cut a serial DB round trip from every scan request. The
-    // cache check now runs for quick/chunk requests too (the widget sends
-    // page_url on those since the checkCache pre-flight was removed): on a
-    // cached page every parallel scan request short-circuits to the stored
-    // result for the cost of one DB read, no AI call.
+    // Publisher config, cache lookup and the experts list have no data
+    // dependency - run all three in parallel. The experts list is needed on
+    // BOTH paths now (fresh scans build the prompt from it; cache hits
+    // hydrate their slim stored matches from it) and is module-cached for 5
+    // minutes, so most requests resolve it without touching the DB.
     //
-    // Cache rules: positives are per-country and invalidated by an expert
-    // re-sync on ANY provider (MAX(last_synced_at) - a second partner's sync
-    // must refresh matches too, not just openintro's). Negatives are
+    // Cache rules: positives are per-country and live until the publisher's
+    // settings change or an admin recrawl - an expert re-sync does NOT
+    // invalidate them anymore. Profile edits flow into cached pages through
+    // live hydration, and unpublished/blocked experts are filtered out at
+    // serve time (see hydrateMatches), so there's nothing about a sync that
+    // a cached page needs a re-scan for. New-supply discovery (a new partner
+    // whose experts might match previously scanned pages) is a deliberate,
+    // manual recrawl - not an automatic sitewide invalidation. Negatives are
     // country-agnostic; unconfirmed ones are trusted 24h, confirmed ones are
     // permanent until an admin recrawls the publisher.
-    const [pubRows, cachedRows] = await Promise.all([
+    const [pubRows, cachedRows, allExperts] = await Promise.all([
       publisher
         ? sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null])
         : Promise.resolve([null]),
       page_url
         ? sql`
-            SELECT result FROM match_cache
+            SELECT result, has_match, content_hash FROM match_cache
             WHERE page_url = ${page_url}
               AND publisher = ${publisher || ''}
               AND (country_code = ${cacheCountry} OR has_match = false)
               AND (
-                (has_match = true AND cached_at > (SELECT COALESCE(MAX(last_synced_at), 'epoch'::timestamptz) FROM providers))
+                has_match = true
                 OR (has_match = false AND (confirmed = true OR cached_at > NOW() - INTERVAL '24 hours'))
               )
               AND cached_at > NOW() - INTERVAL '1 year'
@@ -471,6 +608,7 @@ export default async function handler(req, res) {
             LIMIT 1
           `.catch(() => [null])
         : Promise.resolve([null]),
+      loadExperts(sql),
     ]);
 
     const pub = pubRows[0];
@@ -497,15 +635,41 @@ export default async function handler(req, res) {
       enabledPartners = pub.enabled_partners || ['openintro'];
     }
 
+    if (!allExperts) {
+      // A DB hiccup here must look like a failure to the client, not a
+      // successful empty result - otherwise it's indistinguishable from a
+      // genuine "no experts matched" and can poison the match cache with a
+      // false negative (see widget.js's `complete` tracking in handleReport).
+      // Cache hits need this too: slim cache entries hold only expert ids,
+      // so without the live experts list there is nothing to serve.
+      return res.status(503).json({ error: 'Experts data temporarily unavailable' });
+    }
+
     const cached = cachedRows[0];
-    if (cached) {
-      const cachedMatches = cached.result.matches || [];
-      // A page-view fans out into one quick + N chunk requests that ALL hit
-      // this cache path - only the quick (or a legacy full scan) logs and
-      // notifies, so a cached page-view produces exactly one impression log
-      // and one Slack message instead of one per parallel request.
-      if (!chunk) logCachedImpression(sql, { publisher, page_url, page_title, matches: cachedMatches, readerCountry });
-      return res.status(200).json({ matches: cachedMatches, config: pubConfig, cached: true });
+    // The article was EDITED at the same URL since it was scanned: the cached
+    // verdict (positive or negative) describes text that no longer exists,
+    // so treat it as a miss and rescan. Only enforceable when both sides
+    // have a hash - old cache rows and old cached widget.js copies don't.
+    const contentChanged = cached && cached.content_hash && contentHash && cached.content_hash !== contentHash;
+    if (cached && !contentChanged) {
+      // Hydrate slim {expert_id, reason} entries with each expert's CURRENT
+      // profile, dropping unpublished experts and partners this publisher
+      // has disabled. No AI cost - this is a map lookup per match.
+      const hydrated = hydrateMatches(cached.result.matches, allExperts, enabledPartners);
+      // If a positive entry hydrates to ZERO surviving experts, the cached
+      // answer no longer exists at all (everyone it matched has gone) -
+      // treat it as a cache miss and let the fresh scan below find current
+      // experts, then overwrite this entry via the normal report flow.
+      // Partial survival still serves (fewer matches beats a paid re-scan).
+      const emptiedPositive = cached.has_match && hydrated.length === 0;
+      if (!emptiedPositive) {
+        // A page-view fans out into one quick + N chunk requests that ALL hit
+        // this cache path - only the quick (or a legacy full scan) logs and
+        // notifies, so a cached page-view produces exactly one impression log
+        // and one Slack message instead of one per parallel request.
+        if (!chunk) logCachedImpression(sql, { publisher, page_url, page_title, matches: hydrated, readerCountry });
+        return res.status(200).json({ matches: hydrated, config: pubConfig, cached: true });
+      }
     }
 
     // Quick pass scans only the article intro for a fast first paint; cap matches so the
@@ -518,39 +682,8 @@ export default async function handler(req, res) {
     // client dedupes, at roughly half the per-request latency.
     if (chunk) maxMatches = Math.min(maxMatches, 8);
 
-    const now = Date.now();
-    if (!expertsCache || now - expertsCacheTime > EXPERTS_TTL) {
-      // Stable order, NOT random: the experts block is the bulk of every AI
-      // prompt, and Anthropic prompt caching only hits when the prefix is
-      // byte-identical across requests. Random per-instance ordering meant no
-      // two serverless instances ever shared a cache entry (and the same page
-      // could match differently depending on which instance served it).
-      // Fairness is handled by a deterministic daily rotation further down.
-      expertsCache = await sql`
-        SELECT e.id, e.name, e.bio, e.description_long, e.photo_url, e.position, e.company,
-               e.topics, e.services, e.languages, e.price_from, e.price_currency,
-               e.booking_url, e.location_country,
-               p.name AS provider_name, p.slug AS provider_slug, p.logo_url AS provider_logo_url, p.website_url AS provider_website_url,
-               COALESCE(p.is_demo, false) AS is_demo_provider
-        FROM experts e
-        LEFT JOIN providers p ON p.id = e.provider_id
-        WHERE e.active = true
-        ORDER BY e.id
-      `.catch(() => null);
-      // Only remember a *successful* fetch's timestamp - if the query failed,
-      // leave expertsCacheTime alone so the very next request retries the DB
-      // instead of being stuck treating this transient failure as fresh for TTL.
-      if (expertsCache) expertsCacheTime = now;
-    }
-    if (!expertsCache) {
-      // A DB hiccup here must look like a failure to the client, not a
-      // successful empty result - otherwise it's indistinguishable from a
-      // genuine "no experts matched" and can poison the match cache with a
-      // false negative (see widget.js's `complete` tracking in handleReport).
-      return res.status(503).json({ error: 'Experts data temporarily unavailable' });
-    }
     // Filter by group: real publishers see their enabled providers only; homepage demo sees non-demo experts
-    let experts = [...expertsCache].filter(e =>
+    let experts = [...allExperts].filter(e =>
       enabledPartners
         ? enabledPartners.includes(e.provider_slug || 'openintro')
         : !e.is_demo_provider
@@ -634,6 +767,8 @@ IMPORTANT: Keep each "reason" to at most 30 words (one or two short sentences). 
 
 IMPORTANT: The name you write inside each "reason" MUST be the exact same expert whose ID you put in "expert_id" for that match. Double-check you are not naming a different expert from the list by mistake.
 
+ALTERNATES: when OTHER experts from the list are ALSO a genuinely strong fit for the same challenge (passing every rule above, including domain fit), add up to 2 of them to that match's "alternates" array, each with their own complete "reason" written to the same standards and naming that alternate expert. Alternates are interchangeable candidates for the same phrase - the reader is shown exactly one of them - so each reason must stand entirely on its own. Never repeat an expert anywhere in your response: every expert_id across all matches AND all alternates must be unique. Most matches have no genuine alternates - an empty or omitted "alternates" array is the normal case, and a weak alternate is worse than none.
+
 Available experts:
 ${expertsList}`;
 
@@ -669,10 +804,18 @@ Article:
 ${article.slice(0, 10000)}
 
 Return only valid JSON, no other text:
-{"matches":[{"phrase":"exact substring from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person, opening with the specific challenge rather than a generic reader description - e.g. 'Negotiating your first term sheet without giving away too much equity is tricky - Phil has backed 200+ startups and can walk you through it.'"${credentialSchema}}],"no_match_reason":"Only include this field when matches is empty. One short phrase explaining why - e.g. 'News article', 'Product announcement', 'Company profile / press release', 'No actionable reader challenge identified', 'Pure statistics reporting'"}}`;
+{"matches":[{"phrase":"exact substring from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person, opening with the specific challenge rather than a generic reader description - e.g. 'Negotiating your first term sheet without giving away too much equity is tricky - Phil has backed 200+ startups and can walk you through it.'"${credentialSchema},"alternates":[{"expert_id":2,"reason":"same standards, naming THIS expert"${credentialSchema}}]}],"no_match_reason":"Only include this field when matches is empty. One short phrase explaining why - e.g. 'News article', 'Product announcement', 'Company profile / press release', 'No actionable reader challenge identified', 'Pure statistics reporting'"}}`;
 
+    // maxDuration for this function is 60s (vercel.json) - it used to sit on
+    // the 10s Hobby default while chunk generations regularly took 8-19s,
+    // which is where most "partial scan failure" reports came from: Vercel
+    // killed the function mid-generation, the widget's one retry often died
+    // the same way, and the page's result was never cached. The 45s abort
+    // below keeps one hung upstream call from silently eating the whole
+    // budget: it surfaces as a 500 the widget knows how to retry.
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
+      signal: AbortSignal.timeout(45000),
       headers: {
         'x-api-key': process.env.ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
@@ -680,7 +823,10 @@ Return only valid JSON, no other text:
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: quick ? 512 : (maxMatches <= 4 ? 1024 : maxMatches <= 10 ? 2048 : 3072),
+        // Budgets sized for matches PLUS their alternates (each alternate is
+        // another full reason sentence) - undersized budgets truncate the
+        // JSON mid-output and the salvage regex can only recover part of it.
+        max_tokens: quick ? 768 : (maxMatches <= 4 ? 1536 : maxMatches <= 10 ? 3072 : 4096),
         // 0.7 was set to fix repetitive "As a first-time founder..." openers,
         // before REASON_OPENERS/REASON_CLOSERS existed to assign style
         // deterministically per match. That variety no longer depends on
@@ -745,6 +891,24 @@ Return only valid JSON, no other text:
         if (typeof m.credential === 'string' && m.credential.trim()) {
           out.credential = stripEmDash(m.credential.trim()).slice(0, 220);
         }
+        // Interchangeable candidates for the same phrase (see the ALTERNATES
+        // prompt rule). Not displayed on this fresh response - the widget
+        // shows the primary - but they ride along through report -> cache so
+        // serve-time rotation can pick any surviving candidate per visit.
+        // Same validation as primaries: real expert, globally unique, reason
+        // names its own expert.
+        const alts = (Array.isArray(m.alternates) ? m.alternates : [])
+          .filter(a => a && expertMap[a.expert_id] && typeof a.reason === 'string')
+          .filter(a => { if (seenExperts.has(a.expert_id)) return false; seenExperts.add(a.expert_id); return true; })
+          .slice(0, 2)
+          .map(a => {
+            const altOut = { expert_id: a.expert_id, reason: stripEmDash(fixReasonName(a.reason, expertMap[a.expert_id], experts)) };
+            if (typeof a.credential === 'string' && a.credential.trim()) {
+              altOut.credential = stripEmDash(a.credential.trim()).slice(0, 220);
+            }
+            return altOut;
+          });
+        if (alts.length > 0) out.alts = alts;
         return out;
       });
 
@@ -767,7 +931,7 @@ Return only valid JSON, no other text:
     await Promise.allSettled([
       (async () => {
         if (!page_url) return;
-        await upsertCacheResult(sql, { pageUrl: page_url, countryCode: cacheCountry, publisher, matches: enriched });
+        await upsertCacheResult(sql, { pageUrl: page_url, countryCode: cacheCountry, publisher, matches: enriched, contentHash });
       })(),
       (async () => {
         await ensureLogTable(sql);

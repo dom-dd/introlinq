@@ -11,6 +11,7 @@
     }
   ],
   "functions": {
-    "api/admin.js": { "maxDuration": 60 }
+    "api/admin.js": { "maxDuration": 60 },
+    "api/match.js": { "maxDuration": 60 }
   }
 }
