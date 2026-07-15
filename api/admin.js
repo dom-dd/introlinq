@@ -1,6 +1,6 @@
 ﻿import { neon } from '@neondatabase/serverless';
 import { createMagicToken } from './auth.js';
-import { DECK_HTML_B64 } from './deckContent.js';
+import { DECK_HTML_B64 } from './_deckContent.js';
 
 function auth(req) {
   const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress;
@@ -11,12 +11,16 @@ function auth(req) {
 const DECK_PASSWORD = 'OpenIntroDom';
 const DECK_COOKIE = 'il_deck_auth';
 
-// The actual deck markup lives in deckContent.js (a plain module under api/,
-// never statically served - unlike everything outside api/, files here are
-// compiled into functions, not served as raw source) and is only ever
-// returned after this password check, so there is no path that exposes it
-// unauthenticated. noindex on every response (even the password form) keeps
-// a crawler that somehow requests /deck from ever indexing anything here.
+// The actual deck markup lives in _deckContent.js (the underscore prefix
+// tells Vercel's zero-config routing to exclude it from becoming its own
+// Serverless Function - every OTHER api/*.js file counts toward the Hobby
+// plan's 12-function cap regardless of whether it has a route handler,
+// which is what broke the last two deploys). It's never statically served
+// either way - unlike everything outside api/, files here are compiled into
+// functions, not served as raw source - and is only ever returned after
+// this password check, so there is no path that exposes it unauthenticated.
+// noindex on every response (even the password form) keeps a crawler that
+// somehow requests /deck from ever indexing anything here.
 function deckPasswordForm(showError) {
   return `<!DOCTYPE html>
 <html lang="en">
