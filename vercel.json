@@ -1,5 +1,8 @@
 {
   "cleanUrls": true,
+  "rewrites": [
+    { "source": "/deck", "destination": "/api/admin?resource=deck" }
+  ],
   "crons": [
     {
       "path": "/api/sync/openintro?key=il2026",

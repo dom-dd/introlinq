@@ -1,10 +1,49 @@
 ﻿import { neon } from '@neondatabase/serverless';
 import { createMagicToken } from './auth.js';
+import { DECK_HTML_B64 } from './deckContent.js';
 
 function auth(req) {
   const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress;
   const allowed = process.env.OWNER_IP?.split(',').map(s => s.trim());
   return allowed && allowed.includes(ip);
+}
+
+const DECK_PASSWORD = 'OpenIntroDom';
+const DECK_COOKIE = 'il_deck_auth';
+
+// The actual deck markup lives in deckContent.js (a plain module under api/,
+// never statically served - unlike everything outside api/, files here are
+// compiled into functions, not served as raw source) and is only ever
+// returned after this password check, so there is no path that exposes it
+// unauthenticated. noindex on every response (even the password form) keeps
+// a crawler that somehow requests /deck from ever indexing anything here.
+function deckPasswordForm(showError) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Introlinq — Investor Brief</title>
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#12141F;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  form{background:#1C1E2B;border-radius:14px;padding:2.2rem 2.4rem;width:min(320px,88vw);box-shadow:0 16px 48px rgba(0,0,0,.4);box-sizing:border-box}
+  h1{color:#F2EEE2;font-size:1.05rem;font-weight:600;margin:0 0 1.4rem}
+  input{width:100%;box-sizing:border-box;padding:.75rem .9rem;border-radius:8px;border:1px solid #2B2D3C;background:#15161F;color:#ECE9DE;font-size:.95rem;margin-bottom:.9rem}
+  input:focus{outline:2px solid #F0B93A}
+  button{width:100%;padding:.75rem;border-radius:8px;border:none;background:#F0B93A;color:#15161F;font-weight:600;font-size:.9rem;cursor:pointer}
+  .err{color:#F0B93A;font-size:.82rem;margin:-.6rem 0 .9rem}
+</style>
+</head>
+<body>
+<form method="POST" action="/deck">
+  <h1>This page is password protected</h1>
+  ${showError ? '<div class="err">Incorrect password - try again.</div>' : ''}
+  <input type="password" name="password" placeholder="Password" autofocus autocomplete="current-password">
+  <button type="submit">View brief</button>
+</form>
+</body>
+</html>`;
 }
 
 export default async function handler(req, res) {
@@ -13,6 +52,26 @@ export default async function handler(req, res) {
   // IP check
   if (resource === 'auth') {
     return res.status(200).json({ ok: auth(req) });
+  }
+
+  // Password-gated investor deck. /deck is rewritten here (vercel.json) -
+  // there is no static file at that path, so this handler is the only way
+  // to reach the content.
+  if (resource === 'deck') {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+
+    if (req.method === 'POST') {
+      if (req.body?.password === DECK_PASSWORD) {
+        res.setHeader('Set-Cookie', `${DECK_COOKIE}=1; HttpOnly; Secure; SameSite=Lax; Path=/deck; Max-Age=2592000`);
+        return res.redirect(302, '/deck');
+      }
+      return res.status(401).send(deckPasswordForm(true));
+    }
+
+    const authed = (req.headers.cookie || '').split(';').some(c => c.trim() === `${DECK_COOKIE}=1`);
+    if (!authed) return res.status(200).send(deckPasswordForm(false));
+    return res.status(200).send(Buffer.from(DECK_HTML_B64, 'base64').toString('utf8'));
   }
 
   // Daily publisher discovery - authenticated via CRON_SECRET, triggered by
