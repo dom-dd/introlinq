@@ -341,9 +341,18 @@
     if (existing) existing.remove();
     var s = document.createElement('style');
     s.id = 'il-styles';
+    // 'underline': dotted underline only, no background wash - reads as an
+    // editorial annotation rather than a highlighter mark. 'fill' (default)
+    // is the original tinted-background + solid-underline treatment. Purely
+    // a per-publisher A/B lever - set from the dashboard, no other behaviour
+    // differs between the two.
+    var hlCss = cfg.highlightStyle === 'underline'
+      ? '.il-hl{border-bottom:2px dotted ' + color + ';cursor:pointer;padding:0 1px;transition:border-bottom-style .15s}' +
+        '.il-hl:hover{border-bottom-style:solid}'
+      : '.il-hl{background:' + hexToRgba(color, 0.15) + ';border-bottom:2px solid ' + color + ';cursor:pointer;border-radius:2px;padding:0 2px;transition:background .15s}' +
+        '.il-hl:hover{background:' + hexToRgba(color, 0.3) + '}';
     s.textContent =
-      '.il-hl{background:' + hexToRgba(color, 0.15) + ';border-bottom:2px solid ' + color + ';cursor:pointer;border-radius:2px;padding:0 2px;transition:background .15s}' +
-      '.il-hl:hover{background:' + hexToRgba(color, 0.3) + '}' +
+      hlCss +
       '#il-pop{position:fixed;z-index:2147483647;width:' + w + 'px;background:#fff;border-radius:16px;' +
       'box-shadow:0 16px 48px rgba(0,0,0,0.14),0 2px 8px rgba(0,0,0,0.06);' +
       'padding:18px;opacity:0;transform:translateY(6px);' +

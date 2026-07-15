@@ -525,6 +525,14 @@ tr:last-child td{border-bottom:none}
                   <button class="opt-btn" data-val="open" onclick="pick('sensitivity',this)">Open</button>
                 </div>
               </div>
+              <div class="setting-block">
+                <div class="setting-title">Highlight style</div>
+                <div class="setting-desc">How matched phrases look in the article</div>
+                <div class="option-group" id="highlight-group">
+                  <button class="opt-btn" data-val="fill" onclick="pick('highlight',this)">Highlight</button>
+                  <button class="opt-btn" data-val="underline" onclick="pick('highlight',this)">Underline</button>
+                </div>
+              </div>
             </div>
             <div class="settings-col settings-col-colors">
               <div class="setting-block">
@@ -928,6 +936,7 @@ async function loadDashboard() {
   settings.size = p.widget_size || 'medium';
   settings.power = p.match_power || 'moderate';
   settings.sensitivity = p.match_sensitivity || 'balanced';
+  settings.highlight = p.highlight_style || 'fill';
   renderSettings();
   document.getElementById('carousel-title-input').value = p.carousel_title || '';
 
@@ -1009,6 +1018,7 @@ function renderSettings() {
   setActive('size-group', settings.size);
   setActive('power-group', settings.power);
   setActive('sensitivity-group', settings.sensitivity);
+  setActive('highlight-group', settings.highlight);
 }
 
 function setActive(groupId, val) {
@@ -1021,7 +1031,7 @@ function pick(type, el) {
   settings[type] = el.dataset.val;
   el.closest('.option-group').querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
-  saveSetting(type === 'power' ? 'match_power' : type === 'sensitivity' ? 'match_sensitivity' : 'widget_' + type, el.dataset.val, el);
+  saveSetting(type === 'power' ? 'match_power' : type === 'sensitivity' ? 'match_sensitivity' : type === 'highlight' ? 'highlight_style' : 'widget_' + type, el.dataset.val, el);
 }
 
 const DEFAULT_COLOR = '#e6a820';

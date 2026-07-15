@@ -195,8 +195,13 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-    const { match_power, match_sensitivity, widget_color, accent_color, widget_size, enabled_partners, payment_email, active, carousel_title } = req.body;
+    const { match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, enabled_partners, payment_email, active, carousel_title } = req.body;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS carousel_title TEXT`.catch(() => {});
+    // 'fill' = tinted background + solid underline (original/default). 'underline'
+    // = dotted underline only, no background wash - purely a rendering choice
+    // read fresh by the widget on every request, same as widget_color/widget_size,
+    // so it never touches match_cache and needs no invalidation on change.
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS highlight_style TEXT DEFAULT 'fill'`.catch(() => {});
     const [updated] = await sql`
       UPDATE publishers SET
         match_power = COALESCE(${match_power ?? null}, match_power),
@@ -204,14 +209,17 @@ export default async function handler(req, res) {
         widget_color = COALESCE(${widget_color ?? null}, widget_color),
         accent_color = COALESCE(${accent_color ?? null}, accent_color),
         widget_size = COALESCE(${widget_size ?? null}, widget_size),
+        highlight_style = COALESCE(${highlight_style ?? null}, highlight_style),
         enabled_partners = COALESCE(${enabled_partners ? sql.array(enabled_partners) : null}, enabled_partners),
         payment_email = COALESCE(${payment_email ?? null}, payment_email),
         active = COALESCE(${active ?? null}, active),
         carousel_title = COALESCE(${carousel_title ?? null}, carousel_title)
       WHERE slug = ${pub} AND active = true
-      RETURNING match_power, match_sensitivity, widget_color, accent_color, widget_size, enabled_partners, payment_email, active, carousel_title
+      RETURNING match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, enabled_partners, payment_email, active, carousel_title
     `;
-    // Clear match cache if matching settings changed so new settings take effect immediately
+    // Clear match cache if matching settings changed so new settings take effect immediately.
+    // highlight_style is deliberately excluded - it's a pure rendering choice
+    // (like widget_color/widget_size), never baked into a cached match.
     if (match_power != null || match_sensitivity != null || enabled_partners != null) {
       await sql`DELETE FROM match_cache WHERE publisher = ${pub}`.catch(() => {});
     }
@@ -236,6 +244,7 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS revenue_share DECIMAL DEFAULT 0.70`;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS payment_email TEXT`;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS carousel_title TEXT`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS highlight_style TEXT DEFAULT 'fill'`.catch(() => {});
     // Ensure providers have a name column
     await sql`ALTER TABLE providers ADD COLUMN IF NOT EXISTS name TEXT`;
     await sql`UPDATE providers SET name = 'OpenIntro' WHERE slug = 'openintro' AND name IS NULL`;
@@ -246,6 +255,7 @@ export default async function handler(req, res) {
     const [publisher] = await sql`
       SELECT id, name, slug, domain, created_at,
              match_power, match_sensitivity, widget_color, accent_color, widget_size,
+             COALESCE(highlight_style, 'fill') AS highlight_style,
              COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners,
              COALESCE(revenue_share, 0.70) AS revenue_share,
              payment_email, carousel_title

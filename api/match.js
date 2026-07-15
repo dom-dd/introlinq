@@ -429,12 +429,12 @@ async function handleCheckCache(req, res) {
   if (!page_url) return res.status(200).json({ cacheHit: false });
   try {
     const sql = neon(process.env.DATABASE_URL);
-    let pubConfig = { color: '#e6a820', accent: '#e6a820', size: 'medium' };
+    let pubConfig = { color: '#e6a820', accent: '#e6a820', size: 'medium', highlightStyle: 'fill' };
     let enabledPartners = null; // null = homepage demo
     if (publisher) {
-      const [pub] = await sql`SELECT widget_color, accent_color, widget_size, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null]);
+      const [pub] = await sql`SELECT widget_color, accent_color, widget_size, highlight_style, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null]);
       if (!pub) return res.status(200).json({ cacheHit: false });
-      pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium' };
+      pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium', highlightStyle: pub.highlight_style || 'fill' };
       enabledPartners = pub.enabled_partners || ['openintro'];
     }
 
@@ -591,7 +591,7 @@ export default async function handler(req, res) {
     // permanent until an admin recrawls the publisher.
     const [pubRows, cachedRows, allExperts] = await Promise.all([
       publisher
-        ? sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null])
+        ? sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null])
         : Promise.resolve([null]),
       page_url
         ? sql`
@@ -619,7 +619,7 @@ export default async function handler(req, res) {
 
     let maxMatches = 3;
     let sensitivityInstruction = 'Match on broader topic overlap. If the expert\'s field is relevant to the section, include them. Prefer more matches over fewer.';
-    let pubConfig = { color: '#e6a820', accent: '#e6a820', size: 'medium' };
+    let pubConfig = { color: '#e6a820', accent: '#e6a820', size: 'medium', highlightStyle: 'fill' };
     let enabledPartners = null; // null = homepage demo
 
     if (pub) {
@@ -631,7 +631,7 @@ export default async function handler(req, res) {
         open: 'Match on broader topic overlap. If the expert\'s field is relevant to the section, include them. Prefer more matches over fewer.',
       };
       sensitivityInstruction = sensitivityMap[pub.match_sensitivity] ?? sensitivityMap.balanced;
-      pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium' };
+      pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium', highlightStyle: pub.highlight_style || 'fill' };
       enabledPartners = pub.enabled_partners || ['openintro'];
     }
 
