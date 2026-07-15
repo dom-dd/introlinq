@@ -419,7 +419,7 @@ tr:last-child td{border-bottom:none}
       <div class="wtab-nav">
         <button class="wtab-btn active" onclick="switchWidgetTab('text',this)">Text Widget</button>
         <button class="wtab-btn" onclick="switchWidgetTab('carousel',this)">Expert Carousel</button>
-        <button class="wtab-btn" onclick="switchWidgetTab('board',this)">ExpertBoard</button>
+        <button class="wtab-btn" onclick="switchWidgetTab('board',this)">Expert Board</button>
       </div>
 
       <!-- TEXT WIDGET -->
@@ -457,7 +457,7 @@ tr:last-child td{border-bottom:none}
         <!-- Install -->
         <div class="section">
           <div class="section-header">
-            <div class="section-title">Install</div>
+            <div class="section-title">Install Text Widget</div>
             <div class="section-sub">Add to your blog template once — works on every article automatically</div>
           </div>
           <div class="etab-group">
@@ -598,7 +598,7 @@ tr:last-child td{border-bottom:none}
         <div class="section">
           <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
             <div>
-              <div class="section-title">Install</div>
+              <div class="section-title">Install Expert Carousel</div>
               <div class="section-sub">Paste once where you want the carousel to appear</div>
             </div>
             <a id="carousel-preview-link" href="#" target="_blank" rel="noopener" style="font-size:0.8rem;font-weight:600;color:var(--sage);text-decoration:none;white-space:nowrap;flex-shrink:0">Preview live →</a>
@@ -668,7 +668,7 @@ tr:last-child td{border-bottom:none}
       <div class="wtab-panel" id="wtab-board">
         <div class="wpreview">
           <div class="wpreview-desc">
-            <div class="wpreview-desc-label">ExpertBoard</div>
+            <div class="wpreview-desc-label">Expert Board</div>
             <div class="wpreview-desc-text">A full browsable expert directory with search and topic filters.</div>
             <div class="wpreview-desc-sub">Ideal for a dedicated "Meet our experts" page — lets readers find and book the right person.</div>
           </div>
@@ -699,7 +699,7 @@ tr:last-child td{border-bottom:none}
         <div class="section">
           <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
             <div>
-              <div class="section-title">Install</div>
+              <div class="section-title">Install Expert Board</div>
               <div class="section-sub">Best placed on a dedicated page — gives visitors a full browsable expert directory</div>
             </div>
             <a id="board-preview-link" href="#" target="_blank" rel="noopener" style="font-size:0.8rem;font-weight:600;color:var(--sage);text-decoration:none;white-space:nowrap;flex-shrink:0">Preview live →</a>
@@ -1109,7 +1109,7 @@ function copyCarouselGtm() {
 
 function copyBoardGtm() {
   navigator.clipboard.writeText(document.getElementById('board-gtm-display').textContent.trim());
-  toast('ExpertBoard GTM code copied!');
+  toast('Expert Board GTM code copied!');
 }
 
 async function savePaymentEmail() {
@@ -1142,7 +1142,7 @@ function copyCarouselEmbed() {
 
 function copyBoardEmbed() {
   navigator.clipboard.writeText(document.getElementById('board-embed-display').textContent.trim());
-  toast('ExpertBoard code copied!');
+  toast('Expert Board code copied!');
 }
 
 function copySetupCode() {
