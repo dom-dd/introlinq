@@ -42,6 +42,46 @@ async function loadExperts(sql) {
   return expertsCache;
 }
 
+// Targeted fetch for hydrating a cache HIT: a cached page references a
+// handful of experts (6 on average, measured against real data), not the
+// whole active roster - fetching everyone just to hydrate 6 was the actual
+// driver behind a 5GB/month Neon egress warning (full-roster fetch on every
+// single request, hit or miss, after live hydration started needing expert
+// data on cache hits too). No module-level cache here - unlike loadExperts,
+// the id set differs per page, so there's nothing stable to cache across
+// requests, but the payload is small enough that it doesn't need one.
+// Deliberately does NOT filter by enabled_partners/is_demo here - those are
+// still applied by hydrateMatches so both fetch paths behave identically.
+async function loadExpertsByIds(sql, ids) {
+  if (!ids || ids.length === 0) return [];
+  return await sql`
+    SELECT e.id, e.name, e.bio, e.description_long, e.photo_url, e.position, e.company,
+           e.topics, e.services, e.languages, e.price_from, e.price_currency,
+           e.booking_url, e.location_country,
+           p.name AS provider_name, p.slug AS provider_slug, p.logo_url AS provider_logo_url, p.website_url AS provider_website_url,
+           COALESCE(p.is_demo, false) AS is_demo_provider
+    FROM experts e
+    LEFT JOIN providers p ON p.id = e.provider_id
+    WHERE e.active = true AND e.id = ANY(${ids})
+  `.catch(() => null);
+}
+
+// Every expert id a cached entry could possibly need to hydrate - primaries
+// and alternates, in both the current slim shape and legacy full-snapshot
+// rows (m.expert.id). Shared by both callers of loadExpertsByIds so the id
+// collection logic can't drift between them.
+function collectReferencedIds(cachedMatches) {
+  const ids = new Set();
+  for (const m of cachedMatches || []) {
+    const primaryId = m.expert_id ?? m.expert?.id;
+    if (primaryId != null) ids.add(primaryId);
+    for (const a of (Array.isArray(m.alts) ? m.alts : [])) {
+      if (a.expert_id != null) ids.add(a.expert_id);
+    }
+  }
+  return [...ids];
+}
+
 // Cache writes store only what can't be recomputed later: which experts
 // matched (ids) and the page-specific reason/credential sentences. Everything
 // else about the expert (name, bio, booking_url, photo...) is hydrated LIVE
@@ -466,10 +506,10 @@ async function handleCheckCache(req, res) {
 
     if (!cached) return res.status(200).json({ cacheHit: false });
 
-    const allExperts = await loadExperts(sql);
-    if (!allExperts) return res.status(200).json({ cacheHit: false });
+    const referencedExperts = await loadExpertsByIds(sql, collectReferencedIds(cached.result.matches));
+    if (!referencedExperts) return res.status(200).json({ cacheHit: false });
 
-    const hydrated = hydrateMatches(cached.result.matches, allExperts, enabledPartners);
+    const hydrated = hydrateMatches(cached.result.matches, referencedExperts, enabledPartners);
     // Positive entry whose experts have all vanished: report a miss so the
     // caller runs a fresh scan (mirrors the main handler's emptiedPositive).
     if (cached.has_match && hydrated.length === 0) return res.status(200).json({ cacheHit: false });
@@ -573,11 +613,15 @@ export default async function handler(req, res) {
 
     if (page_url) await ensureCacheTable(sql);
 
-    // Publisher config, cache lookup and the experts list have no data
-    // dependency - run all three in parallel. The experts list is needed on
-    // BOTH paths now (fresh scans build the prompt from it; cache hits
-    // hydrate their slim stored matches from it) and is module-cached for 5
-    // minutes, so most requests resolve it without touching the DB.
+    // Publisher config and the cache lookup have no data dependency - run
+    // them in parallel. The experts list is deliberately NOT fetched here
+    // anymore: a cache hit only needs the handful of experts it actually
+    // references (loadExpertsByIds, below), not the whole active roster.
+    // Fetching everyone unconditionally on every request - hit or miss - was
+    // the actual driver behind a 5GB/month Neon egress warning: a typical
+    // cached page references ~6 experts but was paying to fetch all ~127.
+    // The full roster (loadExperts) is only ever fetched further down, and
+    // only when a fresh AI scan is genuinely about to run.
     //
     // Cache rules: positives are per-country and live until the publisher's
     // settings change or an admin recrawl - an expert re-sync does NOT
@@ -589,7 +633,7 @@ export default async function handler(req, res) {
     // manual recrawl - not an automatic sitewide invalidation. Negatives are
     // country-agnostic; unconfirmed ones are trusted 24h, confirmed ones are
     // permanent until an admin recrawls the publisher.
-    const [pubRows, cachedRows, allExperts] = await Promise.all([
+    const [pubRows, cachedRows] = await Promise.all([
       publisher
         ? sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null])
         : Promise.resolve([null]),
@@ -608,7 +652,6 @@ export default async function handler(req, res) {
             LIMIT 1
           `.catch(() => [null])
         : Promise.resolve([null]),
-      loadExperts(sql),
     ]);
 
     const pub = pubRows[0];
@@ -635,16 +678,6 @@ export default async function handler(req, res) {
       enabledPartners = pub.enabled_partners || ['openintro'];
     }
 
-    if (!allExperts) {
-      // A DB hiccup here must look like a failure to the client, not a
-      // successful empty result - otherwise it's indistinguishable from a
-      // genuine "no experts matched" and can poison the match cache with a
-      // false negative (see widget.js's `complete` tracking in handleReport).
-      // Cache hits need this too: slim cache entries hold only expert ids,
-      // so without the live experts list there is nothing to serve.
-      return res.status(503).json({ error: 'Experts data temporarily unavailable' });
-    }
-
     const cached = cachedRows[0];
     // The article was EDITED at the same URL since it was scanned: the cached
     // verdict (positive or negative) describes text that no longer exists,
@@ -652,24 +685,45 @@ export default async function handler(req, res) {
     // have a hash - old cache rows and old cached widget.js copies don't.
     const contentChanged = cached && cached.content_hash && contentHash && cached.content_hash !== contentHash;
     if (cached && !contentChanged) {
-      // Hydrate slim {expert_id, reason} entries with each expert's CURRENT
-      // profile, dropping unpublished experts and partners this publisher
-      // has disabled. No AI cost - this is a map lookup per match.
-      const hydrated = hydrateMatches(cached.result.matches, allExperts, enabledPartners);
-      // If a positive entry hydrates to ZERO surviving experts, the cached
-      // answer no longer exists at all (everyone it matched has gone) -
-      // treat it as a cache miss and let the fresh scan below find current
-      // experts, then overwrite this entry via the normal report flow.
-      // Partial survival still serves (fewer matches beats a paid re-scan).
-      const emptiedPositive = cached.has_match && hydrated.length === 0;
-      if (!emptiedPositive) {
-        // A page-view fans out into one quick + N chunk requests that ALL hit
-        // this cache path - only the quick (or a legacy full scan) logs and
-        // notifies, so a cached page-view produces exactly one impression log
-        // and one Slack message instead of one per parallel request.
-        if (!chunk) logCachedImpression(sql, { publisher, page_url, page_title, matches: hydrated, readerCountry });
-        return res.status(200).json({ matches: hydrated, config: pubConfig, cached: true });
+      // Fetch only the experts this cached entry actually references (~6 on
+      // average) rather than the whole active roster - see the comment
+      // above the initial Promise.all for why. A null result means the
+      // fetch itself failed (not "zero experts") - fall through to the
+      // fresh-scan path below rather than serving a false empty result.
+      const referencedExperts = await loadExpertsByIds(sql, collectReferencedIds(cached.result.matches));
+      if (referencedExperts) {
+        // Hydrate slim {expert_id, reason} entries with each expert's CURRENT
+        // profile, dropping unpublished experts and partners this publisher
+        // has disabled. No AI cost - this is a map lookup per match.
+        const hydrated = hydrateMatches(cached.result.matches, referencedExperts, enabledPartners);
+        // If a positive entry hydrates to ZERO surviving experts, the cached
+        // answer no longer exists at all (everyone it matched has gone) -
+        // treat it as a cache miss and let the fresh scan below find current
+        // experts, then overwrite this entry via the normal report flow.
+        // Partial survival still serves (fewer matches beats a paid re-scan).
+        const emptiedPositive = cached.has_match && hydrated.length === 0;
+        if (!emptiedPositive) {
+          // A page-view fans out into one quick + N chunk requests that ALL hit
+          // this cache path - only the quick (or a legacy full scan) logs and
+          // notifies, so a cached page-view produces exactly one impression log
+          // and one Slack message instead of one per parallel request.
+          if (!chunk) logCachedImpression(sql, { publisher, page_url, page_title, matches: hydrated, readerCountry });
+          return res.status(200).json({ matches: hydrated, config: pubConfig, cached: true });
+        }
       }
+    }
+
+    // Reaching here means a fresh AI scan is genuinely about to run (cache
+    // miss, content changed, emptied positive, or the targeted fetch above
+    // failed) - THIS is where the full active roster is actually needed, as
+    // the AI's candidate pool. A DB hiccup here must look like a failure to
+    // the client, not a successful empty result - otherwise it's
+    // indistinguishable from a genuine "no experts matched" and can poison
+    // the match cache with a false negative (see widget.js's `complete`
+    // tracking in handleReport).
+    const allExperts = await loadExperts(sql);
+    if (!allExperts) {
+      return res.status(503).json({ error: 'Experts data temporarily unavailable' });
     }
 
     // Quick pass scans only the article intro for a fast first paint; cap matches so the
