@@ -116,11 +116,6 @@ export default async function handler(req, res) {
       sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS article_title TEXT`.catch(() => {}),
     ]);
 
-    await sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, article_title, phrase, lang, timezone, device, traffic_source)
-      VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${click_id}, ${article || null},
-              ${title || null}, ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null})
-    `.catch(() => {});
-
     // Build partner URL with full attribution params
     let destUrl;
     try {
@@ -134,24 +129,36 @@ export default async function handler(req, res) {
     } catch {
       destUrl = decodeURIComponent(expert_url);
     }
-    // Redirect immediately - the reader is actively waiting to reach the
-    // booking page, so nothing below this line should add latency to it.
-    res.redirect(302, destUrl);
 
-    // Slack notification for the click, fired after the redirect response is
-    // already sent. Vercel keeps this invocation alive until the awaited
-    // work below finishes, same background-work pattern used in api/match.js.
-    if (process.env.SLACK_WEBHOOK_URL) {
-      const [publisherRow] = await sql`SELECT name FROM publishers WHERE slug = ${pub} LIMIT 1`.catch(() => [null]);
-      const pubName = publisherRow?.name || pub;
-      const articleTitle = title ? String(title).slice(0, 80) : null;
-      await fetch(process.env.SLACK_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: `👉 *Expert link clicked* - ${expert_name || 'an expert'} · ${pubName}${articleTitle ? ` · _${articleTitle}_` : ''}` }),
-      }).catch(() => {});
-    }
-    return;
+    // Slack notification for the click. This MUST complete before the
+    // redirect is sent: work after the response ends is not guaranteed to
+    // run on Vercel (needs waitUntil), which is why this notification never
+    // actually fired in its original post-redirect position - clicks landed
+    // in click_logs (inserted pre-redirect) but the Slack call was silently
+    // frozen. Every Slack message that does arrive (match.js report path)
+    // is awaited pre-response for the same reason. Kept fast: no extra SQL
+    // lookup (slug instead of display name), hard 1.5s timeout, and run
+    // concurrently with the click INSERT so the reader's added wait is
+    // max(insert, slack) rather than their sum.
+    const articleTitle = title ? String(title).slice(0, 80) : null;
+    const slackPromise = process.env.SLACK_WEBHOOK_URL
+      ? fetch(process.env.SLACK_WEBHOOK_URL, {
+          method: 'POST',
+          signal: AbortSignal.timeout(1500),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: `👉 *Expert link clicked* - ${expert_name || 'an expert'} · ${pub || '/app'}${articleTitle ? ` · _${articleTitle}_` : ''}` }),
+        }).catch(() => {})
+      : Promise.resolve();
+
+    await Promise.all([
+      sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, article_title, phrase, lang, timezone, device, traffic_source)
+        VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${click_id}, ${article || null},
+                ${title || null}, ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null})
+      `.catch(() => {}),
+      slackPromise,
+    ]);
+
+    return res.redirect(302, destUrl);
   }
 
   // CORS for widget click tracking (cross-origin POST)
