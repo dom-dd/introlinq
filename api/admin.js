@@ -8,6 +8,21 @@ function auth(req) {
   return allowed && allowed.includes(ip);
 }
 
+// Fire-and-forget - a Slack outage or missing webhook URL must never block
+// or fail the brief itself, so all errors are swallowed here.
+async function notifySlack(text) {
+  if (!process.env.SLACK_WEBHOOK_URL) return;
+  try {
+    await fetch(process.env.SLACK_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+  } catch (err) {
+    console.error('Slack notify failed:', err);
+  }
+}
+
 const DECK_PASSWORD = 'saranac';
 const DECK_COOKIE = 'il_brief_auth';
 
@@ -89,6 +104,12 @@ export default async function handler(req, res) {
 
     const authed = (req.headers.cookie || '').split(';').some(c => c.trim() === `${DECK_COOKIE}=1`);
     if (!authed) return res.status(200).send(deckPasswordForm(false));
+
+    // Every real view of the brief (fresh login or returning cookie) fires
+    // once - not deduped, so repeat opens by the same reader show up too.
+    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
+    notifySlack(`📄 Someone opened the Introlinq investor brief\nIP: ${ip}`);
+
     return res.status(200).send(Buffer.from(DECK_HTML_B64, 'base64').toString('utf8'));
   }
 
