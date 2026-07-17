@@ -102,7 +102,10 @@ export default async function handler(req, res) {
     // tried the door" and "someone is now looking at it".
     if (req.method === 'POST') {
       const correct = req.body?.password === DECK_PASSWORD;
-      notifySlack(`🔑 Password ${correct ? 'entered correctly' : 'attempt (wrong)'} on the Introlinq investor brief\nIP: ${ip}`);
+      // Awaited - a serverless function can be frozen the instant the
+      // response is sent, which was silently killing this fire-and-forget
+      // before the fetch to Slack ever completed.
+      await notifySlack(`🔑 Password ${correct ? 'entered correctly' : 'attempt (wrong)'} on the Introlinq investor brief\nIP: ${ip}`);
       if (correct) {
         res.setHeader('Set-Cookie', `${DECK_COOKIE}=1; HttpOnly; Secure; SameSite=Lax; Path=/brief; Max-Age=2592000`);
         return res.redirect(302, '/brief');
@@ -110,7 +113,7 @@ export default async function handler(req, res) {
       return res.status(401).send(deckPasswordForm(true));
     }
 
-    notifySlack(`📄 The Introlinq investor brief page was loaded\nIP: ${ip}`);
+    await notifySlack(`📄 The Introlinq investor brief page was loaded\nIP: ${ip}`);
 
     const authed = (req.headers.cookie || '').split(';').some(c => c.trim() === `${DECK_COOKIE}=1`);
     if (!authed) return res.status(200).send(deckPasswordForm(false));
@@ -131,7 +134,7 @@ export default async function handler(req, res) {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
-    notifySlack(`👋 Investor brief session ended - ${mins}m ${secs}s\nIP: ${ip}`);
+    await notifySlack(`👋 Investor brief session ended - ${mins}m ${secs}s\nIP: ${ip}`);
     return res.status(204).end();
   }
 
