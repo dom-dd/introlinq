@@ -200,7 +200,7 @@
       }
 
       // POSTs one scan request, retrying once after a short delay on any
-      // failure — a fresh deploy cold-starts every serverless function, and a
+      // failure - a fresh deploy cold-starts every serverless function, and a
       // page load right then can see its parallel requests transiently fail.
       // Only counts toward failedCount when the retry also fails.
       function postScan(body) {
@@ -229,7 +229,7 @@
       // a mismatch against the cached row and rescan on every visit.
       var contentHash = hashText(text);
 
-      // Quick: article intro, capped — shows the first experts fast. page_url
+      // Quick: article intro, capped - shows the first experts fast. page_url
       // lets the server serve the whole thing from cache when available.
       pending.push(postScan({ article: text.slice(0, QUICK_LEN), publisher: PUB, page_url: pageUrl, page_title: document.title, quick: true, lang: _lang, content_hash: contentHash }));
 
@@ -239,12 +239,12 @@
         pending.push(postScan({ article: chunkText, publisher: PUB, page_url: pageUrl, page_title: document.title, chunk: true, lang: _lang, content_hash: contentHash }));
       });
 
-      // Once every chunk has resolved, report the merged, deduplicated result once —
+      // Once every chunk has resolved, report the merged, deduplicated result once -
       // this is what gets cached, logged, and posted to Slack. `complete` tells the
       // server whether every chunk actually succeeded - if some failed (a transient
       // API error, a timeout), a 0-match result is a partial-failure artifact, not a
       // real "no experts here" verdict, and must not be cached as one. When the
-      // responses came from the server's cache there's nothing new to persist —
+      // responses came from the server's cache there's nothing new to persist -
       // reporting would just rewrite the same entry (and Slack already notified).
       Promise.all(pending.map(function (p) { return p.catch(function () {}); })).then(function () {
         if (!gotAnyResponse || sawCached) return;
@@ -284,7 +284,7 @@
   }
 
   // True for IntroLinq's own UI (carousel ilc-, expertboard ilb-/il-board, widget
-  // popup il-pop) — their text (often French expert bios) must never be treated
+  // popup il-pop) - their text (often French expert bios) must never be treated
   // as article content or the language detection and AI matching go wrong.
   // il-hl highlight spans are NOT excluded: they wrap real article text, and
   // removing them would shift combined-string offsets between highlight passes.
