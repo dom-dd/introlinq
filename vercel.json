@@ -1,7 +1,7 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/deck", "destination": "/api/admin?resource=deck" }
+    { "source": "/brief", "destination": "/api/admin?resource=brief" }
   ],
   "crons": [
     {
