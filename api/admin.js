@@ -118,6 +118,23 @@ export default async function handler(req, res) {
     return res.status(200).send(Buffer.from(DECK_HTML_B64, 'base64').toString('utf8'));
   }
 
+  // Fired via navigator.sendBeacon from the brief page itself (see the
+  // inline script near the end of _deckContent.js) when the tab is hidden
+  // or closed, reporting how long it was open. Unauthenticated on purpose -
+  // it's a fire-and-forget analytics ping, not a path to the content - and
+  // sendBeacon can't attach the auth cookie's context beyond what the
+  // browser already sends automatically, so there's nothing extra to check.
+  if (resource === 'brief-close' && req.method === 'POST') {
+    let body = req.body;
+    if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
+    const seconds = Math.max(0, Math.min(Number(body?.duration) || 0, 86400));
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
+    notifySlack(`👋 Investor brief session ended - ${mins}m ${secs}s\nIP: ${ip}`);
+    return res.status(204).end();
+  }
+
   // Daily publisher discovery - authenticated via CRON_SECRET, triggered by
   // a GitHub Actions schedule (see .github/workflows/discovery-cron.yml)
   // rather than Vercel's own Cron Jobs, since Hobby caps both cron jobs (2)
