@@ -94,21 +94,26 @@ export default async function handler(req, res) {
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
 
+    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
+
+    // Two distinct alerts, not deduped - a single successful visit fires both
+    // (a password-entered alert, then a page-loaded alert on the resulting
+    // redirect), which is intentional: it's the difference between "someone
+    // tried the door" and "someone is now looking at it".
     if (req.method === 'POST') {
-      if (req.body?.password === DECK_PASSWORD) {
+      const correct = req.body?.password === DECK_PASSWORD;
+      notifySlack(`🔑 Password ${correct ? 'entered correctly' : 'attempt (wrong)'} on the Introlinq investor brief\nIP: ${ip}`);
+      if (correct) {
         res.setHeader('Set-Cookie', `${DECK_COOKIE}=1; HttpOnly; Secure; SameSite=Lax; Path=/brief; Max-Age=2592000`);
         return res.redirect(302, '/brief');
       }
       return res.status(401).send(deckPasswordForm(true));
     }
 
+    notifySlack(`📄 The Introlinq investor brief page was loaded\nIP: ${ip}`);
+
     const authed = (req.headers.cookie || '').split(';').some(c => c.trim() === `${DECK_COOKIE}=1`);
     if (!authed) return res.status(200).send(deckPasswordForm(false));
-
-    // Every real view of the brief (fresh login or returning cookie) fires
-    // once - not deduped, so repeat opens by the same reader show up too.
-    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
-    notifySlack(`📄 Someone opened the Introlinq investor brief\nIP: ${ip}`);
 
     return res.status(200).send(Buffer.from(DECK_HTML_B64, 'base64').toString('utf8'));
   }
