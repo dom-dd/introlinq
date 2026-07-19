@@ -152,7 +152,9 @@ function hydrateMatches(cachedMatches, experts, enabledPartners) {
 
 // Claude Haiku 4.5 pricing ($/token, from Anthropic's published rates) - only
 // used to print a rough per-scan cost estimate in Slack, not for billing.
-const HAIKU_PRICE_PER_TOKEN = { input: 1.00e-6, output: 5.00e-6, cacheWrite: 1.25e-6, cacheRead: 0.10e-6 };
+// cacheWrite is 2.00e-6 (not the 5-min TTL's 1.25e-6) since the static block
+// below is cached with ttl: '1h'.
+const HAIKU_PRICE_PER_TOKEN = { input: 1.00e-6, output: 5.00e-6, cacheWrite: 2.00e-6, cacheRead: 0.10e-6 };
 // Static USD->GBP rate for the Slack estimate - a live FX call would add
 // latency for a figure that's already an order-of-magnitude estimate.
 const USD_TO_GBP = 0.79;
@@ -788,8 +790,11 @@ export default async function handler(req, res) {
     // The prompt is split into two blocks so Anthropic prompt caching can
     // work: the static block (instructions + the full experts list - the
     // vast bulk of the tokens) is byte-identical for every request of the
-    // same publisher on the same day, so it's cached and re-billed at ~10%
-    // after the first request. Everything per-request (article text, its
+    // same publisher on the same day, so it's cached (ttl: '1h', re-warmed by
+    // any request within that hour) and re-billed at ~10% on a hit. Sparse
+    // per-publisher traffic meant the old 5-min default TTL missed ~37% of
+    // requests that a 1h TTL now catches (see cost analysis, 2026-07-19).
+    // Everything per-request (article text, its
     // language, the reader's country, match count, the shuffled opener/
     // closer styles) lives in the dynamic block AFTER the cache breakpoint.
     // Anything added to the static block must be stable per publisher+day
@@ -892,7 +897,7 @@ Return only valid JSON, no other text:
         messages: [{
           role: 'user',
           content: [
-            { type: 'text', text: staticPrompt, cache_control: { type: 'ephemeral' } },
+            { type: 'text', text: staticPrompt, cache_control: { type: 'ephemeral', ttl: '1h' } },
             { type: 'text', text: dynamicPrompt }
           ]
         }]
