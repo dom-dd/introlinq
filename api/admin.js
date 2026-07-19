@@ -536,7 +536,7 @@ export default async function handler(req, res) {
   // Global logs
   if (resource === 'logs' && req.method === 'GET') {
     const logs = await sql`
-      SELECT publisher, page_url, match_count, no_match_reason, country_code, expert_names, created_at
+      SELECT publisher, page_url, match_count, no_match_reason, country_code, expert_names, cost_usd, created_at
       FROM match_logs
       WHERE page_url IS NOT NULL
       ORDER BY created_at DESC

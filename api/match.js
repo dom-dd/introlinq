@@ -178,6 +178,7 @@ async function ensureLogTable(sql) {
   await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS expert_booking_urls TEXT[]`.catch(() => {});
   await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS no_match_reason TEXT`.catch(() => {});
   await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS country_code TEXT`.catch(() => {});
+  await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS cost_usd NUMERIC`.catch(() => {});
   logTableReady = true;
 }
 
@@ -188,8 +189,8 @@ function logCachedImpression(sql, { publisher, page_url, page_title, matches, re
   const phrases = matches.map(m => m.phrase);
   const expertNames = matches.map(m => m.expert?.name).filter(Boolean);
   const expertBookingUrls = matches.map(m => m.expert?.booking_url || null);
-  sql`INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, country_code)
-    VALUES (${publisher || null}, '[cached]', ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${readerCountry || null})
+  sql`INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, country_code, cost_usd)
+    VALUES (${publisher || null}, '[cached]', ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${readerCountry || null}, 0)
   `.catch(() => {});
   postSlackNotification(sql, { publisher, page_url, page_title, matchCount: matches.length, readerCountry, cached: true }).catch(() => {});
 }
@@ -564,12 +565,14 @@ async function handleReport(req, res) {
       ? (scanWasComplete ? 'No matches found across article' : 'Partial scan failure - some chunks did not respond, not cached')
       : null;
 
+    const reportCostUsd = typeof cost_usd === 'number' ? cost_usd : 0;
+
     await sql`
-      INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, country_code)
-      VALUES (${publisher || null}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${noMatchLogReason}, ${readerCountry || null})
+      INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, country_code, cost_usd)
+      VALUES (${publisher || null}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${noMatchLogReason}, ${readerCountry || null}, ${reportCostUsd})
     `.catch(() => {});
 
-    await postSlackNotification(sql, { publisher, page_url, page_title, matchCount: matches.length, readerCountry, cached: false, costUsd: typeof cost_usd === 'number' ? cost_usd : 0 });
+    await postSlackNotification(sql, { publisher, page_url, page_title, matchCount: matches.length, readerCountry, cached: false, costUsd: reportCostUsd });
 
     return res.status(200).json({ ok: true });
   } catch (err) {
@@ -995,8 +998,8 @@ Return only valid JSON, no other text:
       (async () => {
         await ensureLogTable(sql);
         await sql`
-          INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, country_code)
-          VALUES (${publisher}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${enriched.length}, ${page_url || null}, ${noMatchReason}, ${readerCountry || null})
+          INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, country_code, cost_usd)
+          VALUES (${publisher}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${enriched.length}, ${page_url || null}, ${noMatchReason}, ${readerCountry || null}, ${costUsd})
         `;
       })(),
       postSlackNotification(sql, { publisher, page_url, page_title, matchCount: enriched.length, readerCountry, cached: false, costUsd })

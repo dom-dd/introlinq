@@ -357,10 +357,11 @@ tr:hover td{background:rgba(0,0,0,0.01)}
                 <th>Page</th>
                 <th>Country</th>
                 <th>Result</th>
+                <th>Cost</th>
               </tr>
             </thead>
             <tbody id="global-logs-tbody">
-              <tr><td colspan="5" class="empty">Loading...</td></tr>
+              <tr><td colspan="6" class="empty">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -691,7 +692,8 @@ async function loadGlobalLogs() {
   const res = await fetch('/api/admin?resource=logs');
   const logs = await res.json();
   const tbody = document.getElementById('global-logs-tbody');
-  if (!logs.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty">No logs yet</td></tr>'; return; }
+  if (!logs.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">No logs yet</td></tr>'; return; }
+  const USD_TO_GBP = 0.79;
   tbody.innerHTML = logs.map(l => {
     const dt = new Date(l.created_at);
     const date = dt.toLocaleDateString('en-GB', { day:'2-digit', month:'short' });
@@ -703,12 +705,19 @@ async function loadGlobalLogs() {
       : `<span style="font-size:0.8rem;color:var(--ink-muted)">${l.no_match_reason || 'no match'}</span>`;
     const country = l.country_code || '-';
     const pub = l.publisher || '/app';
+    const costUsd = l.cost_usd == null ? null : (typeof l.cost_usd === 'string' ? parseFloat(l.cost_usd) : l.cost_usd);
+    const cost = costUsd == null
+      ? `<span style="font-size:0.8rem;color:var(--ink-muted)">-</span>`
+      : costUsd > 0
+        ? `<span style="font-size:0.8rem;color:var(--ink-muted)">£${(costUsd * USD_TO_GBP).toFixed(4)}</span>`
+        : `<span style="font-size:0.8rem;color:var(--ink-muted)">⚡ cached</span>`;
     return `<tr>
       <td style="white-space:nowrap;color:var(--ink-muted);font-size:0.8rem">${date} ${time}</td>
       <td class="td-name">${esc(pub)}</td>
       <td style="font-size:0.8rem;color:var(--ink-muted)" title="${esc(page)}">${esc(pageShort)}</td>
       <td style="font-size:0.8rem">${esc(country)}</td>
       <td style="text-align:left;white-space:normal">${result}</td>
+      <td style="white-space:nowrap">${cost}</td>
     </tr>`;
   }).join('');
 }
