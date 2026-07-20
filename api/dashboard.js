@@ -333,7 +333,7 @@ export default async function handler(req, res) {
       // from the original click's attribution) - pulled out explicitly here
       // rather than returning the whole payload, which also holds internal
       // bookkeeping fields (click_id etc.) not meant for the publisher UI.
-      sql`SELECT expert_name, booking_amount, booking_currency AS currency, publisher_payout, revenue_share, created_at,
+      sql`SELECT expert_name, booking_amount, booking_currency AS currency, publisher_payout, revenue_share, created_at, provider,
                  raw_payload->>'article_title' AS article_title, raw_payload->>'article_url' AS article_url
           FROM bookings WHERE publisher = ${pub} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
     ]);

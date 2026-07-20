@@ -843,6 +843,7 @@ tr:last-child td{border-bottom:none}
             <thead>
               <tr>
                 <th>Date</th>
+                <th>Partner</th>
                 <th>Expert</th>
                 <th>Page</th>
                 <th>Session</th>
@@ -990,6 +991,29 @@ async function loadDashboard() {
   renderBookingHistory(d.bookings);
 }
 
+// Booking's `provider` is the raw slug a partner sends on their webhook
+// (e.g. "open-intro"), which doesn't always match the providers.slug used
+// elsewhere (e.g. "openintro" for the same partner) - so this is its own
+// small lookup rather than reusing renderPartners' logo logic. Add a row
+// here (and a matching square logo in /networks logos/) for each new
+// partner; unmapped providers fall back to a text monogram, not a broken image.
+const PARTNER_LOGOS = { 'open-intro': '/networks%20logos/OpenIntro-icon.png' };
+function partnerDisplayName(provider) {
+  if (!provider) return '';
+  const known = { 'open-intro': 'OpenIntro' };
+  if (known[provider]) return known[provider];
+  return provider.split('-').filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+}
+function partnerLogoCell(provider) {
+  const name = partnerDisplayName(provider);
+  if (!name) return '<span style="color:var(--ink-muted)">-</span>';
+  const logo = PARTNER_LOGOS[provider];
+  if (logo) {
+    return `<img src="${logo}" alt="${esc(name)}" title="${esc(name)}" style="width:20px;height:20px;object-fit:contain;border-radius:4px">`;
+  }
+  return `<span title="${esc(name)}" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:#f4f4f8;color:var(--ink-muted);font-size:0.7rem;font-weight:700">${esc(name[0] || '?')}</span>`;
+}
+
 function renderBookingHistory(bk) {
   const sub = document.getElementById('booking-history-sub');
   const empty = document.getElementById('booking-history-empty');
@@ -1014,6 +1038,7 @@ function renderBookingHistory(bk) {
       : `<span style="color:var(--ink-muted)">-</span>`;
     return `<tr>
       <td style="white-space:nowrap;color:var(--ink-muted);font-size:0.8rem">${date}</td>
+      <td>${partnerLogoCell(b.provider)}</td>
       <td>${esc(b.expert_name || '-')}</td>
       <td style="font-size:0.8rem;max-width:220px">${page}</td>
       <td>${fmt(b.booking_amount, b.currency)}</td>
