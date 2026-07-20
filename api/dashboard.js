@@ -319,7 +319,7 @@ export default async function handler(req, res) {
     const [bookingCountRow, payoutByCurrency, bookingRows] = await Promise.all([
       sql`SELECT COUNT(*)::int AS count FROM bookings WHERE publisher = ${pub}`.catch(() => [{ count: 0 }]),
       sql`SELECT booking_currency AS currency, COALESCE(SUM(publisher_payout),0)::float AS payout FROM bookings WHERE publisher = ${pub} GROUP BY booking_currency ORDER BY payout DESC`.catch(() => []),
-      sql`SELECT expert_name, booking_amount, booking_currency AS currency, publisher_payout, created_at FROM bookings WHERE publisher = ${pub} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
+      sql`SELECT expert_name, booking_amount, booking_currency AS currency, publisher_payout, revenue_share, created_at FROM bookings WHERE publisher = ${pub} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
     ]);
     const bookingSummary = { count: bookingCountRow[0]?.count || 0, by_currency: payoutByCurrency, rows: bookingRows };
 

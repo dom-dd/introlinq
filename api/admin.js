@@ -355,7 +355,13 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PATCH') {
-      const { id, active, match_power, match_sensitivity, widget_color, accent_color, widget_size, enabled_partners } = req.body;
+      const { id, active, match_power, match_sensitivity, widget_color, accent_color, widget_size, enabled_partners, revenue_share } = req.body;
+      // Deliberately admin-only: dashboard.js's own PATCH (session-authenticated
+      // as the publisher) never accepts this field - a publisher must never be
+      // able to set their own commission rate.
+      if (revenue_share != null && (typeof revenue_share !== 'number' || revenue_share < 0 || revenue_share > 1)) {
+        return res.status(400).json({ error: 'revenue_share must be a number between 0 and 1' });
+      }
       const [pub] = await sql`
         UPDATE publishers SET
           active = COALESCE(${active ?? null}, active),
@@ -364,7 +370,8 @@ export default async function handler(req, res) {
           widget_color = COALESCE(${widget_color ?? null}, widget_color),
           accent_color = COALESCE(${accent_color ?? null}, accent_color),
           widget_size = COALESCE(${widget_size ?? null}, widget_size),
-          enabled_partners = COALESCE(${enabled_partners ?? null}, enabled_partners)
+          enabled_partners = COALESCE(${enabled_partners ?? null}, enabled_partners),
+          revenue_share = COALESCE(${revenue_share ?? null}, revenue_share)
         WHERE id = ${id} RETURNING *
       `;
       // Clear match cache for this publisher so new settings take effect immediately

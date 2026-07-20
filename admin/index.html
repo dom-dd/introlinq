@@ -751,7 +751,11 @@ async function loadPublishers() {
         <div class="td-name">${esc(p.name)}</div>
         <div style="font-size:0.75rem;color:var(--ink-muted)">${esc(p.email)}</div>
         ${(p.contact_first_name || p.contact_last_name) ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px;font-style:italic">${esc([p.contact_first_name, p.contact_last_name].filter(Boolean).join(' '))}</div>` : ''}
-        <div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px">${Math.round((p.revenue_share||0.70)*100)}% rev share${p.payment_email ? ` · <span title="Payment: ${esc(p.payment_email)}">💳 ${esc(p.payment_email)}</span>` : ' · <span style="color:#dc2626">no payment email</span>'}</div>
+        <div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px">
+          ${Math.round((p.revenue_share||0.70)*100)}% rev share
+          <button onclick="editRevenueShare(${p.id}, ${Math.round((p.revenue_share||0.70)*100)})" title="Edit revenue share" style="background:none;border:none;cursor:pointer;color:var(--ink-muted);padding:0 0 0 3px;vertical-align:middle" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--ink-muted)'"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
+          ${p.payment_email ? ` · <span title="Payment: ${esc(p.payment_email)}">💳 ${esc(p.payment_email)}</span>` : ' · <span style="color:#dc2626">no payment email</span>'}
+        </div>
       </td>
       <td>
         <div style="display:flex;gap:6px;align-items:center">
@@ -889,6 +893,24 @@ async function togglePublisher(id, active) {
   });
   loadPublishers();
   loadStats();
+}
+
+async function editRevenueShare(id, currentPercent) {
+  const input = prompt('New revenue share for this publisher (%):', currentPercent);
+  if (input === null) return;
+  const pct = parseFloat(input);
+  if (isNaN(pct) || pct < 0 || pct > 100) {
+    toast('Enter a number between 0 and 100');
+    return;
+  }
+  const res = await fetch('/api/admin?resource=publishers', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify({ id, revenue_share: pct / 100 })
+  });
+  if (!res.ok) { toast('Failed to update revenue share'); return; }
+  toast(`Revenue share updated to ${pct}%`);
+  loadPublishers();
 }
 
 let _allBookings = [];
