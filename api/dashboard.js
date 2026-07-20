@@ -329,7 +329,13 @@ export default async function handler(req, res) {
     const [bookingCountRow, payoutByCurrency, bookingRows] = await Promise.all([
       sql`SELECT COUNT(*)::int AS count FROM bookings WHERE publisher = ${pub}`.catch(() => [{ count: 0 }]),
       sql`SELECT booking_currency AS currency, COALESCE(SUM(publisher_payout),0)::float AS payout FROM bookings WHERE publisher = ${pub} GROUP BY booking_currency ORDER BY payout DESC`.catch(() => []),
-      sql`SELECT expert_name, booking_amount, booking_currency AS currency, publisher_payout, revenue_share, created_at FROM bookings WHERE publisher = ${pub} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
+      // article_title/article_url live inside raw_payload (set by the webhook
+      // from the original click's attribution) - pulled out explicitly here
+      // rather than returning the whole payload, which also holds internal
+      // bookkeeping fields (click_id etc.) not meant for the publisher UI.
+      sql`SELECT expert_name, booking_amount, booking_currency AS currency, publisher_payout, revenue_share, created_at,
+                 raw_payload->>'article_title' AS article_title, raw_payload->>'article_url' AS article_url
+          FROM bookings WHERE publisher = ${pub} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
     ]);
     const bookingSummary = { count: bookingCountRow[0]?.count || 0, by_currency: payoutByCurrency, rows: bookingRows };
 

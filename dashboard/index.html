@@ -844,6 +844,7 @@ tr:last-child td{border-bottom:none}
               <tr>
                 <th>Date</th>
                 <th>Expert</th>
+                <th>Page</th>
                 <th>Session</th>
                 <th>Split</th>
                 <th>Your payout</th>
@@ -1005,9 +1006,16 @@ function renderBookingHistory(bk) {
     const date = new Date(b.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
     const fmt = (n, c) => new Intl.NumberFormat('en-US', { style:'currency', currency: c }).format(n);
     const splitPct = Math.round((b.revenue_share != null ? b.revenue_share : 0.70) * 100);
+    const pageShort = b.article_title ? (b.article_title.length > 40 ? b.article_title.slice(0, 40) + '…' : b.article_title) : null;
+    const page = pageShort
+      ? (b.article_url
+          ? `<a href="${esc(b.article_url)}" target="_blank" rel="noopener" style="color:var(--sage);text-decoration:none" title="${esc(b.article_url)}">${esc(pageShort)}</a>`
+          : `<span title="${esc(b.article_title)}">${esc(pageShort)}</span>`)
+      : `<span style="color:var(--ink-muted)">-</span>`;
     return `<tr>
       <td style="white-space:nowrap;color:var(--ink-muted);font-size:0.8rem">${date}</td>
       <td>${esc(b.expert_name || '-')}</td>
+      <td style="font-size:0.8rem;max-width:220px">${page}</td>
       <td>${fmt(b.booking_amount, b.currency)}</td>
       <td style="color:var(--ink-muted);font-size:0.8rem">${splitPct}%</td>
       <td style="color:var(--sage);font-weight:600">${fmt(b.publisher_payout, b.currency)}</td>
