@@ -43,7 +43,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .logout-btn{background:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);font-size:0.75rem;padding:0.25rem 0.75rem;border-radius:100px;cursor:pointer;font-family:'Inter',sans-serif;transition:border-color 0.15s}
 .logout-btn:hover{border-color:rgba(255,255,255,0.5);color:var(--white)}
 
-.admin-body{max-width:1100px;margin:0 auto;padding:2.5rem 2rem 5rem}
+.admin-body{max-width:1400px;margin:0 auto;padding:2.5rem 2rem 5rem}
 
 /* Stats */
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem}
@@ -89,8 +89,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 
 /* Table */
 table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:0.75rem 1.5rem;font-size:0.7rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border)}
-td{padding:0.875rem 1.5rem;font-size:0.875rem;color:var(--ink-soft);border-bottom:1px solid var(--border)}
+th{text-align:left;padding:0.75rem 1.1rem;font-size:0.7rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border)}
+td{padding:0.875rem 1.1rem;font-size:0.875rem;color:var(--ink-soft);border-bottom:1px solid var(--border)}
 td:last-child{text-align:right;white-space:nowrap}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:rgba(0,0,0,0.01)}
@@ -803,7 +803,7 @@ async function loadPublishers() {
         </div>
       </td>
       <td><span class="badge ${p.active ? 'badge-active' : 'badge-inactive'}">${p.active ? 'Active' : 'Inactive'}</span></td>
-      <td>${new Date(p.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</td>
+      <td style="white-space:nowrap">${new Date(p.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' })}</td>
       <td>${renderPublisherIssues(p)}</td>
       <td>
         <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end">
