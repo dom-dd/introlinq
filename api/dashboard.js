@@ -107,6 +107,22 @@ export default async function handler(req, res) {
           }),
         }).catch(err => console.error('Booking email failed:', err));
       }
+
+      // Internal copy showing the full margin breakdown - independent of
+      // whether the publisher has a payment_email configured, since this is
+      // about IntroLinq's own visibility into revenue, not the publisher payout.
+      if (inserted && process.env.RESEND_API_KEY && process.env.COMPANY_NOTIFICATION_EMAIL) {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: 'IntroLinq <notifications@introlinq.com>',
+            to: process.env.COMPANY_NOTIFICATION_EMAIL,
+            subject: `New booking - ${currency} ${Number(booking_amount).toFixed(2)} via ${publisher.name}`,
+            text: `Provider: ${pub}\nPublisher: ${publisher.name} (${publisherSlug})\nExpert: ${resolvedExpert}\n\nBooking amount: ${currency} ${Number(booking_amount).toFixed(2)}\nPublisher payout (${Math.round(publisher.revenue_share * 100)}%): ${currency} ${payout.toFixed(2)}\nIntroLinq margin: ${currency} ${introlinqMargin.toFixed(2)}${articleTitle ? `\n\nArticle: ${articleTitle}${articleUrl ? `\n${articleUrl}` : ''}` : ''}`,
+          }),
+        }).catch(err => console.error('Company notification email failed:', err));
+      }
     }
 
     // Slack - fires for test calls (so partners can verify delivery) and for
