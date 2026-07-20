@@ -43,7 +43,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .logout-btn{background:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);font-size:0.75rem;padding:0.25rem 0.75rem;border-radius:100px;cursor:pointer;font-family:'Inter',sans-serif;transition:border-color 0.15s}
 .logout-btn:hover{border-color:rgba(255,255,255,0.5);color:var(--white)}
 
-.admin-body{max-width:1400px;margin:0 auto;padding:2.5rem 2rem 5rem}
+.admin-body{max-width:1280px;margin:0 auto;padding:2.5rem 2rem 5rem}
 
 /* Stats */
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem}
@@ -806,7 +806,7 @@ async function loadPublishers() {
       <td style="white-space:nowrap">${new Date(p.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' })}</td>
       <td>${renderPublisherIssues(p)}</td>
       <td>
-        <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end">
+        <div style="display:flex;gap:6px;align-items:center;justify-content:flex-start">
           <button onclick="recrawlPublisher('${esc(p.slug)}')" title="Recrawl - clear this publisher's page cache so every page re-scans on next visit" style="background:#fff7e6;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#e6a820" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
           </button>
