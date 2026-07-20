@@ -250,65 +250,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, added, queriesRun, stopReason, elapsedMs: Date.now() - started });
   }
 
-  // Bookings webhook - authenticated via secret header, not IP
-  if (resource === 'bookings' && req.method === 'POST') {
-    if (req.headers['x-webhook-secret'] !== process.env.BOOKINGS_WEBHOOK_SECRET) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-    const sql = neon(process.env.DATABASE_URL);
-    await sql`CREATE TABLE IF NOT EXISTS bookings (
-      id SERIAL PRIMARY KEY,
-      entry_type TEXT DEFAULT 'webhook',
-      provider TEXT NOT NULL,
-      publisher TEXT,
-      expert_name TEXT,
-      booking_id TEXT UNIQUE,
-      booking_amount DECIMAL,
-      booking_currency TEXT DEFAULT 'GBP',
-      commission_amount DECIMAL,
-      commission_currency TEXT DEFAULT 'GBP',
-      revenue_share DECIMAL,
-      publisher_payout DECIMAL,
-      introlinq_margin DECIMAL,
-      raw_payload JSONB,
-      booked_at TIMESTAMPTZ,
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    )`;
-
-    const { click_id, booking_id, provider = 'openintro', expert_name,
-            booking_amount, booking_currency = 'GBP',
-            commission_amount, commission_currency = 'GBP', booked_at } = req.body;
-
-    // Look up publisher from click_id
-    let publisher = req.body.publisher || null;
-    if (!publisher && click_id) {
-      const [click] = await sql`SELECT publisher FROM click_logs WHERE click_id = ${click_id} LIMIT 1`.catch(() => [null]);
-      if (click) publisher = click.publisher;
-    }
-
-    // Get publisher's revenue share
-    let revenue_share = 0.70;
-    if (publisher) {
-      const [pub] = await sql`SELECT revenue_share FROM publishers WHERE slug = ${publisher} LIMIT 1`.catch(() => [null]);
-      if (pub?.revenue_share) revenue_share = parseFloat(pub.revenue_share);
-    }
-
-    const publisher_payout = commission_amount ? Math.round(commission_amount * revenue_share * 100) / 100 : null;
-    const introlinq_margin = commission_amount ? Math.round((commission_amount - publisher_payout) * 100) / 100 : null;
-
-    await sql`INSERT INTO bookings
-      (entry_type, provider, publisher, expert_name, booking_id, booking_amount, booking_currency,
-       commission_amount, commission_currency, revenue_share, publisher_payout, introlinq_margin,
-       raw_payload, booked_at)
-      VALUES ('webhook', ${provider}, ${publisher}, ${expert_name || null}, ${booking_id || null},
-              ${booking_amount || null}, ${booking_currency}, ${commission_amount || null},
-              ${commission_currency}, ${revenue_share}, ${publisher_payout}, ${introlinq_margin},
-              ${JSON.stringify(req.body)}, ${booked_at ? new Date(booked_at) : new Date()})
-      ON CONFLICT (booking_id) DO NOTHING`;
-
-    return res.status(200).json({ ok: true, publisher, publisher_payout, introlinq_margin });
-  }
-
   if (!auth(req)) return res.status(403).json({ error: 'Forbidden' });
 
   const sql = neon(process.env.DATABASE_URL);

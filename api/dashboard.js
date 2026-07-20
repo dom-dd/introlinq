@@ -45,26 +45,54 @@ export default async function handler(req, res) {
     if (!publisher) return res.status(404).json({ error: 'Publisher not found' });
 
     const payout = Math.round(booking_amount * publisher.revenue_share * 100) / 100;
+    const introlinqMargin = Math.round((booking_amount - payout) * 100) / 100;
     const resolvedExpert = expert_name || click?.expert_name || 'an expert';
     const articleUrl = click?.article_url || null;
     const articleTitle = click?.article_title || null;
 
+    // Was this booking actually recorded (vs. a deduped retry)? Gates the
+    // publisher email/Slack ping below so a webhook retry doesn't double-notify.
+    let inserted = false;
+
     if (!test) {
-      // Store booking
+      // Schema must match api/admin.js's ensureBookingsTable-equivalent CREATE
+      // (the admin "Bookings" tab reads/writes the same table for manual
+      // entries) - entry_type/provider distinguish this row's source, and
+      // booking_amount is treated as the commission basis per documentation.html.
       await sql`CREATE TABLE IF NOT EXISTS bookings (
-        id SERIAL PRIMARY KEY, publisher TEXT, expert_id INT, expert_name TEXT,
-        booking_amount DECIMAL, currency TEXT, publisher_payout DECIMAL,
-        click_id TEXT, article_url TEXT, article_title TEXT,
+        id SERIAL PRIMARY KEY,
+        entry_type TEXT DEFAULT 'webhook',
+        provider TEXT NOT NULL,
+        publisher TEXT,
+        expert_name TEXT,
+        booking_id TEXT UNIQUE,
+        booking_amount DECIMAL,
+        booking_currency TEXT DEFAULT 'GBP',
+        commission_amount DECIMAL,
+        commission_currency TEXT DEFAULT 'GBP',
+        revenue_share DECIMAL,
+        publisher_payout DECIMAL,
+        introlinq_margin DECIMAL,
+        raw_payload JSONB,
+        booked_at TIMESTAMPTZ,
         created_at TIMESTAMPTZ DEFAULT NOW()
       )`.catch(() => {});
 
-      await sql`
-        INSERT INTO bookings (publisher, expert_id, expert_name, booking_amount, currency, publisher_payout, click_id, article_url, article_title)
-        VALUES (${publisherSlug}, ${expert_id || null}, ${resolvedExpert}, ${booking_amount}, ${currency}, ${payout}, ${click_id || null}, ${articleUrl}, ${articleTitle})
+      // click_id doubles as the idempotency key - a webhook retry for the
+      // same booking carries the same click_id (it's tied to the original
+      // click, not regenerated per attempt), so ON CONFLICT silently no-ops
+      // instead of double-crediting the publisher. Multiple NULL click_ids
+      // are fine: Postgres UNIQUE never treats NULL as equal to NULL.
+      const rows = await sql`
+        INSERT INTO bookings (entry_type, provider, publisher, expert_name, booking_id, booking_amount, booking_currency, commission_amount, commission_currency, revenue_share, publisher_payout, introlinq_margin, raw_payload, booked_at)
+        VALUES ('webhook', ${pub}, ${publisherSlug}, ${resolvedExpert}, ${click_id || null}, ${booking_amount}, ${currency}, ${booking_amount}, ${currency}, ${publisher.revenue_share}, ${payout}, ${introlinqMargin}, ${JSON.stringify({ ...req.body, article_url: articleUrl, article_title: articleTitle })}, NOW())
+        ON CONFLICT (booking_id) DO NOTHING
+        RETURNING id
       `;
+      inserted = rows.length > 0;
 
-      // Email publisher
-      if (publisher.payment_email && process.env.RESEND_API_KEY) {
+      // Email publisher (skipped on a deduped retry - they were already told once)
+      if (inserted && publisher.payment_email && process.env.RESEND_API_KEY) {
         const articleLine = articleTitle
           ? `\n\nThe booking came from your article: ${articleTitle}${articleUrl ? `\n${articleUrl}` : ''}`
           : '';
@@ -81,8 +109,9 @@ export default async function handler(req, res) {
       }
     }
 
-    // Slack - always fires, marked [TEST] when in test mode
-    if (process.env.SLACK_WEBHOOK_URL) {
+    // Slack - fires for test calls (so partners can verify delivery) and for
+    // real, newly-recorded bookings; skipped on a deduped retry.
+    if (process.env.SLACK_WEBHOOK_URL && (test || inserted)) {
       const testTag = test ? ' · *[TEST]*' : '';
       await fetch(process.env.SLACK_WEBHOOK_URL, {
         method: 'POST',
@@ -273,8 +302,8 @@ export default async function handler(req, res) {
 
     const [bookingCountRow, payoutByCurrency, bookingRows] = await Promise.all([
       sql`SELECT COUNT(*)::int AS count FROM bookings WHERE publisher = ${pub}`.catch(() => [{ count: 0 }]),
-      sql`SELECT currency, COALESCE(SUM(publisher_payout),0)::float AS payout FROM bookings WHERE publisher = ${pub} GROUP BY currency ORDER BY payout DESC`.catch(() => []),
-      sql`SELECT expert_name, booking_amount, currency, publisher_payout, created_at FROM bookings WHERE publisher = ${pub} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
+      sql`SELECT booking_currency AS currency, COALESCE(SUM(publisher_payout),0)::float AS payout FROM bookings WHERE publisher = ${pub} GROUP BY booking_currency ORDER BY payout DESC`.catch(() => []),
+      sql`SELECT expert_name, booking_amount, booking_currency AS currency, publisher_payout, created_at FROM bookings WHERE publisher = ${pub} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
     ]);
     const bookingSummary = { count: bookingCountRow[0]?.count || 0, by_currency: payoutByCurrency, rows: bookingRows };
 
