@@ -464,24 +464,38 @@
     return nodes;
   }
 
-  function attachSpanEvents(sp, m, popup, cfg) {
+  // A matched phrase can land in several DOM text nodes when the article's
+  // own markup (e.g. <strong>50%</strong> mid-sentence) interrupts it -
+  // wrapCombinedRange then produces multiple .il-hl fragments for what is
+  // really ONE match. Every fragment gets its own hover/tap listener (so the
+  // whole phrase is interactive edge-to-edge, no dead zones over the bold
+  // bits), but they all share one popup positioned off the FIRST fragment -
+  // anchoring every handler to the same span keeps the card in one stable
+  // spot instead of jumping/reappearing as the cursor crosses fragment
+  // boundaries (previously each fragment repositioned the popup to itself).
+  function attachGroupEvents(spans, m, popup, cfg) {
+    var anchor = spans[0];
     if ('ontouchstart' in window) {
-      sp.addEventListener('click', function (ev) {
-        ev.stopPropagation();
-        clearTimeout(hideTimer);
-        fillPopup(popup, m, cfg);
-        positionPopup(popup, sp, cfg);
-        popup.classList.add('il-on');
-        closeOnScroll(popup);
+      spans.forEach(function (sp) {
+        sp.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          clearTimeout(hideTimer);
+          fillPopup(popup, m, cfg);
+          positionPopup(popup, anchor, cfg);
+          popup.classList.add('il-on');
+          closeOnScroll(popup);
+        });
       });
     } else {
-      sp.addEventListener('mouseenter', function () {
-        clearTimeout(hideTimer);
-        fillPopup(popup, m, cfg);
-        positionPopup(popup, sp, cfg);
-        popup.classList.add('il-on');
+      spans.forEach(function (sp) {
+        sp.addEventListener('mouseenter', function () {
+          clearTimeout(hideTimer);
+          fillPopup(popup, m, cfg);
+          positionPopup(popup, anchor, cfg);
+          popup.classList.add('il-on');
+        });
+        sp.addEventListener('mouseleave', function () { scheduleHide(popup); });
       });
-      sp.addEventListener('mouseleave', function () { scheduleHide(popup); });
     }
   }
 
@@ -547,7 +561,7 @@
   }
 
   function wrapCombinedRange(nodes, offsets, start, end, match, popup, cfg) {
-    var wrapped = 0;
+    var spans = [];
     for (var i = 0; i < nodes.length; i++) {
       var node = nodes[i];
       var text = node.textContent;
@@ -564,15 +578,17 @@
       var span = document.createElement('span');
       span.className = 'il-hl';
       span.textContent = text.slice(from, to);
-      attachSpanEvents(span, match, popup, cfg);
+      spans.push(span);
 
       if (from > 0) parent.insertBefore(document.createTextNode(text.slice(0, from)), node);
       parent.insertBefore(span, node);
       if (to < text.length) parent.insertBefore(document.createTextNode(text.slice(to)), node);
       parent.removeChild(node);
-      wrapped++;
     }
-    return wrapped > 0;
+    // One shared listener setup for the whole group, not per-fragment -
+    // see attachGroupEvents for why.
+    if (spans.length) attachGroupEvents(spans, match, popup, cfg);
+    return spans.length > 0;
   }
 
   function fillPopup(popup, match, cfg) {
