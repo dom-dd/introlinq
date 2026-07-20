@@ -3,6 +3,16 @@ import crypto from 'crypto';
 
 let clickTableReady = false;
 
+// Display name for the `pub` a partner sends on their webhook calls (e.g.
+// "open-intro") - falls back to a title-cased version of the raw slug for
+// any partner not listed here, so a new integration still reads reasonably
+// rather than showing a bare lowercase-hyphenated string.
+const PROVIDER_NAMES = { 'open-intro': 'OpenIntro' };
+function providerDisplayName(pub) {
+  if (PROVIDER_NAMES[pub]) return PROVIDER_NAMES[pub];
+  return String(pub || '').split('-').filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(' ') || pub;
+}
+
 function getSessionToken(req) {
   const cookies = req.headers.cookie || '';
   const match = cookies.match(/il_session=([^;]+)/);
@@ -102,8 +112,8 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             from: 'IntroLinq <notifications@introlinq.com>',
             to: publisher.payment_email,
-            subject: `You earned ${currency} ${payout.toFixed(2)} - new booking on your site`,
-            text: `Hi ${publisher.name},\n\nA reader on your site just booked a session with ${resolvedExpert}.\n\nBooking value: ${currency} ${Number(booking_amount).toFixed(2)}\nYour commission (${Math.round(publisher.revenue_share * 100)}%): ${currency} ${payout.toFixed(2)}${articleLine}\n\nThis will be included in your next payout.\n\nBest,\nThe IntroLinq team`,
+            subject: `IntroLinq - You earned ${currency} ${payout.toFixed(2)} - new booking on your site`,
+            text: `Hi ${publisher.name},\n\nA reader on your site just booked a session with ${resolvedExpert} via ${providerDisplayName(pub)}.\n\nBooking value: ${currency} ${Number(booking_amount).toFixed(2)}\nYour commission (${Math.round(publisher.revenue_share * 100)}%): ${currency} ${payout.toFixed(2)}${articleLine}\n\nThis will be included in your next payout.\n\nBest,\nThe IntroLinq team`,
           }),
         }).catch(err => console.error('Booking email failed:', err));
       }
@@ -118,8 +128,8 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             from: 'IntroLinq <notifications@introlinq.com>',
             to: process.env.COMPANY_NOTIFICATION_EMAIL,
-            subject: `New booking - ${currency} ${Number(booking_amount).toFixed(2)} via ${publisher.name}`,
-            text: `Provider: ${pub}\nPublisher: ${publisher.name} (${publisherSlug})\nExpert: ${resolvedExpert}\n\nBooking amount: ${currency} ${Number(booking_amount).toFixed(2)}\nPublisher payout (${Math.round(publisher.revenue_share * 100)}%): ${currency} ${payout.toFixed(2)}\nIntroLinq margin: ${currency} ${introlinqMargin.toFixed(2)}${articleTitle ? `\n\nArticle: ${articleTitle}${articleUrl ? `\n${articleUrl}` : ''}` : ''}`,
+            subject: `IntroLinq - New booking - ${currency} ${Number(booking_amount).toFixed(2)} via ${publisher.name}`,
+            text: `Provider: ${providerDisplayName(pub)}\nPublisher: ${publisher.name} (${publisherSlug})\nExpert: ${resolvedExpert}\n\nBooking amount: ${currency} ${Number(booking_amount).toFixed(2)}\nPublisher payout (${Math.round(publisher.revenue_share * 100)}%): ${currency} ${payout.toFixed(2)}\nIntroLinq margin: ${currency} ${introlinqMargin.toFixed(2)}${articleTitle ? `\n\nArticle: ${articleTitle}${articleUrl ? `\n${articleUrl}` : ''}` : ''}`,
           }),
         }).catch(err => console.error('Company notification email failed:', err));
       }
