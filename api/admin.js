@@ -278,7 +278,28 @@ export default async function handler(req, res) {
   // publisher accounts. Listed here so they can be followed up with a
   // personalized /signup link that pre-fills what they already gave us.
   if (resource === 'subscribers') {
-    const rows = await sql`SELECT id, name, email, blog_url, monthly_visitors, country, created_at FROM subscribers ORDER BY created_at DESC`;
+    // Overrides let a human correct the auto-guessed contact/publication
+    // name (e.g. "trainingdesignersclub" -> "Training Designers Club")
+    // once, in the admin table, instead of re-typing the fix every time
+    // the page reloads. NULL means "no override, use the live guess";
+    // an empty string means "guessed wrong and there's no good answer,
+    // leave it blank" - so the two states must stay distinguishable.
+    await sql`ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS contact_name_override TEXT`.catch(() => {});
+    await sql`ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS publication_name_override TEXT`.catch(() => {});
+
+    if (req.method === 'PATCH') {
+      const { id, contact_name_override, publication_name_override } = req.body;
+      if (!id) return res.status(400).json({ error: 'id required' });
+      await sql`
+        UPDATE subscribers
+        SET contact_name_override = ${contact_name_override ?? null},
+            publication_name_override = ${publication_name_override ?? null}
+        WHERE id = ${id}
+      `;
+      return res.status(200).json({ ok: true });
+    }
+
+    const rows = await sql`SELECT id, name, email, blog_url, monthly_visitors, country, created_at, contact_name_override, publication_name_override FROM subscribers ORDER BY created_at DESC`;
     return res.status(200).json(rows);
   }
 

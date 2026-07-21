@@ -1034,6 +1034,17 @@ const GENERIC_EMAIL_DOMAINS = new Set([
   'aol.com', 'protonmail.com', 'live.com', 'msn.com', 'yandex.com',
 ]);
 
+// Shared blogging platforms - the domain itself ("Medium", "Substack")
+// is not the person's publication, so it's excluded the same way a
+// gmail.com email is. Where the platform puts the actual handle in the
+// path (medium.com/@name, substack.com/@name) that handle is used
+// instead of giving up entirely.
+const GENERIC_HOSTING_PLATFORMS = new Set([
+  'medium.com', 'substack.com', 'wordpress.com', 'blogspot.com',
+  'wix.com', 'wixsite.com', 'weebly.com', 'ghost.io', 'tumblr.com',
+  'squarespace.com',
+]);
+
 // Best-effort guess at a publication name - prefers the blog URL's domain
 // (psyll.com -> psyll, planet-fintech.com -> planet fintech), falling back
 // to the email's domain when no blog URL was given (several waitlist
@@ -1044,18 +1055,33 @@ const GENERIC_EMAIL_DOMAINS = new Set([
 // word) without a dictionary - the editable field in the table is there
 // so a human can fix those by hand before sending.
 function guessPublicationName(blogUrl, email) {
-  let host = '';
+  let host = '', path = '';
   if (blogUrl) {
-    try { host = new URL(/^https?:\/\//i.test(blogUrl) ? blogUrl : 'https://' + blogUrl).hostname; } catch {}
+    try {
+      const u = new URL(/^https?:\/\//i.test(blogUrl) ? blogUrl : 'https://' + blogUrl);
+      host = u.hostname.toLowerCase();
+      path = u.pathname;
+    } catch {}
+  }
+  if (host && GENERIC_HOSTING_PLATFORMS.has(host.replace(/^www\./, ''))) {
+    const handle = path.match(/@([a-z0-9._-]+)/i)?.[1];
+    return handle ? handle.replace(/[._-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '';
   }
   if (!host && email && email.includes('@')) {
     const emailDomain = email.split('@')[1]?.toLowerCase();
     if (emailDomain && !GENERIC_EMAIL_DOMAINS.has(emailDomain)) host = emailDomain;
   }
   if (!host) return '';
-  const label = host.replace(/^www\./, '').split('.')[0];
+  const label = host.replace(/^(www|blog|m)\./, '').split('.')[0];
   return label.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
+
+// Local parts that are a role, not a person (info@, support@, hello@),
+// and so shouldn't be title-cased into a fake first name.
+const GENERIC_EMAIL_LOCALPARTS = new Set([
+  'info', 'contact', 'hello', 'hi', 'support', 'admin', 'team', 'mail',
+  'sales', 'help', 'noreply', 'no-reply',
+]);
 
 // Same idea for the contact's first name when the waitlist form didn't
 // collect one - strips trailing digits and separators from the email's
@@ -1063,8 +1089,8 @@ function guessPublicationName(blogUrl, email) {
 // one word) - same editable escape hatch applies.
 function guessContactName(name, email) {
   if (name) return name;
-  const local = (email || '').split('@')[0].replace(/[0-9]+$/, '');
-  if (!local) return '';
+  const local = (email || '').split('@')[0].toLowerCase().replace(/[0-9]+$/, '');
+  if (!local || GENERIC_EMAIL_LOCALPARTS.has(local)) return '';
   return local.replace(/[._-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
@@ -1104,8 +1130,8 @@ async function loadSubscribers() {
       <td style="white-space:nowrap">${new Date(s.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' })}</td>
       <td>
         <div style="display:flex;flex-direction:column;gap:4px;min-width:220px">
-          <input id="sub-contact-${s.id}" style="${inputStyle}" value="${esc(guessContactName(s.name, s.email))}" placeholder="Contact name" title="Contact first/last name used to pre-fill /signup">
-          <input id="sub-pub-${s.id}" style="${inputStyle}" value="${esc(guessPublicationName(s.blog_url, s.email))}" placeholder="Publication name" title="Publication name used to pre-fill /signup - guessed from the domain, fix by hand if it's wrong">
+          <input id="sub-contact-${s.id}" data-id="${s.id}" data-field="contact_name_override" onblur="saveSubscriberOverride(this)" style="${inputStyle}" value="${esc(s.contact_name_override ?? guessContactName(s.name, s.email))}" placeholder="Contact name" title="Contact first/last name used to pre-fill /signup - edits are saved automatically">
+          <input id="sub-pub-${s.id}" data-id="${s.id}" data-field="publication_name_override" onblur="saveSubscriberOverride(this)" style="${inputStyle}" value="${esc(s.publication_name_override ?? guessPublicationName(s.blog_url, s.email))}" placeholder="Publication name" title="Publication name used to pre-fill /signup - guessed from the domain, edits are saved automatically">
           <div style="display:flex;gap:6px">
             <button data-id="${s.id}" data-email="${esc(s.email || '')}" data-domain="${esc(s.blog_url || '')}" onclick="copySubscriberLink(this)" style="flex:1;background:#f4f4f8;border:none;border-radius:6px;padding:0.3rem 0.5rem;cursor:pointer;color:var(--ink-muted);font-size:0.7rem;font-weight:600" onmouseover="this.style.background='#e8e8f0'" onmouseout="this.style.background='#f4f4f8'">Copy link</button>
             <button data-id="${s.id}" data-email="${esc(s.email || '')}" data-domain="${esc(s.blog_url || '')}" onclick="openSubscriberLink(this)" title="Open signup link" style="background:#f4f4f8;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink-muted)" onmouseover="this.style.background='#e8e8f0'" onmouseout="this.style.background='#f4f4f8'">
@@ -1116,6 +1142,20 @@ async function loadSubscribers() {
       </td>
     </tr>
   `).join('');
+}
+
+// Saves both override fields together (not just the one blurred) since
+// the PATCH endpoint writes both columns every call - sending only one
+// would silently null out whichever field wasn't included.
+async function saveSubscriberOverride(input) {
+  const id = input.dataset.id;
+  const contact_name_override = document.getElementById(`sub-contact-${id}`).value.trim();
+  const publication_name_override = document.getElementById(`sub-pub-${id}`).value.trim();
+  await fetch('/api/admin?resource=subscribers', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify({ id, contact_name_override, publication_name_override }),
+  });
 }
 
 function copySubscriberLink(btn) {
