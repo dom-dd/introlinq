@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Partnering with IntroLinq</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink: #1a1a2e;
+      --gold: #e6a820;
+      --green: #3d7a5f;
+      --bg: #f9f8f5;
+      --white: #ffffff;
+      --border: rgba(0,0,0,0.08);
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--ink); line-height: 1.7; }
+    a { color: var(--green); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .header { background: var(--ink); color: white; padding: 2rem 0; }
+    .header-inner { max-width: 720px; margin: 0 auto; padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+    .logo { font-weight: 700; font-size: 1.2rem; color: white; letter-spacing: -0.02em; }
+    .logo span { color: var(--gold); }
+    .badge { background: var(--gold); color: var(--ink); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.2rem 0.6rem; border-radius: 100px; }
+
+    .hero { background: var(--ink); color: white; padding: 2.5rem 0 3rem; border-bottom: 3px solid var(--gold); }
+    .hero-inner { max-width: 720px; margin: 0 auto; padding: 0 1.5rem; }
+    .hero h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 0.6rem; }
+    .hero p { color: rgba(255,255,255,0.7); font-size: 1rem; max-width: 520px; }
+
+    .content { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+
+    .steps { counter-reset: steps; display: flex; flex-direction: column; gap: 0.875rem; margin-bottom: 2rem; }
+    .step { display: flex; gap: 1rem; align-items: flex-start; background: white; border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.35rem; }
+    .step-num { counter-increment: steps; background: var(--green); color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; margin-top: 2px; }
+    .step-num::before { content: counter(steps); }
+    .step-body h4 { font-weight: 600; margin-bottom: 0.2rem; font-size: 0.95rem; }
+    .step-body p { margin: 0; color: #555; font-size: 0.875rem; }
+
+    .callout { background: white; border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; padding: 1rem 1.25rem; margin-bottom: 2rem; font-size: 0.9rem; color: #555; }
+    .callout strong { color: var(--ink); }
+
+    .contact { background: var(--ink); color: white; border-radius: 12px; padding: 1.75rem 2rem; text-align: center; }
+    .contact h3 { font-size: 1.05rem; margin-bottom: 0.4rem; }
+    .contact p { color: rgba(255,255,255,0.6); margin-bottom: 0.9rem; font-size: 0.9rem; }
+    .contact a { color: var(--gold); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">Intro<span>Linq</span></div>
+    <span class="badge">Partnering</span>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-inner">
+    <h1>Partnering with IntroLinq</h1>
+    <p>We embed a widget on publisher blogs that recommends your experts to readers, and send you booking-ready traffic. Here's what a partnership needs on your side.</p>
+  </div>
+</div>
+
+<div class="content">
+  <div class="steps">
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <h4>Expert feed</h4>
+        <p>Share your current roster of bookable experts (name, bio, booking link) so we know who to recommend. Most platforms already have this as an API or export.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <h4>Attribution cookie</h4>
+        <p>A 30-day cookie on your domain, set from the referral link we send. Credits a booking back to us even if the reader converts days later, or books a different expert.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <h4>Booking webhook</h4>
+        <p>One API call to us when a booking completes. If you already track affiliate conversions elsewhere, this is usually a small addition, not new infrastructure.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <h4>Payment authorization</h4>
+        <p>A one-time, no-code link to authorize automatic billing - so commission gets collected on a schedule, with no invoices to chase on either side.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Full technical spec:</strong> once you're ready to scope the engineering work, <a href="/documentation">/documentation</a> has the exact API contract, request/response examples, and test mode.
+  </div>
+
+  <div class="contact">
+    <h3>Want to talk it through?</h3>
+    <p>Happy to answer questions before anyone writes code.</p>
+    <a href="mailto:hello@introlinq.com">hello@introlinq.com</a>
+  </div>
+</div>
+
+</body>
+</html>
