@@ -273,7 +273,7 @@ tr:last-child td{border-bottom:none}
 .prev-card-line.bio{background:#f0f0f8;width:95%}
 .prev-card-btn{height:14px;border-radius:100px;background:var(--gold);width:100%;margin-top:2px}
 
-/* ExpertBoard preview */
+/* Expert Board preview */
 @keyframes board-fadein{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
 .prev-board-search{height:22px;border-radius:100px;border:1px solid #e4e4ee;background:var(--white);display:flex;align-items:center;padding:0 10px;gap:6px;margin-bottom:8px}
 .prev-board-search-icon{width:8px;height:8px;border-radius:50%;border:1.5px solid #ccc}
@@ -320,7 +320,7 @@ tr:last-child td{border-bottom:none}
     <div class="setup-banner-top">
       <div>
         <div class="setup-banner-title">Add the widget to your blog to get started</div>
-        <div class="setup-banner-sub">Paste this before the <code style="background:rgba(255,255,255,0.1);padding:0 4px;border-radius:3px">&lt;/body&gt;</code> tag in your blog template. Need help? <a id="setup-install-link" href="/install">View the installation guide →</a></div>
+        <div class="setup-banner-sub">Add this once to your site's shared template (not each individual page) - paste it before the <code style="background:rgba(255,255,255,0.1);padding:0 4px;border-radius:3px">&lt;/body&gt;</code> tag, not in the header, so it loads without slowing your site down. It'll then appear automatically on every page. Need help? <a id="setup-install-link" href="/install">View the installation guide →</a></div>
       </div>
     </div>
     <div class="setup-embed">
@@ -428,7 +428,7 @@ tr:last-child td{border-bottom:none}
           <div class="wpreview-desc">
             <div class="wpreview-desc-label">Text Widget</div>
             <div class="wpreview-desc-text">Highlights phrases in your articles and shows a matching expert popup when readers hover.</div>
-            <div class="wpreview-desc-sub">Works automatically — no article edits needed. One snippet in your blog template is all it takes.</div>
+            <div class="wpreview-desc-sub">Works automatically - no article edits needed. One snippet in your blog template is all it takes.</div>
           </div>
           <div class="wpreview-anim">
             <div class="wpreview-inner">
@@ -458,7 +458,7 @@ tr:last-child td{border-bottom:none}
         <div class="section">
           <div class="section-header">
             <div class="section-title">Install Text Widget</div>
-            <div class="section-sub">Add to your blog template once — works on every article automatically</div>
+            <div class="section-sub">Add to your blog template once - works on every article automatically</div>
           </div>
           <div class="etab-group">
             <div class="etab-nav">
@@ -466,12 +466,12 @@ tr:last-child td{border-bottom:none}
               <button class="etab-btn" onclick="switchEmbedTab('tag-manager',this)">Google Tag Manager</button>
             </div>
             <div class="etab-panel active" data-etab="your-site">
-              <div class="section-sub" style="margin-bottom:0.625rem">Paste before the <code style="font-size:0.75rem;background:#f0f0f8;padding:1px 4px;border-radius:3px">&lt;/body&gt;</code> tag in your blog template</div>
+              <div class="section-sub" style="margin-bottom:0.625rem">Add once to your site's shared template, right before the <code style="font-size:0.75rem;background:#f0f0f8;padding:1px 4px;border-radius:3px">&lt;/body&gt;</code> tag - it'll then run on every page automatically</div>
               <div class="embed-code" id="embed-display"></div>
               <button class="copy-btn" onclick="copyEmbed()">Copy</button>
             </div>
             <div class="etab-panel" data-etab="tag-manager">
-              <div class="section-sub" style="margin-bottom:0.625rem">Add a Custom HTML tag in GTM — fire on All Pages</div>
+              <div class="section-sub" style="margin-bottom:0.625rem">Add a Custom HTML tag in GTM - fire on All Pages</div>
               <div class="embed-code" id="gtm-embed-display"></div>
               <button class="copy-btn" onclick="copyGtmEmbed()">Copy</button>
             </div>
@@ -479,13 +479,13 @@ tr:last-child td{border-bottom:none}
           <div class="install-guide-row">
             <span class="install-guide-label">Guides:</span>
             <div class="install-guide-icons">
-              <a class="install-guide-icon" id="install-guide-link" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#21759b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 14.5l-3-8.5h1.5l1.8 5.1 1.7-5.1h1.5l-3 8.5zm6.3 0h-1.5l-1.8-5.1-1.2 3.6.9 2.5H13l-1.2-3.3L13 9h1.5l1.8 5.1 1.5-5.1h1.5l-2.5 7.5z"/></svg> WordPress</a>
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#15171a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg> Ghost</a>
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#4353ff"><path d="M17.5 3h-11C4.67 3 3 4.67 3 6.5v11C3 19.33 4.67 21 6.5 21h11c1.83 0 3.5-1.67 3.5-3.5v-11C21 4.67 19.33 3 17.5 3zm-2.1 10.5l-2.4-4-1.6 2.7L10 10.5l-2.5 4.5h9.9l-2-1.5z"/></svg> Webflow</a>
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#000"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Squarespace</a>
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#FAAD4D"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg> Wix</a>
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#0055FF"><path d="M5 3h14v6h-7zm0 6h7l7 6H5zm0 6h7v6z"/></svg> Framer</a>
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Other</a>
+              <a class="install-guide-icon" id="install-guide-link" href="/install?tab=wordpress"><svg width="14" height="14" viewBox="0 0 24 24" fill="#21759b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 14.5l-3-8.5h1.5l1.8 5.1 1.7-5.1h1.5l-3 8.5zm6.3 0h-1.5l-1.8-5.1-1.2 3.6.9 2.5H13l-1.2-3.3L13 9h1.5l1.8 5.1 1.5-5.1h1.5l-2.5 7.5z"/></svg> WordPress</a>
+              <a class="install-guide-icon" href="/install?tab=ghost"><svg width="14" height="14" viewBox="0 0 24 24" fill="#15171a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg> Ghost</a>
+              <a class="install-guide-icon" href="/install?tab=webflow"><svg width="14" height="14" viewBox="0 0 24 24" fill="#4353ff"><path d="M17.5 3h-11C4.67 3 3 4.67 3 6.5v11C3 19.33 4.67 21 6.5 21h11c1.83 0 3.5-1.67 3.5-3.5v-11C21 4.67 19.33 3 17.5 3zm-2.1 10.5l-2.4-4-1.6 2.7L10 10.5l-2.5 4.5h9.9l-2-1.5z"/></svg> Webflow</a>
+              <a class="install-guide-icon" href="/install?tab=squarespace"><svg width="14" height="14" viewBox="0 0 24 24" fill="#000"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Squarespace</a>
+              <a class="install-guide-icon" href="/install?tab=wix"><svg width="14" height="14" viewBox="0 0 24 24" fill="#FAAD4D"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg> Wix</a>
+              <a class="install-guide-icon" href="/install?tab=framer"><svg width="14" height="14" viewBox="0 0 24 24" fill="#0055FF"><path d="M5 3h14v6h-7zm0 6h7l7 6H5zm0 6h7v6z"/></svg> Framer</a>
+              <a class="install-guide-icon" href="/install?tab=html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Any website</a>
             </div>
           </div>
         </div>
@@ -563,7 +563,7 @@ tr:last-child td{border-bottom:none}
         <div class="wpreview">
           <div class="wpreview-desc">
             <div class="wpreview-desc-label">Expert Carousel</div>
-            <div class="wpreview-desc-text">A scrollable row of expert cards — drop it at the end of any article or page.</div>
+            <div class="wpreview-desc-text">A scrollable row of expert cards - drop it at the end of any article or page.</div>
             <div class="wpreview-desc-sub">Readers can browse experts and book a call directly, without leaving your site.</div>
           </div>
           <div class="wpreview-anim">
@@ -614,7 +614,7 @@ tr:last-child td{border-bottom:none}
               <button class="copy-btn" onclick="copyCarouselEmbed()">Copy</button>
             </div>
             <div class="etab-panel" data-etab="tag-manager">
-              <div class="section-sub" style="margin-bottom:0.625rem">Add a Custom HTML tag in GTM — fire on the pages where you want the carousel</div>
+              <div class="section-sub" style="margin-bottom:0.625rem">Add a Custom HTML tag in GTM - fire on the pages where you want the carousel</div>
               <div class="embed-code" id="carousel-gtm-display"></div>
               <button class="copy-btn" onclick="copyCarouselGtm()">Copy</button>
             </div>
@@ -622,13 +622,13 @@ tr:last-child td{border-bottom:none}
           <div class="install-guide-row">
             <span class="install-guide-label">Guides:</span>
             <div class="install-guide-icons">
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#21759b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 14.5l-3-8.5h1.5l1.8 5.1 1.7-5.1h1.5l-3 8.5zm6.3 0h-1.5l-1.8-5.1-1.2 3.6.9 2.5H13l-1.2-3.3L13 9h1.5l1.8 5.1 1.5-5.1h1.5l-2.5 7.5z"/></svg> WordPress</a>
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#15171a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg> Ghost</a>
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#4353ff"><path d="M17.5 3h-11C4.67 3 3 4.67 3 6.5v11C3 19.33 4.67 21 6.5 21h11c1.83 0 3.5-1.67 3.5-3.5v-11C21 4.67 19.33 3 17.5 3zm-2.1 10.5l-2.4-4-1.6 2.7L10 10.5l-2.5 4.5h9.9l-2-1.5z"/></svg> Webflow</a>
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#000"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Squarespace</a>
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#FAAD4D"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg> Wix</a>
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#0055FF"><path d="M5 3h14v6h-7zm0 6h7l7 6H5zm0 6h7v6z"/></svg> Framer</a>
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Other</a>
+              <a class="install-guide-icon" href="/install?tab=wordpress"><svg width="14" height="14" viewBox="0 0 24 24" fill="#21759b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 14.5l-3-8.5h1.5l1.8 5.1 1.7-5.1h1.5l-3 8.5zm6.3 0h-1.5l-1.8-5.1-1.2 3.6.9 2.5H13l-1.2-3.3L13 9h1.5l1.8 5.1 1.5-5.1h1.5l-2.5 7.5z"/></svg> WordPress</a>
+              <a class="install-guide-icon" href="/install?tab=ghost"><svg width="14" height="14" viewBox="0 0 24 24" fill="#15171a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg> Ghost</a>
+              <a class="install-guide-icon" href="/install?tab=webflow"><svg width="14" height="14" viewBox="0 0 24 24" fill="#4353ff"><path d="M17.5 3h-11C4.67 3 3 4.67 3 6.5v11C3 19.33 4.67 21 6.5 21h11c1.83 0 3.5-1.67 3.5-3.5v-11C21 4.67 19.33 3 17.5 3zm-2.1 10.5l-2.4-4-1.6 2.7L10 10.5l-2.5 4.5h9.9l-2-1.5z"/></svg> Webflow</a>
+              <a class="install-guide-icon" href="/install?tab=squarespace"><svg width="14" height="14" viewBox="0 0 24 24" fill="#000"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Squarespace</a>
+              <a class="install-guide-icon" href="/install?tab=wix"><svg width="14" height="14" viewBox="0 0 24 24" fill="#FAAD4D"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg> Wix</a>
+              <a class="install-guide-icon" href="/install?tab=framer"><svg width="14" height="14" viewBox="0 0 24 24" fill="#0055FF"><path d="M5 3h14v6h-7zm0 6h7l7 6H5zm0 6h7v6z"/></svg> Framer</a>
+              <a class="install-guide-icon" href="/install?tab=html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Any website</a>
             </div>
           </div>
         </div>
@@ -636,7 +636,7 @@ tr:last-child td{border-bottom:none}
         <div class="section">
           <div class="section-header">
             <div class="section-title">Appearance</div>
-            <div class="section-sub">Changes save instantly — applies to all widgets</div>
+            <div class="section-sub">Changes save instantly - applies to all widgets</div>
           </div>
           <div class="settings-cols">
             <div class="settings-col settings-col-colors">
@@ -670,7 +670,7 @@ tr:last-child td{border-bottom:none}
           <div class="wpreview-desc">
             <div class="wpreview-desc-label">Expert Board</div>
             <div class="wpreview-desc-text">A full browsable expert directory with search and topic filters.</div>
-            <div class="wpreview-desc-sub">Ideal for a dedicated "Meet our experts" page — lets readers find and book the right person.</div>
+            <div class="wpreview-desc-sub">Ideal for a dedicated "Meet our experts" page - lets readers find and book the right person.</div>
           </div>
           <div class="wpreview-anim">
             <div class="wpreview-inner">
@@ -700,7 +700,7 @@ tr:last-child td{border-bottom:none}
           <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
             <div>
               <div class="section-title">Install Expert Board</div>
-              <div class="section-sub">Best placed on a dedicated page — gives visitors a full browsable expert directory</div>
+              <div class="section-sub">Best placed on a dedicated page - gives visitors a full browsable expert directory</div>
             </div>
             <a id="board-preview-link" href="#" target="_blank" rel="noopener" style="font-size:0.8rem;font-weight:600;color:var(--sage);text-decoration:none;white-space:nowrap;flex-shrink:0">Preview live →</a>
           </div>
@@ -715,7 +715,7 @@ tr:last-child td{border-bottom:none}
               <button class="copy-btn" onclick="copyBoardEmbed()">Copy</button>
             </div>
             <div class="etab-panel" data-etab="tag-manager">
-              <div class="section-sub" style="margin-bottom:0.625rem">Add a Custom HTML tag in GTM — fire on the page where you want the directory</div>
+              <div class="section-sub" style="margin-bottom:0.625rem">Add a Custom HTML tag in GTM - fire on the page where you want the directory</div>
               <div class="embed-code" id="board-gtm-display"></div>
               <button class="copy-btn" onclick="copyBoardGtm()">Copy</button>
             </div>
@@ -723,13 +723,13 @@ tr:last-child td{border-bottom:none}
           <div class="install-guide-row">
             <span class="install-guide-label">Guides:</span>
             <div class="install-guide-icons">
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#21759b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 14.5l-3-8.5h1.5l1.8 5.1 1.7-5.1h1.5l-3 8.5zm6.3 0h-1.5l-1.8-5.1-1.2 3.6.9 2.5H13l-1.2-3.3L13 9h1.5l1.8 5.1 1.5-5.1h1.5l-2.5 7.5z"/></svg> WordPress</a>
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#15171a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg> Ghost</a>
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#4353ff"><path d="M17.5 3h-11C4.67 3 3 4.67 3 6.5v11C3 19.33 4.67 21 6.5 21h11c1.83 0 3.5-1.67 3.5-3.5v-11C21 4.67 19.33 3 17.5 3zm-2.1 10.5l-2.4-4-1.6 2.7L10 10.5l-2.5 4.5h9.9l-2-1.5z"/></svg> Webflow</a>
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#000"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Squarespace</a>
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#FAAD4D"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg> Wix</a>
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="#0055FF"><path d="M5 3h14v6h-7zm0 6h7l7 6H5zm0 6h7v6z"/></svg> Framer</a>
-              <a class="install-guide-icon" href="/install"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Other</a>
+              <a class="install-guide-icon" href="/install?tab=wordpress"><svg width="14" height="14" viewBox="0 0 24 24" fill="#21759b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 14.5l-3-8.5h1.5l1.8 5.1 1.7-5.1h1.5l-3 8.5zm6.3 0h-1.5l-1.8-5.1-1.2 3.6.9 2.5H13l-1.2-3.3L13 9h1.5l1.8 5.1 1.5-5.1h1.5l-2.5 7.5z"/></svg> WordPress</a>
+              <a class="install-guide-icon" href="/install?tab=ghost"><svg width="14" height="14" viewBox="0 0 24 24" fill="#15171a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg> Ghost</a>
+              <a class="install-guide-icon" href="/install?tab=webflow"><svg width="14" height="14" viewBox="0 0 24 24" fill="#4353ff"><path d="M17.5 3h-11C4.67 3 3 4.67 3 6.5v11C3 19.33 4.67 21 6.5 21h11c1.83 0 3.5-1.67 3.5-3.5v-11C21 4.67 19.33 3 17.5 3zm-2.1 10.5l-2.4-4-1.6 2.7L10 10.5l-2.5 4.5h9.9l-2-1.5z"/></svg> Webflow</a>
+              <a class="install-guide-icon" href="/install?tab=squarespace"><svg width="14" height="14" viewBox="0 0 24 24" fill="#000"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Squarespace</a>
+              <a class="install-guide-icon" href="/install?tab=wix"><svg width="14" height="14" viewBox="0 0 24 24" fill="#FAAD4D"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg> Wix</a>
+              <a class="install-guide-icon" href="/install?tab=framer"><svg width="14" height="14" viewBox="0 0 24 24" fill="#0055FF"><path d="M5 3h14v6h-7zm0 6h7l7 6H5zm0 6h7v6z"/></svg> Framer</a>
+              <a class="install-guide-icon" href="/install?tab=html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Any website</a>
             </div>
           </div>
         </div>
@@ -737,7 +737,7 @@ tr:last-child td{border-bottom:none}
         <div class="section">
           <div class="section-header">
             <div class="section-title">Appearance</div>
-            <div class="section-sub">Changes save instantly — applies to all widgets</div>
+            <div class="section-sub">Changes save instantly - applies to all widgets</div>
           </div>
           <div class="settings-cols">
             <div class="settings-col settings-col-colors">

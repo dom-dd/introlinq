@@ -149,13 +149,13 @@
     <pre><code>POST https://www.introlinq.com/api/dashboard?action=booking&amp;pub={your-platform-slug}
 Content-Type: application/json
 x-introlinq-secret: {your_secret_key}</code></pre>
-    <p style="margin-top:0.75rem;font-size:0.875rem;color:#555">The <code>pub</code> parameter is your fixed platform identifier (e.g. <code>open-intro</code>) — it stays the same for every booking you send. IntroLinq resolves which publisher to pay from the <code>click_id</code>.</p>
+    <p style="margin-top:0.75rem;font-size:0.875rem;color:#555">The <code>pub</code> parameter is your fixed platform identifier (e.g. <code>open-intro</code>) - it stays the same for every booking you send. IntroLinq resolves which publisher to pay from the <code>click_id</code>.</p>
 
     <h3>Payload</h3>
     <table>
       <tr><th>Field</th><th>Type</th><th>Description</th></tr>
       <tr><td>click_id</td><td>string <span class="req">required</span></td><td>The <code>click_id</code> received in the attribution URL. This is how IntroLinq identifies which publisher referred the reader and calculates their payout.</td></tr>
-      <tr><td>booking_amount</td><td>number <span class="req">required</span></td><td>The amount IntroLinq uses to calculate the publisher payout — as agreed in your partner contract. The publisher receives their revenue share percentage of this figure.</td></tr>
+      <tr><td>booking_amount</td><td>number <span class="req">required</span></td><td>The amount IntroLinq uses to calculate the publisher payout - as agreed in your partner contract. The publisher receives their revenue share percentage of this figure.</td></tr>
       <tr><td>currency</td><td>string <span class="req">required</span></td><td>ISO 4217 currency code, e.g. <code>GBP</code>, <code>EUR</code>, <code>USD</code>.</td></tr>
       <tr><td>expert_id</td><td>integer <span class="opt">optional</span></td><td>Your internal expert ID.</td></tr>
       <tr><td>expert_name</td><td>string <span class="opt">optional</span></td><td>Expert's full name - shown in the publisher's commission email.</td></tr>
@@ -213,7 +213,7 @@ x-introlinq-secret: {your_secret_key}</code></pre>
   <div class="section">
     <h2>Authentication</h2>
     <p>All webhook requests must include your secret key in the <code>x-introlinq-secret</code> header. Your key is shared with you directly - never include it in client-side code or public repositories.</p>
-    <p>We recommend rotating your key every 6–12 months. Contact us to issue a new one.</p>
+    <p>We recommend rotating your key every 6-12 months. Contact us to issue a new one.</p>
   </div>
 
   <div class="section">

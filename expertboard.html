@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ExpertBoard Preview — IntroLinq</title>
+<title>Expert Board Preview - IntroLinq</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -22,6 +22,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .pub-switcher button{padding:0.45rem 1rem;background:#1a1a2e;color:#fff;border:none;border-radius:8px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
 .pub-switcher button:hover{opacity:0.85}
 .board-wrap{background:#fff;border:1px solid #e4e4ee;border-radius:14px;padding:2rem}
+.pub-linked{display:flex;align-items:center;gap:0.5rem;font-size:0.8125rem;color:#4a4a6a}
+.pub-linked strong{color:#1a1a2e;font-family:monospace;background:#f4f4f8;padding:0.15rem 0.5rem;border-radius:5px}
+.board-section-title{font-size:1.0625rem;font-weight:700;color:#1a1a2e;margin-bottom:0.875rem;letter-spacing:-0.01em}
 </style>
 </head>
 <body>
@@ -30,22 +33,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
   <div class="banner-left">
     <img src="https://www.introlinq.com/favicon.svg" class="banner-logo" alt="IntroLinq">
     <div class="banner-divider"></div>
-    <div class="banner-name">ExpertBoard Preview</div>
+    <div class="banner-name">Expert Board Preview</div>
   </div>
-  <span class="badge">Admin</span>
+  <span class="badge" id="admin-badge">Admin</span>
 </div>
 
 <div class="container">
-  <div class="pub-switcher">
+  <div class="pub-switcher" id="pub-switcher">
     <label>Publisher slug</label>
     <input type="text" id="pub-input" placeholder="e.g. little-green-agency">
     <button onclick="loadBoard()">Load</button>
   </div>
-  <div style="font-size:0.8125rem;font-weight:600;color:#4a4a6a;margin-bottom:0.75rem">Expert Carousel</div>
+  <div class="board-section-title">Expert Carousel</div>
   <div class="board-wrap" id="carousel-wrap" style="margin-bottom:2rem">
     <div style="text-align:center;padding:2rem;color:#8888a8;font-size:0.875rem">Enter a publisher slug above and click Load.</div>
   </div>
-  <div style="font-size:0.8125rem;font-weight:600;color:#4a4a6a;margin-bottom:0.75rem">ExpertBoard (full grid)</div>
+  <div class="board-section-title">Expert Board (full grid)</div>
   <div class="board-wrap" id="board-wrap">
     <div style="text-align:center;padding:3rem;color:#8888a8;font-size:0.875rem">Enter a publisher slug above and click Load.</div>
   </div>
@@ -56,8 +59,8 @@ function getParam(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
 
-function loadBoard() {
-  var pub = document.getElementById('pub-input').value.trim();
+function loadBoard(pub) {
+  pub = (pub || document.getElementById('pub-input').value).trim();
   if (!pub) return;
   history.replaceState(null, '', '?pub=' + encodeURIComponent(pub));
   var ts = Date.now();
@@ -88,11 +91,19 @@ function loadBoard() {
   document.getElementById('board-wrap').appendChild(bs);
 }
 
-// Auto-load from URL param
+// Auto-load from URL param. When a publisher arrives via their dashboard's
+// "Preview live" link, the slug is baked into the URL - lock it to a
+// read-only display instead of leaving it as a free-text field, so they
+// can't retype it to browse another publisher's board. Admins testing
+// this page directly (no ?pub=) still get the free-text input.
 var pub = getParam('pub');
 if (pub) {
-  document.getElementById('pub-input').value = pub;
-  loadBoard();
+  document.getElementById('admin-badge').style.display = 'none';
+  document.getElementById('pub-switcher').outerHTML =
+    '<div class="pub-switcher"><div class="pub-linked">Linked to <strong>' +
+    pub.replace(/[<>&"]/g, function(c) { return { '<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;' }[c]; }) +
+    '</strong></div></div>';
+  loadBoard(pub);
 }
 </script>
 </body>

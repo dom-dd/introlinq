@@ -13,9 +13,9 @@ function normaliseUrl(url) {
 function formatVisitors(val) {
   const map = {
     under_1k: 'Under 1,000',
-    '1k_10k': '1,000 – 10,000',
-    '10k_50k': '10,000 – 50,000',
-    '50k_100k': '50,000 – 100,000',
+    '1k_10k': '1,000 - 10,000',
+    '10k_50k': '10,000 - 50,000',
+    '50k_100k': '50,000 - 100,000',
     '100k_plus': '100,000+',
   };
   return map[val] || val;

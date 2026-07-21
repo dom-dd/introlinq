@@ -104,7 +104,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 
   <!-- Platform tabs -->
   <div class="tab-row">
-    <button class="tab active" onclick="switchTab('wordpress',this)">
+    <button class="tab active" onclick="switchTab('html',this)">
+      <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="#4a4a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Any website
+    </button>
+    <button class="tab" onclick="switchTab('wordpress',this)">
       <svg class="tab-icon" viewBox="0 0 24 24" fill="#21759b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 14.5l-3-8.5h1.5l1.8 5.1 1.7-5.1h1.5l-3 8.5zm6.3 0h-1.5l-1.8-5.1-1.2 3.6.9 2.5H13l-1.2-3.3L13 9h1.5l1.8 5.1 1.5-5.1h1.5l-2.5 7.5z"/></svg>
       WordPress
     </button>
@@ -132,14 +136,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
       <svg class="tab-icon" viewBox="0 0 24 24" fill="#4285f4"><path d="M12 2L2 7l10 5 10-5-10-5zm0 15l-7-3.5V18l7 3.5 7-3.5v-4.5L12 17z"/></svg>
       Tag Manager
     </button>
-    <button class="tab" onclick="switchTab('html',this)">
-      <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="#4a4a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-      Other / HTML
-    </button>
   </div>
 
   <!-- WordPress -->
-  <div class="platform active" id="tab-wordpress">
+  <div class="platform" id="tab-wordpress">
 
     <div style="background:var(--sage-light);border:1px solid rgba(61,122,95,0.2);border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1.75rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
       <div>
@@ -392,8 +392,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
     <div class="note"><strong>Already using GTM?</strong> This is the fastest path - no changes to your site's code needed, works across WordPress, Wix, Squarespace, or any platform that has GTM installed.</div>
   </div>
 
-  <!-- Other / HTML -->
-  <div class="platform" id="tab-html">
+  <!-- Any website / HTML -->
+  <div class="platform active" id="tab-html">
     <div class="steps">
       <div class="step">
         <div class="step-num">1</div>
@@ -433,13 +433,13 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
         <div class="check-icon">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
-        Open a published article on your site with at least 3–4 paragraphs of text.
+        Open a published article on your site with at least 3-4 paragraphs of text.
       </div>
       <div class="check-item">
         <div class="check-icon">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
-        Wait 2–3 seconds for the widget to run. If there's a matching expert, a phrase in the article will be subtly underlined.
+        Wait 2-3 seconds for the widget to run. If there's a matching expert, a phrase in the article will be subtly underlined.
       </div>
       <div class="check-item">
         <div class="check-icon">
@@ -494,6 +494,15 @@ function switchTab(name, el) {
   document.querySelectorAll('.platform').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
+}
+
+// Deep-link support: dashboard "Guides" icons pass ?tab=wordpress etc so
+// clicking Wix opens straight to the Wix instructions instead of always
+// landing on the default first tab.
+const requestedTab = params.get('tab');
+if (requestedTab) {
+  const requestedBtn = document.querySelector(`.tab[onclick*="switchTab('${requestedTab}'"]`);
+  if (requestedBtn) switchTab(requestedTab, requestedBtn);
 }
 </script>
 </body>

@@ -251,9 +251,8 @@ tr:hover td{background:rgba(0,0,0,0.01)}
                 <th>Links</th>
                 <th>Stats</th>
                 <th>Networks</th>
-                <th>Status</th>
                 <th>Added</th>
-                <th>Issues</th>
+                <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -513,7 +512,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
             </div>
           </div>
           <div class="form-group" style="margin-bottom:0.75rem">
-            <label class="form-label">Bio (used for matching — be specific about expertise)</label>
+            <label class="form-label">Bio (used for matching - be specific about expertise)</label>
             <textarea class="form-input" id="ef-bio" rows="3" style="height:auto;resize:vertical" placeholder="Describe what this expert specialises in and who they help..."></textarea>
           </div>
           <div class="form-row">
@@ -757,7 +756,7 @@ async function loadStats() {
 }
 
 // Each row here is one automated health check on a publisher account -
-// rendered as a small circular icon with a hover tooltip in the "Issues"
+// rendered as a small circular icon with a hover tooltip in the "Status"
 // column. Add another row to flag more problems the same way; icon/color
 // are just visual, the tooltip text does the actual explaining.
 const PUBLISHER_ISSUE_CHECKS = [
@@ -799,7 +798,20 @@ function renderWidgetStatusIcon(p) {
   }
   const color = isLive ? '#16a34a' : '#dc2626';
   const bg = isLive ? '#f0fdf4' : '#fef2f2';
-  return `<span title="${esc(tooltip)}" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:${bg};color:${color};flex-shrink:0;cursor:default;font-size:12px;line-height:1">🔗</span>`;
+  const icon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+  return `<span title="${esc(tooltip)}" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:${bg};color:${color};flex-shrink:0;cursor:default">${icon}</span>`;
+}
+
+// Replaces the old plain-text "Active"/"Inactive" badge column - same
+// on/off power icon used on the toggle action button, so a publisher's
+// active state reads at a glance alongside the other status icons instead
+// of needing its own dedicated column.
+function renderActiveStatusIcon(p) {
+  const color = p.active ? '#16a34a' : '#8888a8';
+  const bg = p.active ? '#f0fdf4' : '#f4f4f8';
+  const tooltip = p.active ? 'Active - eligible to match and earn commission.' : 'Inactive - deactivated, widget will not match on their site.';
+  const icon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18.36 6.64A9 9 0 1 1 5.64 6.64"/><line x1="12" y1="2" x2="12" y2="12"/></svg>';
+  return `<span title="${esc(tooltip)}" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:${bg};color:${color};flex-shrink:0;cursor:default">${icon}</span>`;
 }
 
 async function loadPublishers() {
@@ -809,7 +821,7 @@ async function loadPublishers() {
   const tbody = document.getElementById('publishers-tbody');
 
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty">No publishers yet. Add your first one above.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">No publishers yet. Add your first one above.</td></tr>';
     return;
   }
 
@@ -848,9 +860,8 @@ async function loadPublishers() {
           <img src="/networks%20logos/OpenIntro-icon.png" alt="OpenIntro" title="OpenIntro" style="width:20px;height:20px;object-fit:contain;border-radius:4px;${(p.enabled_partners||['openintro']).includes('openintro') ? '' : 'filter:grayscale(1) opacity(0.3)'}">
         </div>
       </td>
-      <td><span class="badge ${p.active ? 'badge-active' : 'badge-inactive'}">${p.active ? 'Active' : 'Inactive'}</span></td>
       <td style="white-space:nowrap">${new Date(p.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' })}</td>
-      <td><div style="display:flex;gap:4px">${renderWidgetStatusIcon(p)}${renderPublisherIssues(p)}</div></td>
+      <td><div style="display:flex;gap:4px">${renderActiveStatusIcon(p)}${renderWidgetStatusIcon(p)}${renderPublisherIssues(p)}</div></td>
       <td>
         <div style="display:flex;gap:6px;align-items:center;justify-content:flex-start">
           <button onclick="recrawlPublisher('${esc(p.slug)}')" title="Recrawl - clear this publisher's page cache so every page re-scans on next visit" style="background:#fff7e6;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
@@ -1129,7 +1140,7 @@ async function clearNoMatchCache() {
   });
   const data = await res.json();
   if (data.ok) {
-    status.textContent = `Done — ${data.deleted} no-match cache entries cleared.`;
+    status.textContent = `Done - ${data.deleted} no-match cache entries cleared.`;
   } else {
     status.textContent = 'Failed: ' + (data.error || 'unknown error');
   }
@@ -1176,7 +1187,7 @@ async function loadGroups() {
     <tr>
       <td class="td-name">${esc(g.name)}</td>
       <td style="font-size:0.8rem;color:var(--ink-muted);font-family:monospace">${esc(g.slug)}</td>
-      <td>${g.logo_url ? `<img src="${esc(g.logo_url)}" style="height:20px;width:auto;object-fit:contain;border-radius:3px" alt="${esc(g.name)}">` : '<span style="font-size:0.75rem;color:var(--ink-muted)">—</span>'}</td>
+      <td>${g.logo_url ? `<img src="${esc(g.logo_url)}" style="height:20px;width:auto;object-fit:contain;border-radius:3px" alt="${esc(g.name)}">` : '<span style="font-size:0.75rem;color:var(--ink-muted)">-</span>'}</td>
       <td><span class="badge ${g.is_demo ? '' : 'badge-active'}" style="${g.is_demo ? 'background:#f4f4f8;color:var(--ink-muted)' : ''}">${g.is_demo ? 'Demo' : 'Live'}</span></td>
       <td style="white-space:nowrap;display:flex;gap:0.375rem">
         ${g.is_demo ? `<a href="/demo/${esc(g.slug)}" target="_blank" class="btn btn-sm" style="background:#f4f4f8;color:var(--ink);text-decoration:none">View</a>` : ''}
@@ -1498,7 +1509,7 @@ document.getElementById('group-edit-overlay').addEventListener('click', function
       <textarea class="form-input" id="em-bio" rows="4" style="resize:vertical;font-family:inherit"></textarea>
     </div>
     <div class="form-group" style="margin-bottom:0.875rem">
-      <label class="form-label">Headline <span style="color:var(--ink-muted);font-weight:400;font-size:0.75rem">— punchy one-liner on cards (e.g. "£500m exit")</span></label>
+      <label class="form-label">Headline <span style="color:var(--ink-muted);font-weight:400;font-size:0.75rem">- punchy one-liner on cards (e.g. "£500m exit")</span></label>
       <div style="display:flex;gap:0.5rem">
         <input class="form-input" id="em-headline" placeholder="e.g. £500m exit" style="flex:1">
         <button type="button" onclick="generateHeadlineForEdit()" id="em-headline-btn" style="padding:0 0.875rem;background:#f4f4f8;border:1.5px solid #e4e4ee;border-radius:8px;font-size:0.75rem;cursor:pointer;white-space:nowrap;color:var(--ink);font-family:inherit">✨ Auto</button>
@@ -1627,7 +1638,7 @@ async function loadHeadlines() {
     const translated = e.headlines && Object.keys(e.headlines).length > 1;
     return `<tr id="hl-row-${e.id}">
       <td style="font-size:0.8125rem"><strong>${esc(e.name)}</strong><br><span style="font-size:0.75rem;color:var(--ink-muted)">${esc(e.position || '')}${e.company ? ' · ' + esc(e.company) : ''}</span></td>
-      <td><input class="form-input" style="padding:0.35rem 0.6rem;font-size:0.8rem;${isManual ? '' : 'color:var(--ink-muted)'}" id="hl-input-${e.id}" value="${esc(hl)}" placeholder="e.g. £500m exit" title="${isManual ? 'Manual headline' : 'From OpenIntro short description — save to customise'}"></td>
+      <td><input class="form-input" style="padding:0.35rem 0.6rem;font-size:0.8rem;${isManual ? '' : 'color:var(--ink-muted)'}" id="hl-input-${e.id}" value="${esc(hl)}" placeholder="e.g. £500m exit" title="${isManual ? 'Manual headline' : 'From OpenIntro short description - save to customise'}"></td>
       <td style="white-space:nowrap;display:flex;gap:0.375rem;align-items:center">
         <button class="btn btn-primary btn-sm" onclick="saveOneHeadline(${e.id})">Save</button>
         <button class="btn btn-ghost btn-sm" onclick="autoHeadline(${e.id})" title="Auto-generate from bio">✨</button>
