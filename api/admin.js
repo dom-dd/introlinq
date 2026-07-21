@@ -274,6 +274,14 @@ export default async function handler(req, res) {
     });
   }
 
+  // Waitlist signups (from the pre-launch landing pages) - not yet full
+  // publisher accounts. Listed here so they can be followed up with a
+  // personalized /signup link that pre-fills what they already gave us.
+  if (resource === 'subscribers') {
+    const rows = await sql`SELECT id, name, email, blog_url, monthly_visitors, country, created_at FROM subscribers ORDER BY created_at DESC`;
+    return res.status(200).json(rows);
+  }
+
   // Publishers
   if (resource === 'publishers') {
     await sql`

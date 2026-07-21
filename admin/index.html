@@ -142,6 +142,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
   <!-- Tab bar - full width flush below header -->
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('publishers',this)">Publishers</button>
+    <button class="tab-btn" onclick="switchTab('waitlist',this)">Waitlist</button>
     <button class="tab-btn" onclick="switchTab('bookings',this)">Bookings</button>
     <button class="tab-btn" onclick="switchTab('logs',this)">Logs</button>
     <button class="tab-btn" onclick="switchTab('cache',this)">Cache</button>
@@ -257,7 +258,34 @@ tr:hover td{background:rgba(0,0,0,0.01)}
               </tr>
             </thead>
             <tbody id="publishers-tbody">
-              <tr><td colspan="8" class="empty">Loading...</td></tr>
+              <tr><td colspan="7" class="empty">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Waitlist tab -->
+    <div class="tab-panel" id="tab-waitlist">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Waitlist signups</div>
+        </div>
+        <div class="section-body" style="overflow-x:auto">
+          <table style="min-width:900px">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Blog</th>
+                <th>Visitors</th>
+                <th>Country</th>
+                <th>Added</th>
+                <th>Signup link</th>
+              </tr>
+            </thead>
+            <tbody id="subscribers-tbody">
+              <tr><td colspan="7" class="empty">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -630,6 +658,7 @@ function showAdmin() {
   document.getElementById('admin-view').style.display = 'block';
   loadStats();
   loadPublishers();
+  loadSubscribers();
   loadBookings();
   loadGlobalLogs();
   loadGroups();
@@ -991,6 +1020,59 @@ async function editRevenueShare(id, currentPercent) {
   if (!res.ok) { toast('Failed to update revenue share'); return; }
   toast(`Revenue share updated to ${pct}%`);
   loadPublishers();
+}
+
+const VISITOR_LABELS = {
+  under_1k: 'Under 1,000', '1k_10k': '1,000 - 10,000', '10k_50k': '10,000 - 50,000',
+  '50k_100k': '50,000 - 100,000', '100k_plus': '100,000+',
+};
+
+// Builds the same ?name=&email=&domain= link that /signup reads to
+// pre-fill the form - keeps the two in sync in one place.
+function subscriberSignupLink(s) {
+  const params = new URLSearchParams();
+  if (s.name) params.set('name', s.name.trim());
+  if (s.email) params.set('email', s.email.trim());
+  if (s.blog_url) params.set('domain', s.blog_url.trim());
+  return `https://www.introlinq.com/signup?${params.toString()}`;
+}
+
+async function loadSubscribers() {
+  const res = await fetch('/api/admin?resource=subscribers');
+  const list = await res.json();
+  const tbody = document.getElementById('subscribers-tbody');
+
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">No waitlist signups yet.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(s => {
+    const link = subscriberSignupLink(s);
+    return `
+    <tr>
+      <td>${esc(s.name || '-')}</td>
+      <td style="font-size:0.8125rem">${esc(s.email)}</td>
+      <td>${s.blog_url ? `<a href="${esc(/^https?:\/\//i.test(s.blog_url) ? s.blog_url : 'https://' + s.blog_url)}" target="_blank" style="color:var(--ink-soft);font-size:0.8125rem">${esc(s.blog_url)}</a>` : '-'}</td>
+      <td style="font-size:0.8125rem;color:var(--ink-soft)">${esc(VISITOR_LABELS[s.monthly_visitors] || s.monthly_visitors || '-')}</td>
+      <td style="font-size:0.8125rem;color:var(--ink-soft)">${esc(countryName(s.country))}</td>
+      <td style="white-space:nowrap">${new Date(s.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' })}</td>
+      <td>
+        <div style="display:flex;gap:6px;align-items:center">
+          <a href="${esc(link)}" target="_blank" style="font-size:0.75rem;color:var(--sage);text-decoration:none;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(link)}">${esc(link.replace('https://www.introlinq.com', ''))}</a>
+          <button onclick="copySubscriberLink('${esc(link)}')" title="Copy signup link" style="background:#f4f4f8;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink-muted)" onmouseover="this.style.background='#e8e8f0'" onmouseout="this.style.background='#f4f4f8'">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `;
+  }).join('');
+}
+
+function copySubscriberLink(link) {
+  navigator.clipboard.writeText(link);
+  toast('Signup link copied');
 }
 
 let _allBookings = [];
