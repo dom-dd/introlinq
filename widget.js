@@ -391,6 +391,15 @@
       'transition:opacity .18s ease,transform .18s ease;pointer-events:none;' +
       'border:1px solid rgba(26,26,46,0.10);' +
       'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;' +
+      // -webkit-text-size-adjust:100% pins our declared font sizes exactly -
+      // mobile Safari/Chrome auto-boost small text in narrow columns based on
+      // the HOST page's surrounding layout (a heuristic meant for the page's
+      // own article text), which can inflate an 8.5px footer label enough to
+      // overflow the card on one publisher's page but not another's, even
+      // with byte-identical widget HTML. overflow:hidden is the hard
+      // backstop: nothing can ever visually escape the rounded card,
+      // whatever the cause.
+      '-webkit-text-size-adjust:100%;text-size-adjust:100%;overflow:hidden;' +
       'box-sizing:border-box;line-height:normal;text-align:left}' +
       '#il-pop.il-on{opacity:1;transform:translateY(0);pointer-events:all}' +
       '#il-pop *{box-sizing:border-box}';
@@ -687,15 +696,21 @@
       var providerLogoUrl = e.provider_logo_url || null;
       var providerUrl = e.provider_website_url || '#';
       var cfg = { name: providerName, url: providerUrl, logo: providerLogoUrl };
-      var ilLogo = '<img src="https://www.introlinq.com/favicon.svg" alt="IntroLinq" style="width:11px;height:11px;border-radius:2px;vertical-align:middle;margin-right:3px">';
-      var s = 'font-size:8.5px;color:#8888a8;font-family:Inter,system-ui,sans-serif;text-decoration:none;display:flex;align-items:center;gap:2px';
-      pv.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-top:6px;padding-top:6px;border-top:1px solid rgba(26,26,46,0.07)';
+      var ilLogo = '<img src="https://www.introlinq.com/favicon.svg" alt="IntroLinq" style="width:11px;height:11px;border-radius:2px;vertical-align:middle;margin-right:3px;flex-shrink:0">';
+      // min-width:0 is load-bearing: flex items default to min-width:auto
+      // (their own content size), which blocks shrinking below that and
+      // pushes the item outside the card instead - min-width:0 + overflow
+      // hidden + nowrap lets these two labels actually give way to each
+      // other on a narrow popup rather than wrapping to a second line or
+      // spilling past the card's rounded corner.
+      var s = 'font-size:8.5px;color:#8888a8;font-family:Inter,system-ui,sans-serif;text-decoration:none;display:flex;align-items:center;gap:2px;min-width:0;overflow:hidden;white-space:nowrap;flex-shrink:1';
+      pv.style.cssText = 'display:flex;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:8px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(26,26,46,0.07)';
       var partnerLink;
       if (e.is_demo_provider && cfg.logo) {
-        partnerLink = '<a href="' + cfg.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with <img src="' + cfg.logo + '" alt="' + cfg.name + '" style="height:14px;width:auto;max-width:70px;object-fit:contain;margin-left:4px;vertical-align:middle"></a>';
+        partnerLink = '<a href="' + cfg.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with <img src="' + cfg.logo + '" alt="' + cfg.name + '" style="height:14px;width:auto;max-width:70px;object-fit:contain;margin-left:4px;vertical-align:middle;flex-shrink:0"></a>';
       } else {
         var providerLogoHtml = cfg.logo
-          ? '<img src="' + cfg.logo + '" alt="' + cfg.name + '" style="width:13px;height:13px;object-fit:contain;border-radius:2px;vertical-align:middle;margin-right:3px">'
+          ? '<img src="' + cfg.logo + '" alt="' + cfg.name + '" style="width:13px;height:13px;object-fit:contain;border-radius:2px;vertical-align:middle;margin-right:3px;flex-shrink:0">'
           : '';
         partnerLink = '<a href="' + cfg.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with ' + providerLogoHtml + cfg.name + '</a>';
       }
