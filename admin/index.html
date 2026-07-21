@@ -772,9 +772,34 @@ const PUBLISHER_ISSUE_CHECKS = [
 function renderPublisherIssues(p) {
   const issues = PUBLISHER_ISSUE_CHECKS.filter(c => c.test(p));
   if (!issues.length) return '';
-  return `<div style="display:flex;gap:4px">${issues.map(c => `
+  return issues.map(c => `
     <span title="${esc(c.text(p))}" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:${c.bg};color:${c.color};flex-shrink:0;cursor:default">${c.icon}</span>
-  `).join('')}</div>`;
+  `).join('');
+}
+
+// Unlike the conditional checks above, this is shown for every publisher
+// (green = healthy) so the whole table can be scanned at a glance for who's
+// live vs who needs a nudge. Red covers both "never installed" and
+// "installed then went quiet" (script removed, site redesign, etc) - the
+// tooltip tells the two apart. 14 days of silence is treated as "flag it";
+// a single missed day is normal (low-traffic blogs, weekends).
+const WIDGET_STALE_MS = 14 * 24 * 60 * 60 * 1000;
+
+function renderWidgetStatusIcon(p) {
+  const fmt = d => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
+  const lastFire = p.last_widget_fire_at ? new Date(p.last_widget_fire_at) : null;
+  const isLive = !!lastFire && (Date.now() - lastFire.getTime()) < WIDGET_STALE_MS;
+  let tooltip;
+  if (!p.first_widget_fire_at) {
+    tooltip = `Widget has never fired - the embed code likely hasn't been added to their site yet.`;
+  } else if (!isLive) {
+    tooltip = `Widget went live on ${fmt(new Date(p.first_widget_fire_at))} but hasn't fired since ${fmt(lastFire)} - it may have been removed.`;
+  } else {
+    tooltip = `Widget is live and firing. First seen ${fmt(new Date(p.first_widget_fire_at))}, last seen ${fmt(lastFire)}.`;
+  }
+  const color = isLive ? '#16a34a' : '#dc2626';
+  const bg = isLive ? '#f0fdf4' : '#fef2f2';
+  return `<span title="${esc(tooltip)}" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:${bg};color:${color};flex-shrink:0;cursor:default;font-size:12px;line-height:1">🔗</span>`;
 }
 
 async function loadPublishers() {
@@ -825,7 +850,7 @@ async function loadPublishers() {
       </td>
       <td><span class="badge ${p.active ? 'badge-active' : 'badge-inactive'}">${p.active ? 'Active' : 'Inactive'}</span></td>
       <td style="white-space:nowrap">${new Date(p.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' })}</td>
-      <td>${renderPublisherIssues(p)}</td>
+      <td><div style="display:flex;gap:4px">${renderWidgetStatusIcon(p)}${renderPublisherIssues(p)}</div></td>
       <td>
         <div style="display:flex;gap:6px;align-items:center;justify-content:flex-start">
           <button onclick="recrawlPublisher('${esc(p.slug)}')" title="Recrawl - clear this publisher's page cache so every page re-scans on next visit" style="background:#fff7e6;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">

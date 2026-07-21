@@ -14,6 +14,7 @@ const GLOBAL_CACHE_COUNTRY = 'XX';
 
 let logTableReady = false;
 let cacheTableReady = false;
+let publisherActivityColumnsReady = false;
 let expertsCache = null;
 let expertsCacheTime = 0;
 const EXPERTS_TTL = 5 * 60 * 1000;
@@ -194,6 +195,59 @@ async function ensureLogTable(sql) {
   logTableReady = true;
 }
 
+// Called on every impression (cache hit or fresh scan) for a real,
+// registered publisher. first_widget_fire_at is set only once - the
+// COALESCE keeps whatever value it already had, and NOW() is evaluated
+// once per statement in Postgres, so comparing it back against the exact
+// same NOW() reliably detects "this call is the one that just set it" vs
+// "it was already set before this call" without a race condition.
+// last_widget_fire_at updates on every call, letting the admin panel later
+// tell "went quiet after being live" apart from "never installed at all".
+async function markPublisherActivity(sql, publisher) {
+  if (!publisher) return;
+  if (!publisherActivityColumnsReady) {
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS first_widget_fire_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS last_widget_fire_at TIMESTAMPTZ`.catch(() => {});
+    publisherActivityColumnsReady = true;
+  }
+  const [row] = await sql`
+    UPDATE publishers
+    SET last_widget_fire_at = NOW(),
+        first_widget_fire_at = COALESCE(first_widget_fire_at, NOW())
+    WHERE slug = ${publisher}
+    RETURNING name, (first_widget_fire_at = NOW()) AS just_went_live
+  `.catch(() => [null]);
+  if (row?.just_went_live) {
+    notifyPublisherWentLive(row.name, publisher).catch(() => {});
+  }
+}
+
+// Fires once per publisher, ever - the moment their widget successfully
+// reaches this endpoint for the first time, confirming installation
+// actually happened. Lets the team celebrate real go-lives and, just as
+// usefully, tells them by omission who to follow up with.
+async function notifyPublisherWentLive(name, publisher) {
+  if (process.env.SLACK_WEBHOOK_URL) {
+    fetch(process.env.SLACK_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: `🎉 *${name}* just went live - their widget fired for the first time. Installation confirmed!` }),
+    }).catch(() => {});
+  }
+  if (process.env.RESEND_API_KEY && process.env.COMPANY_NOTIFICATION_EMAIL) {
+    fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'IntroLinq <notifications@introlinq.com>',
+        to: process.env.COMPANY_NOTIFICATION_EMAIL,
+        subject: `${name} just went live on IntroLinq`,
+        text: `${name} (${publisher}) just installed the widget and it fired for the first time - they're officially live.`,
+      }),
+    }).catch(() => {});
+  }
+}
+
 // A cache hit still counts as an impression (log) and, when it actually
 // showed experts, a Slack ping. Shared by every cache-serving path - this
 // block used to be copy-pasted three times with drifting details.
@@ -204,6 +258,7 @@ function logCachedImpression(sql, { publisher, page_url, page_title, matches, re
   sql`INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, country_code, cost_usd)
     VALUES (${publisher || null}, '[cached]', ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${readerCountry || null}, 0)
   `.catch(() => {});
+  markPublisherActivity(sql, publisher).catch(() => {});
   postSlackNotification(sql, { publisher, page_url, page_title, matchCount: matches.length, readerCountry, cached: true }).catch(() => {});
 }
 
@@ -526,6 +581,7 @@ async function handleReport(req, res) {
       INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, country_code, cost_usd)
       VALUES (${publisher || null}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${noMatchLogReason}, ${readerCountry || null}, ${reportCostUsd})
     `.catch(() => {});
+    await markPublisherActivity(sql, publisher);
 
     await postSlackNotification(sql, { publisher, page_url, page_title, matchCount: matches.length, readerCountry, cached: false, costUsd: reportCostUsd });
 
@@ -1003,6 +1059,7 @@ Return only valid JSON, no other text:
           VALUES (${publisher}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${enriched.length}, ${page_url || null}, ${noMatchReason}, ${readerCountry || null}, ${costUsd})
         `;
       })(),
+      markPublisherActivity(sql, publisher),
       postSlackNotification(sql, { publisher, page_url, page_title, matchCount: enriched.length, readerCountry, cached: false, costUsd })
     ]).catch(() => {});
   } catch (err) {
