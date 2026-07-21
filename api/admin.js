@@ -258,7 +258,11 @@ export default async function handler(req, res) {
   if (resource === 'stats') {
     const [publishers, experts, subscribers, lastSync] = await Promise.all([
       sql`SELECT COUNT(*)::int AS count FROM publishers WHERE active = true AND slug NOT LIKE 'demo-%'`,
-      sql`SELECT COUNT(*)::int AS count FROM experts WHERE active = true`,
+      // Labeled "from OpenIntro" in the UI - must actually filter to that
+      // provider, not count every active expert across every provider
+      // (demo providers included), or the number silently drifts from what
+      // the label claims as soon as there's more than one provider.
+      sql`SELECT COUNT(*)::int AS count FROM experts e JOIN providers p ON p.id = e.provider_id WHERE e.active = true AND p.slug = 'openintro'`,
       sql`SELECT COUNT(*)::int AS count FROM subscribers`,
       sql`SELECT last_synced_at FROM providers WHERE slug = 'openintro'`,
     ]);

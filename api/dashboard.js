@@ -345,8 +345,12 @@ export default async function handler(req, res) {
            topPhrases, topSources, topDevices, pageUrls] = await Promise.all([
       sql`SELECT phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, created_at FROM match_logs WHERE publisher = ${pub} AND page_url IS NOT NULL ORDER BY created_at DESC LIMIT 50`.catch(() => []),
       sql`SELECT COUNT(*)::int AS total FROM click_logs WHERE publisher = ${pub}`.catch(() => [{ total: 0 }]),
-      sql`SELECT slug, COALESCE(name, slug) AS name FROM providers WHERE is_demo IS NOT TRUE ORDER BY slug`,
-      sql`SELECT COUNT(*)::int AS count FROM experts WHERE active = true`,
+      sql`SELECT id, slug, COALESCE(name, slug) AS name FROM providers WHERE is_demo IS NOT TRUE ORDER BY slug`,
+      // Grouped per provider - this used to be one ungrouped COUNT(*) applied
+      // identically to every partner in the list, so a small provider showed
+      // the same (wrong) total as everyone else the moment there was more
+      // than one provider in the table.
+      sql`SELECT provider_id, COUNT(*)::int AS count FROM experts WHERE active = true GROUP BY provider_id`,
       sql`SELECT COUNT(*)::int AS total FROM match_logs WHERE publisher = ${pub} AND match_count > 0`.catch(() => [{ total: 0 }]),
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
@@ -360,10 +364,11 @@ export default async function handler(req, res) {
       sql`SELECT page_url, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND page_url IS NOT NULL GROUP BY page_url ORDER BY count DESC LIMIT 100`.catch(() => []),
     ]);
 
+    const expertCountByProvider = new Map(expertCounts.map(r => [r.provider_id, r.count]));
     const partnersWithStatus = providers.map(p => ({
       slug: p.slug,
       name: p.name,
-      expert_count: expertCounts[0]?.count || 0,
+      expert_count: expertCountByProvider.get(p.id) || 0,
       enabled: (publisher.enabled_partners || ['openintro']).includes(p.slug),
     }));
 
