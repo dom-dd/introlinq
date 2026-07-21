@@ -134,7 +134,7 @@ export default async function handler(req, res) {
       fetch(process.env.SLACK_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: `🎉 New publisher signup: *${name.trim()}* (${normalised}) - ${cleanDomain}` })
+        body: JSON.stringify({ text: `📝 New publisher signed up (not yet installed): *${name.trim()}* (${normalised}) - ${cleanDomain}` })
       }).catch(() => {});
     }
 
