@@ -228,6 +228,27 @@ async function submit() {
     `<script src="https://www.introlinq.com/widget.js" data-publisher="${data.slug}"><\/script>`;
 }
 
+// Pre-fill for known waitlist signups: personalized outreach links can pass
+// ?name=&email=&domain= so returning subscribers don't have to retype what
+// they already gave us on the landing page. Everything stays editable -
+// this is just a head start, not locked.
+(function prefillFromParams() {
+  const params = new URLSearchParams(location.search);
+  const name = params.get('name');
+  const email = params.get('email');
+  const domain = params.get('domain');
+
+  if (name) {
+    document.getElementById('f-name').value = name;
+    generateSlug(name);
+    const parts = name.trim().split(/\s+/);
+    document.getElementById('f-first').value = parts[0];
+    if (parts.length > 1) document.getElementById('f-last').value = parts.slice(1).join(' ');
+  }
+  if (email) document.getElementById('f-email').value = email;
+  if (domain) document.getElementById('f-domain').value = domain;
+})();
+
 // Allow Enter key to submit
 document.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
 </script>
