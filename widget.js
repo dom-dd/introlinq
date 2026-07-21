@@ -168,11 +168,26 @@
       var failedCount = 0;
       var sawCached = false;
       var totalCostUsd = 0;
+      // Every cache-hit response returns the SAME full hydrated set (each of
+      // quick/chunk independently reads the same cache row) - collecting the
+      // union of expert ids across them is "how many the server thinks this
+      // page has". Compared against reportMatches (what actually rendered)
+      // at the end, this is the only way to detect a cache entry whose
+      // phrases no longer exist in the live DOM - a cache hit never gets the
+      // fresh-scan report's "here's what really rendered" round trip.
+      var cachedExpectedIds = {};
+      var cachedExpectedCount = 0;
 
       function collect(data) {
         if (data) gotAnyResponse = true;
         else failedCount++;
-        if (data && data.cached) sawCached = true;
+        if (data && data.cached) {
+          sawCached = true;
+          (data.matches || []).forEach(function (m) {
+            var id = m.expert && m.expert.id;
+            if (id && !cachedExpectedIds[id]) { cachedExpectedIds[id] = true; cachedExpectedCount++; }
+          });
+        }
         if (data && typeof data.cost_usd === 'number') totalCostUsd += data.cost_usd;
         var newMatches = applyMatches(data);
         if (newMatches) reportMatches = reportMatches.concat(newMatches);
@@ -247,7 +262,24 @@
       // responses came from the server's cache there's nothing new to persist -
       // reporting would just rewrite the same entry (and Slack already notified).
       Promise.all(pending.map(function (p) { return p.catch(function () {}); })).then(function () {
-        if (!gotAnyResponse || sawCached) return;
+        if (!gotAnyResponse) return;
+        if (sawCached) {
+          // The server said this page has experts (cachedExpectedCount) but
+          // NONE of their phrases could be found in the live DOM - the exact
+          // wording drifted since this was scanned (a CMS re-render, an ad
+          // shifting surrounding text, anything), and a cache hit has no
+          // other way to ever learn that happened. Tell the server to throw
+          // the entry away so the NEXT visitor gets a fresh, working scan
+          // instead of the same silent failure repeating indefinitely.
+          if (cachedExpectedCount > 0 && reportMatches.length === 0) {
+            fetch(API, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ staleCache: true, publisher: PUB, page_url: pageUrl })
+            }).catch(function () {});
+          }
+          return;
+        }
         fetch(API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

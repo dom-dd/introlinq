@@ -408,6 +408,11 @@ async function postSlackNotification(sql, { publisher, page_url, page_title, mat
 // negative scan, 24h+ after the first. Matches are slimmed to
 // {phrase, reason, credential?, expert_id} - expert details are hydrated
 // live at serve time (see hydrateMatches), never stored.
+// content_hash uses COALESCE(new, old) rather than a blind overwrite: a
+// write with no hash (an older caller, or the hash genuinely failed to
+// compute) must never blank out a hash a PREVIOUS write already established
+// - that would silently disable the content-drift check for this row
+// forever, with nothing to ever re-enable it.
 async function upsertCacheResult(sql, { pageUrl, countryCode, publisher, matches, contentHash }) {
   const slim = slimMatches(matches);
   const hasMatch = matches.length > 0;
@@ -422,7 +427,7 @@ async function upsertCacheResult(sql, { pageUrl, countryCode, publisher, matches
     ON CONFLICT (page_url, country_code, publisher) DO UPDATE SET
       result = EXCLUDED.result,
       has_match = EXCLUDED.has_match,
-      content_hash = EXCLUDED.content_hash,
+      content_hash = COALESCE(EXCLUDED.content_hash, match_cache.content_hash),
       confirmed = CASE
         WHEN EXCLUDED.has_match = true THEN true
         WHEN match_cache.has_match = false AND match_cache.confirmed = true THEN true
@@ -463,67 +468,6 @@ async function ensureCacheTable(sql) {
   await sql`ALTER TABLE match_cache DROP CONSTRAINT IF EXISTS match_cache_page_url_country_code_publisher_key`.catch(() => {});
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS match_cache_unique ON match_cache(page_url, country_code, publisher)`.catch(() => {});
   cacheTableReady = true;
-}
-
-// Fast pre-check so already-scanned pages skip the quick+chunk AI scan entirely
-async function handleCheckCache(req, res) {
-  const { publisher } = req.body;
-  const page_url = normalizePageUrl(req.body.page_url);
-  if (!page_url) return res.status(200).json({ cacheHit: false });
-  try {
-    const sql = neon(process.env.DATABASE_URL);
-    let pubConfig = { color: '#e6a820', accent: '#e6a820', size: 'medium', highlightStyle: 'fill' };
-    let enabledPartners = null; // null = homepage demo
-    if (publisher) {
-      const [pub] = await sql`SELECT widget_color, accent_color, widget_size, highlight_style, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null]);
-      if (!pub) return res.status(200).json({ cacheHit: false });
-      pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium', highlightStyle: pub.highlight_style || 'fill' };
-      enabledPartners = pub.enabled_partners || ['openintro'];
-    }
-
-    await ensureCacheTable(sql);
-
-    const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
-    const cacheCountry = readerCountry || 'XX';
-
-    // Positive entries are per-country (expert selection/ordering can differ)
-    // and served with live-hydrated expert details - an expert re-sync does
-    // NOT invalidate them (see the cache-rules comment in the main handler).
-    // Negative entries hit for EVERY country - a "no match" verdict doesn't
-    // depend on where the reader is - and are trusted for 24h unconfirmed,
-    // or permanently once confirmed by a second negative scan (see
-    // upsertCacheResult).
-    const [cached] = await sql`
-      SELECT result, has_match FROM match_cache
-      WHERE page_url = ${page_url}
-        AND publisher = ${publisher || ''}
-        AND (country_code = ${cacheCountry} OR has_match = false)
-        AND (
-          has_match = true
-          OR (has_match = false AND (confirmed = true OR cached_at > NOW() - INTERVAL '24 hours'))
-        )
-        AND cached_at > NOW() - INTERVAL '1 year'
-      ORDER BY has_match DESC
-      LIMIT 1
-    `.catch(() => [null]);
-
-    if (!cached) return res.status(200).json({ cacheHit: false });
-
-    const referencedExperts = await loadExpertsByIds(sql, collectReferencedIds(cached.result.matches));
-    if (!referencedExperts) return res.status(200).json({ cacheHit: false });
-
-    const hydrated = hydrateMatches(cached.result.matches, referencedExperts, enabledPartners);
-    // Positive entry whose experts have all vanished: report a miss so the
-    // caller runs a fresh scan (mirrors the main handler's emptiedPositive).
-    if (cached.has_match && hydrated.length === 0) return res.status(200).json({ cacheHit: false });
-
-    logCachedImpression(sql, { publisher, page_url, page_title: null, matches: hydrated, readerCountry });
-
-    return res.status(200).json({ cacheHit: true, matches: hydrated, config: pubConfig });
-  } catch (err) {
-    console.error(err);
-    return res.status(200).json({ cacheHit: false });
-  }
 }
 
 // Client has already merged results from the quick pass + all article chunks.
@@ -581,6 +525,44 @@ async function handleReport(req, res) {
   }
 }
 
+// A cache HIT is served (and logged/Slack-notified) the instant it's
+// hydrated, with no confirmation that the widget actually managed to
+// highlight anything - unlike a fresh scan, whose report always reflects
+// what really rendered. If the cached phrases no longer exist verbatim in
+// the live DOM (the page changed enough that wording drifted, even if
+// content_hash didn't catch it - e.g. an old entry from before content_hash
+// was populated), the widget silently shows nothing while the log still
+// says "N found", and nothing was ever in place to notice or recover. This
+// lets the widget report that back so the entry is thrown away instead of
+// failing the same way for every subsequent visitor indefinitely.
+async function handleStaleCache(req, res) {
+  const { publisher } = req.body;
+  const page_url = normalizePageUrl(req.body.page_url);
+  if (!page_url) return res.status(200).json({ ok: true });
+  try {
+    const sql = neon(process.env.DATABASE_URL);
+    const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
+    const cacheCountry = readerCountry || 'XX';
+    // Only positive entries have a rendering-failure mode (nothing to
+    // highlight on a negative). The 2-minute floor on cached_at stops a
+    // burst of reports for the same entry (several tabs, a bad actor) from
+    // forcing back-to-back rescans - a genuine failure from a separate
+    // later visitor will comfortably clear it.
+    await sql`
+      DELETE FROM match_cache
+      WHERE page_url = ${page_url}
+        AND publisher = ${publisher || ''}
+        AND country_code = ${cacheCountry}
+        AND has_match = true
+        AND cached_at < NOW() - INTERVAL '2 minutes'
+    `.catch(() => {});
+    return res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(200).json({ ok: true });
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -594,8 +576,8 @@ export default async function handler(req, res) {
   if (req.body && req.body.report === true) {
     return handleReport(req, res);
   }
-  if (req.body && req.body.checkCache === true) {
-    return handleCheckCache(req, res);
+  if (req.body && req.body.staleCache === true) {
+    return handleStaleCache(req, res);
   }
 
   const { article, page_title, quick, chunk, lang } = req.body;
