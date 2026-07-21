@@ -1,5 +1,17 @@
 ﻿import { neon } from '@neondatabase/serverless';
 
+// match_cache is global per page now, not per reader country - country
+// fragmentation (every new country paying for its own fresh scan) turned
+// out to cost real money for no real benefit at this scale, and directly
+// caused the "works on desktop, nothing on phone" confusion when a single
+// visitor's two devices got geolocated to different countries (mobile
+// carriers and privacy features like iCloud Private Relay routinely do
+// this even on the same WiFi). One page = one cache entry = one scan,
+// shown identically to every reader everywhere. readerCountry is still
+// captured and logged for analytics (dashboard stats, Slack) - it just no
+// longer affects what gets cached or matched.
+const GLOBAL_CACHE_COUNTRY = 'XX';
+
 let logTableReady = false;
 let cacheTableReady = false;
 let expertsCache = null;
@@ -482,7 +494,6 @@ async function handleReport(req, res) {
   try {
     const sql = neon(process.env.DATABASE_URL);
     const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
-    const cacheCountry = readerCountry || 'XX';
 
     await ensureCacheTable(sql);
 
@@ -495,7 +506,7 @@ async function handleReport(req, res) {
     // a negative cache entry (their positive results still cache fine).
     const scanWasComplete = complete === true;
     if (matches.length > 0 || scanWasComplete) {
-      await upsertCacheResult(sql, { pageUrl: page_url, countryCode: cacheCountry, publisher, matches, contentHash });
+      await upsertCacheResult(sql, { pageUrl: page_url, countryCode: GLOBAL_CACHE_COUNTRY, publisher, matches, contentHash });
     }
 
     await ensureLogTable(sql);
@@ -541,8 +552,6 @@ async function handleStaleCache(req, res) {
   if (!page_url) return res.status(200).json({ ok: true });
   try {
     const sql = neon(process.env.DATABASE_URL);
-    const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
-    const cacheCountry = readerCountry || 'XX';
     // Only positive entries have a rendering-failure mode (nothing to
     // highlight on a negative). The 2-minute floor on cached_at stops a
     // burst of reports for the same entry (several tabs, a bad actor) from
@@ -552,7 +561,7 @@ async function handleStaleCache(req, res) {
       DELETE FROM match_cache
       WHERE page_url = ${page_url}
         AND publisher = ${publisher || ''}
-        AND country_code = ${cacheCountry}
+        AND country_code = ${GLOBAL_CACHE_COUNTRY}
         AND has_match = true
         AND cached_at < NOW() - INTERVAL '2 minutes'
     `.catch(() => {});
@@ -596,7 +605,6 @@ export default async function handler(req, res) {
 
     const { publisher } = req.body;
     const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
-    const cacheCountry = readerCountry || 'XX'; // 'XX' = unknown country, avoids empty-string NULL issue in cache
 
     if (page_url) await ensureCacheTable(sql);
 
@@ -610,16 +618,18 @@ export default async function handler(req, res) {
     // The full roster (loadExperts) is only ever fetched further down, and
     // only when a fresh AI scan is genuinely about to run.
     //
-    // Cache rules: positives are per-country and live until the publisher's
-    // settings change or an admin recrawl - an expert re-sync does NOT
-    // invalidate them anymore. Profile edits flow into cached pages through
-    // live hydration, and unpublished/blocked experts are filtered out at
-    // serve time (see hydrateMatches), so there's nothing about a sync that
-    // a cached page needs a re-scan for. New-supply discovery (a new partner
+    // Cache rules: one entry per page, shared by every reader everywhere -
+    // country no longer affects the cache key (see GLOBAL_CACHE_COUNTRY) or
+    // the match itself. Positives live until the publisher's settings
+    // change or an admin recrawl - an expert re-sync does NOT invalidate
+    // them anymore. Profile edits flow into cached pages through live
+    // hydration, and unpublished/blocked experts are filtered out at serve
+    // time (see hydrateMatches), so there's nothing about a sync that a
+    // cached page needs a re-scan for. New-supply discovery (a new partner
     // whose experts might match previously scanned pages) is a deliberate,
-    // manual recrawl - not an automatic sitewide invalidation. Negatives are
-    // country-agnostic; unconfirmed ones are trusted 24h, confirmed ones are
-    // permanent until an admin recrawls the publisher.
+    // manual recrawl - not an automatic sitewide invalidation. Unconfirmed
+    // negatives are trusted 24h, confirmed ones are permanent until an
+    // admin recrawls the publisher.
     const [pubRows, cachedRows] = await Promise.all([
       publisher
         ? sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null])
@@ -629,7 +639,7 @@ export default async function handler(req, res) {
             SELECT result, has_match, content_hash FROM match_cache
             WHERE page_url = ${page_url}
               AND publisher = ${publisher || ''}
-              AND (country_code = ${cacheCountry} OR has_match = false)
+              AND country_code = ${GLOBAL_CACHE_COUNTRY}
               AND (
                 has_match = true
                 OR (has_match = false AND (confirmed = true OR cached_at > NOW() - INTERVAL '24 hours'))
@@ -816,9 +826,10 @@ ALTERNATES: when OTHER experts from the list are ALSO a genuinely strong fit for
 Available experts:
 ${expertsList}`;
 
-    const countryLine = readerCountry && COUNTRY_NAMES[readerCountry]
-      ? `The reader is browsing from ${COUNTRY_NAMES[readerCountry]}. When two experts fit a challenge equally well, prefer the one based in the reader's country.\n\n`
-      : '';
+    // No reader-country hint in the prompt anymore: the match this scan
+    // produces gets cached globally and shown identically to every country,
+    // so biasing it toward whichever reader happened to trigger the scan
+    // would just be arbitrary noise, not a real signal about the audience.
     const titleLine = page_title ? `Article title: ${String(page_title).slice(0, 150)}\n\n` : '';
 
     // The card shows the expert's credential one-liner above the reason. For
@@ -836,7 +847,7 @@ ${expertsList}`;
 
     const dynamicPrompt = `IMPORTANT: ${languageInstruction}
 ${credentialInstruction}
-${countryLine}${titleLine}Return up to ${maxMatches} matches.
+${titleLine}Return up to ${maxMatches} matches.
 
 For each match's "reason", use a DIFFERENT one of these opening approaches — assign them in order to the matches you return (first match uses approach 1, second uses approach 2, etc.), and never reuse an approach or fall back to a generic "As a first-time founder..." opener regardless of what these approaches say:
 ${pickReasonOpeners(Math.max(maxMatches, 6)).map((o, i) => `${i + 1}. ${o}`).join('\n')}
@@ -975,7 +986,7 @@ Return only valid JSON, no other text:
     await Promise.allSettled([
       (async () => {
         if (!page_url) return;
-        await upsertCacheResult(sql, { pageUrl: page_url, countryCode: cacheCountry, publisher, matches: enriched, contentHash });
+        await upsertCacheResult(sql, { pageUrl: page_url, countryCode: GLOBAL_CACHE_COUNTRY, publisher, matches: enriched, contentHash });
       })(),
       (async () => {
         await ensureLogTable(sql);
