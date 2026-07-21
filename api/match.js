@@ -33,7 +33,7 @@ async function loadExperts(sql) {
     // could match differently depending on which instance served it).
     // Fairness is handled by a deterministic daily rotation in the handler.
     const rows = await sql`
-      SELECT e.id, e.name, e.bio, e.description_long, e.photo_url, e.position, e.company,
+      SELECT e.id, e.name, e.bio, e.description_long, e.highlights, e.photo_url, e.position, e.company,
              e.topics, e.services, e.languages, e.price_from, e.price_currency,
              e.booking_url, e.location_country,
              p.name AS provider_name, p.slug AS provider_slug, p.logo_url AS provider_logo_url, p.website_url AS provider_website_url,
@@ -763,10 +763,18 @@ export default async function handler(req, res) {
     const expertsList = experts.map(e => {
       const role = [e.position, e.company].filter(Boolean).join(' at ');
       const langs = (e.languages || []).join(', ');
-      const desc = truncateAtSentence(e.description_long || '', 400);
+      // Trimmed from 400 - highlights (below) now carry more of the dense-
+      // signal weight this used to shoulder alone, so the long-form
+      // description doesn't need as much room.
+      const desc = truncateAtSentence(e.description_long || '', 250);
       const services = (e.services || []).slice(0, 3).join('; ');
+      // Curated, pre-summarized achievement bullets - denser matching
+      // signal per token than freeform description text. Capped at 4 for
+      // the same reason services is capped at 3: unbounded per-expert
+      // content scales badly across the whole roster in one prompt.
+      const highlights = (e.highlights || []).slice(0, 4).join('; ');
       const about = [e.bio, desc].filter(Boolean).join(' - ');
-      return `ID:${e.id} | ${e.name}${role ? ` (${role})` : ''} | Languages: ${langs} | About: ${about} | Services: ${services}`;
+      return `ID:${e.id} | ${e.name}${role ? ` (${role})` : ''} | Languages: ${langs} | About: ${about}${highlights ? ` | Highlights: ${highlights}` : ''} | Services: ${services}`;
     }).join('\n\n');
 
     // Trust the widget's language detection (run once on the full article) when
