@@ -378,11 +378,17 @@
     // is the original tinted-background + solid-underline treatment. Purely
     // a per-publisher A/B lever - set from the dashboard, no other behaviour
     // differs between the two.
+    // !important throughout: unlike the popup (appended to body, outside the
+    // article), these spans are inserted directly into the article's own DOM
+    // - a low-specificity class selector like .il-hl loses to whatever the
+    // host page's own stylesheet declares for span/text elements at that
+    // point in the article, on some publisher pages but not others depending
+    // on their CSS's specificity and cascade order.
     var hlCss = cfg.highlightStyle === 'underline'
-      ? '.il-hl{border-bottom:2px dotted ' + color + ';cursor:pointer;padding:0 1px;transition:border-bottom-style .15s}' +
-        '.il-hl:hover{border-bottom-style:solid}'
-      : '.il-hl{background:' + hexToRgba(color, 0.15) + ';border-bottom:2px solid ' + color + ';cursor:pointer;border-radius:2px;padding:0 2px;transition:background .15s}' +
-        '.il-hl:hover{background:' + hexToRgba(color, 0.3) + '}';
+      ? '.il-hl{border-bottom:2px dotted ' + color + '!important;cursor:pointer!important;padding:0 1px!important;background:none!important;transition:border-bottom-style .15s}' +
+        '.il-hl:hover{border-bottom-style:solid!important}'
+      : '.il-hl{background:' + hexToRgba(color, 0.15) + '!important;border-bottom:2px solid ' + color + '!important;cursor:pointer!important;border-radius:2px!important;padding:0 2px!important;transition:background .15s}' +
+        '.il-hl:hover{background:' + hexToRgba(color, 0.3) + '!important}';
     s.textContent =
       hlCss +
       '#il-pop{position:fixed;z-index:2147483647;width:' + w + 'px;background:#fff;border-radius:16px;' +
@@ -419,22 +425,31 @@
 
     var p = document.createElement('div');
     p.id = 'il-pop';
+    // Every visual property below is !important, not just the photo (which
+    // was already defended this way): planet-fintech's page has a
+    // body{font-size:11px} base and other broad rules that were bleeding
+    // through our plain inline styles despite those normally winning on
+    // specificity - a card that looked fine on every other publisher's page
+    // showed with its name/role row missing and other text sized wrong on
+    // that one specifically. !important on an inline style beats essentially
+    // any host stylesheet rule that isn't itself an equally-specific inline
+    // !important, which no publisher's page has a reason to write.
     p.innerHTML =
-      '<div style="display:flex;gap:12px;align-items:center;margin-bottom:' + (isSmall ? '8' : '10') + 'px">' +
+      '<div style="display:flex!important;gap:12px;align-items:center;margin-bottom:' + (isSmall ? '8' : '10') + 'px">' +
         '<img id="il-ph" style="width:' + photoSize + 'px!important;height:' + photoSize + 'px!important;min-width:' + photoSize + 'px!important;min-height:' + photoSize + 'px!important;max-width:' + photoSize + 'px!important;max-height:' + photoSize + 'px!important;border-radius:50%!important;object-fit:cover!important;flex-shrink:0!important;background:#edf5f0!important;display:block!important" src="" alt="">' +
         '<div style="flex:1;min-width:0">' +
-          '<div style="display:flex;align-items:center;gap:6px">' +
-            '<div id="il-nm" style="font-weight:600;font-size:' + nameSize + ';color:#1a1a2e;line-height:1.25"></div>' +
-            '<span id="il-fl" style="font-size:13px;line-height:1;flex-shrink:0"></span>' +
+          '<div style="display:flex!important;align-items:center;gap:6px">' +
+            '<div id="il-nm" style="font-weight:600!important;font-size:' + nameSize + '!important;color:#1a1a2e!important;line-height:1.25!important"></div>' +
+            '<span id="il-fl" style="font-size:13px!important;line-height:1!important;flex-shrink:0"></span>' +
           '</div>' +
-          '<div id="il-rl" style="font-size:11.5px;color:#4a4a6a;margin-top:2px;line-height:1.3"></div>' +
+          '<div id="il-rl" style="font-size:11.5px!important;color:#4a4a6a!important;margin-top:2px;line-height:1.3!important"></div>' +
         '</div>' +
-        '<button id="il-cl" style="display:none;flex-shrink:0;background:none;border:none;cursor:pointer;color:#8888a8;font-size:18px;line-height:1;padding:0 0 0 4px;align-self:flex-start" aria-label="Close">&times;</button>' +
+        '<button id="il-cl" style="display:none;flex-shrink:0;background:none!important;border:none!important;cursor:pointer;color:#8888a8!important;font-size:18px!important;line-height:1!important;padding:0 0 0 4px;align-self:flex-start" aria-label="Close">&times;</button>' +
       '</div>' +
-      (isSmall ? '' : '<div id="il-bio" style="display:none;font-size:' + (isLarge ? '12px' : '11.5px') + ';color:#1a1a2e;font-weight:500;line-height:1.45;margin-bottom:8px"></div>') +
-      (isSmall ? '' : '<div id="il-rs" style="font-size:' + (isLarge ? '13px' : '12.5px') + ';color:#4a4a6a;line-height:1.6;margin-bottom:12px;font-style:italic;border-left:2px solid ' + hexToRgba(accent, 0.3) + ';padding-left:10px"></div>') +
-      '<a id="il-bk" href="#" target="_blank" rel="noopener" style="display:block;background:' + accent + ';color:' + getContrastColor(accent) + ';text-align:center;padding:' + (isSmall ? '7' : '9') + 'px;border-radius:100px;font-size:13px;font-weight:700;text-decoration:none">' + BOOK_LABEL + '</a>' +
-      '<div id="il-pv" style="font-size:8.5px;color:#8888a8;text-align:center;margin-top:6px;letter-spacing:.02em"></div>';
+      (isSmall ? '' : '<div id="il-bio" style="display:none;font-size:' + (isLarge ? '12px' : '11.5px') + '!important;color:#1a1a2e!important;font-weight:500!important;line-height:1.45!important;margin-bottom:8px"></div>') +
+      (isSmall ? '' : '<div id="il-rs" style="font-size:' + (isLarge ? '13px' : '12.5px') + '!important;color:#4a4a6a!important;line-height:1.6!important;margin-bottom:12px;font-style:italic!important;border-left:2px solid ' + hexToRgba(accent, 0.3) + ';padding-left:10px"></div>') +
+      '<a id="il-bk" href="#" target="_blank" rel="noopener" style="display:block!important;background:' + accent + '!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:' + (isSmall ? '7' : '9') + 'px;border-radius:100px;font-size:13px!important;font-weight:700!important;text-decoration:none!important">' + BOOK_LABEL + '</a>' +
+      '<div id="il-pv" style="font-size:8.5px!important;color:#8888a8!important;text-align:center;margin-top:6px;letter-spacing:.02em"></div>';
     document.body.appendChild(p);
     p.addEventListener('mouseenter', function () { clearTimeout(hideTimer); });
     p.addEventListener('mouseleave', function () { scheduleHide(p); });
@@ -696,21 +711,23 @@
       var providerLogoUrl = e.provider_logo_url || null;
       var providerUrl = e.provider_website_url || '#';
       var cfg = { name: providerName, url: providerUrl, logo: providerLogoUrl };
-      var ilLogo = '<img src="https://www.introlinq.com/favicon.svg" alt="IntroLinq" style="width:11px;height:11px;border-radius:2px;vertical-align:middle;margin-right:3px;flex-shrink:0">';
+      var ilLogo = '<img src="https://www.introlinq.com/favicon.svg" alt="IntroLinq" style="width:11px!important;height:11px!important;border-radius:2px;vertical-align:middle;margin-right:3px;flex-shrink:0">';
       // min-width:0 is load-bearing: flex items default to min-width:auto
       // (their own content size), which blocks shrinking below that and
       // pushes the item outside the card instead - min-width:0 + overflow
       // hidden + nowrap lets these two labels actually give way to each
       // other on a narrow popup rather than wrapping to a second line or
-      // spilling past the card's rounded corner.
-      var s = 'font-size:8.5px;color:#8888a8;font-family:Inter,system-ui,sans-serif;text-decoration:none;display:flex;align-items:center;gap:2px;min-width:0;overflow:hidden;white-space:nowrap;flex-shrink:1';
-      pv.style.cssText = 'display:flex;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:8px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(26,26,46,0.07)';
+      // spilling past the card's rounded corner. !important throughout for
+      // the same reason as createPopup's template - some host pages'
+      // stylesheets otherwise bleed through plain inline styles.
+      var s = 'font-size:8.5px!important;color:#8888a8!important;font-family:Inter,system-ui,sans-serif;text-decoration:none;display:flex!important;align-items:center;gap:2px;min-width:0;overflow:hidden;white-space:nowrap;flex-shrink:1';
+      pv.style.cssText = 'display:flex!important;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:8px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(26,26,46,0.07)';
       var partnerLink;
       if (e.is_demo_provider && cfg.logo) {
-        partnerLink = '<a href="' + cfg.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with <img src="' + cfg.logo + '" alt="' + cfg.name + '" style="height:14px;width:auto;max-width:70px;object-fit:contain;margin-left:4px;vertical-align:middle;flex-shrink:0"></a>';
+        partnerLink = '<a href="' + cfg.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with <img src="' + cfg.logo + '" alt="' + cfg.name + '" style="height:14px!important;width:auto;max-width:70px;object-fit:contain;margin-left:4px;vertical-align:middle;flex-shrink:0"></a>';
       } else {
         var providerLogoHtml = cfg.logo
-          ? '<img src="' + cfg.logo + '" alt="' + cfg.name + '" style="width:13px;height:13px;object-fit:contain;border-radius:2px;vertical-align:middle;margin-right:3px;flex-shrink:0">'
+          ? '<img src="' + cfg.logo + '" alt="' + cfg.name + '" style="width:13px!important;height:13px!important;object-fit:contain;border-radius:2px;vertical-align:middle;margin-right:3px;flex-shrink:0">'
           : '';
         partnerLink = '<a href="' + cfg.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with ' + providerLogoHtml + cfg.name + '</a>';
       }
