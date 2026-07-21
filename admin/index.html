@@ -1045,33 +1045,40 @@ const GENERIC_HOSTING_PLATFORMS = new Set([
   'squarespace.com',
 ]);
 
-// Best-effort guess at a publication name - prefers the blog URL's domain
-// (psyll.com -> psyll, planet-fintech.com -> planet fintech), falling back
-// to the email's domain when no blog URL was given (several waitlist
-// entries only have an email, e.g. sheridan@trainingdesignersclub.co.uk)
-// as long as that domain isn't a generic mailbox provider. Only splits on
-// real separators (hyphens, underscores) since there's no reliable way to
-// break apart smushed compound words (trainingdesignersclub stays one
-// word) without a dictionary - the editable field in the table is there
-// so a human can fix those by hand before sending.
-function guessPublicationName(blogUrl, email) {
-  let host = '', path = '';
-  if (blogUrl) {
-    try {
-      const u = new URL(/^https?:\/\//i.test(blogUrl) ? blogUrl : 'https://' + blogUrl);
-      host = u.hostname.toLowerCase();
-      path = u.pathname;
-    } catch {}
+// Best-effort guess at the subscriber's own domain - the blog URL if they
+// gave one, otherwise their email's domain when it isn't a generic mailbox
+// provider (several waitlist entries only left an email, e.g.
+// sheridan@trainingdesignersclub.co.uk - trainingdesignersclub.co.uk IS
+// her site). Shared by the publication-name guess below and the edit
+// modal's Website URL field.
+function guessDomain(blogUrl, email) {
+  if (blogUrl) return blogUrl;
+  if (email && email.includes('@')) {
+    const emailDomain = email.split('@')[1]?.toLowerCase();
+    if (emailDomain && !GENERIC_EMAIL_DOMAINS.has(emailDomain)) return 'https://' + emailDomain;
   }
-  if (host && GENERIC_HOSTING_PLATFORMS.has(host.replace(/^www\./, ''))) {
+  return '';
+}
+
+// Best-effort guess at a publication name from the resolved domain
+// (psyll.com -> psyll, planet-fintech.com -> planet fintech). Only splits
+// on real separators (hyphens, underscores) since there's no reliable way
+// to break apart smushed compound words (trainingdesignersclub stays one
+// word) without a dictionary - the edit modal is there so a human can fix
+// those by hand before sending.
+function guessPublicationName(blogUrl, email) {
+  const domain = guessDomain(blogUrl, email);
+  if (!domain) return '';
+  let host = '', path = '';
+  try {
+    const u = new URL(/^https?:\/\//i.test(domain) ? domain : 'https://' + domain);
+    host = u.hostname.toLowerCase();
+    path = u.pathname;
+  } catch { return ''; }
+  if (GENERIC_HOSTING_PLATFORMS.has(host.replace(/^www\./, ''))) {
     const handle = path.match(/@([a-z0-9._-]+)/i)?.[1];
     return handle ? handle.replace(/[._-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '';
   }
-  if (!host && email && email.includes('@')) {
-    const emailDomain = email.split('@')[1]?.toLowerCase();
-    if (emailDomain && !GENERIC_EMAIL_DOMAINS.has(emailDomain)) host = emailDomain;
-  }
-  if (!host) return '';
   const label = host.replace(/^(www|blog|m)\./, '').split('.')[0];
   return label.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
@@ -1083,44 +1090,63 @@ const GENERIC_EMAIL_LOCALPARTS = new Set([
   'sales', 'help', 'noreply', 'no-reply',
 ]);
 
-// Same idea for the contact's first name when the waitlist form didn't
-// collect one - strips trailing digits and separators from the email's
-// local part. Also imperfect for smushed names (kunalagarwal -> stays
-// one word) - same editable escape hatch applies.
+// Best-effort guess at "First Last" when the waitlist form didn't collect
+// a name - strips trailing digits and separators from the email's local
+// part. Also imperfect for smushed names (kunalagarwal -> stays one word)
+// - same editable escape hatch applies. Split into first/last by the
+// caller since the edit modal has two separate fields.
 function guessContactName(name, email) {
-  if (name) return name;
+  if (name) return name.trim();
   const local = (email || '').split('@')[0].toLowerCase().replace(/[0-9]+$/, '');
   if (!local || GENERIC_EMAIL_LOCALPARTS.has(local)) return '';
   return local.replace(/[._-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-// Reads the CURRENT (possibly hand-edited) values out of a row's inputs
-// rather than the original subscriber record, so fixing a guessed name
-// in the table actually changes the link that gets copied/opened.
-function subscriberSignupLink(id, email, domain) {
-  const contact = document.getElementById(`sub-contact-${id}`).value.trim();
-  const pub = document.getElementById(`sub-pub-${id}`).value.trim();
+function guessFirstName(name, email) {
+  return guessContactName(name, email).split(/\s+/)[0] || '';
+}
+function guessLastName(name, email) {
+  const parts = guessContactName(name, email).split(/\s+/);
+  return parts.length > 1 ? parts.slice(1).join(' ') : '';
+}
+
+// Resolves the field a row/modal should actually use: a saved override
+// (including a deliberate empty string) wins, otherwise fall back to the
+// live guess.
+function resolvedFirstName(s) { return s.contact_first_override ?? guessFirstName(s.name, s.email); }
+function resolvedLastName(s) { return s.contact_last_override ?? guessLastName(s.name, s.email); }
+function resolvedEmail(s) { return s.email_override ?? s.email ?? ''; }
+function resolvedDomain(s) { return s.domain_override ?? guessDomain(s.blog_url, s.email); }
+function resolvedPublicationName(s) { return s.publication_name_override ?? guessPublicationName(s.blog_url, s.email); }
+
+function subscriberSignupLink(s) {
   const params = new URLSearchParams();
+  const pub = resolvedPublicationName(s);
+  const first = resolvedFirstName(s);
+  const last = resolvedLastName(s);
+  const contact = [first, last].filter(Boolean).join(' ');
+  const email = resolvedEmail(s);
+  const domain = resolvedDomain(s);
   if (pub) params.set('pub', pub);
   if (contact) params.set('contact', contact);
-  if (email) params.set('email', email.trim());
-  if (domain) params.set('domain', domain.trim());
+  if (email) params.set('email', email);
+  if (domain) params.set('domain', domain);
   return `https://www.introlinq.com/signup?${params.toString()}`;
 }
 
+let _subscribers = [];
+
 async function loadSubscribers() {
   const res = await fetch('/api/admin?resource=subscribers');
-  const list = await res.json();
+  _subscribers = await res.json();
   const tbody = document.getElementById('subscribers-tbody');
 
-  if (!list.length) {
+  if (!_subscribers.length) {
     tbody.innerHTML = '<tr><td colspan="7" class="empty">No waitlist signups yet.</td></tr>';
     return;
   }
 
-  const inputStyle = 'width:100%;padding:0.3rem 0.5rem;border:1.5px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit;outline:none';
-
-  tbody.innerHTML = list.map(s => `
+  tbody.innerHTML = _subscribers.map(s => `
     <tr>
       <td>${esc(s.name || '-')}</td>
       <td style="font-size:0.8125rem">${esc(s.email)}</td>
@@ -1129,44 +1155,96 @@ async function loadSubscribers() {
       <td style="font-size:0.8125rem;color:var(--ink-soft)">${esc(countryName(s.country))}</td>
       <td style="white-space:nowrap">${new Date(s.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' })}</td>
       <td>
-        <div style="display:flex;flex-direction:column;gap:4px;min-width:220px">
-          <input id="sub-contact-${s.id}" data-id="${s.id}" data-field="contact_name_override" onblur="saveSubscriberOverride(this)" style="${inputStyle}" value="${esc(s.contact_name_override ?? guessContactName(s.name, s.email))}" placeholder="Contact name" title="Contact first/last name used to pre-fill /signup - edits are saved automatically">
-          <input id="sub-pub-${s.id}" data-id="${s.id}" data-field="publication_name_override" onblur="saveSubscriberOverride(this)" style="${inputStyle}" value="${esc(s.publication_name_override ?? guessPublicationName(s.blog_url, s.email))}" placeholder="Publication name" title="Publication name used to pre-fill /signup - guessed from the domain, edits are saved automatically">
-          <div style="display:flex;gap:6px">
-            <button data-id="${s.id}" data-email="${esc(s.email || '')}" data-domain="${esc(s.blog_url || '')}" onclick="copySubscriberLink(this)" style="flex:1;background:#f4f4f8;border:none;border-radius:6px;padding:0.3rem 0.5rem;cursor:pointer;color:var(--ink-muted);font-size:0.7rem;font-weight:600" onmouseover="this.style.background='#e8e8f0'" onmouseout="this.style.background='#f4f4f8'">Copy link</button>
-            <button data-id="${s.id}" data-email="${esc(s.email || '')}" data-domain="${esc(s.blog_url || '')}" onclick="openSubscriberLink(this)" title="Open signup link" style="background:#f4f4f8;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink-muted)" onmouseover="this.style.background='#e8e8f0'" onmouseout="this.style.background='#f4f4f8'">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            </button>
-          </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button onclick="editSubscriber(${s.id})" title="Edit signup details" style="background:#f4f4f8;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink-muted)" onmouseover="this.style.background='#e8e8f0'" onmouseout="this.style.background='#f4f4f8'">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          </button>
+          <button onclick="copySubscriberLink(${s.id})" title="Copy signup link" style="background:#f4f4f8;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink-muted)" onmouseover="this.style.background='#e8e8f0'" onmouseout="this.style.background='#f4f4f8'">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+          <button onclick="openSubscriberLink(${s.id})" title="Open signup link" style="background:#f4f4f8;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink-muted)" onmouseover="this.style.background='#e8e8f0'" onmouseout="this.style.background='#f4f4f8'">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </button>
         </div>
       </td>
     </tr>
   `).join('');
 }
 
-// Saves both override fields together (not just the one blurred) since
-// the PATCH endpoint writes both columns every call - sending only one
-// would silently null out whichever field wasn't included.
-async function saveSubscriberOverride(input) {
-  const id = input.dataset.id;
-  const contact_name_override = document.getElementById(`sub-contact-${id}`).value.trim();
-  const publication_name_override = document.getElementById(`sub-pub-${id}`).value.trim();
-  await fetch('/api/admin?resource=subscribers', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
-    body: JSON.stringify({ id, contact_name_override, publication_name_override }),
-  });
-}
-
-function copySubscriberLink(btn) {
-  const { id, email, domain } = btn.dataset;
-  navigator.clipboard.writeText(subscriberSignupLink(id, email, domain));
+function copySubscriberLink(id) {
+  const s = _subscribers.find(x => x.id === id);
+  if (!s) return;
+  navigator.clipboard.writeText(subscriberSignupLink(s));
   toast('Signup link copied');
 }
 
-function openSubscriberLink(btn) {
-  const { id, email, domain } = btn.dataset;
-  window.open(subscriberSignupLink(id, email, domain), '_blank');
+function openSubscriberLink(id) {
+  const s = _subscribers.find(x => x.id === id);
+  if (!s) return;
+  window.open(subscriberSignupLink(s), '_blank');
+}
+
+let _editingSubscriberId = null;
+
+function editSubscriber(id) {
+  const s = _subscribers.find(x => x.id === id);
+  if (!s) return;
+  _editingSubscriberId = id;
+  document.getElementById('sem-pub').value = resolvedPublicationName(s);
+  document.getElementById('sem-first').value = resolvedFirstName(s);
+  document.getElementById('sem-last').value = resolvedLastName(s);
+  document.getElementById('sem-email').value = resolvedEmail(s);
+  document.getElementById('sem-domain').value = resolvedDomain(s);
+  updateSubscriberEditPreview();
+  document.getElementById('subscriber-edit-overlay').style.display = 'flex';
+}
+
+function closeSubscriberEditModal() {
+  document.getElementById('subscriber-edit-overlay').style.display = 'none';
+  _editingSubscriberId = null;
+}
+
+// Builds the link live from whatever's currently typed in the modal - not
+// just the saved values - so it visibly updates as you edit, before you
+// even hit Save.
+function updateSubscriberEditPreview() {
+  const draft = {
+    id: _editingSubscriberId,
+    publication_name_override: document.getElementById('sem-pub').value.trim(),
+    contact_first_override: document.getElementById('sem-first').value.trim(),
+    contact_last_override: document.getElementById('sem-last').value.trim(),
+    email_override: document.getElementById('sem-email').value.trim(),
+    domain_override: document.getElementById('sem-domain').value.trim(),
+  };
+  document.getElementById('sem-link-preview').textContent = subscriberSignupLink(draft);
+}
+
+function copySubscriberEditPreview() {
+  navigator.clipboard.writeText(document.getElementById('sem-link-preview').textContent);
+  toast('Signup link copied');
+}
+
+async function saveSubscriberEdit() {
+  const id = _editingSubscriberId;
+  if (!id) return;
+  const body = {
+    id,
+    publication_name_override: document.getElementById('sem-pub').value.trim(),
+    contact_first_override: document.getElementById('sem-first').value.trim(),
+    contact_last_override: document.getElementById('sem-last').value.trim(),
+    email_override: document.getElementById('sem-email').value.trim(),
+    domain_override: document.getElementById('sem-domain').value.trim(),
+  };
+  await fetch('/api/admin?resource=subscribers', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify(body),
+  });
+  const s = _subscribers.find(x => x.id === id);
+  if (s) Object.assign(s, body);
+  closeSubscriberEditModal();
+  loadSubscribers();
+  toast('Signup details saved');
 }
 
 let _allBookings = [];
@@ -1561,6 +1639,52 @@ login();
   </div>
 </div>
 
+<!-- Subscriber (waitlist) signup-details edit modal -->
+<div id="subscriber-edit-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:1.75rem;width:min(480px,94vw);max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+      <div style="font-size:1rem;font-weight:600;color:var(--ink)">Edit signup details</div>
+      <button onclick="closeSubscriberEditModal()" style="background:none;border:none;font-size:1.25rem;cursor:pointer;color:var(--ink-muted);line-height:1">×</button>
+    </div>
+    <div class="form-group" style="margin-bottom:0.875rem">
+      <label class="form-label">Publication name</label>
+      <input class="form-input" id="sem-pub" oninput="updateSubscriberEditPreview()" placeholder="e.g. Little Green Agency">
+    </div>
+    <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:0.875rem;margin-bottom:0.875rem">
+      <div>
+        <label class="form-label">First name</label>
+        <input class="form-input" id="sem-first" oninput="updateSubscriberEditPreview()">
+      </div>
+      <div>
+        <label class="form-label">Last name</label>
+        <input class="form-input" id="sem-last" oninput="updateSubscriberEditPreview()">
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:0.875rem">
+      <label class="form-label">Email address</label>
+      <input class="form-input" id="sem-email" type="email" oninput="updateSubscriberEditPreview()">
+    </div>
+    <div class="form-group" style="margin-bottom:0.875rem">
+      <label class="form-label">Website URL</label>
+      <input class="form-input" id="sem-domain" oninput="updateSubscriberEditPreview()" placeholder="https://theirblog.com">
+    </div>
+    <div class="form-group" style="margin-bottom:0">
+      <label class="form-label">Signup link</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <div id="sem-link-preview" style="flex:1;font-size:0.75rem;color:var(--sage);font-family:monospace;background:var(--sage-light);padding:0.5rem 0.625rem;border-radius:6px;word-break:break-all"></div>
+        <button onclick="copySubscriberEditPreview()" title="Copy signup link" style="background:#f4f4f8;border:none;border-radius:6px;width:32px;height:32px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink-muted)" onmouseover="this.style.background='#e8e8f0'" onmouseout="this.style.background='#f4f4f8'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
+      <div class="input-hint" style="font-size:0.7rem;color:var(--ink-muted);margin-top:0.35rem">Updates live as you type - not saved until you click Save changes.</div>
+    </div>
+    <div class="form-actions" style="margin-top:1.25rem">
+      <button class="btn btn-primary" onclick="saveSubscriberEdit()">Save changes</button>
+      <button class="btn btn-ghost" onclick="closeSubscriberEditModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let _editingGroupId = null;
 let _editGroupLogoDataUrl = undefined; // undefined = keep existing, null = remove, string = new
@@ -1643,6 +1767,10 @@ async function saveGroup() {
 
 document.getElementById('group-edit-overlay').addEventListener('click', function(e) {
   if (e.target === this) closeGroupEditModal();
+});
+
+document.getElementById('subscriber-edit-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeSubscriberEditModal();
 });
 </script>
 
