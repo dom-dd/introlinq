@@ -229,19 +229,24 @@ async function submit() {
 }
 
 // Pre-fill for known waitlist signups: personalized outreach links can pass
-// ?name=&email=&domain= so returning subscribers don't have to retype what
-// they already gave us on the landing page. Everything stays editable -
-// this is just a head start, not locked.
+// ?pub=&contact=&email=&domain= so returning subscribers don't have to
+// retype what they already gave us on the landing page. pub and contact
+// are deliberately separate params - a person's name (Jarek) is not their
+// publication's name (psyll) and conflating the two mis-filled both
+// fields. Everything stays editable - this is just a head start, not locked.
 (function prefillFromParams() {
   const params = new URLSearchParams(location.search);
-  const name = params.get('name');
+  const pub = params.get('pub');
+  const contact = params.get('contact');
   const email = params.get('email');
   const domain = params.get('domain');
 
-  if (name) {
-    document.getElementById('f-name').value = name;
-    generateSlug(name);
-    const parts = name.trim().split(/\s+/);
+  if (pub) {
+    document.getElementById('f-name').value = pub;
+    generateSlug(pub);
+  }
+  if (contact) {
+    const parts = contact.trim().split(/\s+/);
     document.getElementById('f-first').value = parts[0];
     if (parts.length > 1) document.getElementById('f-last').value = parts.slice(1).join(' ');
   }

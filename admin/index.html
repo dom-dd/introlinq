@@ -1027,13 +1027,58 @@ const VISITOR_LABELS = {
   '50k_100k': '50,000 - 100,000', '100k_plus': '100,000+',
 };
 
-// Builds the same ?name=&email=&domain= link that /signup reads to
-// pre-fill the form - keeps the two in sync in one place.
-function subscriberSignupLink(s) {
+// Public webmail providers - never usable as a stand-in for someone's
+// publication (a gmail.com sender tells us nothing about their blog).
+const GENERIC_EMAIL_DOMAINS = new Set([
+  'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com',
+  'aol.com', 'protonmail.com', 'live.com', 'msn.com', 'yandex.com',
+]);
+
+// Best-effort guess at a publication name - prefers the blog URL's domain
+// (psyll.com -> psyll, planet-fintech.com -> planet fintech), falling back
+// to the email's domain when no blog URL was given (several waitlist
+// entries only have an email, e.g. sheridan@trainingdesignersclub.co.uk)
+// as long as that domain isn't a generic mailbox provider. Only splits on
+// real separators (hyphens, underscores) since there's no reliable way to
+// break apart smushed compound words (trainingdesignersclub stays one
+// word) without a dictionary - the editable field in the table is there
+// so a human can fix those by hand before sending.
+function guessPublicationName(blogUrl, email) {
+  let host = '';
+  if (blogUrl) {
+    try { host = new URL(/^https?:\/\//i.test(blogUrl) ? blogUrl : 'https://' + blogUrl).hostname; } catch {}
+  }
+  if (!host && email && email.includes('@')) {
+    const emailDomain = email.split('@')[1]?.toLowerCase();
+    if (emailDomain && !GENERIC_EMAIL_DOMAINS.has(emailDomain)) host = emailDomain;
+  }
+  if (!host) return '';
+  const label = host.replace(/^www\./, '').split('.')[0];
+  return label.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// Same idea for the contact's first name when the waitlist form didn't
+// collect one - strips trailing digits and separators from the email's
+// local part. Also imperfect for smushed names (kunalagarwal -> stays
+// one word) - same editable escape hatch applies.
+function guessContactName(name, email) {
+  if (name) return name;
+  const local = (email || '').split('@')[0].replace(/[0-9]+$/, '');
+  if (!local) return '';
+  return local.replace(/[._-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// Reads the CURRENT (possibly hand-edited) values out of a row's inputs
+// rather than the original subscriber record, so fixing a guessed name
+// in the table actually changes the link that gets copied/opened.
+function subscriberSignupLink(id, email, domain) {
+  const contact = document.getElementById(`sub-contact-${id}`).value.trim();
+  const pub = document.getElementById(`sub-pub-${id}`).value.trim();
   const params = new URLSearchParams();
-  if (s.name) params.set('name', s.name.trim());
-  if (s.email) params.set('email', s.email.trim());
-  if (s.blog_url) params.set('domain', s.blog_url.trim());
+  if (pub) params.set('pub', pub);
+  if (contact) params.set('contact', contact);
+  if (email) params.set('email', email.trim());
+  if (domain) params.set('domain', domain.trim());
   return `https://www.introlinq.com/signup?${params.toString()}`;
 }
 
@@ -1047,9 +1092,9 @@ async function loadSubscribers() {
     return;
   }
 
-  tbody.innerHTML = list.map(s => {
-    const link = subscriberSignupLink(s);
-    return `
+  const inputStyle = 'width:100%;padding:0.3rem 0.5rem;border:1.5px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit;outline:none';
+
+  tbody.innerHTML = list.map(s => `
     <tr>
       <td>${esc(s.name || '-')}</td>
       <td style="font-size:0.8125rem">${esc(s.email)}</td>
@@ -1058,21 +1103,30 @@ async function loadSubscribers() {
       <td style="font-size:0.8125rem;color:var(--ink-soft)">${esc(countryName(s.country))}</td>
       <td style="white-space:nowrap">${new Date(s.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' })}</td>
       <td>
-        <div style="display:flex;gap:6px;align-items:center">
-          <a href="${esc(link)}" target="_blank" style="font-size:0.75rem;color:var(--sage);text-decoration:none;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(link)}">${esc(link.replace('https://www.introlinq.com', ''))}</a>
-          <button onclick="copySubscriberLink('${esc(link)}')" title="Copy signup link" style="background:#f4f4f8;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink-muted)" onmouseover="this.style.background='#e8e8f0'" onmouseout="this.style.background='#f4f4f8'">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          </button>
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:220px">
+          <input id="sub-contact-${s.id}" style="${inputStyle}" value="${esc(guessContactName(s.name, s.email))}" placeholder="Contact name" title="Contact first/last name used to pre-fill /signup">
+          <input id="sub-pub-${s.id}" style="${inputStyle}" value="${esc(guessPublicationName(s.blog_url, s.email))}" placeholder="Publication name" title="Publication name used to pre-fill /signup - guessed from the domain, fix by hand if it's wrong">
+          <div style="display:flex;gap:6px">
+            <button data-id="${s.id}" data-email="${esc(s.email || '')}" data-domain="${esc(s.blog_url || '')}" onclick="copySubscriberLink(this)" style="flex:1;background:#f4f4f8;border:none;border-radius:6px;padding:0.3rem 0.5rem;cursor:pointer;color:var(--ink-muted);font-size:0.7rem;font-weight:600" onmouseover="this.style.background='#e8e8f0'" onmouseout="this.style.background='#f4f4f8'">Copy link</button>
+            <button data-id="${s.id}" data-email="${esc(s.email || '')}" data-domain="${esc(s.blog_url || '')}" onclick="openSubscriberLink(this)" title="Open signup link" style="background:#f4f4f8;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink-muted)" onmouseover="this.style.background='#e8e8f0'" onmouseout="this.style.background='#f4f4f8'">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </button>
+          </div>
         </div>
       </td>
     </tr>
-  `;
-  }).join('');
+  `).join('');
 }
 
-function copySubscriberLink(link) {
-  navigator.clipboard.writeText(link);
+function copySubscriberLink(btn) {
+  const { id, email, domain } = btn.dataset;
+  navigator.clipboard.writeText(subscriberSignupLink(id, email, domain));
   toast('Signup link copied');
+}
+
+function openSubscriberLink(btn) {
+  const { id, email, domain } = btn.dataset;
+  window.open(subscriberSignupLink(id, email, domain), '_blank');
 }
 
 let _allBookings = [];
