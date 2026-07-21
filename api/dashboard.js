@@ -87,6 +87,8 @@ export default async function handler(req, res) {
         booked_at TIMESTAMPTZ,
         created_at TIMESTAMPTZ DEFAULT NOW()
       )`.catch(() => {});
+      await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ`.catch(() => {});
+      await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payout_batch_id TEXT`.catch(() => {});
 
       // click_id doubles as the idempotency key - a webhook retry for the
       // same booking carries the same click_id (it's tied to the original
@@ -328,12 +330,20 @@ export default async function handler(req, res) {
 
     const [bookingCountRow, payoutByCurrency, bookingRows] = await Promise.all([
       sql`SELECT COUNT(*)::int AS count FROM bookings WHERE publisher = ${pub}`.catch(() => [{ count: 0 }]),
-      sql`SELECT booking_currency AS currency, COALESCE(SUM(publisher_payout),0)::float AS payout FROM bookings WHERE publisher = ${pub} GROUP BY booking_currency ORDER BY payout DESC`.catch(() => []),
+      // total = everything ever earned; paid/pending split by whether a
+      // payout has actually gone out yet, so the dashboard can show "you're
+      // owed X" separately from the cumulative all-time total, instead of
+      // one number that only ever grows even after being paid.
+      sql`SELECT booking_currency AS currency,
+                 COALESCE(SUM(publisher_payout),0)::float AS payout,
+                 COALESCE(SUM(publisher_payout) FILTER (WHERE paid_at IS NOT NULL),0)::float AS paid,
+                 COALESCE(SUM(publisher_payout) FILTER (WHERE paid_at IS NULL),0)::float AS pending
+          FROM bookings WHERE publisher = ${pub} GROUP BY booking_currency ORDER BY payout DESC`.catch(() => []),
       // article_title/article_url live inside raw_payload (set by the webhook
       // from the original click's attribution) - pulled out explicitly here
       // rather than returning the whole payload, which also holds internal
       // bookkeeping fields (click_id etc.) not meant for the publisher UI.
-      sql`SELECT expert_name, booking_amount, booking_currency AS currency, publisher_payout, revenue_share, created_at, provider,
+      sql`SELECT expert_name, booking_amount, booking_currency AS currency, publisher_payout, revenue_share, created_at, provider, paid_at,
                  raw_payload->>'article_title' AS article_title, raw_payload->>'article_url' AS article_url
           FROM bookings WHERE publisher = ${pub} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
     ]);

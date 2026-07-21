@@ -408,6 +408,11 @@ export default async function handler(req, res) {
       revenue_share DECIMAL, publisher_payout DECIMAL, introlinq_margin DECIMAL,
       raw_payload JSONB, booked_at TIMESTAMPTZ, created_at TIMESTAMPTZ DEFAULT NOW()
     )`.catch(() => {});
+    // NULL = still owed, a timestamp = when it was actually paid out. Lets
+    // both the admin panel and the publisher's own dashboard distinguish
+    // "earned" from "already sent" instead of one number that only grows.
+    await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payout_batch_id TEXT`.catch(() => {});
 
     if (req.method === 'GET') {
       const bookings = await sql`
@@ -423,7 +428,22 @@ export default async function handler(req, res) {
                COALESCE(SUM(introlinq_margin),0)::float AS total_margin
         FROM bookings
       `;
-      return res.status(200).json({ bookings, totals });
+      // Who's actually owed money right now, grouped by publisher + currency
+      // (a publisher could earn in more than one currency across partners).
+      // payment_email surfaced here too so admin can see at a glance who
+      // can't be paid yet because they never set one.
+      const pendingPayouts = await sql`
+        SELECT b.publisher, p.name AS publisher_name, p.payment_email,
+               b.booking_currency AS currency,
+               COALESCE(SUM(b.publisher_payout),0)::float AS pending
+        FROM bookings b
+        LEFT JOIN publishers p ON p.slug = b.publisher
+        WHERE b.paid_at IS NULL AND b.publisher_payout IS NOT NULL
+        GROUP BY b.publisher, p.name, p.payment_email, b.booking_currency
+        HAVING COALESCE(SUM(b.publisher_payout),0) > 0
+        ORDER BY pending DESC
+      `.catch(() => []);
+      return res.status(200).json({ bookings, totals, pendingPayouts });
     }
 
     if (req.method === 'POST') {
@@ -446,6 +466,68 @@ export default async function handler(req, res) {
         ON CONFLICT (booking_id) DO NOTHING`;
       return res.status(201).json({ ok: true });
     }
+  }
+
+  // Manual payout confirmation - admin already sent the money themselves
+  // (Wise, PayPal by hand, bank transfer) and just needs the system to
+  // reflect it. No PayPal credentials required for this path - it's the
+  // thing that makes "who's been paid" trackable even before automated
+  // payouts are wired up.
+  if (resource === 'mark-paid' && req.method === 'POST') {
+    const { publisher, currency } = req.body;
+    if (!publisher || !currency) return res.status(400).json({ error: 'publisher and currency required' });
+    const batchId = 'manual-' + Date.now();
+    const result = await sql`
+      UPDATE bookings SET paid_at = NOW(), payout_batch_id = ${batchId}
+      WHERE publisher = ${publisher} AND booking_currency = ${currency} AND paid_at IS NULL
+      RETURNING id, publisher_payout
+    `;
+    const total = result.reduce((s, r) => s + parseFloat(r.publisher_payout || 0), 0);
+    return res.status(200).json({ ok: true, marked: result.length, total });
+  }
+
+  // Fully automated payout via PayPal - actually sends the money, then
+  // marks paid only on confirmed success (never marks paid if the transfer
+  // failed). Needs PAYPAL_CLIENT_ID/PAYPAL_CLIENT_SECRET - returns a clear
+  // 503 explaining what's missing rather than failing silently if unset.
+  if (resource === 'payout' && req.method === 'POST') {
+    if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
+      return res.status(503).json({ error: 'PayPal not configured - use mark-paid for a manual payout, or add PAYPAL_CLIENT_ID/PAYPAL_CLIENT_SECRET to enable automated payouts' });
+    }
+    const { publisher, currency } = req.body;
+    if (!publisher || !currency) return res.status(400).json({ error: 'publisher and currency required' });
+
+    const [pub] = await sql`SELECT name, payment_email FROM publishers WHERE slug = ${publisher} LIMIT 1`;
+    if (!pub) return res.status(404).json({ error: 'Publisher not found' });
+    if (!pub.payment_email) return res.status(400).json({ error: 'Publisher has no payment email set' });
+
+    const [pending] = await sql`
+      SELECT COALESCE(SUM(publisher_payout),0)::float AS total
+      FROM bookings WHERE publisher = ${publisher} AND booking_currency = ${currency} AND paid_at IS NULL
+    `;
+    if (!pending.total || pending.total <= 0) return res.status(400).json({ error: 'Nothing pending for this publisher/currency' });
+
+    const batchId = `il-${publisher}-${Date.now()}`;
+    let payoutBatchId;
+    try {
+      payoutBatchId = await sendPayPalPayout({
+        email: pub.payment_email,
+        amount: pending.total,
+        currency,
+        note: `IntroLinq payout - ${pub.name}`,
+        batchId,
+      });
+    } catch (err) {
+      console.error('PayPal payout failed:', err);
+      return res.status(502).json({ error: 'PayPal payout failed: ' + err.message });
+    }
+
+    const result = await sql`
+      UPDATE bookings SET paid_at = NOW(), payout_batch_id = ${payoutBatchId}
+      WHERE publisher = ${publisher} AND booking_currency = ${currency} AND paid_at IS NULL
+      RETURNING id
+    `;
+    return res.status(200).json({ ok: true, marked: result.length, total: pending.total, payout_batch_id: payoutBatchId });
   }
 
   // One-time: fix missing location_country for specific experts
@@ -717,6 +799,43 @@ ${expert.name} — ${bio}`);
   }
 
   return res.status(404).json({ error: 'Unknown resource' });
+}
+
+// PAYPAL_ENV=live switches to the real API - defaults to sandbox so a
+// missing/unset env var can never accidentally move real money.
+const PAYPAL_API = process.env.PAYPAL_ENV === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
+
+async function getPayPalAccessToken() {
+  const auth = Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString('base64');
+  const res = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
+    method: 'POST',
+    headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=client_credentials',
+  });
+  if (!res.ok) throw new Error(`PayPal auth failed: ${res.status}`);
+  const data = await res.json();
+  return data.access_token;
+}
+
+async function sendPayPalPayout({ email, amount, currency, note, batchId }) {
+  const token = await getPayPalAccessToken();
+  const res = await fetch(`${PAYPAL_API}/v1/payments/payouts`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      sender_batch_header: { sender_batch_id: batchId, email_subject: 'You have a payout from IntroLinq', email_message: note },
+      items: [{
+        recipient_type: 'EMAIL',
+        amount: { value: amount.toFixed(2), currency },
+        receiver: email,
+        note,
+        sender_item_id: batchId,
+      }],
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(JSON.stringify(data).slice(0, 300));
+  return data.batch_header?.payout_batch_id || batchId;
 }
 
 async function callClaude(prompt) {

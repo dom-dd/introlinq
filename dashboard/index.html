@@ -779,16 +779,16 @@ tr:last-child td{border-bottom:none}
 
     <!-- ── Payouts ── -->
     <div class="tab-panel" id="tab-payouts">
-      <div class="stats-grid" style="grid-template-columns:repeat(2,1fr)">
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
         <div class="stat-card">
           <div class="stat-label">Confirmed bookings</div>
           <div class="stat-value" id="stat-bookings">-</div>
           <div class="stat-sub">sessions booked through your site</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Total earnings</div>
+          <div class="stat-label">Pending payout</div>
           <div class="stat-value" id="stat-earnings" style="font-size:1.6rem;padding-top:0.15rem">-</div>
-          <div class="stat-sub">your cumulative payout</div>
+          <div class="stat-sub">owed to you, not yet sent</div>
           <div id="payout-progress" style="display:none;margin-top:0.75rem">
             <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--ink-muted);margin-bottom:0.3rem">
               <span id="payout-progress-label">$0 of $50 minimum</span>
@@ -799,6 +799,11 @@ tr:last-child td{border-bottom:none}
             </div>
             <div id="payout-ready" style="display:none;margin-top:0.4rem;font-size:0.7rem;font-weight:600;color:var(--sage)">✓ Ready for payout</div>
           </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Paid to date</div>
+          <div class="stat-value" id="stat-paid" style="font-size:1.6rem;padding-top:0.15rem">-</div>
+          <div class="stat-sub">already sent to you</div>
         </div>
       </div>
 
@@ -966,22 +971,30 @@ async function loadDashboard() {
   document.getElementById('stat-bookings').textContent = (bk.count || 0).toLocaleString();
   const byCurrency = bk.by_currency || [];
   const earningsEl = document.getElementById('stat-earnings');
+  const paidEl = document.getElementById('stat-paid');
   if (byCurrency.length) {
+    // Pending drives the $50-minimum progress bar, not the all-time total -
+    // once a payout goes out, hitting the minimum again means NEW pending
+    // earnings, not the old cumulative total staying permanently "ready".
     earningsEl.innerHTML = byCurrency.map(r =>
-      `<div style="font-size:${byCurrency.length > 1 ? '1.25rem' : '2rem'};line-height:1.6">${new Intl.NumberFormat('en-US', { style:'currency', currency: r.currency }).format(r.payout)}</div>`
+      `<div style="font-size:${byCurrency.length > 1 ? '1.25rem' : '2rem'};line-height:1.6">${new Intl.NumberFormat('en-US', { style:'currency', currency: r.currency }).format(r.pending)}</div>`
+    ).join('');
+    paidEl.innerHTML = byCurrency.map(r =>
+      `<div style="font-size:${byCurrency.length > 1 ? '1.25rem' : '2rem'};line-height:1.6">${new Intl.NumberFormat('en-US', { style:'currency', currency: r.currency }).format(r.paid)}</div>`
     ).join('');
     const primary = byCurrency[0];
     const MINIMUM = 50;
-    const earned = primary.payout || 0;
-    const pct = Math.min(100, Math.round((earned / MINIMUM) * 100));
+    const pending = primary.pending || 0;
+    const pct = Math.min(100, Math.round((pending / MINIMUM) * 100));
     const fmt = new Intl.NumberFormat('en-US', { style:'currency', currency: primary.currency });
     document.getElementById('payout-progress').style.display = 'block';
-    document.getElementById('payout-progress-label').textContent = `${fmt.format(earned)} of ${fmt.format(MINIMUM)} minimum`;
+    document.getElementById('payout-progress-label').textContent = `${fmt.format(pending)} of ${fmt.format(MINIMUM)} minimum`;
     document.getElementById('payout-progress-pct').textContent = pct + '%';
     document.getElementById('payout-progress-bar').style.width = pct + '%';
-    if (earned >= MINIMUM) document.getElementById('payout-ready').style.display = 'block';
+    if (pending >= MINIMUM) document.getElementById('payout-ready').style.display = 'block';
   } else {
     earningsEl.textContent = '-';
+    paidEl.textContent = '-';
   }
   if (p.payment_email) {
     document.getElementById('payment-email-input').value = p.payment_email;
@@ -1045,7 +1058,9 @@ function renderBookingHistory(bk) {
         <div style="color:var(--sage);font-weight:600">${fmt(b.publisher_payout, b.currency)}</div>
         <div style="color:var(--ink-muted);font-size:0.75rem">${splitPct}% split</div>
       </td>
-      <td><span style="font-size:0.75rem;background:#f0fdf4;color:#166534;padding:0.15rem 0.5rem;border-radius:100px;font-weight:600">Confirmed</span></td>
+      <td>${b.paid_at
+        ? `<span style="font-size:0.75rem;background:#f0fdf4;color:#166534;padding:0.15rem 0.5rem;border-radius:100px;font-weight:600" title="Paid ${new Date(b.paid_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}">Paid</span>`
+        : `<span style="font-size:0.75rem;background:#fffbeb;color:#92400e;padding:0.15rem 0.5rem;border-radius:100px;font-weight:600">Pending</span>`}</td>
     </tr>`;
   }).join('');
 }

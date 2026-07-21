@@ -267,6 +267,27 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 
     <!-- Bookings tab -->
     <div class="tab-panel" id="tab-bookings">
+      <div class="section" style="margin-bottom:1.5rem">
+        <div class="section-header">
+          <div class="section-title">Pending payouts</div>
+          <div class="section-sub">Who's owed money right now, and hasn't been paid yet</div>
+        </div>
+        <div style="overflow-x:auto">
+          <table style="min-width:600px">
+            <thead>
+              <tr>
+                <th>Publisher</th>
+                <th>Payment email</th>
+                <th>Pending</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="pending-payouts-tbody">
+              <tr><td colspan="4" class="empty">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
       <div class="section">
         <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
           <div>
@@ -956,6 +977,55 @@ async function loadBookings() {
     pubs.map(p => `<option value="${esc(p)}" ${p === current ? 'selected' : ''}>${esc(p)}</option>`).join('');
 
   filterBookings();
+  renderPendingPayouts(d.pendingPayouts || []);
+}
+
+function renderPendingPayouts(rows) {
+  const tbody = document.getElementById('pending-payouts-tbody');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="4" class="empty">Nobody owed anything right now.</td></tr>'; return; }
+  tbody.innerHTML = rows.map(r => {
+    const amount = new Intl.NumberFormat('en-GB', { style:'currency', currency: r.currency }).format(r.pending);
+    const noEmail = !r.payment_email;
+    return `<tr>
+      <td><div style="font-weight:500">${esc(r.publisher_name || r.publisher)}</div><div style="font-size:0.72rem;color:var(--ink-muted)">${esc(r.publisher)}</div></td>
+      <td style="font-size:0.8rem">${noEmail ? '<span style="color:#dc2626">No payment email</span>' : esc(r.payment_email)}</td>
+      <td style="color:var(--sage);font-weight:600">${amount}</td>
+      <td style="white-space:nowrap;text-align:right">
+        <button class="btn btn-ghost btn-sm" onclick="markPaid('${esc(r.publisher)}','${esc(r.currency)}','${amount}')" style="margin-right:0.4rem">Mark as paid</button>
+        <button class="btn btn-primary btn-sm" onclick="payoutViaPayPal('${esc(r.publisher)}','${esc(r.currency)}','${amount}')" ${noEmail ? 'disabled title="No payment email set"' : ''}>Pay via PayPal</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// For when you've already sent the money yourself (Wise, PayPal by hand,
+// bank transfer) - just records that it happened, no API call.
+async function markPaid(publisher, currency, amountLabel) {
+  if (!confirm(`Mark ${amountLabel} as paid to ${publisher}?\n\nOnly do this if you've actually sent the money yourself - this doesn't send anything, it just records it.`)) return;
+  const res = await fetch('/api/admin?resource=mark-paid', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify({ publisher, currency })
+  });
+  const data = await res.json();
+  if (!res.ok) { toast(data.error || 'Failed to mark as paid'); return; }
+  toast(`Marked ${data.marked} booking${data.marked !== 1 ? 's' : ''} as paid`);
+  loadBookings();
+}
+
+// Actually sends the money via PayPal, then marks paid on confirmed
+// success. Needs PAYPAL_CLIENT_ID/PAYPAL_CLIENT_SECRET configured.
+async function payoutViaPayPal(publisher, currency, amountLabel) {
+  if (!confirm(`Send ${amountLabel} to ${publisher} via PayPal now?\n\nThis actually transfers real money.`)) return;
+  const res = await fetch('/api/admin?resource=payout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify({ publisher, currency })
+  });
+  const data = await res.json();
+  if (!res.ok) { toast(data.error || 'Payout failed'); return; }
+  toast(`Sent ${amountLabel} to ${publisher} - ${data.marked} booking${data.marked !== 1 ? 's' : ''} marked paid`);
+  loadBookings();
 }
 
 function filterBookings() {
