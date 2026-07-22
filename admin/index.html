@@ -984,30 +984,23 @@ async function loadStats() {
   }
 }
 
-// Each row here is one automated health check on a publisher account -
-// rendered as a small circular icon with a hover tooltip in the "Status"
-// column. Add another row to flag more problems the same way; icon/color
-// are just visual, the tooltip text does the actual explaining.
-const PUBLISHER_ISSUE_CHECKS = [
-  {
-    test: p => !p.payment_email,
-    icon: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',
-    color: '#dc2626', bg: '#fef2f2',
-    text: p => `No payment email set - this publisher cannot be paid out even if they earn commission.`,
-  },
-];
-
-function renderPublisherIssues(p) {
-  const issues = PUBLISHER_ISSUE_CHECKS.filter(c => c.test(p));
-  if (!issues.length) return '';
-  return issues.map(c => `
-    <span title="${esc(c.text(p))}" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:${c.bg};color:${c.color};flex-shrink:0;cursor:default">${c.icon}</span>
-  `).join('');
+// Always shown (not just when missing), same red/green pattern as the
+// widget and active icons below - so entering a payment email visibly
+// flips this to green instead of just making a warning icon vanish.
+function renderPaymentStatusIcon(p) {
+  const hasEmail = !!p.payment_email;
+  const color = hasEmail ? '#16a34a' : '#dc2626';
+  const bg = hasEmail ? '#f0fdf4' : '#fef2f2';
+  const tooltip = hasEmail
+    ? `Payment email set: ${p.payment_email}`
+    : 'No payment email set - this publisher cannot be paid out even if they earn commission.';
+  const icon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>';
+  return `<span title="${esc(tooltip)}" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:${bg};color:${color};flex-shrink:0;cursor:default">${icon}</span>`;
 }
 
-// Unlike the conditional checks above, this is shown for every publisher
-// (green = healthy) so the whole table can be scanned at a glance for who's
-// live vs who needs a nudge. Red covers both "never installed" and
+// Same always-shown pattern - green = healthy, so the whole table can be
+// scanned at a glance for who's live vs who needs a nudge. Red covers
+// both "never installed" and
 // "installed then went quiet" (script removed, site redesign, etc) - the
 // tooltip tells the two apart. 14 days of silence is treated as "flag it";
 // a single missed day is normal (low-traffic blogs, weekends).
@@ -1090,7 +1083,7 @@ async function loadPublishers() {
         </div>
       </td>
       <td style="white-space:nowrap">${new Date(p.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' })}</td>
-      <td><div style="display:flex;gap:4px">${renderActiveStatusIcon(p)}${renderWidgetStatusIcon(p)}${renderPublisherIssues(p)}</div></td>
+      <td><div style="display:flex;gap:4px">${renderActiveStatusIcon(p)}${renderWidgetStatusIcon(p)}${renderPaymentStatusIcon(p)}</div></td>
       <td>
         <div style="display:flex;gap:6px;align-items:center;justify-content:flex-start">
           <button onclick="recrawlPublisher('${esc(p.slug)}')" title="Recrawl - clear this publisher's page cache so every page re-scans on next visit" style="background:#fff7e6;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
