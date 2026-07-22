@@ -274,6 +274,39 @@ export default async function handler(req, res) {
     });
   }
 
+  // Platform-wide analytics (impressions/clicks across every publisher) -
+  // kept as its own endpoint rather than folded into `stats` above, since
+  // `stats` runs on every admin page load regardless of which tab is open
+  // and these queries are heavier; this only runs when the Stats tab is
+  // actually opened. Demo publishers (slug LIKE 'demo-%') are excluded
+  // everywhere here, same as the rest of admin - they're showcase pages,
+  // not real traffic, and would inflate every number.
+  if (resource === 'analytics') {
+    const notDemo = sql`publisher NOT LIKE 'demo-%'`;
+    const [totals, clicksByDay, imprByDay, clicksByWeek, imprByWeek, clicksByMonth, imprByMonth] = await Promise.all([
+      sql`
+        SELECT
+          (SELECT COUNT(*) FROM match_logs WHERE match_count > 0 AND ${notDemo})::int AS impressions,
+          (SELECT COUNT(*) FROM click_logs WHERE ${notDemo})::int AS clicks,
+          (SELECT COUNT(*) FROM match_cache WHERE ${notDemo})::int AS pages_scanned,
+          (SELECT COUNT(*) FROM publishers WHERE active = true AND slug NOT LIKE 'demo-%' AND first_widget_fire_at IS NOT NULL)::int AS publishers_live,
+          (SELECT COUNT(*) FROM publishers WHERE active = true AND slug NOT LIKE 'demo-%')::int AS publishers_total
+      `,
+      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM click_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`,
+      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM match_logs WHERE match_count > 0 AND ${notDemo} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`,
+      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM click_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`,
+      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM match_logs WHERE match_count > 0 AND ${notDemo} AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`,
+      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM click_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`,
+      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM match_logs WHERE match_count > 0 AND ${notDemo} AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`,
+    ]);
+    return res.status(200).json({
+      totals: totals[0],
+      clicks_by_day: clicksByDay, impressions_by_day: imprByDay,
+      clicks_by_week: clicksByWeek, impressions_by_week: imprByWeek,
+      clicks_by_month: clicksByMonth, impressions_by_month: imprByMonth,
+    });
+  }
+
   // Waitlist signups (from the pre-launch landing pages) - not yet full
   // publisher accounts. Listed here so they can be followed up with a
   // personalized /signup link that pre-fills what they already gave us.

@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -51,6 +52,15 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .stat-label{font-size:0.75rem;color:var(--ink-muted);font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.375rem}
 .stat-value{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--ink);line-height:1}
 .stat-sub{font-size:0.7rem;color:var(--ink-muted);margin-top:0.375rem}
+
+/* Platform analytics charts */
+.period-btns{display:flex;gap:4px}
+.period-btn{padding:0.3rem 0.7rem;border-radius:100px;font-size:0.75rem;font-weight:500;border:1.5px solid var(--border);background:var(--white);color:var(--ink-soft);cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+.period-btn:hover{border-color:var(--ink-soft)}
+.period-btn.active{background:var(--ink);color:var(--white);border-color:var(--ink)}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem;padding:1.5rem}
+.chart-label{font-size:0.7rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.75rem}
+.chart-wrap{position:relative;height:220px}
 
 /* Tabs */
 .tab-bar{background:var(--white);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;gap:0}
@@ -142,6 +152,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
   <!-- Tab bar - full width flush below header -->
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('publishers',this)">Publishers</button>
+    <button class="tab-btn" onclick="switchTab('stats',this)">Stats</button>
     <button class="tab-btn" onclick="switchTab('waitlist',this)">Waitlist</button>
     <button class="tab-btn" onclick="switchTab('bookings',this)">Bookings</button>
     <button class="tab-btn" onclick="switchTab('logs',this)">Logs</button>
@@ -261,6 +272,56 @@ tr:hover td{background:rgba(0,0,0,0.01)}
               <tr><td colspan="7" class="empty">Loading...</td></tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats tab -->
+    <div class="tab-panel" id="tab-stats">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Impressions</div>
+          <div class="stat-value" id="stat-total-impressions">-</div>
+          <div class="stat-sub">all-time, real publishers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Clicks</div>
+          <div class="stat-value" id="stat-total-clicks">-</div>
+          <div class="stat-sub">all-time, real publishers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pages scanned</div>
+          <div class="stat-value" id="stat-pages-scanned">-</div>
+          <div class="stat-sub">unique cached pages</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Widgets live</div>
+          <div class="stat-value" id="stat-widgets-live">-</div>
+          <div class="stat-sub" id="stat-widgets-live-sub">of active publishers</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="section-title">Platform performance</div>
+            <div class="section-sub">Clicks and impressions across every publisher</div>
+          </div>
+          <div class="period-btns">
+            <button class="period-btn active" onclick="setPlatformPeriod('daily',this)">Daily</button>
+            <button class="period-btn" onclick="setPlatformPeriod('weekly',this)">Weekly</button>
+            <button class="period-btn" onclick="setPlatformPeriod('monthly',this)">Monthly</button>
+          </div>
+        </div>
+        <div class="chart-grid">
+          <div>
+            <div class="chart-label">Clicks</div>
+            <div class="chart-wrap"><canvas id="chart-platform-clicks"></canvas></div>
+          </div>
+          <div>
+            <div class="chart-label">Impressions</div>
+            <div class="chart-wrap"><canvas id="chart-platform-impr"></canvas></div>
+          </div>
         </div>
       </div>
     </div>
@@ -698,6 +759,118 @@ function switchTab(name, btn) {
   document.getElementById('tab-' + name).classList.add('active');
   if (name === 'experts') loadHeadlines();
   if (name === 'cache') loadCache();
+  if (name === 'stats') loadAnalytics();
+}
+
+// ── Platform analytics ──────────────────────────────────────────────────
+// Ported from dashboard/index.html's per-publisher Performance charts -
+// same fill*/Chart.js pattern, just fed platform-wide totals instead of
+// one publisher's numbers. Kept as its own fetch (not part of loadStats)
+// since it's heavier and only needed when this tab is actually open.
+let platformClicksChart, platformImprChart, _analytics = null;
+
+async function loadAnalytics() {
+  const res = await fetch('/api/admin?resource=analytics');
+  const d = await res.json();
+  _analytics = d;
+
+  const t = d.totals || {};
+  document.getElementById('stat-total-impressions').textContent = (t.impressions || 0).toLocaleString();
+  document.getElementById('stat-total-clicks').textContent = (t.clicks || 0).toLocaleString();
+  document.getElementById('stat-pages-scanned').textContent = (t.pages_scanned || 0).toLocaleString();
+  document.getElementById('stat-widgets-live').textContent = t.publishers_live ?? '-';
+  document.getElementById('stat-widgets-live-sub').textContent = `of ${t.publishers_total ?? 0} active publishers`;
+
+  initPlatformCharts();
+  setPlatformPeriod('daily', document.querySelector('#tab-stats .period-btn'));
+}
+
+function fillDaysAdmin(raw, n) {
+  const map = {};
+  raw.forEach(r => { map[String(r.date).slice(0,10)] = r.count; });
+  const out = { labels: [], data: [] };
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    out.labels.push(i === 0 ? 'Today' : d.toLocaleDateString('en-GB', { day:'numeric', month:'short' }));
+    out.data.push(map[key] || 0);
+  }
+  return out;
+}
+
+function fillWeeksAdmin(raw) {
+  const map = {};
+  raw.forEach(r => { map[String(r.week_start).slice(0,10)] = r.count; });
+  const out = { labels: [], data: [] };
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date();
+    const day = d.getDay() || 7;
+    d.setDate(d.getDate() - day + 1 - i * 7);
+    const key = d.toISOString().slice(0, 10);
+    out.labels.push(d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
+    out.data.push(map[key] || 0);
+  }
+  return out;
+}
+
+function fillMonthsAdmin(raw) {
+  const map = {};
+  raw.forEach(r => { map[r.month] = r.count; });
+  const out = { labels: [], data: [] };
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i);
+    const key = d.toLocaleString('en-US', { month: 'short', year: '2-digit' });
+    out.labels.push(key);
+    out.data.push(map[key] || 0);
+  }
+  return out;
+}
+
+function initPlatformCharts() {
+  if (platformClicksChart) { platformClicksChart.destroy(); platformClicksChart = null; }
+  if (platformImprChart) { platformImprChart.destroy(); platformImprChart = null; }
+  const baseOpts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { title: t => t[0].label } } },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#8888a8', maxRotation: 0 } },
+      y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 }, color: '#8888a8', precision: 0 } }
+    }
+  };
+  platformClicksChart = new Chart(document.getElementById('chart-platform-clicks'), {
+    type: 'bar',
+    data: { labels: [], datasets: [{ data: [], backgroundColor: '#3d7a5f', borderRadius: 4 }] },
+    options: { ...baseOpts }
+  });
+  platformImprChart = new Chart(document.getElementById('chart-platform-impr'), {
+    type: 'line',
+    data: { labels: [], datasets: [{ data: [], borderColor: '#1a1a2e', backgroundColor: 'rgba(26,26,46,0.06)', fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 4 }] },
+    options: { ...baseOpts }
+  });
+}
+
+function setPlatformPeriod(period, btn) {
+  document.querySelectorAll('#tab-stats .period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const d = _analytics;
+  if (!d || !platformClicksChart) return;
+  let c, m;
+  if (period === 'monthly') {
+    c = fillMonthsAdmin(d.clicks_by_month || []);
+    m = fillMonthsAdmin(d.impressions_by_month || []);
+  } else if (period === 'weekly') {
+    c = fillWeeksAdmin(d.clicks_by_week || []);
+    m = fillWeeksAdmin(d.impressions_by_week || []);
+  } else {
+    c = fillDaysAdmin(d.clicks_by_day || [], 30);
+    m = fillDaysAdmin(d.impressions_by_day || [], 30);
+  }
+  platformClicksChart.data.labels = c.labels;
+  platformClicksChart.data.datasets[0].data = c.data;
+  platformClicksChart.update();
+  platformImprChart.data.labels = m.labels;
+  platformImprChart.data.datasets[0].data = m.data;
+  platformImprChart.update();
 }
 
 let cacheEntries = [];
