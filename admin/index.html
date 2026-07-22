@@ -1216,7 +1216,7 @@ async function toggleContacted(id, contacted) {
   });
   const s = _subscribers.find(x => x.id === id);
   if (s) s.contacted_at = contacted ? new Date().toISOString() : null;
-  loadSubscribers();
+  await loadSubscribers();
 }
 
 function copySubscriberLink(id) {
