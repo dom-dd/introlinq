@@ -267,14 +267,15 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 
     <!-- Waitlist tab -->
     <div class="tab-panel" id="tab-waitlist">
-      <div class="section">
+      <div class="section" style="margin-bottom:1.5rem">
         <div class="section-header">
-          <div class="section-title">Waitlist signups</div>
+          <div class="section-title" id="subscribers-todo-title">To contact</div>
         </div>
         <div class="section-body" style="overflow-x:auto">
           <table style="min-width:900px">
             <thead>
               <tr>
+                <th style="width:32px"></th>
                 <th>Name</th>
                 <th>Email</th>
                 <th>Blog</th>
@@ -284,8 +285,33 @@ tr:hover td{background:rgba(0,0,0,0.01)}
                 <th>Signup link</th>
               </tr>
             </thead>
-            <tbody id="subscribers-tbody">
-              <tr><td colspan="7" class="empty">Loading...</td></tr>
+            <tbody id="subscribers-todo-tbody">
+              <tr><td colspan="8" class="empty">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title" id="subscribers-done-title">Contacted</div>
+        </div>
+        <div class="section-body" style="overflow-x:auto">
+          <table style="min-width:900px">
+            <thead>
+              <tr>
+                <th style="width:32px"></th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Blog</th>
+                <th>Visitors</th>
+                <th>Country</th>
+                <th>Added</th>
+                <th>Signup link</th>
+              </tr>
+            </thead>
+            <tbody id="subscribers-done-tbody">
+              <tr><td colspan="8" class="empty">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -1136,18 +1162,12 @@ function subscriberSignupLink(s) {
 
 let _subscribers = [];
 
-async function loadSubscribers() {
-  const res = await fetch('/api/admin?resource=subscribers');
-  _subscribers = await res.json();
-  const tbody = document.getElementById('subscribers-tbody');
-
-  if (!_subscribers.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty">No waitlist signups yet.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = _subscribers.map(s => `
+function subscriberRow(s) {
+  return `
     <tr>
+      <td>
+        <input type="checkbox" ${s.contacted_at ? 'checked' : ''} onchange="toggleContacted(${s.id}, this.checked)" title="${s.contacted_at ? 'Contacted on ' + new Date(s.contacted_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' }) + ' - click to undo' : 'Mark as contacted'}" style="width:16px;height:16px;cursor:pointer">
+      </td>
       <td>${esc(s.name || '-')}</td>
       <td style="font-size:0.8125rem">${esc(s.email)}</td>
       <td>${s.blog_url ? `<a href="${esc(/^https?:\/\//i.test(s.blog_url) ? s.blog_url : 'https://' + s.blog_url)}" target="_blank" style="color:var(--ink-soft);font-size:0.8125rem">${esc(s.blog_url)}</a>` : '-'}</td>
@@ -1168,7 +1188,35 @@ async function loadSubscribers() {
         </div>
       </td>
     </tr>
-  `).join('');
+  `;
+}
+
+async function loadSubscribers() {
+  const res = await fetch('/api/admin?resource=subscribers');
+  _subscribers = await res.json();
+
+  const todo = _subscribers.filter(s => !s.contacted_at);
+  const done = _subscribers.filter(s => s.contacted_at)
+    .sort((a, b) => new Date(b.contacted_at) - new Date(a.contacted_at));
+
+  document.getElementById('subscribers-todo-title').textContent = `To contact (${todo.length})`;
+  document.getElementById('subscribers-done-title').textContent = `Contacted (${done.length})`;
+
+  const todoBody = document.getElementById('subscribers-todo-tbody');
+  const doneBody = document.getElementById('subscribers-done-tbody');
+  todoBody.innerHTML = todo.length ? todo.map(subscriberRow).join('') : '<tr><td colspan="8" class="empty">Everyone\'s been contacted.</td></tr>';
+  doneBody.innerHTML = done.length ? done.map(subscriberRow).join('') : '<tr><td colspan="8" class="empty">No one marked as contacted yet.</td></tr>';
+}
+
+async function toggleContacted(id, contacted) {
+  await fetch('/api/admin?resource=subscribers', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify({ id, contacted }),
+  });
+  const s = _subscribers.find(x => x.id === id);
+  if (s) s.contacted_at = contacted ? new Date().toISOString() : null;
+  loadSubscribers();
 }
 
 function copySubscriberLink(id) {
