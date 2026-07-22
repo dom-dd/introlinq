@@ -171,14 +171,14 @@ tr:hover td{background:rgba(0,0,0,0.01)}
         <div class="stat-sub">active sites</div>
       </div>
       <div class="stat-card">
+        <div class="stat-label">Widget live</div>
+        <div class="stat-value" id="stat-widget-live">-</div>
+        <div class="stat-sub" id="stat-widget-live-sub">of active publishers</div>
+      </div>
+      <div class="stat-card">
         <div class="stat-label">Experts</div>
         <div class="stat-value" id="stat-experts">-</div>
         <div class="stat-sub">from OpenIntro</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Waitlist</div>
-        <div class="stat-value" id="stat-subscribers">-</div>
-        <div class="stat-sub">total signups</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Last sync</div>
@@ -295,9 +295,9 @@ tr:hover td{background:rgba(0,0,0,0.01)}
           <div class="stat-sub">unique cached pages</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Widgets live</div>
-          <div class="stat-value" id="stat-widgets-live">-</div>
-          <div class="stat-sub" id="stat-widgets-live-sub">of active publishers</div>
+          <div class="stat-label">CTR</div>
+          <div class="stat-value" id="stat-ctr">-</div>
+          <div class="stat-sub">clicks / impressions</div>
         </div>
       </div>
 
@@ -778,8 +778,8 @@ async function loadAnalytics() {
   document.getElementById('stat-total-impressions').textContent = (t.impressions || 0).toLocaleString();
   document.getElementById('stat-total-clicks').textContent = (t.clicks || 0).toLocaleString();
   document.getElementById('stat-pages-scanned').textContent = (t.pages_scanned || 0).toLocaleString();
-  document.getElementById('stat-widgets-live').textContent = t.publishers_live ?? '-';
-  document.getElementById('stat-widgets-live-sub').textContent = `of ${t.publishers_total ?? 0} active publishers`;
+  const ctr = t.impressions > 0 ? (t.clicks / t.impressions * 100).toFixed(1) : '0.0';
+  document.getElementById('stat-ctr').textContent = `${ctr}%`;
 
   initPlatformCharts();
   setPlatformPeriod('daily', document.querySelector('#tab-stats .period-btn'));
@@ -976,7 +976,8 @@ async function loadStats() {
   const d = await res.json();
   document.getElementById('stat-publishers').textContent = d.publishers ?? '-';
   document.getElementById('stat-experts').textContent = d.experts ?? '-';
-  document.getElementById('stat-subscribers').textContent = d.subscribers ?? '-';
+  document.getElementById('stat-widget-live').textContent = d.publishers_live ?? '-';
+  document.getElementById('stat-widget-live-sub').textContent = `of ${d.publishers ?? 0} active publishers`;
   if (d.last_synced_at) {
     const dt = new Date(d.last_synced_at);
     document.getElementById('stat-sync').textContent = dt.toLocaleDateString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });

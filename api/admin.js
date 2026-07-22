@@ -256,20 +256,19 @@ export default async function handler(req, res) {
 
   // Stats
   if (resource === 'stats') {
-    const [publishers, experts, subscribers, lastSync] = await Promise.all([
-      sql`SELECT COUNT(*)::int AS count FROM publishers WHERE active = true AND slug NOT LIKE 'demo-%'`,
+    const [publishers, experts, lastSync] = await Promise.all([
+      sql`SELECT COUNT(*)::int AS count, COUNT(*) FILTER (WHERE first_widget_fire_at IS NOT NULL)::int AS live_count FROM publishers WHERE active = true AND slug NOT LIKE 'demo-%'`,
       // Labeled "from OpenIntro" in the UI - must actually filter to that
       // provider, not count every active expert across every provider
       // (demo providers included), or the number silently drifts from what
       // the label claims as soon as there's more than one provider.
       sql`SELECT COUNT(*)::int AS count FROM experts e JOIN providers p ON p.id = e.provider_id WHERE e.active = true AND p.slug = 'openintro'`,
-      sql`SELECT COUNT(*)::int AS count FROM subscribers`,
       sql`SELECT last_synced_at FROM providers WHERE slug = 'openintro'`,
     ]);
     return res.status(200).json({
       publishers: publishers[0].count,
+      publishers_live: publishers[0].live_count,
       experts: experts[0].count,
-      subscribers: subscribers[0].count,
       last_synced_at: lastSync[0]?.last_synced_at || null,
     });
   }
@@ -288,9 +287,7 @@ export default async function handler(req, res) {
         SELECT
           (SELECT COUNT(*) FROM match_logs WHERE match_count > 0 AND ${notDemo})::int AS impressions,
           (SELECT COUNT(*) FROM click_logs WHERE ${notDemo})::int AS clicks,
-          (SELECT COUNT(*) FROM match_cache WHERE ${notDemo})::int AS pages_scanned,
-          (SELECT COUNT(*) FROM publishers WHERE active = true AND slug NOT LIKE 'demo-%' AND first_widget_fire_at IS NOT NULL)::int AS publishers_live,
-          (SELECT COUNT(*) FROM publishers WHERE active = true AND slug NOT LIKE 'demo-%')::int AS publishers_total
+          (SELECT COUNT(*) FROM match_cache WHERE ${notDemo})::int AS pages_scanned
       `,
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM click_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`,
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM match_logs WHERE match_count > 0 AND ${notDemo} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`,
