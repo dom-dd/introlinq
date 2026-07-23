@@ -417,11 +417,13 @@
       // position:absolute (not fixed) + document-relative left/top - the
       // cue must scroll WITH the article text, not stay pinned to the
       // viewport while the highlighted phrase it's pointing at scrolls
-      // away underneath it.
-      '@keyframes il-cue-in{0%{opacity:0;transform:translate(calc(-50% + 14px),calc(-50% + 14px)) scale(.9)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}' +
+      // away underneath it. Motion: slides up from below into position
+      // (fade in), taps, slides back down out of position (fade out) -
+      // mirrors reaching up to tap something then withdrawing.
+      '@keyframes il-cue-in{0%{opacity:0;transform:translate(-50%,calc(-50% + 22px))}100%{opacity:1;transform:translate(-50%,-50%)}}' +
       '@keyframes il-cue-tap{0%{transform:translate(-50%,-50%) scale(1)}35%{transform:translate(-50%,-50%) scale(.78)}65%{transform:translate(-50%,-50%) scale(1.05)}100%{transform:translate(-50%,-50%) scale(1)}}' +
-      '@keyframes il-cue-out{0%{opacity:1}100%{opacity:0}}' +
-      '#il-cue{position:absolute!important;z-index:2147483647!important;pointer-events:none!important;width:34px!important;height:34px!important;opacity:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))!important;' +
+      '@keyframes il-cue-out{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,calc(-50% + 22px))}}' +
+      '#il-cue{position:absolute!important;z-index:2147483647!important;pointer-events:none!important;width:26px!important;height:32px!important;opacity:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))!important;' +
       'animation:il-cue-in .5s ease forwards,il-cue-tap .4s ease .5s,il-cue-out .4s ease 1.2s forwards!important}' +
       '#il-cue svg{width:100%!important;height:100%!important;display:block!important}' +
       '@keyframes il-pulse-glow{0%,100%{box-shadow:0 0 0 0 ' + hexToRgba(color, 0) + '}50%{box-shadow:0 0 0 6px ' + hexToRgba(color, 0.35) + '}}' +
@@ -612,7 +614,13 @@
     cue.id = 'il-cue';
     cue.style.left = (rect.left + rect.width / 2 + scrollX) + 'px';
     cue.style.top = (rect.top + rect.height / 2 + scrollY) + 'px';
-    cue.innerHTML = '<svg viewBox="0 0 32 32"><path d="M13 4a2 2 0 0 1 4 0v9.5l1.5-1a2 2 0 0 1 2.8.6l.2.3a2 2 0 0 1-.5 2.7l-6 4.4a4 4 0 0 1-2.4.8H9a4 4 0 0 1-3.6-2.3l-2-4.3a2 2 0 0 1 1-2.6 2 2 0 0 1 2.5.7l1.1 1.7V4z" fill="#fff" stroke="#1a1a2e" stroke-width="1.3" stroke-linejoin="round"/></svg>';
+    // Simple two-shape silhouette (a narrow capsule "finger" overlapping a
+    // wide capsule "palm/fist") rather than one hand-drawn path - much more
+    // predictable to actually read as a hand at 26x32px than a bespoke
+    // bezier outline. The container's drop-shadow (see injectStyles) gives
+    // it definition against any background without needing per-shape
+    // strokes, which would otherwise show a seam where the two overlap.
+    cue.innerHTML = '<svg viewBox="0 0 24 30"><rect x="9" y="1" width="6" height="16" rx="3" fill="#fff"/><rect x="4" y="14" width="16" height="15" rx="7.5" fill="#fff"/></svg>';
     document.body.appendChild(cue);
     setTimeout(function () { cue.remove(); }, 1650);
   }
