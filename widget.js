@@ -410,15 +410,19 @@
       '#il-pop.il-on{opacity:1;transform:translateY(0);pointer-events:all}' +
       '#il-pop *{box-sizing:border-box}' +
       // One-time discoverability nudge (see maybeShowDiscoveryCue) - a
-      // "phantom cursor" tap on desktop, a soft pulse on the highlight
+      // white "phantom hand" tap on desktop, a soft pulse on the highlight
       // itself on touch. pointer-events:none on #il-cue is load-bearing:
       // it must never intercept the mouseenter/click that actually opens
       // the popup, or the outside-click dismiss handler on touch.
-      '@keyframes il-cue-in{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}60%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}' +
-      '@keyframes il-cue-tap{0%{transform:translate(-50%,-50%) scale(1)}40%{transform:translate(-50%,-50%) scale(.82)}100%{transform:translate(-50%,-50%) scale(1)}}' +
+      // position:absolute (not fixed) + document-relative left/top - the
+      // cue must scroll WITH the article text, not stay pinned to the
+      // viewport while the highlighted phrase it's pointing at scrolls
+      // away underneath it.
+      '@keyframes il-cue-in{0%{opacity:0;transform:translate(calc(-50% + 14px),calc(-50% + 14px)) scale(.9)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}' +
+      '@keyframes il-cue-tap{0%{transform:translate(-50%,-50%) scale(1)}35%{transform:translate(-50%,-50%) scale(.78)}65%{transform:translate(-50%,-50%) scale(1.05)}100%{transform:translate(-50%,-50%) scale(1)}}' +
       '@keyframes il-cue-out{0%{opacity:1}100%{opacity:0}}' +
-      '#il-cue{position:fixed!important;z-index:2147483647!important;pointer-events:none!important;width:30px!important;height:30px!important;opacity:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3))!important;' +
-      'animation:il-cue-in .45s ease forwards,il-cue-tap .35s ease .55s,il-cue-out .35s ease .95s forwards!important}' +
+      '#il-cue{position:absolute!important;z-index:2147483647!important;pointer-events:none!important;width:34px!important;height:34px!important;opacity:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))!important;' +
+      'animation:il-cue-in .5s ease forwards,il-cue-tap .4s ease .5s,il-cue-out .4s ease 1.2s forwards!important}' +
       '#il-cue svg{width:100%!important;height:100%!important;display:block!important}' +
       '@keyframes il-pulse-glow{0%,100%{box-shadow:0 0 0 0 ' + hexToRgba(color, 0) + '}50%{box-shadow:0 0 0 6px ' + hexToRgba(color, 0.35) + '}}' +
       '.il-hl.il-cue-pulse{animation:il-pulse-glow 1s ease-in-out 2!important}';
@@ -536,18 +540,21 @@
   // Most readers never notice a highlight is interactive - it's deliberately
   // subtle (see the .il-hl rules in injectStyles above), which is good for
   // not looking spammy but bad for discoverability. This shows a one-time
-  // animated nudge - a "phantom cursor" tap on desktop, a soft pulse on the
-  // highlight itself on touch (same 'ontouchstart' in window check used
-  // everywhere else in this file) - the moment the FIRST highlighted phrase
-  // on the page scrolls into view, then never again: tracked in localStorage
-  // so a reader who's already learned the pattern on one article doesn't
-  // see it repeat on every other page of the same site. cueShown guards
-  // against the function running more than once per page load (highlights
-  // stream in over several async responses - see applyMatches) rather than
-  // per phrase; the anchor from whichever call gets there first is a good
-  // enough proxy for "first in reading order" since the quick pass (which
-  // covers the article's intro) always resolves before any chunk pass.
+  // animated nudge - a white "phantom hand" tap on desktop, a soft pulse on
+  // the highlight itself on touch (same 'ontouchstart' in window check used
+  // everywhere else in this file) - after the FIRST highlighted phrase on
+  // the page has been in view for a couple of seconds (not the instant it
+  // appears - a reader who's still scrolling past it hasn't "looked" at it
+  // yet), then never again: tracked in localStorage so a reader who's
+  // already learned the pattern on one article doesn't see it repeat on
+  // every other page of the same site. cueShown guards against the function
+  // running more than once per page load (highlights stream in over several
+  // async responses - see applyMatches) rather than per phrase; the anchor
+  // from whichever call gets there first is a good enough proxy for "first
+  // in reading order" since the quick pass (which covers the article's
+  // intro) always resolves before any chunk pass.
   var cueShown = false;
+  var CUE_DWELL_MS = 2500;
   function maybeShowDiscoveryCue(anchor) {
     if (cueShown) return;
     cueShown = true;
@@ -558,25 +565,46 @@
     var markSeen = function () {
       try { localStorage.setItem('il_cue_seen', '1'); } catch (e) {}
     };
+    var dwellTimer = null;
     var observer = new IntersectionObserver(function (entries) {
-      if (!entries[0].isIntersecting) return;
-      observer.disconnect();
-      markSeen();
-      if ('ontouchstart' in window) {
-        anchor.classList.add('il-cue-pulse');
-        setTimeout(function () { anchor.classList.remove('il-cue-pulse'); }, 2200);
-      } else {
-        var rect = anchor.getBoundingClientRect();
-        var cue = document.createElement('div');
-        cue.id = 'il-cue';
-        cue.style.left = (rect.left + rect.width / 2) + 'px';
-        cue.style.top = (rect.top + rect.height / 2) + 'px';
-        cue.innerHTML = '<svg viewBox="0 0 24 24"><path d="M4 3l6.5 17 2.2-6.8L20 11z" fill="#1a1a2e" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/></svg>';
-        document.body.appendChild(cue);
-        setTimeout(function () { cue.remove(); }, 1400);
+      if (entries[0].isIntersecting) {
+        if (dwellTimer) return;
+        dwellTimer = setTimeout(function () {
+          observer.disconnect();
+          markSeen();
+          if ('ontouchstart' in window) {
+            anchor.classList.add('il-cue-pulse');
+            setTimeout(function () { anchor.classList.remove('il-cue-pulse'); }, 2200);
+          } else {
+            showPhantomHand(anchor);
+          }
+        }, CUE_DWELL_MS);
+      } else if (dwellTimer) {
+        // Scrolled past before the dwell finished - they didn't actually
+        // read it, so don't count this as "looked at it". Re-arms if the
+        // phrase scrolls back into view later.
+        clearTimeout(dwellTimer);
+        dwellTimer = null;
       }
     }, { threshold: 0.6 });
     observer.observe(anchor);
+  }
+
+  // Positioned with page-relative (document) coordinates, not viewport
+  // coordinates, and #il-cue is position:absolute rather than fixed - so it
+  // scrolls together with the article text it's pointing at instead of
+  // staying pinned to the screen while the phrase scrolls away underneath.
+  function showPhantomHand(anchor) {
+    var rect = anchor.getBoundingClientRect();
+    var scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+    var scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    var cue = document.createElement('div');
+    cue.id = 'il-cue';
+    cue.style.left = (rect.left + rect.width / 2 + scrollX) + 'px';
+    cue.style.top = (rect.top + rect.height / 2 + scrollY) + 'px';
+    cue.innerHTML = '<svg viewBox="0 0 32 32"><path d="M13 4a2 2 0 0 1 4 0v9.5l1.5-1a2 2 0 0 1 2.8.6l.2.3a2 2 0 0 1-.5 2.7l-6 4.4a4 4 0 0 1-2.4.8H9a4 4 0 0 1-3.6-2.3l-2-4.3a2 2 0 0 1 1-2.6 2 2 0 0 1 2.5.7l1.1 1.7V4z" fill="#fff" stroke="#1a1a2e" stroke-width="1.3" stroke-linejoin="round"/></svg>';
+    document.body.appendChild(cue);
+    setTimeout(function () { cue.remove(); }, 1650);
   }
 
   // A matched phrase can land in several DOM text nodes when the article's
