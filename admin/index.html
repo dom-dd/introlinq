@@ -367,7 +367,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
                 <th>Blog</th>
                 <th>Visitors</th>
                 <th>Country</th>
-                <th>Added</th>
+                <th>Contacted on</th>
                 <th>Signup link</th>
               </tr>
             </thead>
@@ -1329,7 +1329,8 @@ function subscriberSignupLink(s) {
 
 let _subscribers = [];
 
-function subscriberRow(s) {
+function subscriberRow(s, dateField) {
+  const dateValue = dateField === 'contacted_at' ? s.contacted_at : s.created_at;
   return `
     <tr>
       <td>
@@ -1340,7 +1341,7 @@ function subscriberRow(s) {
       <td>${s.blog_url ? `<a href="${esc(/^https?:\/\//i.test(s.blog_url) ? s.blog_url : 'https://' + s.blog_url)}" target="_blank" style="color:var(--ink-soft);font-size:0.8125rem">${esc(s.blog_url)}</a>` : '-'}</td>
       <td style="font-size:0.8125rem;color:var(--ink-soft)">${esc(VISITOR_LABELS[s.monthly_visitors] || s.monthly_visitors || '-')}</td>
       <td style="font-size:0.8125rem;color:var(--ink-soft)">${esc(countryName(s.country))}</td>
-      <td style="white-space:nowrap">${new Date(s.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' })}</td>
+      <td style="white-space:nowrap">${new Date(dateValue).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' })}</td>
       <td>
         <div style="display:flex;gap:6px;align-items:center">
           <button onclick="editSubscriber(${s.id})" title="Edit signup details" style="background:#f4f4f8;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink-muted)" onmouseover="this.style.background='#e8e8f0'" onmouseout="this.style.background='#f4f4f8'">
@@ -1371,8 +1372,8 @@ async function loadSubscribers() {
 
   const todoBody = document.getElementById('subscribers-todo-tbody');
   const doneBody = document.getElementById('subscribers-done-tbody');
-  todoBody.innerHTML = todo.length ? todo.map(subscriberRow).join('') : '<tr><td colspan="8" class="empty">Everyone\'s been contacted.</td></tr>';
-  doneBody.innerHTML = done.length ? done.map(subscriberRow).join('') : '<tr><td colspan="8" class="empty">No one marked as contacted yet.</td></tr>';
+  todoBody.innerHTML = todo.length ? todo.map(s => subscriberRow(s, 'created_at')).join('') : '<tr><td colspan="8" class="empty">Everyone\'s been contacted.</td></tr>';
+  doneBody.innerHTML = done.length ? done.map(s => subscriberRow(s, 'contacted_at')).join('') : '<tr><td colspan="8" class="empty">No one marked as contacted yet.</td></tr>';
 }
 
 async function toggleContacted(id, contacted) {
