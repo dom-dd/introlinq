@@ -150,13 +150,39 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .screens-label{font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--sage);margin-bottom:0.75rem}
 .screens-title{font-family:'DM Serif Display',serif;font-size:1.75rem;color:var(--ink);letter-spacing:-0.02em;margin-bottom:0.625rem}
 .screens-sub{font-size:0.9375rem;color:var(--ink-soft);max-width:520px;margin:0 auto;line-height:1.65}
-.screens-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:2.5rem}
+.screens-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:2.5rem;align-items:start}
 @media (max-width:820px){.screens-grid{grid-template-columns:1fr}}
 .screen-frame{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 8px 32px rgba(26,26,46,0.06);text-align:left}
 .screen-frame-bar{display:flex;gap:0.4rem;padding:0.75rem 0.9rem;border-bottom:1px solid var(--border);background:var(--cream)}
 .screen-frame-bar span{width:9px;height:9px;border-radius:50%;background:rgba(26,26,46,0.15)}
 .screen-placeholder{aspect-ratio:16/10;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(135deg,rgba(26,26,46,0.025),rgba(26,26,46,0.025) 10px,transparent 10px,transparent 20px);border:1.5px dashed var(--border)}
 .screen-placeholder-label{font-size:0.8125rem;color:var(--ink-muted);font-weight:500;background:var(--white);padding:0.5rem 1rem;border-radius:100px;border:1px solid var(--border)}
+
+/* Mock dashboard screenshots */
+.mock-screen{padding:1.375rem 1.5rem}
+.mock-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.125rem}
+.mock-greeting{font-family:'DM Serif Display',serif;font-size:1.1875rem;color:var(--ink);letter-spacing:-0.01em}
+.mock-greeting-sub{font-size:0.7rem;color:var(--ink-muted);margin-top:0.125rem}
+.mock-period{display:flex;gap:2px;background:var(--cream);border-radius:8px;padding:2px}
+.mock-period-btn{font-size:0.68rem;font-weight:500;color:var(--ink-muted);padding:0.3rem 0.6rem;border-radius:6px}
+.mock-period-btn.active{background:var(--white);color:var(--ink);box-shadow:0 1px 3px rgba(26,26,46,0.1)}
+.mock-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0.625rem;margin-bottom:1.125rem}
+.mock-stat{background:var(--cream);border:1px solid var(--border);border-radius:10px;padding:0.75rem 0.875rem;min-width:0}
+.mock-stat-label{font-size:0.625rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.3rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mock-stat-value{font-family:'DM Serif Display',serif;font-size:1.25rem;color:var(--ink);line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mock-stat-change{font-size:0.65rem;color:var(--sage);font-weight:600;margin-top:0.25rem}
+.mock-chart-card{border:1px solid var(--border);border-radius:10px;padding:0.875rem 1rem 0}
+.mock-chart-title{font-size:0.65rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.5rem}
+.mock-chart{width:100%;height:100px;display:block}
+.mock-activity-title{font-size:0.65rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.625rem}
+.mock-activity-list{display:flex;flex-direction:column;gap:0.75rem}
+.mock-activity-row{display:flex;align-items:center;gap:0.75rem}
+.mock-activity-icon{width:26px;height:26px;border-radius:50%;background:var(--sage-light);color:var(--sage);display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;flex-shrink:0}
+.mock-activity-info{flex:1;min-width:0}
+.mock-activity-name{font-size:0.8rem;font-weight:600;color:var(--ink)}
+.mock-activity-sub{font-size:0.68rem;color:var(--ink-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mock-activity-amount{font-size:0.8rem;font-weight:700;color:var(--sage);flex-shrink:0}
+.mock-divider{border:none;border-top:1px solid var(--border);margin:1.125rem 0}
 
 /* Blogs we work with */
 .blogs-strip{margin-top:3.5rem;text-align:center}
@@ -441,11 +467,104 @@ The honest summary: talk to customers early, stay lean, get to revenue as fast a
     <div class="screens-grid">
       <div class="screen-frame">
         <div class="screen-frame-bar"><span></span><span></span><span></span></div>
-        <div class="screen-placeholder"><span class="screen-placeholder-label">Dashboard screenshot</span></div>
+        <div class="mock-screen">
+          <div class="mock-top">
+            <div>
+              <div class="mock-greeting">Good afternoon, Sarah</div>
+              <div class="mock-greeting-sub">The Growth Journal</div>
+            </div>
+            <div class="mock-period">
+              <span class="mock-period-btn active">Daily</span>
+              <span class="mock-period-btn">Weekly</span>
+              <span class="mock-period-btn">Monthly</span>
+            </div>
+          </div>
+          <div class="mock-stats">
+            <div class="mock-stat">
+              <div class="mock-stat-label">Impressions</div>
+              <div class="mock-stat-value">18,204</div>
+              <div class="mock-stat-change">↗ +12.4%</div>
+            </div>
+            <div class="mock-stat">
+              <div class="mock-stat-label">Clicks</div>
+              <div class="mock-stat-value">1,092</div>
+              <div class="mock-stat-change">↗ +8.7%</div>
+            </div>
+            <div class="mock-stat">
+              <div class="mock-stat-label">CTR</div>
+              <div class="mock-stat-value">6.0%</div>
+              <div class="mock-stat-change">↗ +0.4%</div>
+            </div>
+          </div>
+          <div class="mock-chart-card">
+            <div class="mock-chart-title">Clicks &amp; impressions over time</div>
+            <svg class="mock-chart" viewBox="0 0 400 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="mockChartFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#3d7a5f" stop-opacity="0.28"/>
+                  <stop offset="100%" stop-color="#3d7a5f" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <polygon points="0,78 40,68 80,72 120,50 160,58 200,28 240,40 280,20 320,32 360,12 400,24 400,100 0,100" fill="url(#mockChartFill)"/>
+              <polyline points="0,78 40,68 80,72 120,50 160,58 200,28 240,40 280,20 320,32 360,12 400,24" fill="none" stroke="#3d7a5f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
       </div>
       <div class="screen-frame">
         <div class="screen-frame-bar"><span></span><span></span><span></span></div>
-        <div class="screen-placeholder"><span class="screen-placeholder-label">Earnings screenshot</span></div>
+        <div class="mock-screen">
+          <div class="mock-stats">
+            <div class="mock-stat">
+              <div class="mock-stat-label">Confirmed bookings</div>
+              <div class="mock-stat-value">37</div>
+            </div>
+            <div class="mock-stat">
+              <div class="mock-stat-label">Pending payout</div>
+              <div class="mock-stat-value">$612</div>
+            </div>
+            <div class="mock-stat">
+              <div class="mock-stat-label">Paid to date</div>
+              <div class="mock-stat-value">$4,830</div>
+            </div>
+          </div>
+          <hr class="mock-divider">
+          <div class="mock-activity-title">Recent bookings</div>
+          <div class="mock-activity-list">
+            <div class="mock-activity-row">
+              <div class="mock-activity-icon">✓</div>
+              <div class="mock-activity-info">
+                <div class="mock-activity-name">Claire Dawson</div>
+                <div class="mock-activity-sub">via "Year two of freelancing..."</div>
+              </div>
+              <div class="mock-activity-amount">+$32.50</div>
+            </div>
+            <div class="mock-activity-row">
+              <div class="mock-activity-icon">✓</div>
+              <div class="mock-activity-info">
+                <div class="mock-activity-name">Tom Barrett</div>
+                <div class="mock-activity-sub">via "Marathon training later in life..."</div>
+              </div>
+              <div class="mock-activity-amount">+$40.00</div>
+            </div>
+            <div class="mock-activity-row">
+              <div class="mock-activity-icon">✓</div>
+              <div class="mock-activity-info">
+                <div class="mock-activity-name">Dr. Sarah Collins</div>
+                <div class="mock-activity-sub">via "I switched to fermented foods..."</div>
+              </div>
+              <div class="mock-activity-amount">+$32.50</div>
+            </div>
+            <div class="mock-activity-row">
+              <div class="mock-activity-icon">✓</div>
+              <div class="mock-activity-info">
+                <div class="mock-activity-name">Daniel Park</div>
+                <div class="mock-activity-sub">via "I applied for sixty jobs in a year..."</div>
+              </div>
+              <div class="mock-activity-amount">+$60.00</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
