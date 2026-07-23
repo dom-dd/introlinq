@@ -548,14 +548,13 @@
   // the page has been in view for a couple of seconds (not the instant it
   // appears - a reader who's still scrolling past it hasn't "looked" at it
   // yet), then repeats every CUE_REPEAT_MS for as long as they stay on it.
-  // Still only ever starts once per browser per site though: localStorage
-  // stops a reader who's already learned the pattern on one article from
-  // seeing it again on a different page later. cueShown guards against the
-  // function running more than once per page load (highlights stream in
-  // over several async responses - see applyMatches) rather than per
-  // phrase; the anchor from whichever call gets there first is a good
-  // enough proxy for "first in reading order" since the quick pass (which
-  // covers the article's intro) always resolves before any chunk pass.
+  // Runs on every visit (no longer gated behind a "seen it once" flag) -
+  // cueShown just guards against the function running more than once per
+  // page load (highlights stream in over several async responses - see
+  // applyMatches) rather than per phrase; the anchor from whichever call
+  // gets there first is a good enough proxy for "first in reading order"
+  // since the quick pass (which covers the article's intro) always
+  // resolves before any chunk pass.
   var cueShown = false;
   var CUE_DWELL_MS = 2500;
   // TESTING VALUE - repeats the play every 5s while still in view, instead
@@ -566,14 +565,7 @@
     if (cueShown) return;
     cueShown = true;
     if (typeof IntersectionObserver !== 'function') return;
-    try {
-      if (localStorage.getItem('il_cue_seen')) return;
-    } catch (e) { return; }
-    var markSeen = function () {
-      try { localStorage.setItem('il_cue_seen', '1'); } catch (e) {}
-    };
     var play = function () {
-      markSeen();
       if ('ontouchstart' in window) {
         anchor.classList.add('il-cue-pulse');
         setTimeout(function () { anchor.classList.remove('il-cue-pulse'); }, 2200);
