@@ -322,17 +322,23 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS domain_override TEXT`.catch(() => {});
     await sql`ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS publication_name_override TEXT`.catch(() => {});
     await sql`ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS contacted_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS installed_at TIMESTAMPTZ`.catch(() => {});
 
     if (req.method === 'PATCH') {
-      const { id, contacted, contact_first_override, contact_last_override, email_override, domain_override, publication_name_override } = req.body;
+      const { id, contacted, installed, contact_first_override, contact_last_override, email_override, domain_override, publication_name_override } = req.body;
       if (!id) return res.status(400).json({ error: 'id required' });
 
-      // The "mark as contacted" checkbox is a separate, lightweight toggle
-      // from the edit-modal save below - it must not require (or clobber)
-      // the other override fields, so it's handled as its own branch
-      // rather than folded into the always-write-all-five UPDATE.
+      // The "mark as contacted"/"mark as installed" checkboxes are separate,
+      // lightweight toggles from the edit-modal save below - they must not
+      // require (or clobber) the other override fields, so each is handled
+      // as its own branch rather than folded into the always-write-all-five
+      // UPDATE.
       if (contacted !== undefined) {
         await sql`UPDATE subscribers SET contacted_at = ${contacted ? new Date().toISOString() : null} WHERE id = ${id}`;
+        return res.status(200).json({ ok: true });
+      }
+      if (installed !== undefined) {
+        await sql`UPDATE subscribers SET installed_at = ${installed ? new Date().toISOString() : null} WHERE id = ${id}`;
         return res.status(200).json({ ok: true });
       }
 
@@ -349,7 +355,7 @@ export default async function handler(req, res) {
     }
 
     const rows = await sql`
-      SELECT id, name, email, blog_url, monthly_visitors, country, created_at, contacted_at,
+      SELECT id, name, email, blog_url, monthly_visitors, country, created_at, contacted_at, installed_at,
         contact_first_override, contact_last_override, email_override, domain_override, publication_name_override
       FROM subscribers ORDER BY created_at DESC
     `;

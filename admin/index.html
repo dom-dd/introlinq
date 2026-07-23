@@ -336,7 +336,8 @@ tr:hover td{background:rgba(0,0,0,0.01)}
           <table style="min-width:900px">
             <thead>
               <tr>
-                <th style="width:32px"></th>
+                <th style="width:28px;font-size:0.65rem;font-weight:600;color:var(--ink-muted)" title="Contacted">Cont.</th>
+                <th style="width:28px;font-size:0.65rem;font-weight:600;color:var(--ink-muted)" title="Installed">Inst.</th>
                 <th>Name</th>
                 <th>Email</th>
                 <th>Blog</th>
@@ -347,13 +348,13 @@ tr:hover td{background:rgba(0,0,0,0.01)}
               </tr>
             </thead>
             <tbody id="subscribers-todo-tbody">
-              <tr><td colspan="8" class="empty">Loading...</td></tr>
+              <tr><td colspan="9" class="empty">Loading...</td></tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <div class="section">
+      <div class="section" style="margin-bottom:1.5rem">
         <div class="section-header">
           <div class="section-title" id="subscribers-done-title">Contacted</div>
         </div>
@@ -361,7 +362,8 @@ tr:hover td{background:rgba(0,0,0,0.01)}
           <table style="min-width:900px">
             <thead>
               <tr>
-                <th style="width:32px"></th>
+                <th style="width:28px;font-size:0.65rem;font-weight:600;color:var(--ink-muted)" title="Contacted">Cont.</th>
+                <th style="width:28px;font-size:0.65rem;font-weight:600;color:var(--ink-muted)" title="Installed">Inst.</th>
                 <th>Name</th>
                 <th>Email</th>
                 <th>Blog</th>
@@ -372,7 +374,33 @@ tr:hover td{background:rgba(0,0,0,0.01)}
               </tr>
             </thead>
             <tbody id="subscribers-done-tbody">
-              <tr><td colspan="8" class="empty">Loading...</td></tr>
+              <tr><td colspan="9" class="empty">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title" id="subscribers-installed-title">Installed</div>
+        </div>
+        <div class="section-body" style="overflow-x:auto">
+          <table style="min-width:900px">
+            <thead>
+              <tr>
+                <th style="width:28px;font-size:0.65rem;font-weight:600;color:var(--ink-muted)" title="Contacted">Cont.</th>
+                <th style="width:28px;font-size:0.65rem;font-weight:600;color:var(--ink-muted)" title="Installed">Inst.</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Blog</th>
+                <th>Visitors</th>
+                <th>Country</th>
+                <th>Installed on</th>
+                <th>Signup link</th>
+              </tr>
+            </thead>
+            <tbody id="subscribers-installed-tbody">
+              <tr><td colspan="9" class="empty">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -1330,11 +1358,14 @@ function subscriberSignupLink(s) {
 let _subscribers = [];
 
 function subscriberRow(s, dateField) {
-  const dateValue = dateField === 'contacted_at' ? s.contacted_at : s.created_at;
+  const dateValue = s[dateField];
   return `
     <tr>
       <td>
         <input type="checkbox" ${s.contacted_at ? 'checked' : ''} onchange="toggleContacted(${s.id}, this.checked)" title="${s.contacted_at ? 'Contacted on ' + new Date(s.contacted_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' }) + ' - click to undo' : 'Mark as contacted'}" style="width:16px;height:16px;cursor:pointer">
+      </td>
+      <td>
+        <input type="checkbox" ${s.installed_at ? 'checked' : ''} onchange="toggleInstalled(${s.id}, this.checked)" title="${s.installed_at ? 'Installed on ' + new Date(s.installed_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' }) + ' - click to undo' : 'Mark as installed'}" style="width:16px;height:16px;cursor:pointer">
       </td>
       <td>${esc(s.name || '-')}</td>
       <td style="font-size:0.8125rem">${esc(s.email)}</td>
@@ -1363,17 +1394,26 @@ async function loadSubscribers() {
   const res = await fetch('/api/admin?resource=subscribers');
   _subscribers = await res.json();
 
-  const todo = _subscribers.filter(s => !s.contacted_at);
-  const done = _subscribers.filter(s => s.contacted_at)
+  // Installed implies contacted-in-spirit regardless of whether the
+  // contacted checkbox was ever explicitly ticked first (e.g. someone
+  // installs after finding IntroLinq on their own) - so "installed" wins
+  // the section a row lands in, then "contacted", then neither.
+  const installed = _subscribers.filter(s => s.installed_at)
+    .sort((a, b) => new Date(b.installed_at) - new Date(a.installed_at));
+  const done = _subscribers.filter(s => s.contacted_at && !s.installed_at)
     .sort((a, b) => new Date(b.contacted_at) - new Date(a.contacted_at));
+  const todo = _subscribers.filter(s => !s.contacted_at && !s.installed_at);
 
   document.getElementById('subscribers-todo-title').textContent = `To contact (${todo.length})`;
   document.getElementById('subscribers-done-title').textContent = `Contacted (${done.length})`;
+  document.getElementById('subscribers-installed-title').textContent = `Installed (${installed.length})`;
 
   const todoBody = document.getElementById('subscribers-todo-tbody');
   const doneBody = document.getElementById('subscribers-done-tbody');
-  todoBody.innerHTML = todo.length ? todo.map(s => subscriberRow(s, 'created_at')).join('') : '<tr><td colspan="8" class="empty">Everyone\'s been contacted.</td></tr>';
-  doneBody.innerHTML = done.length ? done.map(s => subscriberRow(s, 'contacted_at')).join('') : '<tr><td colspan="8" class="empty">No one marked as contacted yet.</td></tr>';
+  const installedBody = document.getElementById('subscribers-installed-tbody');
+  todoBody.innerHTML = todo.length ? todo.map(s => subscriberRow(s, 'created_at')).join('') : '<tr><td colspan="9" class="empty">Everyone\'s been contacted.</td></tr>';
+  doneBody.innerHTML = done.length ? done.map(s => subscriberRow(s, 'contacted_at')).join('') : '<tr><td colspan="9" class="empty">No one marked as contacted yet.</td></tr>';
+  installedBody.innerHTML = installed.length ? installed.map(s => subscriberRow(s, 'installed_at')).join('') : '<tr><td colspan="9" class="empty">No one marked as installed yet.</td></tr>';
 }
 
 async function toggleContacted(id, contacted) {
@@ -1384,6 +1424,17 @@ async function toggleContacted(id, contacted) {
   });
   const s = _subscribers.find(x => x.id === id);
   if (s) s.contacted_at = contacted ? new Date().toISOString() : null;
+  await loadSubscribers();
+}
+
+async function toggleInstalled(id, installed) {
+  await fetch('/api/admin?resource=subscribers', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify({ id, installed }),
+  });
+  const s = _subscribers.find(x => x.id === id);
+  if (s) s.installed_at = installed ? new Date().toISOString() : null;
   await loadSubscribers();
 }
 
