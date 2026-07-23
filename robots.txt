@@ -1,5 +1,4 @@
 User-agent: *
 Disallow: /brief
-Disallow: /home
 Disallow: /documentation
 Disallow: /onboarding
