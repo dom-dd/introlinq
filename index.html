@@ -88,10 +88,6 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .form-badge{display:inline-block;font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;background:var(--gold);color:var(--white);padding:0.2rem 0.6rem;border-radius:100px;margin-bottom:1rem}
 .form-title{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--ink);line-height:1.2;margin-bottom:0.375rem}
 .form-sub{font-size:0.875rem;color:var(--ink-soft);line-height:1.6;margin-bottom:1.25rem}
-.spots-row{display:flex;align-items:center;gap:0.5rem;margin-bottom:1.375rem}
-.spots-bar-wrap{flex:1;height:5px;background:rgba(230,168,32,0.15);border-radius:100px;overflow:hidden}
-.spots-bar{height:100%;background:var(--gold);border-radius:100px;width:0;transition:width 0.4s ease}
-.spots-text{white-space:nowrap;font-size:0.75rem;font-weight:500;color:var(--gold);opacity:0;transition:opacity 0.3s ease}
 .form-input{width:100%;padding:0.75rem 1rem;border:2px solid rgba(26,26,46,0.28);border-radius:var(--radius-sm);font-size:0.9375rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--white);outline:none;transition:border-color 0.15s;margin-bottom:0.75rem}
 .form-input:focus{border-color:var(--sage);background:var(--white)}
 .form-input::placeholder{color:var(--ink-muted)}
@@ -397,15 +393,11 @@ The honest summary: talk to customers early, stay lean, get to revenue as fast a
     <div id="signup-form">
       <div class="form-card">
         <div id="lp-form-inner">
-          <p style="font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);margin-bottom:0.375rem">First 100 sites only</p>
-          <h2 class="form-title">We only accept 100 sites at this rate.</h2>
-          <p class="form-sub">Once these spots are gone, they're gone. Founding members earn 90% commission on every booking - permanently. After that it's 50/50 for everyone else.</p>
-          <div class="spots-row">
-            <div class="spots-bar-wrap"><div class="spots-bar" id="lp-spots-bar"></div></div>
-            <span class="spots-text" id="lp-spots-text"></span>
-          </div>
+          <p style="font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);margin-bottom:0.375rem">Now accepting publishers</p>
+          <h2 class="form-title">Start earning from every booking.</h2>
+          <p class="form-sub">Founding members earn 90% commission on every booking - permanently. After that it's 50/50 for everyone else.</p>
           <a class="form-submit" href="/signup" style="display:block;text-align:center;text-decoration:none">Create your account →</a>
-          <p class="form-trust">Free to join · Live in minutes · Lock in 90% while spots last</p>
+          <p class="form-trust">Free to join · Live in minutes · Lock in 90% commission</p>
           <div class="form-platforms">
             <p class="form-platforms-label">Works with any publishing platform</p>
             <div class="form-platform-logos">
@@ -596,9 +588,9 @@ The honest summary: talk to customers early, stay lean, get to revenue as fast a
 
   <!-- Secondary CTA -->
   <div style="margin-top:3.5rem;background:var(--ink);border-radius:16px;padding:2.5rem 2rem;text-align:center">
-    <p style="font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--sage-mid);margin-bottom:0.75rem">First 100 spots only</p>
-    <h2 style="font-family:'DM Serif Display',serif;font-size:1.75rem;color:var(--white);letter-spacing:-0.02em;margin-bottom:0.625rem;line-height:1.2">This is the only time we offer 90%.</h2>
-    <p style="font-size:0.9375rem;color:rgba(255,255,255,0.6);line-height:1.65;margin-bottom:1.75rem;max-width:480px;margin-left:auto;margin-right:auto">We accept exactly 100 sites at a 90% commission rate - locked in permanently. Once these spots are gone, new publishers will only ever get 50/50. No exceptions.</p>
+    <p style="font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--sage-mid);margin-bottom:0.75rem">Now accepting publishers</p>
+    <h2 style="font-family:'DM Serif Display',serif;font-size:1.75rem;color:var(--white);letter-spacing:-0.02em;margin-bottom:0.625rem;line-height:1.2">Founding members earn 90% commission.</h2>
+    <p style="font-size:0.9375rem;color:rgba(255,255,255,0.6);line-height:1.65;margin-bottom:1.75rem;max-width:480px;margin-left:auto;margin-right:auto">Sign up now and lock in 90% commission on every booking - permanently. After that it's 50/50 for everyone else.</p>
     <a href="/signup" style="background:var(--gold);color:var(--ink);border:none;padding:0.875rem 2rem;border-radius:100px;font-size:0.9375rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;text-decoration:none;display:inline-block">Create your account →</a>
   </div>
 
@@ -626,7 +618,7 @@ The honest summary: talk to customers early, stay lean, get to revenue as fast a
     <div class="faq-list">
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFaq(this)">How does the commission work?</button>
-        <div class="faq-answer">When a reader books a session with an expert through your blog, you earn 90% of the booking fee. The first 100 publishers to sign up lock this rate in permanently - after that it's 50/50.</div>
+        <div class="faq-answer">When a reader books a session with an expert through your blog, you earn 90% of the booking fee. Founding members lock this rate in permanently - after that it's 50/50.</div>
       </div>
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFaq(this)">Is it really free?</button>
@@ -683,20 +675,6 @@ The honest summary: talk to customers early, stay lean, get to revenue as fast a
 </div>
 
 <script>
-async function fetchSpots() {
-  try {
-    const r = await fetch('/api/spots');
-    const d = await r.json();
-    const remaining = d.remaining;
-    const taken = 100 - remaining;
-    const pct = Math.min(100, taken) + '%';
-    const label = 'Only ' + remaining + ' of 100 founding spots left';
-    ['lp-spots-bar','exit-spots-bar'].forEach(id => { const el = document.getElementById(id); if (el) el.style.width = pct; });
-    ['lp-spots-text','exit-spots-text'].forEach(id => { const el = document.getElementById(id); if (el) { el.textContent = label; el.style.opacity = '1'; } });
-  } catch {}
-}
-fetchSpots();
-
 (function() {
   const isNew = !localStorage.getItem('il_visitor');
   if (isNew) localStorage.setItem('il_visitor', '1');
@@ -794,7 +772,6 @@ async function handleExitSubmit(e) {
     form.style.display = 'none';
     document.getElementById('exit-success').style.display = 'block';
     if (window._ilViewId) fetch('/api/track', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action: 'convert', viewId: window._ilViewId }) }).catch(()=>{});
-    fetchSpots();
     setTimeout(closeExitPopup, 3000);
   } catch {
     btn.textContent = 'Save my spot';
@@ -1048,13 +1025,9 @@ function t_maybeHide() {
 <div id="exit-popup" class="exit-overlay">
   <div class="exit-modal">
     <button class="exit-close" onclick="closeExitPopup()" aria-label="Close">✕</button>
-    <div class="exit-badge">100 founding spots only</div>
-    <h2 class="exit-title">Don't lose your spot.</h2>
-    <p class="exit-sub">Only 100 sites get the 90% rate. Once these spots are gone, it's 50/50 for everyone else. Save your place now - it takes 10 seconds.</p>
-    <div class="spots-remaining" style="margin-bottom:1.25rem;margin-top:-0.25rem">
-      <div class="spots-bar-wrap"><div class="spots-bar" id="exit-spots-bar"></div></div>
-      <span class="spots-text" id="exit-spots-text"></span>
-    </div>
+    <div class="exit-badge">Founding member rate</div>
+    <h2 class="exit-title">Don't leave empty-handed.</h2>
+    <p class="exit-sub">Founding members earn 90% commission on every booking - permanently. Save your place now - it takes 10 seconds.</p>
     <form id="exit-form" onsubmit="handleExitSubmit(event)">
       <input class="form-input" type="email" name="email" placeholder="Your email address" required>
       <button class="form-submit" type="submit">Save my spot</button>
