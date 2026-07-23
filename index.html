@@ -58,8 +58,39 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 /* Carousel */
 .carousel-wrap{background:var(--ink);border-radius:20px;padding:1.75rem;position:relative;--ilc-bg:var(--ink)}
 .carousel-label{font-size:0.7rem;font-weight:500;color:rgba(255,255,255,0.4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:1rem}
+.carousel-track{position:relative;overflow:visible;border-radius:var(--radius)}
+.carousel-slide{display:none;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem 1.75rem 1.25rem;text-align:left;animation:slideIn 0.4s ease}
+.carousel-slide.active{display:block}
 @keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.carousel-niche{font-size:0.7rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:0.5rem}
+.carousel-title{font-family:'DM Serif Display',serif;font-size:1.1rem;margin-bottom:0.75rem;color:var(--ink);line-height:1.3}
+.carousel-text{font-size:0.9rem;color:var(--ink-soft);line-height:1.85}
+.carousel-text-2{font-size:0.9rem;color:var(--ink-soft);line-height:1.85;margin-top:0.5rem}
+.carousel-dots{display:flex;gap:0.5rem;justify-content:center;margin-top:1rem}
+.carousel-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.2);border:none;cursor:pointer;padding:0;transition:background 0.2s}
+.carousel-dot.active{background:var(--sage)}
 .carousel-sticker{position:absolute;top:-14px;right:28px;background:var(--gold);color:var(--ink);font-size:0.75rem;font-weight:700;padding:0.5rem 1.125rem;border-radius:100px;box-shadow:0 4px 14px rgba(230,168,32,0.45);transform:rotate(-3deg);z-index:5;white-space:nowrap}
+
+/* Expert popup */
+.expert-trigger{position:relative;color:var(--sage);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;cursor:pointer;display:inline-block}
+.expert-trigger-dot{display:inline-block;width:6px;height:6px;background:var(--sage);border-radius:50%;vertical-align:middle;margin-left:3px;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.85)}}
+.expert-popup{display:block;position:absolute;bottom:calc(100% + 10px);left:0;background:var(--white);border:1px solid var(--sage-mid);border-radius:var(--radius);padding:1rem 1.125rem;width:300px;z-index:30;box-shadow:0 2px 8px rgba(0,0,0,0.08),0 16px 48px rgba(0,0,0,0.18),0 0 0 1px rgba(61,122,95,0.15),0 8px 32px rgba(61,122,95,0.12);text-align:left;pointer-events:none;opacity:0;transition:opacity 0.25s}
+.expert-popup::after{content:'';position:absolute;top:100%;left:24px;border:7px solid transparent;border-top-color:var(--sage-mid)}
+.expert-popup::before{content:'';position:absolute;top:100%;left:25px;border:6px solid transparent;border-top-color:var(--white);z-index:1}
+.expert-trigger:hover .expert-popup,.expert-trigger.open .expert-popup,.expert-trigger.auto-open .expert-popup{opacity:1;pointer-events:auto}
+.popup-header{display:flex;align-items:flex-start;gap:0.75rem;margin-bottom:0.5rem}
+.popup-avatar{width:54px;height:54px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--sage-light)}
+.popup-info{flex:1}
+.popup-name{display:block;font-weight:600;font-size:0.875rem;color:var(--ink);line-height:1.2}
+.popup-role{display:block;font-size:0.75rem;color:var(--ink-soft);line-height:1.4;margin-top:0.25rem}
+.popup-rec{display:block;font-size:0.8rem;color:var(--ink-soft);border-top:1px solid var(--border-soft);padding-top:0.5rem;line-height:1.5;margin-bottom:0.5rem}
+.popup-footer-row{display:flex;align-items:center;justify-content:space-between;gap:0.5rem}
+.popup-price{font-size:0.75rem;font-weight:500;color:var(--ink-muted)}
+.popup-book{background:var(--sage);color:var(--white);border:none;padding:0.4rem 0.875rem;border-radius:100px;font-size:0.75rem;font-weight:500;cursor:pointer;white-space:nowrap}
+.demo-cursor{position:absolute;left:0;bottom:-28px;pointer-events:none;opacity:0;font-size:1.125rem;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2))}
+.carousel-slide.active .demo-cursor{animation:cursorRise 0.7s cubic-bezier(0.4,0,0.2,1) 1.1s forwards}
+@keyframes cursorRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
 /* Form card */
 .form-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;box-shadow:0 4px 24px rgba(26,26,46,0.07);height:100%}
@@ -239,12 +270,16 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
   nav{padding:1rem 1.25rem}
   .hero-title{font-size:1.875rem}
   .carousel-wrap{padding:1.25rem}
+  .carousel-slide{padding:1.25rem}
   .stats-strip{flex-wrap:wrap}
   .stat-item{min-width:50%;border-top:1px solid var(--border)}
   .stat-item+.stat-item::before{display:none}
   .stat-item:nth-child(odd){border-right:1px solid var(--border)}
   .carousel-sticker{top:-12px;right:16px;font-size:0.7rem;padding:0.4rem 0.875rem}
 }
+
+.demo-panel{display:none}
+.demo-panel.active{display:block}
 </style>
 </head>
 <body>
@@ -275,10 +310,64 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
         <p class="hero-sub">Every article has readers who need expert guidance. IntroLinq finds them, matches the right expert from our database of 100+ specialists - filtered by topic, language, location, and budget - and you earn commission on every booking. No ongoing work. It runs on every article you've published and every one you write.</p>
       </div>
       <div class="carousel-wrap">
-        <span class="carousel-sticker">Install this widget &amp; earn 50% commission</span>
-        <div class="carousel-label">This is the real Expert Carousel widget, live - the same one you'd install on your site</div>
-        <script src="https://www.introlinq.com/carousel.js" data-publisher="demo-homepage"></script>
-      </div><!-- /carousel-wrap -->
+      <!-- Demo panel -->
+      <div class="demo-panel active" id="dp-demo">
+      <div class="carousel-label">IntroLinq detected the topic and matched an expert automatically - hover the underlined link to see what your readers see</div>
+      <div class="carousel-track">
+
+        <div class="carousel-slide active">
+          <div class="carousel-niche">Finance</div>
+          <div class="carousel-title">Year two of freelancing and I still had no idea what I was doing financially</div>
+          <p class="carousel-text">I kept telling myself I'd sort it out when I had more time. Spoiler: you never have more time. At some point I started asking around - other freelancers who'd been at it longer, people who'd actually figured out <span class="expert-trigger" onclick="this.classList.toggle('open')">how to manage money as a self-employed creative<span class="expert-trigger-dot"></span><span class="demo-cursor">🖱️</span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=5" alt="Claire Dawson"><span class="popup-info"><span class="popup-name">Claire Dawson</span><span class="popup-role">Finance coach · Freelance &amp; creative specialist</span></span></span><span class="popup-rec">Need help managing your finances as a freelancer or creative?</span><span class="popup-footer-row"><span class="popup-price">from £65 via Folio.co</span><button class="popup-book">Book with Claire</button></span></span></span>. Most of them had got some outside help at some point.</p>
+          <p class="carousel-text-2">I waited too long. The stuff I thought would sort itself out, didn't.</p>
+        </div>
+
+        <div class="carousel-slide">
+          <div class="carousel-niche">Food & Nutrition</div>
+          <div class="carousel-title">I switched to fermented foods for gut health and had no idea where to actually start</div>
+          <p class="carousel-text">Sourdough, kimchi, kefir - everyone seems to swear by them. But every source told me something different. Too much too soon and things got worse, not better. Eventually I found someone who could explain <span class="expert-trigger" onclick="this.classList.toggle('open')">which fermented foods actually suit your gut, and how to introduce them properly<span class="expert-trigger-dot"></span><span class="demo-cursor">🖱️</span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=25" alt="Dr. Sarah Collins"><span class="popup-info"><span class="popup-name">Dr. Sarah Collins</span><span class="popup-role">Registered Dietitian · Gut health specialist</span></span></span><span class="popup-rec">Not sure which fermented foods are right for your gut?</span><span class="popup-footer-row"><span class="popup-price">from £65 via Wellcast</span><button class="popup-book">Book with Sarah</button></span></span></span>. It's far more individual than the internet makes it sound.</p>
+          <p class="carousel-text-2">What works for one gut doesn't work for another. That's not a caveat - it's the whole point.</p>
+        </div>
+
+        <div class="carousel-slide">
+          <div class="carousel-niche">Sport & Fitness</div>
+          <div class="carousel-title">I signed up for a marathon mostly as a joke. Then had to actually train for it.</div>
+          <p class="carousel-text">The first month was fine. The second month everything started hurting in ways Google couldn't really explain. I started looking for people who'd done <span class="expert-trigger" onclick="this.classList.toggle('open')">marathon training later in life, not just the usual 25-year-old advice<span class="expert-trigger-dot"></span><span class="demo-cursor">🖱️</span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=15" alt="Tom Barrett"><span class="popup-info"><span class="popup-name">Tom Barrett</span><span class="popup-role">Running coach · Marathon &amp; endurance specialist</span></span></span><span class="popup-rec">Need help structuring a marathon plan that works for your age and schedule?</span><span class="popup-footer-row"><span class="popup-price">from £80 via CoachNow</span><button class="popup-book">Book with Tom</button></span></span></span>. It turns out the approach is quite different.</p>
+          <p class="carousel-text-2">The generic plans work until they don't. Then you need someone who can actually adapt.</p>
+        </div>
+
+        <div class="carousel-slide">
+          <div class="carousel-niche">Fashion & Style</div>
+          <div class="carousel-title">My wardrobe was full and I still had nothing to wear</div>
+          <p class="carousel-text">I knew it wasn't a quantity problem. I kept buying things that looked right in the shop and felt wrong the moment I got home. Eventually I stopped trying to solve it alone and started talking to people who understood <span class="expert-trigger" onclick="this.classList.toggle('open')">dressing for your real life rather than some aspirational version of it<span class="expert-trigger-dot"></span><span class="demo-cursor">🖱️</span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=47" alt="Elise Moreau"><span class="popup-info"><span class="popup-name">Elise Moreau</span><span class="popup-role">Personal stylist · 12 years experience</span></span></span><span class="popup-rec">Want help building a wardrobe that actually works for your life?</span><span class="popup-footer-row"><span class="popup-price">from £90 via Stylematch</span><button class="popup-book">Book with Elise</button></span></span></span>. Humbling how obvious the gaps were once someone pointed them out.</p>
+          <p class="carousel-text-2">You don't need more things. You need the right things, and someone who can spot the difference.</p>
+        </div>
+
+        <div class="carousel-slide">
+          <div class="carousel-niche">Career & Tech</div>
+          <div class="carousel-title">I applied for sixty jobs in a year. Then I stopped applying entirely.</div>
+          <p class="carousel-text">The applications weren't really the problem - I'd got fairly good at those. What I had no visibility on was <span class="expert-trigger" onclick="this.classList.toggle('open')">how hiring decisions actually get made at the level I was trying to reach<span class="expert-trigger-dot"></span><span class="demo-cursor">🖱️</span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=33" alt="Daniel Park"><span class="popup-info"><span class="popup-name">Daniel Park</span><span class="popup-role">Career strategist · Former hiring director</span></span></span><span class="popup-rec">Struggling to break into senior roles? Daniel has been on both sides of the hiring table.</span><span class="popup-footer-row"><span class="popup-price">from £120 via Advisr</span><button class="popup-book">Book with Daniel</button></span></span></span>. I started having conversations instead of sending CVs. Completely different outcome.</p>
+          <p class="carousel-text-2">Most people optimise the wrong thing. The CV is rarely what's holding you back.</p>
+        </div>
+
+        <div class="carousel-slide">
+          <div class="carousel-niche">Health & Wellness</div>
+          <div class="carousel-title">I tracked my sleep for three months and it made everything worse</div>
+          <p class="carousel-text">Sleep apps, supplements, blackout curtains, the whole lot. Each thing helped a bit and then stopped. What actually shifted things was finding someone who looked at <span class="expert-trigger" onclick="this.classList.toggle('open')">sleep as part of a wider picture rather than a standalone thing to optimise<span class="expert-trigger-dot"></span><span class="demo-cursor">🖱️</span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=53" alt="Dr. Nina Wells"><span class="popup-info"><span class="popup-name">Dr. Nina Wells</span><span class="popup-role">Sleep &amp; wellness specialist · 8 years clinical experience</span></span></span><span class="popup-rec">Having trouble sleeping and not sure why? Dr. Nina looks beyond bedtime habits.</span><span class="popup-footer-row"><span class="popup-price">from £75 via Wellcast</span><button class="popup-book">Book with Dr. Nina</button></span></span></span>. The answer wasn't another product.</p>
+          <p class="carousel-text-2">When you've tried everything, the missing piece is usually someone who can see what you can't.</p>
+        </div>
+
+      </div>
+      <div class="carousel-dots">
+        <button class="carousel-dot active" onclick="goToSlide(0)"></button>
+        <button class="carousel-dot" onclick="goToSlide(1)"></button>
+        <button class="carousel-dot" onclick="goToSlide(2)"></button>
+        <button class="carousel-dot" onclick="goToSlide(3)"></button>
+        <button class="carousel-dot" onclick="goToSlide(4)"></button>
+        <button class="carousel-dot" onclick="goToSlide(5)"></button>
+      </div>
+      </div><!-- /demo panel -->
+    </div><!-- /carousel-wrap -->
     </div><!-- /left-col -->
 
     <!-- Right: form -->
@@ -407,112 +496,15 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
     </div>
   </div>
 
-  <!-- Experts marquee -->
-  <div class="experts-strip">
-    <p class="experts-strip-label">Some of the 100+ experts available on IntroLinq</p>
-    <div class="experts-marquee-wrap">
-      <div class="experts-marquee">
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/rob-pierre.jpg" alt="Rob Pierre"><div class="expert-card-sm-name">Rob Pierre<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Jellyfish</div><div class="expert-card-sm-title">Investor &amp; Advisor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/ahana-banerjee.jpg" alt="Ahana Banerjee"><div class="expert-card-sm-name">Ahana Banerjee<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Clear (YC W21)</div><div class="expert-card-sm-title">Founder &amp; CEO</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/chris-chaney.jpg" alt="Chris Chaney"><div class="expert-card-sm-name">Chris Chaney<img class="expert-flag" src="https://flagcdn.com/16x12/de.png" alt=""></div><div class="expert-card-sm-company">Serial Entrepreneur</div><div class="expert-card-sm-title">$100M exit</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/phil-nadel.jpg" alt="Phil Nadel"><div class="expert-card-sm-name">Phil Nadel<img class="expert-flag" src="https://flagcdn.com/16x12/us.png" alt=""></div><div class="expert-card-sm-company">200+ startups funded</div><div class="expert-card-sm-title">Investor &amp; Entrepreneur</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/andrew-chen.jpg" alt="Andrew Chen"><div class="expert-card-sm-name">Andrew Chen<img class="expert-flag" src="https://flagcdn.com/16x12/pt.png" alt=""></div><div class="expert-card-sm-company">3x Founder</div><div class="expert-card-sm-title">IPO &amp; $370M in exits</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/joel-blake.jpg" alt="Joel Blake OBE"><div class="expert-card-sm-name">Joel Blake OBE<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Fintech Founder</div><div class="expert-card-sm-title">Board Advisor &amp; Mentor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/kenneth-kashif-thomas.jpg" alt="Kenneth Kashif Thomas"><div class="expert-card-sm-name">Kenneth Kashif Thomas<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Startup Investor</div><div class="expert-card-sm-title">Revenue Advisor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/ben-brabyn.jpg" alt="Ben Brabyn"><div class="expert-card-sm-name">Ben Brabyn<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Level39</div><div class="expert-card-sm-title">Exited Founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/luke-tobin.jpg" alt="Luke Tobin"><div class="expert-card-sm-name">Luke Tobin<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">3x Exited Founder</div><div class="expert-card-sm-title">Startup Advisor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/sophie-deen.jpg" alt="Sophie Deen"><div class="expert-card-sm-name">Sophie Deen<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Bright Little Labs</div><div class="expert-card-sm-title">CEO · Warner Bros. partner</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/jonny-plein.jpg" alt="Jonny Plein"><div class="expert-card-sm-name">Jonny Plein<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Global E-commerce</div><div class="expert-card-sm-title">Co-founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/marc-warde.jpg" alt="Marc Warde"><div class="expert-card-sm-name">Marc Warde<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Restaurateur</div><div class="expert-card-sm-title">Food Industry Advisor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/valeria-vahorovska.jpg" alt="Valeria Vahorovska"><div class="expert-card-sm-name">Valeria Vahorovska<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Award-winning Fintech</div><div class="expert-card-sm-title">Founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/stuart-andrews.jpg" alt="Stuart Andrews"><div class="expert-card-sm-name">Stuart Andrews<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Executive Coach</div><div class="expert-card-sm-title">$500M+ transformations</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/ketan-makwana.jpg" alt="Ketan Makwana"><div class="expert-card-sm-name">Ketan Makwana<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Venture Architect</div><div class="expert-card-sm-title">Entrepreneur &amp; Advisor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/justin-musgrove.jpg" alt="Justin Musgrove"><div class="expert-card-sm-name">Justin Musgrove<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Fitness &amp; Wellness</div><div class="expert-card-sm-title">CEO</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/andre-zayarni.jpg" alt="Andre Zayarni"><div class="expert-card-sm-name">Andre Zayarni<img class="expert-flag" src="https://flagcdn.com/16x12/de.png" alt=""></div><div class="expert-card-sm-company">Klarna · Tripadvisor</div><div class="expert-card-sm-title">AI Founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/john-foy.jpg" alt="John Foy"><div class="expert-card-sm-name">John Foy<img class="expert-flag" src="https://flagcdn.com/16x12/kw.png" alt=""></div><div class="expert-card-sm-company">100+ sites built</div><div class="expert-card-sm-title">£100M revenue</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/nitzan-yudan.jpg" alt="Nitzan Yudan"><div class="expert-card-sm-name">Nitzan Yudan<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Global Mobility Expert</div><div class="expert-card-sm-title">$30M raised</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/mark-mills.jpg" alt="Mark Mills OBE DL"><div class="expert-card-sm-name">Mark Mills OBE DL<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Business Builder</div><div class="expert-card-sm-title">Advisor &amp; OBE</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/mags-walker.jpg" alt="Mags Walker"><div class="expert-card-sm-name">Mags Walker<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Content &amp; Brand Agency</div><div class="expert-card-sm-title">Founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/russell-dalgleish.jpg" alt="Russell Dalgleish"><div class="expert-card-sm-name">Russell Dalgleish<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Tech, Health &amp; Climate</div><div class="expert-card-sm-title">Global Connector</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/keturah-cummings.jpg" alt="Keturah Cummings"><div class="expert-card-sm-name">Keturah Cummings<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Netflix · BBC · Nike</div><div class="expert-card-sm-title">Music Entrepreneur</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/patrick-visser.jpg" alt="Patrick Visser"><div class="expert-card-sm-name">Patrick Visser<img class="expert-flag" src="https://flagcdn.com/16x12/es.png" alt=""></div><div class="expert-card-sm-company">Serial Entrepreneur</div><div class="expert-card-sm-title">Angel Investor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/dominic-gagnon.jpg" alt="Dominic Gagnon"><div class="expert-card-sm-name">Dominic Gagnon<img class="expert-flag" src="https://flagcdn.com/16x12/ca.png" alt=""></div><div class="expert-card-sm-company">4 successful exits</div><div class="expert-card-sm-title">Innovation Leader</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/ron-thurston.jpg" alt="Ron Thurston"><div class="expert-card-sm-name">Ron Thurston<img class="expert-flag" src="https://flagcdn.com/16x12/us.png" alt=""></div><div class="expert-card-sm-company">#1 Bestselling Author</div><div class="expert-card-sm-title">Keynote Speaker</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/jeff-hoffman.jpg" alt="Jeff Hoffman"><div class="expert-card-sm-name">Jeff Hoffman<img class="expert-flag" src="https://flagcdn.com/16x12/us.png" alt=""></div><div class="expert-card-sm-company">Global Entrepreneur</div><div class="expert-card-sm-title">Author &amp; Speaker</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/louis-carle.jpg" alt="Louis Carle"><div class="expert-card-sm-name">Louis Carle<img class="expert-flag" src="https://flagcdn.com/16x12/fr.png" alt=""></div><div class="expert-card-sm-company">Maddyness</div><div class="expert-card-sm-title">Co-founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/rob-law.jpg" alt="Rob Law MBE"><div class="expert-card-sm-name">Rob Law MBE<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Trunki</div><div class="expert-card-sm-title">Founder · MBE</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/jingjin-liu.jpg" alt="Jingjin Liu"><div class="expert-card-sm-name">Jingjin Liu<img class="expert-flag" src="https://flagcdn.com/16x12/de.png" alt=""></div><div class="expert-card-sm-company">Women's Leadership Asia</div><div class="expert-card-sm-title">Founder &amp; CEO</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/alan-knight.jpg" alt="Alan Knight OBE"><div class="expert-card-sm-name">Alan Knight OBE<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Global Sustainability</div><div class="expert-card-sm-title">Leader &amp; OBE</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/ben-wiggins.jpg" alt="Ben Wiggins"><div class="expert-card-sm-name">Ben Wiggins<img class="expert-flag" src="https://flagcdn.com/16x12/us.png" alt=""></div><div class="expert-card-sm-company">Serial Founder</div><div class="expert-card-sm-title">&amp; Investor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/mark-strippel.jpg" alt="Mark Strippel"><div class="expert-card-sm-name">Mark Strippel<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">BBC 1Xtra &amp; Asian Network</div><div class="expert-card-sm-title">Media Leader</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/etienne-portais.jpg" alt="Etienne Portais"><div class="expert-card-sm-name">Etienne Portais<img class="expert-flag" src="https://flagcdn.com/16x12/fr.png" alt=""></div><div class="expert-card-sm-company">France's #1 Startup Media</div><div class="expert-card-sm-title">Co-founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/amit-malik.jpg" alt="Amit Malik"><div class="expert-card-sm-name">Amit Malik<img class="expert-flag" src="https://flagcdn.com/16x12/in.png" alt=""></div><div class="expert-card-sm-company">Global Executive</div><div class="expert-card-sm-title">Board Advisor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/ricardo-fernandez.jpg" alt="Ricardo Fernandez"><div class="expert-card-sm-name">Ricardo Fernandez<img class="expert-flag" src="https://flagcdn.com/16x12/es.png" alt=""></div><div class="expert-card-sm-company">Startup Scaling</div><div class="expert-card-sm-title">400+ employees</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/walt-anderson.jpg" alt="Walt Anderson"><div class="expert-card-sm-name">Walt Anderson<img class="expert-flag" src="https://flagcdn.com/16x12/us.png" alt=""></div><div class="expert-card-sm-company">Telecom Billionaire</div><div class="expert-card-sm-title">Space Broadband</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/tom-cheesewright.jpg" alt="Tom Cheesewright"><div class="expert-card-sm-name">Tom Cheesewright<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Applied Futurist</div><div class="expert-card-sm-title">Keynote Speaker</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/jonny-tooze.jpg" alt="Jonny Tooze"><div class="expert-card-sm-name">Jonny Tooze<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Executive Chairman</div><div class="expert-card-sm-title">25+ years exp.</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/matthew-smith.jpg" alt="Matthew Smith"><div class="expert-card-sm-name">Matthew Smith<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">10x Tech Entrepreneur</div><div class="expert-card-sm-title">8-figure exits</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/jess-jeetley.jpg" alt="Jess Jeetley"><div class="expert-card-sm-name">Jess Jeetley<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">AI Strategist</div><div class="expert-card-sm-title">Multi-exit Founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/judith-fetzer.jpg" alt="Judith Fetzer"><div class="expert-card-sm-name">Judith Fetzer<img class="expert-flag" src="https://flagcdn.com/16x12/ca.png" alt=""></div><div class="expert-card-sm-company">$60M brand</div><div class="expert-card-sm-title">Entrepreneur</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/andrew-lockhead.jpg" alt="Andrew Lockhead"><div class="expert-card-sm-name">Andrew Lockhead<img class="expert-flag" src="https://flagcdn.com/16x12/ca.png" alt=""></div><div class="expert-card-sm-company">Stay22</div><div class="expert-card-sm-title">CEO · EY Award Winner</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/paul-blair.jpg" alt="Paul Blair"><div class="expert-card-sm-name">Paul Blair<img class="expert-flag" src="https://flagcdn.com/16x12/pt.png" alt=""></div><div class="expert-card-sm-company">Dragons' Den</div><div class="expert-card-sm-title">CEO &amp; Disruptor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/toreson-lloyd.jpg" alt="Toreson Lloyd"><div class="expert-card-sm-name">Toreson Lloyd<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">APEXX Global</div><div class="expert-card-sm-title">Co-founder &amp; CCO</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/ria-morgan.jpg" alt="Ria Morgan"><div class="expert-card-sm-name">Ria Morgan<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Gender-neutral Kidswear</div><div class="expert-card-sm-title">Founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/ian-fishwick.jpg" alt="Ian Fishwick"><div class="expert-card-sm-name">Ian Fishwick<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">CEO · 3x UK CEO of Year</div><div class="expert-card-sm-title">£100M exit</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/renee-elliott.jpg" alt="Renée Elliott"><div class="expert-card-sm-name">Renée Elliott<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Planet Organic</div><div class="expert-card-sm-title">Founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/pascal-bornet.jpg" alt="Pascal Bornet"><div class="expert-card-sm-name">Pascal Bornet<img class="expert-flag" src="https://flagcdn.com/16x12/us.png" alt=""></div><div class="expert-card-sm-company">AI Pioneer</div><div class="expert-card-sm-title">2M followers · Author</div></div>
-        <!-- Duplicate for seamless loop -->
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/rob-pierre.jpg" alt="Rob Pierre"><div class="expert-card-sm-name">Rob Pierre<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Jellyfish</div><div class="expert-card-sm-title">Investor &amp; Advisor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/ahana-banerjee.jpg" alt="Ahana Banerjee"><div class="expert-card-sm-name">Ahana Banerjee<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Clear (YC W21)</div><div class="expert-card-sm-title">Founder &amp; CEO</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/chris-chaney.jpg" alt="Chris Chaney"><div class="expert-card-sm-name">Chris Chaney<img class="expert-flag" src="https://flagcdn.com/16x12/de.png" alt=""></div><div class="expert-card-sm-company">Serial Entrepreneur</div><div class="expert-card-sm-title">$100M exit</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/phil-nadel.jpg" alt="Phil Nadel"><div class="expert-card-sm-name">Phil Nadel<img class="expert-flag" src="https://flagcdn.com/16x12/us.png" alt=""></div><div class="expert-card-sm-company">200+ startups funded</div><div class="expert-card-sm-title">Investor &amp; Entrepreneur</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/andrew-chen.jpg" alt="Andrew Chen"><div class="expert-card-sm-name">Andrew Chen<img class="expert-flag" src="https://flagcdn.com/16x12/pt.png" alt=""></div><div class="expert-card-sm-company">3x Founder</div><div class="expert-card-sm-title">IPO &amp; $370M in exits</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/joel-blake.jpg" alt="Joel Blake OBE"><div class="expert-card-sm-name">Joel Blake OBE<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Fintech Founder</div><div class="expert-card-sm-title">Board Advisor &amp; Mentor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/kenneth-kashif-thomas.jpg" alt="Kenneth Kashif Thomas"><div class="expert-card-sm-name">Kenneth Kashif Thomas<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Startup Investor</div><div class="expert-card-sm-title">Revenue Advisor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/ben-brabyn.jpg" alt="Ben Brabyn"><div class="expert-card-sm-name">Ben Brabyn<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Level39</div><div class="expert-card-sm-title">Exited Founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/luke-tobin.jpg" alt="Luke Tobin"><div class="expert-card-sm-name">Luke Tobin<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">3x Exited Founder</div><div class="expert-card-sm-title">Startup Advisor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/sophie-deen.jpg" alt="Sophie Deen"><div class="expert-card-sm-name">Sophie Deen<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Bright Little Labs</div><div class="expert-card-sm-title">CEO · Warner Bros. partner</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/jonny-plein.jpg" alt="Jonny Plein"><div class="expert-card-sm-name">Jonny Plein<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Global E-commerce</div><div class="expert-card-sm-title">Co-founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/marc-warde.jpg" alt="Marc Warde"><div class="expert-card-sm-name">Marc Warde<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Restaurateur</div><div class="expert-card-sm-title">Food Industry Advisor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/valeria-vahorovska.jpg" alt="Valeria Vahorovska"><div class="expert-card-sm-name">Valeria Vahorovska<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Award-winning Fintech</div><div class="expert-card-sm-title">Founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/stuart-andrews.jpg" alt="Stuart Andrews"><div class="expert-card-sm-name">Stuart Andrews<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Executive Coach</div><div class="expert-card-sm-title">$500M+ transformations</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/ketan-makwana.jpg" alt="Ketan Makwana"><div class="expert-card-sm-name">Ketan Makwana<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Venture Architect</div><div class="expert-card-sm-title">Entrepreneur &amp; Advisor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/justin-musgrove.jpg" alt="Justin Musgrove"><div class="expert-card-sm-name">Justin Musgrove<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Fitness &amp; Wellness</div><div class="expert-card-sm-title">CEO</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/andre-zayarni.jpg" alt="Andre Zayarni"><div class="expert-card-sm-name">Andre Zayarni<img class="expert-flag" src="https://flagcdn.com/16x12/de.png" alt=""></div><div class="expert-card-sm-company">Klarna · Tripadvisor</div><div class="expert-card-sm-title">AI Founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/john-foy.jpg" alt="John Foy"><div class="expert-card-sm-name">John Foy<img class="expert-flag" src="https://flagcdn.com/16x12/kw.png" alt=""></div><div class="expert-card-sm-company">100+ sites built</div><div class="expert-card-sm-title">£100M revenue</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/nitzan-yudan.jpg" alt="Nitzan Yudan"><div class="expert-card-sm-name">Nitzan Yudan<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Global Mobility Expert</div><div class="expert-card-sm-title">$30M raised</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/mark-mills.jpg" alt="Mark Mills OBE DL"><div class="expert-card-sm-name">Mark Mills OBE DL<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Business Builder</div><div class="expert-card-sm-title">Advisor &amp; OBE</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/mags-walker.jpg" alt="Mags Walker"><div class="expert-card-sm-name">Mags Walker<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Content &amp; Brand Agency</div><div class="expert-card-sm-title">Founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/russell-dalgleish.jpg" alt="Russell Dalgleish"><div class="expert-card-sm-name">Russell Dalgleish<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Tech, Health &amp; Climate</div><div class="expert-card-sm-title">Global Connector</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/keturah-cummings.jpg" alt="Keturah Cummings"><div class="expert-card-sm-name">Keturah Cummings<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Netflix · BBC · Nike</div><div class="expert-card-sm-title">Music Entrepreneur</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/patrick-visser.jpg" alt="Patrick Visser"><div class="expert-card-sm-name">Patrick Visser<img class="expert-flag" src="https://flagcdn.com/16x12/es.png" alt=""></div><div class="expert-card-sm-company">Serial Entrepreneur</div><div class="expert-card-sm-title">Angel Investor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/dominic-gagnon.jpg" alt="Dominic Gagnon"><div class="expert-card-sm-name">Dominic Gagnon<img class="expert-flag" src="https://flagcdn.com/16x12/ca.png" alt=""></div><div class="expert-card-sm-company">4 successful exits</div><div class="expert-card-sm-title">Innovation Leader</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/ron-thurston.jpg" alt="Ron Thurston"><div class="expert-card-sm-name">Ron Thurston<img class="expert-flag" src="https://flagcdn.com/16x12/us.png" alt=""></div><div class="expert-card-sm-company">#1 Bestselling Author</div><div class="expert-card-sm-title">Keynote Speaker</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/jeff-hoffman.jpg" alt="Jeff Hoffman"><div class="expert-card-sm-name">Jeff Hoffman<img class="expert-flag" src="https://flagcdn.com/16x12/us.png" alt=""></div><div class="expert-card-sm-company">Global Entrepreneur</div><div class="expert-card-sm-title">Author &amp; Speaker</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/louis-carle.jpg" alt="Louis Carle"><div class="expert-card-sm-name">Louis Carle<img class="expert-flag" src="https://flagcdn.com/16x12/fr.png" alt=""></div><div class="expert-card-sm-company">Maddyness</div><div class="expert-card-sm-title">Co-founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/rob-law.jpg" alt="Rob Law MBE"><div class="expert-card-sm-name">Rob Law MBE<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Trunki</div><div class="expert-card-sm-title">Founder · MBE</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/jingjin-liu.jpg" alt="Jingjin Liu"><div class="expert-card-sm-name">Jingjin Liu<img class="expert-flag" src="https://flagcdn.com/16x12/de.png" alt=""></div><div class="expert-card-sm-company">Women's Leadership Asia</div><div class="expert-card-sm-title">Founder &amp; CEO</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/alan-knight.jpg" alt="Alan Knight OBE"><div class="expert-card-sm-name">Alan Knight OBE<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Global Sustainability</div><div class="expert-card-sm-title">Leader &amp; OBE</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/ben-wiggins.jpg" alt="Ben Wiggins"><div class="expert-card-sm-name">Ben Wiggins<img class="expert-flag" src="https://flagcdn.com/16x12/us.png" alt=""></div><div class="expert-card-sm-company">Serial Founder</div><div class="expert-card-sm-title">&amp; Investor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/mark-strippel.jpg" alt="Mark Strippel"><div class="expert-card-sm-name">Mark Strippel<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">BBC 1Xtra &amp; Asian Network</div><div class="expert-card-sm-title">Media Leader</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/etienne-portais.jpg" alt="Etienne Portais"><div class="expert-card-sm-name">Etienne Portais<img class="expert-flag" src="https://flagcdn.com/16x12/fr.png" alt=""></div><div class="expert-card-sm-company">France's #1 Startup Media</div><div class="expert-card-sm-title">Co-founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/amit-malik.jpg" alt="Amit Malik"><div class="expert-card-sm-name">Amit Malik<img class="expert-flag" src="https://flagcdn.com/16x12/in.png" alt=""></div><div class="expert-card-sm-company">Global Executive</div><div class="expert-card-sm-title">Board Advisor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/ricardo-fernandez.jpg" alt="Ricardo Fernandez"><div class="expert-card-sm-name">Ricardo Fernandez<img class="expert-flag" src="https://flagcdn.com/16x12/es.png" alt=""></div><div class="expert-card-sm-company">Startup Scaling</div><div class="expert-card-sm-title">400+ employees</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/walt-anderson.jpg" alt="Walt Anderson"><div class="expert-card-sm-name">Walt Anderson<img class="expert-flag" src="https://flagcdn.com/16x12/us.png" alt=""></div><div class="expert-card-sm-company">Telecom Billionaire</div><div class="expert-card-sm-title">Space Broadband</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/tom-cheesewright.jpg" alt="Tom Cheesewright"><div class="expert-card-sm-name">Tom Cheesewright<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Applied Futurist</div><div class="expert-card-sm-title">Keynote Speaker</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/jonny-tooze.jpg" alt="Jonny Tooze"><div class="expert-card-sm-name">Jonny Tooze<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Executive Chairman</div><div class="expert-card-sm-title">25+ years exp.</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/matthew-smith.jpg" alt="Matthew Smith"><div class="expert-card-sm-name">Matthew Smith<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">10x Tech Entrepreneur</div><div class="expert-card-sm-title">8-figure exits</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/jess-jeetley.jpg" alt="Jess Jeetley"><div class="expert-card-sm-name">Jess Jeetley<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">AI Strategist</div><div class="expert-card-sm-title">Multi-exit Founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/judith-fetzer.jpg" alt="Judith Fetzer"><div class="expert-card-sm-name">Judith Fetzer<img class="expert-flag" src="https://flagcdn.com/16x12/ca.png" alt=""></div><div class="expert-card-sm-company">$60M brand</div><div class="expert-card-sm-title">Entrepreneur</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/andrew-lockhead.jpg" alt="Andrew Lockhead"><div class="expert-card-sm-name">Andrew Lockhead<img class="expert-flag" src="https://flagcdn.com/16x12/ca.png" alt=""></div><div class="expert-card-sm-company">Stay22</div><div class="expert-card-sm-title">CEO · EY Award Winner</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/paul-blair.jpg" alt="Paul Blair"><div class="expert-card-sm-name">Paul Blair<img class="expert-flag" src="https://flagcdn.com/16x12/pt.png" alt=""></div><div class="expert-card-sm-company">Dragons' Den</div><div class="expert-card-sm-title">CEO &amp; Disruptor</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/toreson-lloyd.jpg" alt="Toreson Lloyd"><div class="expert-card-sm-name">Toreson Lloyd<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">APEXX Global</div><div class="expert-card-sm-title">Co-founder &amp; CCO</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/ria-morgan.jpg" alt="Ria Morgan"><div class="expert-card-sm-name">Ria Morgan<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Gender-neutral Kidswear</div><div class="expert-card-sm-title">Founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/ian-fishwick.jpg" alt="Ian Fishwick"><div class="expert-card-sm-name">Ian Fishwick<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">CEO · 3x UK CEO of Year</div><div class="expert-card-sm-title">£100M exit</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/renee-elliott.jpg" alt="Renée Elliott"><div class="expert-card-sm-name">Renée Elliott<img class="expert-flag" src="https://flagcdn.com/16x12/gb.png" alt=""></div><div class="expert-card-sm-company">Planet Organic</div><div class="expert-card-sm-title">Founder</div></div>
-        <div class="expert-card-sm"><img class="expert-card-sm-avatar" src="/experts-images/pascal-bornet.jpg" alt="Pascal Bornet"><div class="expert-card-sm-name">Pascal Bornet<img class="expert-flag" src="https://flagcdn.com/16x12/us.png" alt=""></div><div class="expert-card-sm-company">AI Pioneer</div><div class="expert-card-sm-title">2M followers · Author</div></div>
-      </div>
-    </div>
+  <!-- Real Expert Carousel -->
+  <div class="screens-section">
+    <p class="screens-label">Meet the network</p>
+    <h2 class="screens-title">100+ real experts, ready to book.</h2>
+    <p class="screens-sub">This is the real Expert Carousel widget, live - the same one you'd install on your site.</p>
+    <div class="carousel-wrap">
+      <span class="carousel-sticker">Install this widget &amp; earn 50% commission</span>
+      <script src="https://www.introlinq.com/carousel.js" data-publisher="demo-homepage"></script>
+    </div><!-- /carousel-wrap -->
   </div>
 
   <!-- Bookings showcase -->
@@ -675,6 +667,34 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
   window.addEventListener('beforeunload', sendExit);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sendExit(); });
 })();
+
+// Carousel
+let currentSlide = 0;
+const slides = document.querySelectorAll('.carousel-slide');
+const dots = document.querySelectorAll('.carousel-dot');
+let autoTimer, popupTimer;
+
+function goToSlide(n) {
+  slides[currentSlide].querySelectorAll('.expert-trigger').forEach(t => t.classList.remove('auto-open','open'));
+  slides[currentSlide].classList.remove('active');
+  dots[currentSlide].classList.remove('active');
+  currentSlide = n;
+  slides[currentSlide].classList.add('active');
+  dots[currentSlide].classList.add('active');
+  clearInterval(autoTimer);
+  autoTimer = setInterval(() => goToSlide((currentSlide + 1) % slides.length), 10000);
+  clearTimeout(popupTimer);
+  popupTimer = setTimeout(() => {
+    const trigger = slides[currentSlide]?.querySelector('.expert-trigger');
+    if (trigger) trigger.classList.add('auto-open');
+  }, 1850);
+}
+
+autoTimer = setInterval(() => goToSlide((currentSlide + 1) % slides.length), 10000);
+popupTimer = setTimeout(() => {
+  const trigger = slides[0]?.querySelector('.expert-trigger');
+  if (trigger) trigger.classList.add('auto-open');
+}, 1850);
 
 // FAQ accordion
 function toggleFaq(btn) {
