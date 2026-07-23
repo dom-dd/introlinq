@@ -215,18 +215,21 @@ async function markPublisherActivity(sql, publisher) {
     SET last_widget_fire_at = NOW(),
         first_widget_fire_at = COALESCE(first_widget_fire_at, NOW())
     WHERE slug = ${publisher}
-    RETURNING name, (first_widget_fire_at = NOW()) AS just_went_live
+    RETURNING name, email, (first_widget_fire_at = NOW()) AS just_went_live
   `.catch(() => [null]);
   if (row?.just_went_live) {
-    notifyPublisherWentLive(row.name, publisher).catch(() => {});
+    notifyPublisherWentLive(row.name, row.email, publisher).catch(() => {});
   }
 }
 
 // Fires once per publisher, ever - the moment their widget successfully
 // reaches this endpoint for the first time, confirming installation
-// actually happened. Lets the team celebrate real go-lives and, just as
-// usefully, tells them by omission who to follow up with.
-async function notifyPublisherWentLive(name, publisher) {
+// actually happened. Lets the team celebrate real go-lives, tells them by
+// omission who to follow up with, and - the part that actually matters to
+// the publisher - reassures the publisher themselves that it worked. A lot
+// of people paste the snippet and have no way to know whether it actually
+// took; this is the "yes, it's working" confirmation for that anxiety.
+async function notifyPublisherWentLive(name, email, publisher) {
   if (process.env.SLACK_WEBHOOK_URL) {
     fetch(process.env.SLACK_WEBHOOK_URL, {
       method: 'POST',
@@ -246,6 +249,35 @@ async function notifyPublisherWentLive(name, publisher) {
       }),
     }).catch(() => {});
   }
+  if (process.env.RESEND_API_KEY && email) {
+    const firstName = (name || '').split(' ')[0] || name;
+    fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'IntroLinq <hello@introlinq.com>',
+        to: email,
+        subject: `You're live! IntroLinq is working on your site 🎉`,
+        html: widgetLiveEmail(firstName),
+      }),
+    }).catch(() => {});
+  }
+}
+
+function widgetLiveEmail(firstName) {
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#faf8f4;font-family:'Inter',system-ui,sans-serif">
+<div style="max-width:480px;margin:40px auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid rgba(26,26,46,0.08)">
+  <div style="background:#1a1a2e;padding:28px 32px">
+    <div style="font-family:Georgia,serif;font-size:1.25rem;color:#fff">Intro<span style="color:#e6a820">Linq</span></div>
+  </div>
+  <div style="padding:32px">
+    <p style="margin:0 0 8px;font-size:1rem;font-weight:600;color:#1a1a2e">You're live, ${firstName} 🎉</p>
+    <p style="margin:0 0 16px;font-size:0.875rem;color:#8888a8;line-height:1.6">Good news - we just confirmed IntroLinq is correctly installed and working on your site. No further setup needed on your end.</p>
+    <p style="margin:0 0 24px;font-size:0.875rem;color:#8888a8;line-height:1.6">From here it runs on its own: readers on your articles will start seeing relevant experts they can book, and you'll earn a commission on every session. Thanks for adding it - excited to see it grow on your site.</p>
+    <a href="https://www.introlinq.com/dashboard" style="display:block;background:#1a1a2e;color:#fff;text-align:center;padding:14px;border-radius:100px;font-size:0.875rem;font-weight:600;text-decoration:none">View my dashboard →</a>
+  </div>
+</div>
+</body></html>`;
 }
 
 // A cache hit still counts as an impression (log) and, when it actually

@@ -112,6 +112,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .setup-copy-btn{background:var(--ink);color:#fff;border:none;padding:0.6rem 1.25rem;border-radius:100px;font-size:0.8125rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:opacity .15s;flex-shrink:0}
 .setup-copy-btn:hover{opacity:0.85}
 
+/* ── Live banner - shown for a few days right after the widget's first fire ── */
+.live-banner{background:var(--sage-light);border:1.5px solid rgba(61,122,95,0.3);border-radius:var(--radius);padding:0.875rem 1.5rem;margin:1.5rem auto;display:none;width:calc(100% - 3rem);max-width:860px;align-items:center;gap:0.625rem}
+.live-banner-dot{width:8px;height:8px;border-radius:50%;background:var(--sage);flex-shrink:0;box-shadow:0 0 0 3px rgba(61,122,95,0.15)}
+.live-banner-text{font-size:0.8125rem;color:var(--ink);font-weight:500}
+.live-banner-text strong{color:var(--sage)}
+
 /* ── Widget settings ── */
 .settings-cols{display:flex;gap:2rem;padding:1.5rem}
 .settings-col{display:flex;flex-direction:column;gap:1.5rem;flex:1}
@@ -328,6 +334,12 @@ tr:last-child td{border-bottom:none}
       <button class="setup-copy-btn" onclick="copySetupCode()">Copy code</button>
     </div>
     <div style="font-size:0.75rem;color:var(--ink-muted);line-height:1.5;margin-top:0.75rem;font-style:italic">Don't panic if nothing shows up on the very first page you check - the widget takes a couple of seconds to scan a new page, and not every article will have a matching expert. Try a few different pages. Once a page's been scanned once, it loads instantly for every reader after that.</div>
+  </div>
+
+  <!-- Live banner - shown for a few days right after the widget's confirmed first fire, then fades out on its own since ongoing stats become the confirmation from then on -->
+  <div class="live-banner" id="live-banner">
+    <div class="live-banner-dot"></div>
+    <div class="live-banner-text"><strong>Your widget is live</strong> - it's installed correctly and working on your site.</div>
   </div>
 
   <div class="tab-bar">
@@ -930,6 +942,12 @@ async function loadDashboard() {
     document.getElementById('setup-banner').style.display = 'block';
     document.getElementById('setup-embed-code').textContent = embedCode;
     document.getElementById('setup-install-link').href = `/install?pub=${encodeURIComponent(d.publisher.slug)}`;
+  } else if (d.publisher.first_widget_fire_at) {
+    // Only for the first few days right after going live - after that the
+    // real impression/click stats on this same page are the ongoing
+    // confirmation, so a permanent banner would just be stale clutter.
+    const daysSinceLive = (Date.now() - new Date(d.publisher.first_widget_fire_at).getTime()) / 86400000;
+    if (daysSinceLive <= 3) document.getElementById('live-banner').style.display = 'flex';
   }
 
   // Widget tab

@@ -322,7 +322,7 @@ export default async function handler(req, res) {
              COALESCE(highlight_style, 'fill') AS highlight_style,
              COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners,
              COALESCE(revenue_share, 0.70) AS revenue_share,
-             payment_email, carousel_title
+             payment_email, carousel_title, first_widget_fire_at
       FROM publishers WHERE slug = ${pub} AND active = true LIMIT 1
     `;
 
