@@ -336,6 +336,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
           <table style="min-width:900px">
             <thead>
               <tr>
+                <th style="width:24px"></th>
                 <th style="width:28px;font-size:0.65rem;font-weight:600;color:var(--ink-muted)" title="Contacted">Cont.</th>
                 <th style="width:28px;font-size:0.65rem;font-weight:600;color:var(--ink-muted)" title="Installed">Inst.</th>
                 <th>Name</th>
@@ -348,7 +349,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
               </tr>
             </thead>
             <tbody id="subscribers-todo-tbody">
-              <tr><td colspan="9" class="empty">Loading...</td></tr>
+              <tr><td colspan="10" class="empty">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -362,6 +363,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
           <table style="min-width:900px">
             <thead>
               <tr>
+                <th style="width:24px"></th>
                 <th style="width:28px;font-size:0.65rem;font-weight:600;color:var(--ink-muted)" title="Contacted">Cont.</th>
                 <th style="width:28px;font-size:0.65rem;font-weight:600;color:var(--ink-muted)" title="Installed">Inst.</th>
                 <th>Name</th>
@@ -374,7 +376,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
               </tr>
             </thead>
             <tbody id="subscribers-done-tbody">
-              <tr><td colspan="9" class="empty">Loading...</td></tr>
+              <tr><td colspan="10" class="empty">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -388,6 +390,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
           <table style="min-width:900px">
             <thead>
               <tr>
+                <th style="width:24px"></th>
                 <th style="width:28px;font-size:0.65rem;font-weight:600;color:var(--ink-muted)" title="Contacted">Cont.</th>
                 <th style="width:28px;font-size:0.65rem;font-weight:600;color:var(--ink-muted)" title="Installed">Inst.</th>
                 <th>Name</th>
@@ -400,7 +403,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
               </tr>
             </thead>
             <tbody id="subscribers-installed-tbody">
-              <tr><td colspan="9" class="empty">Loading...</td></tr>
+              <tr><td colspan="10" class="empty">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -1360,7 +1363,12 @@ let _subscribers = [];
 function subscriberRow(s, dateField) {
   const dateValue = s[dateField];
   return `
-    <tr>
+    <tr style="${s.starred ? 'background:#fffbeb' : ''}">
+      <td>
+        <button onclick="toggleStarred(${s.id}, ${!s.starred})" title="${s.starred ? 'Unmark VIP' : 'Mark as VIP'}" style="background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;color:${s.starred ? 'var(--gold)' : 'var(--ink-muted)'}" onmouseover="this.style.opacity='.6'" onmouseout="this.style.opacity='1'">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="${s.starred ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </button>
+      </td>
       <td>
         <input type="checkbox" ${s.contacted_at ? 'checked' : ''} onchange="toggleContacted(${s.id}, this.checked)" title="${s.contacted_at ? 'Contacted on ' + new Date(s.contacted_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' }) + ' - click to undo' : 'Mark as contacted'}" style="width:16px;height:16px;cursor:pointer">
       </td>
@@ -1411,9 +1419,9 @@ async function loadSubscribers() {
   const todoBody = document.getElementById('subscribers-todo-tbody');
   const doneBody = document.getElementById('subscribers-done-tbody');
   const installedBody = document.getElementById('subscribers-installed-tbody');
-  todoBody.innerHTML = todo.length ? todo.map(s => subscriberRow(s, 'created_at')).join('') : '<tr><td colspan="9" class="empty">Everyone\'s been contacted.</td></tr>';
-  doneBody.innerHTML = done.length ? done.map(s => subscriberRow(s, 'contacted_at')).join('') : '<tr><td colspan="9" class="empty">No one marked as contacted yet.</td></tr>';
-  installedBody.innerHTML = installed.length ? installed.map(s => subscriberRow(s, 'installed_at')).join('') : '<tr><td colspan="9" class="empty">No one marked as installed yet.</td></tr>';
+  todoBody.innerHTML = todo.length ? todo.map(s => subscriberRow(s, 'created_at')).join('') : '<tr><td colspan="10" class="empty">Everyone\'s been contacted.</td></tr>';
+  doneBody.innerHTML = done.length ? done.map(s => subscriberRow(s, 'contacted_at')).join('') : '<tr><td colspan="10" class="empty">No one marked as contacted yet.</td></tr>';
+  installedBody.innerHTML = installed.length ? installed.map(s => subscriberRow(s, 'installed_at')).join('') : '<tr><td colspan="10" class="empty">No one marked as installed yet.</td></tr>';
 }
 
 async function toggleContacted(id, contacted) {
@@ -1435,6 +1443,19 @@ async function toggleInstalled(id, installed) {
   });
   const s = _subscribers.find(x => x.id === id);
   if (s) s.installed_at = installed ? new Date().toISOString() : null;
+  await loadSubscribers();
+}
+
+// Purely cosmetic - just a way to flag VIP leads with a gold highlight.
+// Doesn't affect which section a row appears in.
+async function toggleStarred(id, starred) {
+  await fetch('/api/admin?resource=subscribers', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify({ id, starred }),
+  });
+  const s = _subscribers.find(x => x.id === id);
+  if (s) s.starred = starred;
   await loadSubscribers();
 }
 
