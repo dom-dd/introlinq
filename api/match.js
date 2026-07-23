@@ -406,9 +406,15 @@ function detectArticleLanguage(articleText) {
 // was scanned 8 times in a day this way). Also drops valueless params like
 // Planet Fintech's "?com" comment-view suffix, and the #fragment. Remaining
 // real params (e.g. WordPress ?p=123 routing) are kept, sorted for stability.
+// preview/print are here for the same reason as the tracking params above,
+// not because they're tracking-related: Planet Fintech's CMS generates
+// ?preview=1 and ?print=1 links to the same article body, and each was
+// getting its own separate cache entry and its own full AI scan - one
+// article was charged 4 times in an hour purely from its preview link.
 const TRACKING_PARAM_EXACT = new Set([
   'gclid', 'fbclid', 'msclkid', 'yclid', 'dclid', 'twclid', 'igshid',
-  'gbraid', 'wbraid', 'ref', 'ref_src', 's_kwcid', 'mkt_tok', '_hsenc', '_hsmi'
+  'gbraid', 'wbraid', 'ref', 'ref_src', 's_kwcid', 'mkt_tok', '_hsenc', '_hsmi',
+  'preview', 'print'
 ]);
 function normalizePageUrl(raw) {
   if (!raw || typeof raw !== 'string') return raw;
