@@ -539,22 +539,27 @@
 
   // Most readers never notice a highlight is interactive - it's deliberately
   // subtle (see the .il-hl rules in injectStyles above), which is good for
-  // not looking spammy but bad for discoverability. This shows a one-time
-  // animated nudge - a white "phantom hand" tap on desktop, a soft pulse on
-  // the highlight itself on touch (same 'ontouchstart' in window check used
+  // not looking spammy but bad for discoverability. This shows an animated
+  // nudge - a white "phantom hand" tap on desktop, a soft pulse on the
+  // highlight itself on touch (same 'ontouchstart' in window check used
   // everywhere else in this file) - after the FIRST highlighted phrase on
   // the page has been in view for a couple of seconds (not the instant it
   // appears - a reader who's still scrolling past it hasn't "looked" at it
-  // yet), then never again: tracked in localStorage so a reader who's
-  // already learned the pattern on one article doesn't see it repeat on
-  // every other page of the same site. cueShown guards against the function
-  // running more than once per page load (highlights stream in over several
-  // async responses - see applyMatches) rather than per phrase; the anchor
-  // from whichever call gets there first is a good enough proxy for "first
-  // in reading order" since the quick pass (which covers the article's
-  // intro) always resolves before any chunk pass.
+  // yet), then repeats every CUE_REPEAT_MS for as long as they stay on it.
+  // Still only ever starts once per browser per site though: localStorage
+  // stops a reader who's already learned the pattern on one article from
+  // seeing it again on a different page later. cueShown guards against the
+  // function running more than once per page load (highlights stream in
+  // over several async responses - see applyMatches) rather than per
+  // phrase; the anchor from whichever call gets there first is a good
+  // enough proxy for "first in reading order" since the quick pass (which
+  // covers the article's intro) always resolves before any chunk pass.
   var cueShown = false;
   var CUE_DWELL_MS = 2500;
+  // TESTING VALUE - repeats the play every 5s while still in view, instead
+  // of playing once and disappearing forever. Under evaluation on
+  // /demo/introlinq; not a final decision on the real UX.
+  var CUE_REPEAT_MS = 5000;
   function maybeShowDiscoveryCue(anchor) {
     if (cueShown) return;
     cueShown = true;
@@ -565,26 +570,31 @@
     var markSeen = function () {
       try { localStorage.setItem('il_cue_seen', '1'); } catch (e) {}
     };
+    var play = function () {
+      markSeen();
+      if ('ontouchstart' in window) {
+        anchor.classList.add('il-cue-pulse');
+        setTimeout(function () { anchor.classList.remove('il-cue-pulse'); }, 2200);
+      } else {
+        showPhantomHand(anchor);
+      }
+    };
     var dwellTimer = null;
+    var repeatTimer = null;
     var observer = new IntersectionObserver(function (entries) {
       if (entries[0].isIntersecting) {
-        if (dwellTimer) return;
+        if (dwellTimer || repeatTimer) return;
         dwellTimer = setTimeout(function () {
-          observer.disconnect();
-          markSeen();
-          if ('ontouchstart' in window) {
-            anchor.classList.add('il-cue-pulse');
-            setTimeout(function () { anchor.classList.remove('il-cue-pulse'); }, 2200);
-          } else {
-            showPhantomHand(anchor);
-          }
+          dwellTimer = null;
+          play();
+          repeatTimer = setInterval(play, CUE_REPEAT_MS);
         }, CUE_DWELL_MS);
-      } else if (dwellTimer) {
-        // Scrolled past before the dwell finished - they didn't actually
-        // read it, so don't count this as "looked at it". Re-arms if the
-        // phrase scrolls back into view later.
-        clearTimeout(dwellTimer);
-        dwellTimer = null;
+      } else {
+        // Scrolled away - stop looping/waiting. They didn't actually read
+        // it if the dwell hadn't finished yet; either way it re-arms
+        // cleanly if the phrase scrolls back into view later.
+        if (dwellTimer) { clearTimeout(dwellTimer); dwellTimer = null; }
+        if (repeatTimer) { clearInterval(repeatTimer); repeatTimer = null; }
       }
     }, { threshold: 0.6 });
     observer.observe(anchor);
