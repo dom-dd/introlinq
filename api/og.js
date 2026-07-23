@@ -83,7 +83,7 @@ export default function handler() {
                 borderRadius: '100px',
                 fontFamily: 'Georgia, serif',
               },
-              children: '90% commission · Free forever',
+              children: '50% commission · Free forever',
             },
           },
         ],
