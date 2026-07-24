@@ -1067,6 +1067,19 @@ function renderActiveStatusIcon(p) {
   return `<span title="${esc(tooltip)}" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:${bg};color:${color};flex-shrink:0;cursor:default">${icon}</span>`;
 }
 
+function reminderTooltip(p) {
+  const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' }) + ' ' + new Date(d).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : 'not sent yet';
+  const stages = [
+    ['Day 1', p.reminder_1_sent_at],
+    ['Day 3', p.reminder_2_sent_at],
+    ['Day 10', p.reminder_3_sent_at],
+    ['Day 24', p.reminder_4_sent_at],
+  ];
+  const lines = stages.map(([label, sentAt]) => `${label}: ${fmt(sentAt)}`);
+  const action = p.reminders_paused ? 'Paused - click to resume' : 'Click to pause';
+  return lines.join('\n') + '\n\n' + action;
+}
+
 async function loadPublishers() {
   const res = await fetch('/api/admin?resource=publishers', {});
   const list = await res.json();
@@ -1126,7 +1139,7 @@ async function loadPublishers() {
           <button onclick="loginAsPublisher('${esc(p.email)}')" title="Log in as this publisher" style="background:#f0f4ff;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4f6ef7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
           </button>
-          <button onclick="toggleReminders(${p.id}, ${!p.reminders_paused})" title="${p.reminders_paused ? 'Activation reminders paused - click to resume' : 'Pause activation reminders (e.g. once you\'ve spoken to them directly)'}" style="background:${p.reminders_paused ? '#eef2ff' : '#f4f4f8'};border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
+          <button onclick="toggleReminders(${p.id}, ${!p.reminders_paused})" title="${esc(reminderTooltip(p))}" style="background:${p.reminders_paused ? '#eef2ff' : '#f4f4f8'};border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
             ${p.reminders_paused
               ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4f6ef7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
               : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8888a8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
