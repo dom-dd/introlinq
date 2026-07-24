@@ -281,14 +281,19 @@ export default async function handler(req, res) {
   // everywhere here, same as the rest of admin - they're showcase pages,
   // not real traffic, and would inflate every number.
   //
-  // Stats reset point announced to publishers alongside the new hover-
-  // tracking feature - every number here is scoped to this cutover instead
-  // of all-time. Nothing is deleted (click_logs is still needed intact for
-  // booking attribution via click_id) - this is purely a query-level
-  // filter, so it's trivially reversible if ever needed. pages_scanned is
-  // deliberately NOT windowed - match_cache has no created_at column and
+  // Stats reset point - bumped forward once (2026-07-24 14:00 -> 23:15) so
+  // Seen aligns with the rest of the funnel from the same moment; Seen
+  // launched a few hours after the original reset, which would have
+  // diluted seen-rate the same way hover-rate was diluted before that first
+  // reset. Every number here is scoped to this cutover instead of all-time.
+  // Nothing is deleted (click_logs is still needed intact for booking
+  // attribution via click_id) - this is purely a query-level filter, so
+  // it's trivially reversible if ever needed. Deliberately not treating
+  // this as a repeatable pattern - a reset every time a new metric ships
+  // would eventually read as unstable rather than reassuring. pages_scanned
+  // is deliberately NOT windowed - match_cache has no created_at column and
   // represents current cached-page state, not an event log to reset.
-  const STATS_RESET_AT = '2026-07-24T14:00:00Z';
+  const STATS_RESET_AT = '2026-07-24T23:15:00Z';
 
   if (resource === 'analytics') {
     const notDemo = sql`publisher NOT LIKE 'demo-%'`;

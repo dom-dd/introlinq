@@ -494,12 +494,15 @@ export default async function handler(req, res) {
     ]);
     const bookingSummary = { count: bookingCountRow[0]?.count || 0, by_currency: payoutByCurrency, rows: bookingRows };
 
-    // Stats reset point announced to publishers alongside the new hover-
-    // tracking feature - every number below is scoped to this cutover
-    // instead of all-time. Nothing is deleted (click_logs is still needed
-    // intact for booking attribution via click_id) - this is purely a query-
-    // level filter, so it's trivially reversible if ever needed.
-    const STATS_RESET_AT = '2026-07-24T14:00:00Z';
+    // Stats reset point - bumped forward again so Seen aligns with the rest
+    // of the funnel from the same moment (it launched a few hours after the
+    // original reset, which would have diluted the seen-rate the same way
+    // hover-rate was diluted before the first reset). Nothing is deleted
+    // (click_logs is still needed intact for booking attribution via
+    // click_id) - this is purely a query-level filter, so it's trivially
+    // reversible if ever needed. Not intended as a repeating pattern - see
+    // the comment on this constant in api/admin.js.
+    const STATS_RESET_AT = '2026-07-24T23:15:00Z';
 
     const [logs, clickData, hoverData, seenData, providers, expertCounts, totalImpressions,
            clicksByDay, impressionsByDay, hoversByDay, seenByDay, clicksByWeek, impressionsByWeek, hoversByWeek, seenByWeek,
