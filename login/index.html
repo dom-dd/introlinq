@@ -38,9 +38,13 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
   <div class="card-body">
     <div id="form-view">
       <p class="title">Access your dashboard</p>
-      <p class="sub">Enter your email and we'll send you a login link.</p>
+      <p class="sub" id="email-sub">Enter your email and we'll send you a login link.</p>
       <input class="input" type="email" id="email-input" placeholder="you@example.com" autocomplete="email">
-      <button class="btn" id="submit-btn" onclick="requestLink()">Send login link</button>
+      <input class="input" type="password" id="password-input" placeholder="Password" autocomplete="current-password" style="display:none;margin-top:10px">
+      <button class="btn" id="submit-btn" onclick="submitForm()">Continue</button>
+      <div id="use-link-row" style="display:none;text-align:center;margin-top:12px">
+        <a href="#" id="use-link-btn" style="font-size:0.8125rem;color:var(--ink-muted)" onclick="useEmailLink(event)">Email me a link instead</a>
+      </div>
       <div class="msg" id="msg"></div>
     </div>
     <div id="success-view" style="display:none;text-align:center">
@@ -60,13 +64,97 @@ if (error) {
   document.getElementById('msg').className = 'msg msg-error';
 }
 
+// Two-step, adaptive to the account: a publisher who never set a password
+// never sees a password field at all - the page behaves exactly as it
+// always did for them. Only an account that HAS opted into a password
+// (via dashboard Settings) gets asked for one, on a second step after we
+// look up which kind of account this email belongs to.
+let awaitingPassword = false;
+
 document.getElementById('email-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') requestLink();
+  if (e.key === 'Enter') submitForm();
+});
+document.getElementById('password-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitForm();
 });
 
-async function requestLink() {
+function setMsg(text, isError) {
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.className = 'msg ' + (isError ? 'msg-error' : 'msg-success');
+}
+
+async function submitForm() {
   const email = document.getElementById('email-input').value.trim();
   if (!email) return;
+
+  if (awaitingPassword) return submitPassword(email);
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Checking...';
+  setMsg('', false);
+
+  let hasPassword = false;
+  try {
+    const res = await fetch('/api/auth?action=check-method', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const body = await res.json();
+    hasPassword = !!body.hasPassword;
+  } catch (e) {}
+
+  btn.disabled = false;
+
+  if (hasPassword) {
+    awaitingPassword = true;
+    document.getElementById('email-sub').textContent = 'Enter your password to continue.';
+    document.getElementById('email-input').disabled = true;
+    document.getElementById('password-input').style.display = 'block';
+    document.getElementById('use-link-row').style.display = 'block';
+    document.getElementById('password-input').focus();
+    btn.textContent = 'Log in';
+  } else {
+    sendEmailLink(email);
+  }
+}
+
+async function submitPassword(email) {
+  const password = document.getElementById('password-input').value;
+  if (!password) return;
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Logging in...';
+  setMsg('', false);
+
+  try {
+    const res = await fetch('/api/auth?action=password-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const body = await res.json();
+    if (res.ok && body.ok) {
+      location.href = `/dashboard?pub=${encodeURIComponent(body.slug)}`;
+      return;
+    }
+    setMsg(body.error || 'Invalid email or password', true);
+  } catch (e) {
+    setMsg('Something went wrong. Try again.', true);
+  }
+  btn.disabled = false;
+  btn.textContent = 'Log in';
+}
+
+function useEmailLink(ev) {
+  ev.preventDefault();
+  const email = document.getElementById('email-input').value.trim();
+  if (email) sendEmailLink(email);
+}
+
+async function sendEmailLink(email) {
   const btn = document.getElementById('submit-btn');
   btn.disabled = true;
   btn.textContent = 'Sending...';

@@ -1,5 +1,8 @@
 ﻿import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
+
+const PASSWORD_MIN_LENGTH = 10;
 
 let clickTableReady = false;
 let hoverTableReady = false;
@@ -292,6 +295,32 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+  // Password login opt-in/out - handled as its own branch (not folded into
+  // the generic settings PATCH below) because setting a password needs
+  // hashing before it ever reaches SQL, and needs its own validation error
+  // instead of silently accepting whatever's given. No re-verification of
+  // identity beyond the session check above is needed - that's the whole
+  // point of gating this on an authenticated session rather than a
+  // separate email-based reset flow.
+  if (req.method === 'PATCH' && (req.body.password || req.body.remove_password)) {
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS password_hash TEXT`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS password_fail_count INT DEFAULT 0`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS password_locked_until TIMESTAMPTZ`.catch(() => {});
+
+    if (req.body.remove_password) {
+      await sql`UPDATE publishers SET password_hash = NULL, password_fail_count = 0, password_locked_until = NULL WHERE slug = ${pub}`;
+      return res.status(200).json({ ok: true, has_password: false });
+    }
+
+    const { password } = req.body;
+    if (typeof password !== 'string' || password.length < PASSWORD_MIN_LENGTH) {
+      return res.status(400).json({ error: `Password must be at least ${PASSWORD_MIN_LENGTH} characters` });
+    }
+    const hash = await bcrypt.hash(password, 10);
+    await sql`UPDATE publishers SET password_hash = ${hash}, password_fail_count = 0, password_locked_until = NULL WHERE slug = ${pub}`;
+    return res.status(200).json({ ok: true, has_password: true });
+  }
+
   if (req.method === 'PATCH') {
     const { match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, enabled_partners, payment_email, active, carousel_title } = req.body;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS carousel_title TEXT`.catch(() => {});
@@ -363,7 +392,8 @@ export default async function handler(req, res) {
              COALESCE(discovery_cue_enabled, true) AS discovery_cue_enabled,
              COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners,
              COALESCE(revenue_share, 0.70) AS revenue_share,
-             payment_email, carousel_title, first_widget_fire_at
+             payment_email, carousel_title, first_widget_fire_at,
+             (password_hash IS NOT NULL) AS has_password
       FROM publishers WHERE slug = ${pub} AND active = true LIMIT 1
     `;
 

@@ -1,5 +1,14 @@
 ﻿import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
+
+// Lockout window for password login - 5 failed attempts locks the account
+// for 15 minutes, reset on the next successful login. Guards the one new
+// unauthenticated attack surface password login adds (a magic-link token is
+// a 32-byte random value, too large to brute-force; a password isn't).
+const PASSWORD_MAX_ATTEMPTS = 5;
+const PASSWORD_LOCKOUT_MS = 15 * 60 * 1000;
+const PASSWORD_MIN_LENGTH = 10;
 
 let tableReady = false;
 
@@ -25,7 +34,20 @@ async function ensureTables(sql) {
     expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
   )`;
+  await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS password_hash TEXT`.catch(() => {});
+  await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS password_fail_count INT DEFAULT 0`.catch(() => {});
+  await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS password_locked_until TIMESTAMPTZ`.catch(() => {});
   tableReady = true;
+}
+
+// Issues a session exactly the way the magic-link flow does - password
+// login is just a second way to reach this same call, not a parallel
+// session mechanism to keep in sync.
+async function issueSession(sql, res, pub) {
+  const sessionToken = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  await sql`INSERT INTO sessions (token, publisher_slug, publisher_name, expires_at) VALUES (${sessionToken}, ${pub.slug}, ${pub.name}, ${expiresAt})`;
+  res.setHeader('Set-Cookie', `il_session=${sessionToken}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`);
 }
 
 export async function createMagicToken(sql, email, expiresInMs) {
@@ -55,11 +77,7 @@ export default async function handler(req, res) {
     const [pub] = await sql`SELECT slug, name FROM publishers WHERE email = ${link.email} AND active = true LIMIT 1`;
     if (!pub) return res.redirect(302, '/login?error=notfound');
 
-    const sessionToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-    await sql`INSERT INTO sessions (token, publisher_slug, publisher_name, expires_at) VALUES (${sessionToken}, ${pub.slug}, ${pub.name}, ${expiresAt})`;
-
-    res.setHeader('Set-Cookie', `il_session=${sessionToken}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`);
+    await issueSession(sql, res, pub);
     return res.redirect(302, `/dashboard?pub=${pub.slug}`);
   }
 
@@ -138,6 +156,53 @@ export default async function handler(req, res) {
     }
 
     return res.status(201).json({ ok: true, slug });
+  }
+
+  // POST ?action=check-method { email } - tells the login page whether to
+  // reveal a password field. Always returns hasPassword:false for an
+  // unknown email, same as "no password set" - never reveals whether an
+  // email is a registered publisher.
+  if (req.method === 'POST' && action === 'check-method') {
+    const { email } = req.body || {};
+    if (!email) return res.status(400).json({ error: 'Email required' });
+    const normalised = email.toLowerCase().trim();
+    const [pub] = await sql`SELECT password_hash FROM publishers WHERE email = ${normalised} AND active = true LIMIT 1`;
+    return res.status(200).json({ hasPassword: !!(pub && pub.password_hash) });
+  }
+
+  // POST ?action=password-login { email, password } - the one genuinely new
+  // unauthenticated attack surface this feature adds (a magic-link token is
+  // a 32-byte random value, too large to brute-force; a password isn't) -
+  // see PASSWORD_MAX_ATTEMPTS/PASSWORD_LOCKOUT_MS above.
+  if (req.method === 'POST' && action === 'password-login') {
+    const { email, password } = req.body || {};
+    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+    const normalised = email.toLowerCase().trim();
+
+    const [pub] = await sql`
+      SELECT id, slug, name, password_hash, password_fail_count, password_locked_until
+      FROM publishers WHERE email = ${normalised} AND active = true LIMIT 1
+    `;
+
+    // Same generic error whether the email doesn't exist, has no password
+    // set, is locked out, or the password is simply wrong - never reveal
+    // which case it was, or this becomes an account-enumeration oracle.
+    const genericError = () => res.status(401).json({ error: 'Invalid email or password' });
+
+    if (!pub || !pub.password_hash) return genericError();
+    if (pub.password_locked_until && new Date(pub.password_locked_until) > new Date()) return genericError();
+
+    const valid = await bcrypt.compare(password, pub.password_hash);
+    if (!valid) {
+      const failCount = (pub.password_fail_count || 0) + 1;
+      const lockUntil = failCount >= PASSWORD_MAX_ATTEMPTS ? new Date(Date.now() + PASSWORD_LOCKOUT_MS) : null;
+      await sql`UPDATE publishers SET password_fail_count = ${lockUntil ? 0 : failCount}, password_locked_until = ${lockUntil} WHERE id = ${pub.id}`;
+      return genericError();
+    }
+
+    await sql`UPDATE publishers SET password_fail_count = 0, password_locked_until = NULL WHERE id = ${pub.id}`;
+    await issueSession(sql, res, pub);
+    return res.status(200).json({ ok: true, slug: pub.slug });
   }
 
   // POST { email } - send login magic link

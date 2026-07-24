@@ -864,6 +864,34 @@ tr:last-child td{border-bottom:none}
 
       <div class="section">
         <div class="section-header">
+          <div class="section-title">Login</div>
+          <div class="section-sub">By default you log in with a link we email you - no password needed</div>
+        </div>
+        <div style="padding:1.5rem;max-width:440px">
+          <div id="password-not-set">
+            <div class="setting-title">Set a password</div>
+            <div class="setting-desc" style="margin-top:0.25rem">Optional - log in faster without waiting on an email each time</div>
+            <div class="payout-field">
+              <input type="password" class="payout-input" id="new-password-input" placeholder="At least 10 characters" autocomplete="new-password">
+              <button class="payout-save" onclick="setPassword()">Save</button>
+            </div>
+            <div class="payout-hint">The email link will always still work too, even after you set a password.</div>
+          </div>
+          <div id="password-set" style="display:none">
+            <div class="setting-title">Password login is on</div>
+            <div class="setting-desc" style="margin-top:0.25rem">You can log in with either your password or the email link</div>
+            <div class="payout-field">
+              <input type="password" class="payout-input" id="change-password-input" placeholder="New password (at least 10 characters)" autocomplete="new-password">
+              <button class="payout-save" onclick="setPassword()">Update</button>
+            </div>
+            <div class="payout-hint"><a href="#" onclick="removePassword();return false" style="color:var(--red)">Remove password login</a></div>
+          </div>
+          <div class="msg" id="password-msg" style="margin-top:0.5rem;font-size:0.8125rem"></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
           <div class="section-title">Booking history</div>
           <div class="section-sub" id="booking-history-sub">Loading...</div>
         </div>
@@ -1035,6 +1063,8 @@ async function loadDashboard() {
   if (p.payment_email) {
     document.getElementById('payment-email-input').value = p.payment_email;
   }
+  document.getElementById('password-not-set').style.display = p.has_password ? 'none' : 'block';
+  document.getElementById('password-set').style.display = p.has_password ? 'block' : 'none';
   document.getElementById('revenue-share-pct').textContent = Math.round((p.revenue_share || 0.70) * 100) + '%';
   renderBookingHistory(d.bookings);
 }
@@ -1230,6 +1260,48 @@ async function savePaymentEmail() {
   });
   if (res.status === 401) { window.location.href = '/login'; return; }
   if (res.ok) toast('Payment email saved');
+}
+
+async function setPassword() {
+  const el = document.getElementById('password-set').style.display === 'none'
+    ? document.getElementById('new-password-input')
+    : document.getElementById('change-password-input');
+  const password = el.value;
+  const msgEl = document.getElementById('password-msg');
+  msgEl.textContent = '';
+  if (!password) return;
+  const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ password })
+  });
+  if (res.status === 401) { window.location.href = '/login'; return; }
+  const body = await res.json();
+  if (res.ok) {
+    el.value = '';
+    document.getElementById('password-not-set').style.display = 'none';
+    document.getElementById('password-set').style.display = 'block';
+    toast('Password saved');
+  } else {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = body.error || 'Could not save password';
+  }
+}
+
+async function removePassword() {
+  const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ remove_password: true })
+  });
+  if (res.status === 401) { window.location.href = '/login'; return; }
+  if (res.ok) {
+    document.getElementById('password-set').style.display = 'none';
+    document.getElementById('password-not-set').style.display = 'block';
+    toast('Password login removed');
+  }
 }
 
 function copyEmbed() {
