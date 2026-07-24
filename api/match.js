@@ -15,6 +15,7 @@ const GLOBAL_CACHE_COUNTRY = 'XX';
 let logTableReady = false;
 let cacheTableReady = false;
 let publisherActivityColumnsReady = false;
+let discoveryCueColumnReady = false;
 let expertsCache = null;
 let expertsCacheTime = 0;
 const EXPERTS_TTL = 5 * 60 * 1000;
@@ -724,6 +725,14 @@ export default async function handler(req, res) {
     // manual recrawl - not an automatic sitewide invalidation. Unconfirmed
     // negatives are trusted 24h, confirmed ones are permanent until an
     // admin recrawls the publisher.
+    // Must exist before the SELECT below reads it - a bare column-missing
+    // Postgres error there gets swallowed by that query's own .catch(),
+    // which reads as "publisher not found" and silently zeroes out matches
+    // for every publisher until something else happens to create the column.
+    if (!discoveryCueColumnReady) {
+      await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS discovery_cue_enabled BOOLEAN DEFAULT true`.catch(() => {});
+      discoveryCueColumnReady = true;
+    }
     const [pubRows, cachedRows] = await Promise.all([
       publisher
         ? sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null])
