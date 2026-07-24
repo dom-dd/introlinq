@@ -1,10 +1,13 @@
 import { neon } from '@neondatabase/serverless';
 
 // Redirects every send to TEST_EMAIL and scopes the publisher query down to
-// TEST_PUBLISHER - flip to false only once a real run has been reviewed.
-const TEST_MODE = true;
+// TEST_PUBLISHER - was used to review real test runs before going live.
+// Flipped to false 2026-07-24: query logic and email content verified
+// against real (non-demo) publisher data first.
+const TEST_MODE = false;
 const TEST_PUBLISHER = 'little-green-agency';
 const TEST_EMAIL = 'dom@open-intro.com';
+const BCC_EMAIL = 'dom@introlinq.com';
 
 // Days since signup at which each stage becomes eligible. Checked in order,
 // lowest first - a publisher who's behind (e.g. after a cron outage) catches
@@ -64,7 +67,7 @@ export default async function handler(req, res) {
     const emailRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: 'IntroLinq <hello@introlinq.com>', to: email, subject, html }),
+      body: JSON.stringify({ from: 'IntroLinq <hello@introlinq.com>', to: email, bcc: BCC_EMAIL, subject, html }),
     });
 
     if (emailRes.ok) {
