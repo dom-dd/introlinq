@@ -550,14 +550,26 @@
   // repeats every CUE_REPEAT_MS for as long as they stay on it. Each
   // highlight gets its own independent observer, so whichever one a reader
   // actually scrolls to (not just the first on the page) still gets a nudge.
+  // The whole point is teaching a reader they CAN hover a highlight - once
+  // they've actually done that for real (see stopDiscoveryCue, wired into
+  // attachGroupEvents below), cueLearned stops every future play everywhere
+  // on the page and clears whatever's on screen right now.
+  var cueLearned = false;
+  function stopDiscoveryCue() {
+    if (cueLearned) return;
+    cueLearned = true;
+    var existing = document.querySelectorAll('#il-cue');
+    for (var i = 0; i < existing.length; i++) existing[i].remove();
+  }
   var CUE_DWELL_MS = 2500;
-  // TESTING VALUE - repeats the play every 5s while still in view, instead
+  // TESTING VALUE - repeats the play every 3s while still in view, instead
   // of playing once and disappearing forever. Under evaluation on
   // /demo/introlinq; not a final decision on the real UX.
-  var CUE_REPEAT_MS = 5000;
+  var CUE_REPEAT_MS = 3000;
   function maybeShowDiscoveryCue(anchor) {
     if (typeof IntersectionObserver !== 'function') return;
     var play = function () {
+      if (cueLearned) return;
       if ('ontouchstart' in window) {
         anchor.classList.add('il-cue-pulse');
         setTimeout(function () { anchor.classList.remove('il-cue-pulse'); }, 2200);
@@ -568,10 +580,12 @@
     var dwellTimer = null;
     var repeatTimer = null;
     var observer = new IntersectionObserver(function (entries) {
+      if (cueLearned) { observer.disconnect(); return; }
       if (entries[0].isIntersecting) {
         if (dwellTimer || repeatTimer) return;
         dwellTimer = setTimeout(function () {
           dwellTimer = null;
+          if (cueLearned) return;
           play();
           repeatTimer = setInterval(play, CUE_REPEAT_MS);
         }, CUE_DWELL_MS);
@@ -629,6 +643,7 @@
       spans.forEach(function (sp) {
         sp.addEventListener('click', function (ev) {
           ev.stopPropagation();
+          stopDiscoveryCue();
           clearTimeout(hideTimer);
           fillPopup(popup, m, cfg);
           positionPopup(popup, anchor, cfg);
@@ -639,6 +654,7 @@
     } else {
       spans.forEach(function (sp) {
         sp.addEventListener('mouseenter', function () {
+          stopDiscoveryCue();
           clearTimeout(hideTimer);
           fillPopup(popup, m, cfg);
           positionPopup(popup, anchor, cfg);
