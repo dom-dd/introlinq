@@ -282,8 +282,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
         <div class="stat-card">
           <div class="stat-label">Impressions</div>
           <div class="stat-value" id="stat-total-impressions">-</div>
-          <div class="stat-sub">all-time, real publishers</div>
-          <div class="stat-sub" id="stat-hover-rate-sub-impr">hover rate: -</div>
+          <div class="stat-sub">since stats reset, real publishers</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Hovers</div>
@@ -818,17 +817,10 @@ async function loadAnalytics() {
   document.getElementById('stat-pages-scanned').textContent = (t.pages_scanned || 0).toLocaleString();
   const ctr = t.impressions > 0 ? (t.clicks / t.impressions * 100).toFixed(1) : '0.0';
   document.getElementById('stat-ctr').textContent = `${ctr}%`;
-
-  // Hover-rate ratios use only activity since hover tracking went live, not
-  // all-time totals - hover_logs has nothing before that point, so dividing
-  // by all-time impressions would understate the rate with weeks of
-  // impressions that had real, just unmeasured, hovers.
-  const sh = d.totals_since_hover_tracking || {};
-  const hoverRate = sh.impressions > 0 ? (sh.hovers / sh.impressions * 100).toFixed(1) : '0.0';
-  document.getElementById('stat-hover-rate-sub').textContent = `${hoverRate}% since tracking began`;
-  document.getElementById('stat-hover-rate-sub-impr').textContent = `hover rate since tracking began: ${hoverRate}%`;
-  const hoverToClick = sh.hovers > 0 ? (sh.clicks / sh.hovers * 100).toFixed(1) : '0.0';
-  document.getElementById('stat-hover-to-click-sub').textContent = `${hoverToClick}% of hovers convert (since tracking began)`;
+  const hoverRate = t.impressions > 0 ? (t.hovers / t.impressions * 100).toFixed(1) : '0.0';
+  document.getElementById('stat-hover-rate-sub').textContent = `${hoverRate}% of impressions`;
+  const hoverToClick = t.hovers > 0 ? (t.clicks / t.hovers * 100).toFixed(1) : '0.0';
+  document.getElementById('stat-hover-to-click-sub').textContent = `${hoverToClick}% of hovers convert`;
 
   initPlatformCharts();
   setPlatformPeriod('daily', document.querySelector('#tab-stats .period-btn'));
@@ -1144,16 +1136,9 @@ async function loadPublishers() {
           const hov = p.hovers || 0;
           const clk = p.clicks || 0;
           const ctr = imp > 0 ? (clk / imp * 100).toFixed(1) : '0.0';
-          // Rates use impressions/clicks SINCE hover tracking launched, not the
-          // all-time imp/clk shown above - hover_logs has nothing before that
-          // point, so e.g. 2,000 all-time impressions against 5 hovers from the
-          // last hour would show a meaningless 0.25% instead of the real rate
-          // for the window hovers have actually existed in.
-          const impSince = p.impressions_since_hover_tracking || 0;
-          const clkSince = p.clicks_since_hover_tracking || 0;
-          const hoverRateSince = impSince > 0 ? (hov / impSince * 100).toFixed(1) : '0.0';
-          const hoverToClickSince = hov > 0 ? (clkSince / hov * 100).toFixed(1) : '0.0';
-          const hoverTitle = `All-time: ${imp.toLocaleString()} impressions, ${clk.toLocaleString()} clicks (${ctr}% CTR)\nSince hover tracking began: ${impSince.toLocaleString()} impressions → ${hov.toLocaleString()} hovers (${hoverRateSince}%) → ${clkSince.toLocaleString()} clicks (${hoverToClickSince}% of hovers)`;
+          const hoverRate = imp > 0 ? (hov / imp * 100).toFixed(1) : '0.0';
+          const hoverToClick = hov > 0 ? (clk / hov * 100).toFixed(1) : '0.0';
+          const hoverTitle = `${imp.toLocaleString()} impressions → ${hov.toLocaleString()} hovers (${hoverRate}%) → ${clk.toLocaleString()} clicks (${hoverToClick}% of hovers)`;
           return `<div title="${esc(hoverTitle)}" style="font-size:0.75rem;color:var(--ink-soft);line-height:1.9;white-space:nowrap">
             <span style="font-weight:500;color:var(--ink)">${imp.toLocaleString()}</span> imp &nbsp;
             <span style="font-weight:500;color:var(--ink)">${hov.toLocaleString()}</span> hov &nbsp;
