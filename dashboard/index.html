@@ -945,8 +945,8 @@ async function loadDashboard() {
   // that had real, just unmeasured, hovers.
   const sh = d.totals_since_hover_tracking || {};
   const hoverRate = sh.impressions > 0 ? (sh.hovers / sh.impressions * 100).toFixed(1) : '0.0';
-  document.getElementById('stat-hover-rate-sub').textContent = `${hoverRate}% of readers who saw the card`;
-  document.getElementById('stat-hover-rate-sub-impr').textContent = `hover rate: ${hoverRate}%`;
+  document.getElementById('stat-hover-rate-sub').textContent = `${hoverRate}% since tracking began`;
+  document.getElementById('stat-hover-rate-sub-impr').textContent = `hover rate since tracking began: ${hoverRate}%`;
 
   // Charts (Overview tab)
   window._cd = d;

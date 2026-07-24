@@ -424,19 +424,30 @@ export default async function handler(req, res) {
       // are excluded from this list - they're not real customers, and are
       // already visible under the Experts tab's Groups table.
       const publishers = await sql`SELECT * FROM publishers WHERE slug NOT LIKE 'demo-%' ORDER BY created_at DESC`;
-      const [matchStats, clickStats, hoverStats] = await Promise.all([
+      // impressionsSince/clicksSince exist alongside the all-time totals so the
+      // per-publisher hover-rate tooltip can divide by a window that actually
+      // overlaps with hover_logs (which has nothing before HOVER_TRACKING_SINCE) -
+      // otherwise a publisher with 2,000 all-time impressions and 5 hovers from
+      // the last hour would show a nonsense "0.25%" rate.
+      const [matchStats, clickStats, hoverStats, matchStatsSince, clickStatsSince] = await Promise.all([
         sql`SELECT publisher, COUNT(*)::int AS impressions FROM match_logs WHERE match_count > 0 GROUP BY publisher`.catch(() => []),
         sql`SELECT publisher, COUNT(*)::int AS clicks FROM click_logs GROUP BY publisher`.catch(() => []),
         sql`SELECT publisher, COUNT(*)::int AS hovers FROM hover_logs GROUP BY publisher`.catch(() => []),
+        sql`SELECT publisher, COUNT(*)::int AS impressions FROM match_logs WHERE match_count > 0 AND created_at >= ${HOVER_TRACKING_SINCE} GROUP BY publisher`.catch(() => []),
+        sql`SELECT publisher, COUNT(*)::int AS clicks FROM click_logs WHERE created_at >= ${HOVER_TRACKING_SINCE} GROUP BY publisher`.catch(() => []),
       ]);
       const matchMap = Object.fromEntries(matchStats.map(r => [r.publisher, r.impressions]));
       const clickMap = Object.fromEntries(clickStats.map(r => [r.publisher, r.clicks]));
       const hoverMap = Object.fromEntries(hoverStats.map(r => [r.publisher, r.hovers]));
+      const matchSinceMap = Object.fromEntries(matchStatsSince.map(r => [r.publisher, r.impressions]));
+      const clickSinceMap = Object.fromEntries(clickStatsSince.map(r => [r.publisher, r.clicks]));
       const result = publishers.map(p => ({
         ...p,
         impressions: matchMap[p.slug] || 0,
         clicks: clickMap[p.slug] || 0,
         hovers: hoverMap[p.slug] || 0,
+        impressions_since_hover_tracking: matchSinceMap[p.slug] || 0,
+        clicks_since_hover_tracking: clickSinceMap[p.slug] || 0,
       }));
       return res.status(200).json(result);
     }
