@@ -409,7 +409,7 @@
       'box-sizing:border-box;line-height:normal;text-align:left}' +
       '#il-pop.il-on{opacity:1;transform:translateY(0);pointer-events:all}' +
       '#il-pop *{box-sizing:border-box}' +
-      // One-time discoverability nudge (see maybeShowDiscoveryCue) - a
+      // Discoverability nudge (see maybeShowDiscoveryCue) - a
       // white "phantom hand" tap on desktop, a soft pulse on the highlight
       // itself on touch. pointer-events:none on #il-cue is load-bearing:
       // it must never intercept the mouseenter/click that actually opens
@@ -424,7 +424,7 @@
       '@keyframes il-cue-tap{0%{transform:translate(-50%,-50%) scale(1)}35%{transform:translate(-50%,-50%) scale(.78)}65%{transform:translate(-50%,-50%) scale(1.05)}100%{transform:translate(-50%,-50%) scale(1)}}' +
       '@keyframes il-cue-out{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,calc(-50% + 22px))}}' +
       '#il-cue{position:absolute!important;z-index:2147483647!important;pointer-events:none!important;width:26px!important;height:32px!important;opacity:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))!important;' +
-      'animation:il-cue-in .5s ease forwards,il-cue-tap .4s ease .5s,il-cue-out .4s ease 1.2s forwards!important}' +
+      'animation:il-cue-in .8s ease forwards,il-cue-tap .6s ease .8s,il-cue-out .7s ease 1.9s forwards!important}' +
       '#il-cue svg{width:100%!important;height:100%!important;display:block!important}' +
       '@keyframes il-pulse-glow{0%,100%{box-shadow:0 0 0 0 ' + hexToRgba(color, 0) + '}50%{box-shadow:0 0 0 6px ' + hexToRgba(color, 0.35) + '}}' +
       '.il-hl.il-cue-pulse{animation:il-pulse-glow 1s ease-in-out 2!important}';
@@ -544,26 +544,18 @@
   // not looking spammy but bad for discoverability. This shows an animated
   // nudge - a white "phantom hand" tap on desktop, a soft pulse on the
   // highlight itself on touch (same 'ontouchstart' in window check used
-  // everywhere else in this file) - after the FIRST highlighted phrase on
-  // the page has been in view for a couple of seconds (not the instant it
-  // appears - a reader who's still scrolling past it hasn't "looked" at it
-  // yet), then repeats every CUE_REPEAT_MS for as long as they stay on it.
-  // Runs on every visit (no longer gated behind a "seen it once" flag) -
-  // cueShown just guards against the function running more than once per
-  // page load (highlights stream in over several async responses - see
-  // applyMatches) rather than per phrase; the anchor from whichever call
-  // gets there first is a good enough proxy for "first in reading order"
-  // since the quick pass (which covers the article's intro) always
-  // resolves before any chunk pass.
-  var cueShown = false;
+  // everywhere else in this file) - on EVERY highlighted phrase, each time
+  // it's been in view for a couple of seconds (not the instant it appears -
+  // a reader who's still scrolling past it hasn't "looked" at it yet), then
+  // repeats every CUE_REPEAT_MS for as long as they stay on it. Each
+  // highlight gets its own independent observer, so whichever one a reader
+  // actually scrolls to (not just the first on the page) still gets a nudge.
   var CUE_DWELL_MS = 2500;
   // TESTING VALUE - repeats the play every 5s while still in view, instead
   // of playing once and disappearing forever. Under evaluation on
   // /demo/introlinq; not a final decision on the real UX.
   var CUE_REPEAT_MS = 5000;
   function maybeShowDiscoveryCue(anchor) {
-    if (cueShown) return;
-    cueShown = true;
     if (typeof IntersectionObserver !== 'function') return;
     var play = function () {
       if ('ontouchstart' in window) {
@@ -614,7 +606,7 @@
     // strokes, which would otherwise show a seam where the two overlap.
     cue.innerHTML = '<svg viewBox="0 0 24 30"><rect x="9" y="1" width="6" height="16" rx="3" fill="#fff"/><rect x="4" y="14" width="16" height="15" rx="7.5" fill="#fff"/></svg>';
     document.body.appendChild(cue);
-    setTimeout(function () { cue.remove(); }, 1650);
+    setTimeout(function () { cue.remove(); }, 2650);
   }
 
   // A matched phrase can land in several DOM text nodes when the article's
