@@ -280,9 +280,17 @@ export default async function handler(req, res) {
   // actually opened. Demo publishers (slug LIKE 'demo-%') are excluded
   // everywhere here, same as the rest of admin - they're showcase pages,
   // not real traffic, and would inflate every number.
+  // Hover tracking went live at this timestamp - hover_logs has nothing before
+  // it, so an all-time hover-rate (hovers / all-time impressions) would be
+  // diluted by weeks of pre-tracking impressions that definitely had real
+  // hovers, just unmeasured ones. Rates are computed only over activity since
+  // this cutoff so the percentage reflects actual current behaviour; the raw
+  // all-time impression/click counts are untouched and still shown as-is.
+  const HOVER_TRACKING_SINCE = '2026-07-24T14:00:00Z';
+
   if (resource === 'analytics') {
     const notDemo = sql`publisher NOT LIKE 'demo-%'`;
-    const [totals, clicksByDay, imprByDay, hoversByDay, clicksByWeek, imprByWeek, hoversByWeek, clicksByMonth, imprByMonth, hoversByMonth] = await Promise.all([
+    const [totals, sinceHovers, clicksByDay, imprByDay, hoversByDay, clicksByWeek, imprByWeek, hoversByWeek, clicksByMonth, imprByMonth, hoversByMonth] = await Promise.all([
       sql`
         SELECT
           (SELECT COUNT(*) FROM match_logs WHERE match_count > 0 AND ${notDemo})::int AS impressions,
@@ -290,6 +298,12 @@ export default async function handler(req, res) {
           (SELECT COUNT(*) FROM hover_logs WHERE ${notDemo})::int AS hovers,
           (SELECT COUNT(*) FROM match_cache WHERE ${notDemo})::int AS pages_scanned
       `.catch(() => [{ impressions: 0, clicks: 0, hovers: 0, pages_scanned: 0 }]),
+      sql`
+        SELECT
+          (SELECT COUNT(*) FROM match_logs WHERE match_count > 0 AND ${notDemo} AND created_at >= ${HOVER_TRACKING_SINCE})::int AS impressions,
+          (SELECT COUNT(*) FROM click_logs WHERE ${notDemo} AND created_at >= ${HOVER_TRACKING_SINCE})::int AS clicks,
+          (SELECT COUNT(*) FROM hover_logs WHERE ${notDemo} AND created_at >= ${HOVER_TRACKING_SINCE})::int AS hovers
+      `.catch(() => [{ impressions: 0, clicks: 0, hovers: 0 }]),
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM click_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`,
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM match_logs WHERE match_count > 0 AND ${notDemo} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`,
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM hover_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
@@ -302,6 +316,7 @@ export default async function handler(req, res) {
     ]);
     return res.status(200).json({
       totals: totals[0],
+      totals_since_hover_tracking: sinceHovers[0],
       clicks_by_day: clicksByDay, impressions_by_day: imprByDay, hovers_by_day: hoversByDay,
       clicks_by_week: clicksByWeek, impressions_by_week: imprByWeek, hovers_by_week: hoversByWeek,
       clicks_by_month: clicksByMonth, impressions_by_month: imprByMonth, hovers_by_month: hoversByMonth,

@@ -283,6 +283,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
           <div class="stat-label">Impressions</div>
           <div class="stat-value" id="stat-total-impressions">-</div>
           <div class="stat-sub">all-time, real publishers</div>
+          <div class="stat-sub" id="stat-hover-rate-sub-impr">hover rate: -</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Hovers</div>
@@ -817,9 +818,16 @@ async function loadAnalytics() {
   document.getElementById('stat-pages-scanned').textContent = (t.pages_scanned || 0).toLocaleString();
   const ctr = t.impressions > 0 ? (t.clicks / t.impressions * 100).toFixed(1) : '0.0';
   document.getElementById('stat-ctr').textContent = `${ctr}%`;
-  const hoverRate = t.impressions > 0 ? (t.hovers / t.impressions * 100).toFixed(1) : '0.0';
+
+  // Hover-rate ratios use only activity since hover tracking went live, not
+  // all-time totals - hover_logs has nothing before that point, so dividing
+  // by all-time impressions would understate the rate with weeks of
+  // impressions that had real, just unmeasured, hovers.
+  const sh = d.totals_since_hover_tracking || {};
+  const hoverRate = sh.impressions > 0 ? (sh.hovers / sh.impressions * 100).toFixed(1) : '0.0';
   document.getElementById('stat-hover-rate-sub').textContent = `hover rate: ${hoverRate}%`;
-  const hoverToClick = t.hovers > 0 ? (t.clicks / t.hovers * 100).toFixed(1) : '0.0';
+  document.getElementById('stat-hover-rate-sub-impr').textContent = `hover rate: ${hoverRate}%`;
+  const hoverToClick = sh.hovers > 0 ? (sh.clicks / sh.hovers * 100).toFixed(1) : '0.0';
   document.getElementById('stat-hover-to-click-sub').textContent = `of hovers click through: ${hoverToClick}%`;
 
   initPlatformCharts();

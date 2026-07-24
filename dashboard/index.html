@@ -357,6 +357,7 @@ tr:last-child td{border-bottom:none}
           <div class="stat-label">Impressions</div>
           <div class="stat-value clickable" id="stat-articles" onclick="openPagesModal()">-</div>
           <div class="stat-sub">pages where an expert was shown</div>
+          <div class="stat-sub" id="stat-hover-rate-sub-impr">hover rate: -</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Hovers</div>
@@ -937,8 +938,15 @@ async function loadDashboard() {
   document.getElementById('stat-hovers').textContent = hovers.toLocaleString();
   document.getElementById('stat-clicks').textContent = clicks.toLocaleString();
   document.getElementById('stat-ctr').textContent = ctr + '%';
-  const hoverRate = impressions > 0 ? (hovers / impressions * 100).toFixed(1) : '0.0';
+
+  // Uses only activity since hover tracking went live, not all-time
+  // impressions - hover_logs has nothing before that point, so dividing by
+  // all-time impressions would understate the rate with older impressions
+  // that had real, just unmeasured, hovers.
+  const sh = d.totals_since_hover_tracking || {};
+  const hoverRate = sh.impressions > 0 ? (sh.hovers / sh.impressions * 100).toFixed(1) : '0.0';
   document.getElementById('stat-hover-rate-sub').textContent = `${hoverRate}% of readers who saw the card`;
+  document.getElementById('stat-hover-rate-sub-impr').textContent = `hover rate: ${hoverRate}%`;
 
   // Charts (Overview tab)
   window._cd = d;

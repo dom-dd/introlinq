@@ -390,13 +390,25 @@ export default async function handler(req, res) {
     ]);
     const bookingSummary = { count: bookingCountRow[0]?.count || 0, by_currency: payoutByCurrency, rows: bookingRows };
 
-    const [logs, clickData, hoverData, providers, expertCounts, totalImpressions,
+    // See HOVER_TRACKING_SINCE in api/admin.js for why hover-rate ratios are
+    // computed over this window rather than all-time - hover_logs has
+    // nothing before it, so dividing by all-time impressions would dilute
+    // the rate with weeks of impressions that had real (unmeasured) hovers.
+    const HOVER_TRACKING_SINCE = '2026-07-24T14:00:00Z';
+
+    const [logs, clickData, hoverData, sinceHovers, providers, expertCounts, totalImpressions,
            clicksByDay, impressionsByDay, hoversByDay, clicksByWeek, impressionsByWeek, hoversByWeek,
            clicksByMonth, impressionsByMonth, hoversByMonth,
            topPhrases, topSources, topDevices, pageUrls] = await Promise.all([
       sql`SELECT phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, created_at FROM match_logs WHERE publisher = ${pub} AND page_url IS NOT NULL ORDER BY created_at DESC LIMIT 50`.catch(() => []),
       sql`SELECT COUNT(*)::int AS total FROM click_logs WHERE publisher = ${pub}`.catch(() => [{ total: 0 }]),
       sql`SELECT COUNT(*)::int AS total FROM hover_logs WHERE publisher = ${pub}`.catch(() => [{ total: 0 }]),
+      sql`
+        SELECT
+          (SELECT COUNT(*) FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND created_at >= ${HOVER_TRACKING_SINCE})::int AS impressions,
+          (SELECT COUNT(*) FROM click_logs WHERE publisher = ${pub} AND created_at >= ${HOVER_TRACKING_SINCE})::int AS clicks,
+          (SELECT COUNT(*) FROM hover_logs WHERE publisher = ${pub} AND created_at >= ${HOVER_TRACKING_SINCE})::int AS hovers
+      `.catch(() => [{ impressions: 0, clicks: 0, hovers: 0 }]),
       sql`SELECT id, slug, COALESCE(name, slug) AS name FROM providers WHERE is_demo IS NOT TRUE ORDER BY slug`,
       // Grouped per provider - this used to be one ungrouped COUNT(*) applied
       // identically to every partner in the list, so a small provider showed
@@ -432,6 +444,7 @@ export default async function handler(req, res) {
       logs,
       clicks: clickData[0]?.total || 0,
       hovers: hoverData[0]?.total || 0,
+      totals_since_hover_tracking: sinceHovers[0],
       total_impressions: totalImpressions[0]?.total || 0,
       partners: partnersWithStatus,
       bookings: bookingSummary,
