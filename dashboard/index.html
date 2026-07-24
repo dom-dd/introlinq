@@ -204,6 +204,14 @@ tr:last-child td{border-bottom:none}
 .payout-save{background:var(--sage);color:#fff;border:none;padding:0.625rem 1.125rem;border-radius:8px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap}
 .payout-hint{font-size:0.75rem;color:var(--ink-muted);margin-top:0.5rem}
 
+/* ── Account settings ── */
+.account-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start}
+.account-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 1rem}
+@media (max-width:900px){
+  .account-grid{grid-template-columns:1fr}
+  .account-field-grid{grid-template-columns:1fr}
+}
+
 /* ── Misc ── */
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--ink);color:var(--white);padding:0.75rem 1.25rem;border-radius:100px;font-size:0.875rem;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;z-index:9999}
 .toast.show{opacity:1;transform:translateY(0)}
@@ -890,75 +898,89 @@ tr:last-child td{border-bottom:none}
 
     <!-- ── Account settings ── -->
     <div class="tab-panel" id="tab-account">
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Account details</div>
-          <div class="section-sub">Your site and contact info</div>
-        </div>
-        <div style="padding:1.5rem;max-width:440px">
-          <div class="setting-title">Site name</div>
-          <div class="payout-field">
-            <input type="text" class="payout-input" id="account-name-input" placeholder="Your site name">
+      <div class="account-grid">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Account details</div>
+            <div class="section-sub">Your site and contact info</div>
           </div>
-          <div class="setting-title" style="margin-top:1rem">Website</div>
-          <div class="payout-field">
-            <input type="text" class="payout-input" id="account-domain-input" placeholder="https://yoursite.com">
-          </div>
-          <div class="setting-title" style="margin-top:1rem">Contact first name</div>
-          <div class="payout-field">
-            <input type="text" class="payout-input" id="account-first-name-input" placeholder="First name">
-          </div>
-          <div class="setting-title" style="margin-top:1rem">Contact last name</div>
-          <div class="payout-field">
-            <input type="text" class="payout-input" id="account-last-name-input" placeholder="Last name">
-          </div>
-          <div class="payout-field" style="margin-top:1.25rem">
-            <button class="payout-save" onclick="saveAccountDetails()">Save changes</button>
-          </div>
-          <div class="msg" id="account-details-msg" style="margin-top:0.5rem;font-size:0.8125rem"></div>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Email</div>
-          <div class="section-sub">Used for your login link and account notifications</div>
-        </div>
-        <div style="padding:1.5rem;max-width:440px">
-          <div class="payout-field">
-            <input type="email" class="payout-input" id="account-email-input" placeholder="you@example.com" autocomplete="username">
-            <button class="payout-save" onclick="saveEmail()">Save</button>
-          </div>
-          <div class="payout-hint">We'll email the old address to confirm, so you'll notice right away if this ever changes without you.</div>
-          <div class="msg" id="account-email-msg" style="margin-top:0.5rem;font-size:0.8125rem"></div>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Login</div>
-          <div class="section-sub">By default you log in with a link we email you - no password needed</div>
-        </div>
-        <div style="padding:1.5rem;max-width:440px">
-          <div id="password-not-set">
-            <div class="setting-title">Set a password</div>
-            <div class="setting-desc" style="margin-top:0.25rem">Optional - log in faster without waiting on an email each time</div>
-            <div class="payout-field">
-              <input type="password" class="payout-input" id="new-password-input" placeholder="At least 8 characters" autocomplete="new-password">
-              <button class="payout-save" onclick="setPassword()">Save</button>
+          <div style="padding:1.5rem">
+            <div class="account-field-grid">
+              <div>
+                <div class="setting-title">Site name</div>
+                <div class="payout-field">
+                  <input type="text" class="payout-input" id="account-name-input" placeholder="Your site name">
+                </div>
+              </div>
+              <div>
+                <div class="setting-title">Website</div>
+                <div class="payout-field">
+                  <input type="text" class="payout-input" id="account-domain-input" placeholder="https://yoursite.com">
+                </div>
+              </div>
+              <div>
+                <div class="setting-title" style="margin-top:1rem">Contact first name</div>
+                <div class="payout-field">
+                  <input type="text" class="payout-input" id="account-first-name-input" placeholder="First name">
+                </div>
+              </div>
+              <div>
+                <div class="setting-title" style="margin-top:1rem">Contact last name</div>
+                <div class="payout-field">
+                  <input type="text" class="payout-input" id="account-last-name-input" placeholder="Last name">
+                </div>
+              </div>
             </div>
-            <div class="payout-hint">The email link will always still work too, even after you set a password.</div>
-          </div>
-          <div id="password-set" style="display:none">
-            <div class="setting-title">Password login is on</div>
-            <div class="setting-desc" style="margin-top:0.25rem">You can log in with either your password or the email link</div>
-            <div class="payout-field">
-              <input type="password" class="payout-input" id="change-password-input" placeholder="New password (at least 8 characters)" autocomplete="new-password">
-              <button class="payout-save" onclick="setPassword()">Update</button>
+            <div class="payout-field" style="margin-top:1.25rem">
+              <button class="payout-save" onclick="saveAccountDetails()">Save changes</button>
             </div>
-            <div class="payout-hint"><a href="#" onclick="removePassword();return false" style="color:var(--red)">Remove password login</a></div>
+            <div class="msg" id="account-details-msg" style="margin-top:0.5rem;font-size:0.8125rem"></div>
           </div>
-          <div class="msg" id="password-msg" style="margin-top:0.5rem;font-size:0.8125rem"></div>
+        </div>
+
+        <div>
+          <div class="section">
+            <div class="section-header">
+              <div class="section-title">Email</div>
+              <div class="section-sub">Used for your login link and account notifications</div>
+            </div>
+            <div style="padding:1.5rem">
+              <div class="payout-field">
+                <input type="email" class="payout-input" id="account-email-input" placeholder="you@example.com" autocomplete="username">
+                <button class="payout-save" onclick="saveEmail()">Save</button>
+              </div>
+              <div class="payout-hint">We'll email the old address to confirm, so you'll notice right away if this ever changes without you.</div>
+              <div class="msg" id="account-email-msg" style="margin-top:0.5rem;font-size:0.8125rem"></div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-header">
+              <div class="section-title">Login</div>
+              <div class="section-sub">By default you log in with a link we email you - no password needed</div>
+            </div>
+            <div style="padding:1.5rem">
+              <div id="password-not-set">
+                <div class="setting-title">Set a password</div>
+                <div class="setting-desc" style="margin-top:0.25rem">Optional - log in faster without waiting on an email each time</div>
+                <div class="payout-field">
+                  <input type="password" class="payout-input" id="new-password-input" placeholder="At least 8 characters" autocomplete="new-password">
+                  <button class="payout-save" onclick="setPassword()">Save</button>
+                </div>
+                <div class="payout-hint">The email link will always still work too, even after you set a password.</div>
+              </div>
+              <div id="password-set" style="display:none">
+                <div class="setting-title">Password login is on</div>
+                <div class="setting-desc" style="margin-top:0.25rem">You can log in with either your password or the email link</div>
+                <div class="payout-field">
+                  <input type="password" class="payout-input" id="change-password-input" placeholder="New password (at least 8 characters)" autocomplete="new-password">
+                  <button class="payout-save" onclick="setPassword()">Update</button>
+                </div>
+                <div class="payout-hint"><a href="#" onclick="removePassword();return false" style="color:var(--red)">Remove password login</a></div>
+              </div>
+              <div class="msg" id="password-msg" style="margin-top:0.5rem;font-size:0.8125rem"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
