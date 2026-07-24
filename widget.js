@@ -664,13 +664,39 @@
   // anchoring every handler to the same span keeps the card in one stable
   // spot instead of jumping/reappearing as the cursor crosses fragment
   // boundaries (previously each fragment repositioned the popup to itself).
+  // Fired once per highlighted phrase per page view, the first time a reader
+  // actually hovers (desktop) or taps (touch) it - not on every re-hover, or
+  // this would flood hover_logs every time a cursor drifts in and out. This
+  // is the missing middle funnel step between impression (shown) and click
+  // (booked): tells a discoverability problem (nobody ever hovers) apart
+  // from a relevance/commitment-bar problem (readers hover and see the
+  // expert card, but don't click through).
+  function trackHover(hoverTracked, m) {
+    if (hoverTracked.done) return;
+    hoverTracked.done = true;
+    var e = m.expert;
+    fetch('https://www.introlinq.com/api/dashboard?pub=' + encodeURIComponent(PUB) + '&action=hover', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        expert_id: e && e.id,
+        expert_name: e && e.name,
+        phrase: m.phrase,
+        article: window.location.href.slice(0, 300),
+        device: window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop'
+      })
+    }).catch(function () {});
+  }
+
   function attachGroupEvents(spans, m, popup, cfg) {
     var anchor = spans[0];
+    var hoverTracked = { done: false };
     if ('ontouchstart' in window) {
       spans.forEach(function (sp) {
         sp.addEventListener('click', function (ev) {
           ev.stopPropagation();
           stopDiscoveryCue();
+          trackHover(hoverTracked, m);
           clearTimeout(hideTimer);
           fillPopup(popup, m, cfg);
           positionPopup(popup, anchor, cfg);
@@ -682,6 +708,7 @@
       spans.forEach(function (sp) {
         sp.addEventListener('mouseenter', function () {
           stopDiscoveryCue();
+          trackHover(hoverTracked, m);
           clearTimeout(hideTimer);
           fillPopup(popup, m, cfg);
           positionPopup(popup, anchor, cfg);

@@ -278,16 +278,21 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 
     <!-- Stats tab -->
     <div class="tab-panel" id="tab-stats">
-      <div class="stats-grid">
+      <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
         <div class="stat-card">
           <div class="stat-label">Impressions</div>
           <div class="stat-value" id="stat-total-impressions">-</div>
           <div class="stat-sub">all-time, real publishers</div>
         </div>
         <div class="stat-card">
+          <div class="stat-label">Hovers</div>
+          <div class="stat-value" id="stat-total-hovers">-</div>
+          <div class="stat-sub" id="stat-hover-rate-sub">hover rate: -</div>
+        </div>
+        <div class="stat-card">
           <div class="stat-label">Clicks</div>
           <div class="stat-value" id="stat-total-clicks">-</div>
-          <div class="stat-sub">all-time, real publishers</div>
+          <div class="stat-sub" id="stat-hover-to-click-sub">of hovers click through: -</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Pages scanned</div>
@@ -807,10 +812,15 @@ async function loadAnalytics() {
 
   const t = d.totals || {};
   document.getElementById('stat-total-impressions').textContent = (t.impressions || 0).toLocaleString();
+  document.getElementById('stat-total-hovers').textContent = (t.hovers || 0).toLocaleString();
   document.getElementById('stat-total-clicks').textContent = (t.clicks || 0).toLocaleString();
   document.getElementById('stat-pages-scanned').textContent = (t.pages_scanned || 0).toLocaleString();
   const ctr = t.impressions > 0 ? (t.clicks / t.impressions * 100).toFixed(1) : '0.0';
   document.getElementById('stat-ctr').textContent = `${ctr}%`;
+  const hoverRate = t.impressions > 0 ? (t.hovers / t.impressions * 100).toFixed(1) : '0.0';
+  document.getElementById('stat-hover-rate-sub').textContent = `hover rate: ${hoverRate}%`;
+  const hoverToClick = t.hovers > 0 ? (t.clicks / t.hovers * 100).toFixed(1) : '0.0';
+  document.getElementById('stat-hover-to-click-sub').textContent = `of hovers click through: ${hoverToClick}%`;
 
   initPlatformCharts();
   setPlatformPeriod('daily', document.querySelector('#tab-stats .period-btn'));
@@ -1123,10 +1133,13 @@ async function loadPublishers() {
       <td>
         ${(()=>{
           const imp = p.impressions || 0;
+          const hov = p.hovers || 0;
           const clk = p.clicks || 0;
           const ctr = imp > 0 ? (clk / imp * 100).toFixed(1) : '0.0';
-          return `<div style="font-size:0.75rem;color:var(--ink-soft);line-height:1.9;white-space:nowrap">
+          const hoverTitle = `${imp.toLocaleString()} impressions → ${hov.toLocaleString()} hovers (${imp > 0 ? (hov/imp*100).toFixed(1) : '0.0'}%) → ${clk.toLocaleString()} clicks (${hov > 0 ? (clk/hov*100).toFixed(1) : '0.0'}% of hovers)`;
+          return `<div title="${esc(hoverTitle)}" style="font-size:0.75rem;color:var(--ink-soft);line-height:1.9;white-space:nowrap">
             <span style="font-weight:500;color:var(--ink)">${imp.toLocaleString()}</span> imp &nbsp;
+            <span style="font-weight:500;color:var(--ink)">${hov.toLocaleString()}</span> hov &nbsp;
             <span style="font-weight:500;color:var(--ink)">${clk.toLocaleString()}</span> clk &nbsp;
             <span style="font-weight:500;color:var(--ink)">${ctr}%</span>
           </div>`;

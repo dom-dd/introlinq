@@ -2,6 +2,7 @@
 import crypto from 'crypto';
 
 let clickTableReady = false;
+let hoverTableReady = false;
 
 // Display name for the `pub` a partner sends on their webhook calls (e.g.
 // "open-intro") - falls back to a title-cased version of the raw slug for
@@ -226,6 +227,39 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
   }
 
+  // Hover tracking - fired by widget.js once per highlighted phrase per page
+  // view, the first time a reader actually hovers (desktop) or taps (touch)
+  // it, regardless of whether they go on to click. This is the missing
+  // middle funnel step between impression (shown) and click (booked) - it's
+  // what tells a discoverability problem (nobody ever hovers) apart from a
+  // relevance/commitment-bar problem (readers hover and see the expert, but
+  // don't click through). Public/no-auth like the click redirect above -
+  // this is a beacon fired directly by the widget on a reader's page, not an
+  // authenticated dashboard action.
+  if (req.method === 'POST' && action === 'hover') {
+    const { expert_id, expert_name, phrase, article, device } = req.body || {};
+    if (!hoverTableReady) {
+      await sql`
+        CREATE TABLE IF NOT EXISTS hover_logs (
+          id SERIAL PRIMARY KEY,
+          publisher TEXT,
+          expert_id INT,
+          expert_name TEXT,
+          phrase TEXT,
+          article_url TEXT,
+          device TEXT,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `;
+      hoverTableReady = true;
+    }
+    await sql`
+      INSERT INTO hover_logs (publisher, expert_id, expert_name, phrase, article_url, device)
+      VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${phrase || null}, ${article || null}, ${device || null})
+    `.catch(() => {});
+    return res.status(200).end();
+  }
+
   // GET and PATCH: require valid session cookie
   if (req.method === 'GET' || req.method === 'PATCH') {
     const sessionToken = getSessionToken(req);
@@ -356,12 +390,13 @@ export default async function handler(req, res) {
     ]);
     const bookingSummary = { count: bookingCountRow[0]?.count || 0, by_currency: payoutByCurrency, rows: bookingRows };
 
-    const [logs, clickData, providers, expertCounts, totalImpressions,
-           clicksByDay, impressionsByDay, clicksByWeek, impressionsByWeek,
-           clicksByMonth, impressionsByMonth,
+    const [logs, clickData, hoverData, providers, expertCounts, totalImpressions,
+           clicksByDay, impressionsByDay, hoversByDay, clicksByWeek, impressionsByWeek, hoversByWeek,
+           clicksByMonth, impressionsByMonth, hoversByMonth,
            topPhrases, topSources, topDevices, pageUrls] = await Promise.all([
       sql`SELECT phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, created_at FROM match_logs WHERE publisher = ${pub} AND page_url IS NOT NULL ORDER BY created_at DESC LIMIT 50`.catch(() => []),
       sql`SELECT COUNT(*)::int AS total FROM click_logs WHERE publisher = ${pub}`.catch(() => [{ total: 0 }]),
+      sql`SELECT COUNT(*)::int AS total FROM hover_logs WHERE publisher = ${pub}`.catch(() => [{ total: 0 }]),
       sql`SELECT id, slug, COALESCE(name, slug) AS name FROM providers WHERE is_demo IS NOT TRUE ORDER BY slug`,
       // Grouped per provider - this used to be one ungrouped COUNT(*) applied
       // identically to every partner in the list, so a small provider showed
@@ -371,10 +406,13 @@ export default async function handler(req, res) {
       sql`SELECT COUNT(*)::int AS total FROM match_logs WHERE publisher = ${pub} AND match_count > 0`.catch(() => [{ total: 0 }]),
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
+      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM hover_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
       sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`.catch(() => []),
       sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`.catch(() => []),
+      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM hover_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`.catch(() => []),
       sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
       sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
+      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM hover_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
       sql`SELECT phrase, COUNT(*)::int AS clicks FROM click_logs WHERE publisher = ${pub} AND phrase IS NOT NULL AND phrase != '' GROUP BY phrase ORDER BY clicks DESC LIMIT 5`.catch(() => []),
       sql`SELECT traffic_source AS source, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND traffic_source IS NOT NULL GROUP BY traffic_source ORDER BY count DESC`.catch(() => []),
       sql`SELECT device, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND device IS NOT NULL GROUP BY device ORDER BY count DESC`.catch(() => []),
@@ -393,15 +431,19 @@ export default async function handler(req, res) {
       publisher,
       logs,
       clicks: clickData[0]?.total || 0,
+      hovers: hoverData[0]?.total || 0,
       total_impressions: totalImpressions[0]?.total || 0,
       partners: partnersWithStatus,
       bookings: bookingSummary,
       clicks_by_day: clicksByDay,
       impressions_by_day: impressionsByDay,
+      hovers_by_day: hoversByDay,
       clicks_by_week: clicksByWeek,
       impressions_by_week: impressionsByWeek,
+      hovers_by_week: hoversByWeek,
       clicks_by_month: clicksByMonth,
       impressions_by_month: impressionsByMonth,
+      hovers_by_month: hoversByMonth,
       top_phrases: topPhrases,
       traffic_sources: topSources,
       devices: topDevices,

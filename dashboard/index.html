@@ -352,11 +352,16 @@ tr:last-child td{border-bottom:none}
 
     <!-- ── Overview ── -->
     <div class="tab-panel active" id="tab-overview">
-      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
         <div class="stat-card">
           <div class="stat-label">Impressions</div>
           <div class="stat-value clickable" id="stat-articles" onclick="openPagesModal()">-</div>
           <div class="stat-sub">pages where an expert was shown</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Hovers</div>
+          <div class="stat-value" id="stat-hovers">-</div>
+          <div class="stat-sub" id="stat-hover-rate-sub">readers who saw the expert card</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Clicks</div>
@@ -925,11 +930,15 @@ async function loadDashboard() {
 
   // Overview stats
   const impressions = d.total_impressions || 0;
+  const hovers = d.hovers || 0;
   const clicks = d.clicks || 0;
   const ctr = impressions > 0 ? (clicks / impressions * 100).toFixed(1) : '0.0';
   document.getElementById('stat-articles').textContent = impressions.toLocaleString();
+  document.getElementById('stat-hovers').textContent = hovers.toLocaleString();
   document.getElementById('stat-clicks').textContent = clicks.toLocaleString();
   document.getElementById('stat-ctr').textContent = ctr + '%';
+  const hoverRate = impressions > 0 ? (hovers / impressions * 100).toFixed(1) : '0.0';
+  document.getElementById('stat-hover-rate-sub').textContent = `${hoverRate}% of readers who saw the card`;
 
   // Charts (Overview tab)
   window._cd = d;
