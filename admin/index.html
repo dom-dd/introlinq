@@ -1077,9 +1077,12 @@ function reminderTooltip(p) {
     ['Day 10', 10, p.reminder_3_sent_at],
     ['Day 24', 24, p.reminder_4_sent_at],
   ];
-  const lines = stages.map(([label, days, sentAt]) => sentAt
-    ? `${label}: sent on ${fmtDateTime(sentAt)}`
-    : `${label}: scheduled for ${fmtDate(new Date(created.getTime() + days * 86400000))}`);
+  const lines = stages.map(([label, days, sentAt]) => {
+    if (sentAt) return `${label}: sent on ${fmtDateTime(sentAt)}`;
+    if (p.first_widget_fire_at) return `${label}: cancelled - widget went live`;
+    if (p.reminders_paused) return `${label}: on pause`;
+    return `${label}: scheduled for ${fmtDate(new Date(created.getTime() + days * 86400000))}`;
+  });
   const action = p.first_widget_fire_at
     ? 'Stopped automatically - widget went live'
     : p.reminders_paused
