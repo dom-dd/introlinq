@@ -2,7 +2,7 @@
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 
-const PASSWORD_MIN_LENGTH = 10;
+const PASSWORD_MIN_LENGTH = 8;
 
 let clickTableReady = false;
 let hoverTableReady = false;

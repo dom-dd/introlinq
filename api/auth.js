@@ -8,7 +8,7 @@ import bcrypt from 'bcryptjs';
 // a 32-byte random value, too large to brute-force; a password isn't).
 const PASSWORD_MAX_ATTEMPTS = 5;
 const PASSWORD_LOCKOUT_MS = 15 * 60 * 1000;
-const PASSWORD_MIN_LENGTH = 10;
+const PASSWORD_MIN_LENGTH = 8;
 
 let tableReady = false;
 
