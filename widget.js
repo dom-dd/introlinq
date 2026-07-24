@@ -688,6 +688,52 @@
     }).catch(function () {});
   }
 
+  function trackSeen(m) {
+    var e = m.expert;
+    fetch('https://www.introlinq.com/api/dashboard?pub=' + encodeURIComponent(PUB) + '&action=seen', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        expert_id: e && e.id,
+        expert_name: e && e.name,
+        phrase: m.phrase,
+        article: window.location.href.slice(0, 300),
+        device: window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop'
+      })
+    }).catch(function () {});
+  }
+
+  // Fires once per highlighted phrase per page view, the first time it's
+  // been at least 60% visible for a full continuous second - long enough to
+  // rule out a rapid scroll-past, short of the 2.5s dwell the discovery cue
+  // itself waits for (this is a lower, easier-to-clear bar than "eligible
+  // for a nudge animation"). Deliberately independent of maybeShowDiscoveryCue
+  // and cfg.discoveryCue - a publisher turning the cue animation off doesn't
+  // mean they stop wanting to know whether readers actually scroll past
+  // their highlights, so this observer runs unconditionally.
+  var SEEN_DWELL_MS = 1000;
+  function maybeTrackSeen(anchor, m) {
+    if (typeof IntersectionObserver !== 'function') return;
+    var tracked = false;
+    var timer = null;
+    var observer = new IntersectionObserver(function (entries) {
+      if (entries[0].isIntersecting) {
+        if (timer || tracked) return;
+        timer = setTimeout(function () {
+          timer = null;
+          if (tracked) return;
+          tracked = true;
+          trackSeen(m);
+          observer.disconnect();
+        }, SEEN_DWELL_MS);
+      } else if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+    }, { threshold: 0.6 });
+    observer.observe(anchor);
+  }
+
   function attachGroupEvents(spans, m, popup, cfg) {
     var anchor = spans[0];
     var hoverTracked = { done: false };
@@ -810,6 +856,7 @@
     if (spans.length) {
       attachGroupEvents(spans, match, popup, cfg);
       maybeShowDiscoveryCue(spans[0], cfg);
+      maybeTrackSeen(spans[0], match);
     }
     return spans.length > 0;
   }

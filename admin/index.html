@@ -278,11 +278,16 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 
     <!-- Stats tab -->
     <div class="tab-panel" id="tab-stats">
-      <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
+      <div class="stats-grid" style="grid-template-columns:repeat(6,1fr)">
         <div class="stat-card">
           <div class="stat-label">Impressions</div>
           <div class="stat-value" id="stat-total-impressions">-</div>
           <div class="stat-sub">since stats reset, real publishers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Seen</div>
+          <div class="stat-value" id="stat-total-seen">-</div>
+          <div class="stat-sub" id="stat-seen-rate-sub">seen rate: -</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Hovers</div>
@@ -812,13 +817,16 @@ async function loadAnalytics() {
 
   const t = d.totals || {};
   document.getElementById('stat-total-impressions').textContent = (t.impressions || 0).toLocaleString();
+  document.getElementById('stat-total-seen').textContent = (t.seen || 0).toLocaleString();
   document.getElementById('stat-total-hovers').textContent = (t.hovers || 0).toLocaleString();
   document.getElementById('stat-total-clicks').textContent = (t.clicks || 0).toLocaleString();
   document.getElementById('stat-pages-scanned').textContent = (t.pages_scanned || 0).toLocaleString();
   const ctr = t.impressions > 0 ? (t.clicks / t.impressions * 100).toFixed(1) : '0.0';
   document.getElementById('stat-ctr').textContent = `${ctr}%`;
-  const hoverRate = t.impressions > 0 ? (t.hovers / t.impressions * 100).toFixed(1) : '0.0';
-  document.getElementById('stat-hover-rate-sub').textContent = `${hoverRate}% of impressions`;
+  const seenRate = t.impressions > 0 ? (t.seen / t.impressions * 100).toFixed(1) : '0.0';
+  document.getElementById('stat-seen-rate-sub').textContent = `${seenRate}% of impressions`;
+  const hoverRate = t.seen > 0 ? (t.hovers / t.seen * 100).toFixed(1) : '0.0';
+  document.getElementById('stat-hover-rate-sub').textContent = `${hoverRate}% of those seen`;
   const hoverToClick = t.hovers > 0 ? (t.clicks / t.hovers * 100).toFixed(1) : '0.0';
   document.getElementById('stat-hover-to-click-sub').textContent = `${hoverToClick}% of hovers convert`;
 
@@ -1133,14 +1141,17 @@ async function loadPublishers() {
       <td>
         ${(()=>{
           const imp = p.impressions || 0;
+          const seen = p.seen || 0;
           const hov = p.hovers || 0;
           const clk = p.clicks || 0;
           const ctr = imp > 0 ? (clk / imp * 100).toFixed(1) : '0.0';
-          const hoverRate = imp > 0 ? (hov / imp * 100).toFixed(1) : '0.0';
+          const seenRate = imp > 0 ? (seen / imp * 100).toFixed(1) : '0.0';
+          const hoverRate = seen > 0 ? (hov / seen * 100).toFixed(1) : '0.0';
           const hoverToClick = hov > 0 ? (clk / hov * 100).toFixed(1) : '0.0';
-          const hoverTitle = `${imp.toLocaleString()} impressions → ${hov.toLocaleString()} hovers (${hoverRate}%) → ${clk.toLocaleString()} clicks (${hoverToClick}% of hovers)`;
+          const hoverTitle = `${imp.toLocaleString()} impressions → ${seen.toLocaleString()} seen (${seenRate}%) → ${hov.toLocaleString()} hovers (${hoverRate}%) → ${clk.toLocaleString()} clicks (${hoverToClick}% of hovers)`;
           return `<div title="${esc(hoverTitle)}" style="font-size:0.75rem;color:var(--ink-soft);line-height:1.9;white-space:nowrap">
             <span style="font-weight:500;color:var(--ink)">${imp.toLocaleString()}</span> imp &nbsp;
+            <span style="font-weight:500;color:var(--ink)">${seen.toLocaleString()}</span> seen &nbsp;
             <span style="font-weight:500;color:var(--ink)">${hov.toLocaleString()}</span> hov &nbsp;
             <span style="font-weight:500;color:var(--ink)">${clk.toLocaleString()}</span> clk &nbsp;
             <span style="font-weight:500;color:var(--ink)">${ctr}%</span>

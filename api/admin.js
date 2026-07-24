@@ -292,29 +292,33 @@ export default async function handler(req, res) {
 
   if (resource === 'analytics') {
     const notDemo = sql`publisher NOT LIKE 'demo-%'`;
-    const [totals, clicksByDay, imprByDay, hoversByDay, clicksByWeek, imprByWeek, hoversByWeek, clicksByMonth, imprByMonth, hoversByMonth] = await Promise.all([
+    const [totals, clicksByDay, imprByDay, hoversByDay, seenByDay, clicksByWeek, imprByWeek, hoversByWeek, seenByWeek, clicksByMonth, imprByMonth, hoversByMonth, seenByMonth] = await Promise.all([
       sql`
         SELECT
           (SELECT COUNT(*) FROM match_logs WHERE match_count > 0 AND ${notDemo} AND created_at >= ${STATS_RESET_AT})::int AS impressions,
           (SELECT COUNT(*) FROM click_logs WHERE ${notDemo} AND created_at >= ${STATS_RESET_AT})::int AS clicks,
           (SELECT COUNT(*) FROM hover_logs WHERE ${notDemo})::int AS hovers,
+          (SELECT COUNT(*) FROM seen_logs WHERE ${notDemo})::int AS seen,
           (SELECT COUNT(*) FROM match_cache WHERE ${notDemo})::int AS pages_scanned
-      `.catch(() => [{ impressions: 0, clicks: 0, hovers: 0, pages_scanned: 0 }]),
+      `.catch(() => [{ impressions: 0, clicks: 0, hovers: 0, seen: 0, pages_scanned: 0 }]),
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM click_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '30 days' AND created_at >= ${STATS_RESET_AT} GROUP BY date ORDER BY date`,
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM match_logs WHERE match_count > 0 AND ${notDemo} AND created_at > NOW() - INTERVAL '30 days' AND created_at >= ${STATS_RESET_AT} GROUP BY date ORDER BY date`,
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM hover_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
+      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM seen_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
       sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM click_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '12 weeks' AND created_at >= ${STATS_RESET_AT} GROUP BY week_start ORDER BY week_start`,
       sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM match_logs WHERE match_count > 0 AND ${notDemo} AND created_at > NOW() - INTERVAL '12 weeks' AND created_at >= ${STATS_RESET_AT} GROUP BY week_start ORDER BY week_start`,
       sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM hover_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`.catch(() => []),
+      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM seen_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`.catch(() => []),
       sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM click_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '12 months' AND created_at >= ${STATS_RESET_AT} GROUP BY month_start, month ORDER BY month_start`,
       sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM match_logs WHERE match_count > 0 AND ${notDemo} AND created_at > NOW() - INTERVAL '12 months' AND created_at >= ${STATS_RESET_AT} GROUP BY month_start, month ORDER BY month_start`,
       sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM hover_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
+      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM seen_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
     ]);
     return res.status(200).json({
       totals: totals[0],
-      clicks_by_day: clicksByDay, impressions_by_day: imprByDay, hovers_by_day: hoversByDay,
-      clicks_by_week: clicksByWeek, impressions_by_week: imprByWeek, hovers_by_week: hoversByWeek,
-      clicks_by_month: clicksByMonth, impressions_by_month: imprByMonth, hovers_by_month: hoversByMonth,
+      clicks_by_day: clicksByDay, impressions_by_day: imprByDay, hovers_by_day: hoversByDay, seen_by_day: seenByDay,
+      clicks_by_week: clicksByWeek, impressions_by_week: imprByWeek, hovers_by_week: hoversByWeek, seen_by_week: seenByWeek,
+      clicks_by_month: clicksByMonth, impressions_by_month: imprByMonth, hovers_by_month: hoversByMonth, seen_by_month: seenByMonth,
     });
   }
 
@@ -422,19 +426,22 @@ export default async function handler(req, res) {
       // Windowed to STATS_RESET_AT so these match what each publisher sees in
       // their own dashboard - not deleted, just filtered (see STATS_RESET_AT
       // comment above).
-      const [matchStats, clickStats, hoverStats] = await Promise.all([
+      const [matchStats, clickStats, hoverStats, seenStats] = await Promise.all([
         sql`SELECT publisher, COUNT(*)::int AS impressions FROM match_logs WHERE match_count > 0 AND created_at >= ${STATS_RESET_AT} GROUP BY publisher`.catch(() => []),
         sql`SELECT publisher, COUNT(*)::int AS clicks FROM click_logs WHERE created_at >= ${STATS_RESET_AT} GROUP BY publisher`.catch(() => []),
         sql`SELECT publisher, COUNT(*)::int AS hovers FROM hover_logs GROUP BY publisher`.catch(() => []),
+        sql`SELECT publisher, COUNT(*)::int AS seen FROM seen_logs GROUP BY publisher`.catch(() => []),
       ]);
       const matchMap = Object.fromEntries(matchStats.map(r => [r.publisher, r.impressions]));
       const clickMap = Object.fromEntries(clickStats.map(r => [r.publisher, r.clicks]));
       const hoverMap = Object.fromEntries(hoverStats.map(r => [r.publisher, r.hovers]));
+      const seenMap = Object.fromEntries(seenStats.map(r => [r.publisher, r.seen]));
       const result = publishers.map(p => ({
         ...p,
         impressions: matchMap[p.slug] || 0,
         clicks: clickMap[p.slug] || 0,
         hovers: hoverMap[p.slug] || 0,
+        seen: seenMap[p.slug] || 0,
       }));
       return res.status(200).json(result);
     }

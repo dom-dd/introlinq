@@ -374,11 +374,16 @@ tr:last-child td{border-bottom:none}
 
     <!-- ── Overview ── -->
     <div class="tab-panel active" id="tab-overview">
-      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
         <div class="stat-card">
           <div class="stat-label">Impressions</div>
           <div class="stat-value clickable" id="stat-articles" onclick="openPagesModal()">-</div>
           <div class="stat-sub">pages where an expert was shown</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Seen</div>
+          <div class="stat-value" id="stat-seen">-</div>
+          <div class="stat-sub" id="stat-seen-rate-sub">the highlight was on their screen</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Hovers</div>
@@ -1051,15 +1056,19 @@ async function loadDashboard() {
 
   // Overview stats
   const impressions = d.total_impressions || 0;
+  const seen = d.seen || 0;
   const hovers = d.hovers || 0;
   const clicks = d.clicks || 0;
   const ctr = impressions > 0 ? (clicks / impressions * 100).toFixed(1) : '0.0';
   document.getElementById('stat-articles').textContent = impressions.toLocaleString();
+  document.getElementById('stat-seen').textContent = seen.toLocaleString();
   document.getElementById('stat-hovers').textContent = hovers.toLocaleString();
   document.getElementById('stat-clicks').textContent = clicks.toLocaleString();
   document.getElementById('stat-ctr').textContent = ctr + '%';
-  const hoverRate = impressions > 0 ? (hovers / impressions * 100).toFixed(1) : '0.0';
-  document.getElementById('stat-hover-rate-sub').textContent = `${hoverRate}% of readers who saw the card`;
+  const seenRate = impressions > 0 ? (seen / impressions * 100).toFixed(1) : '0.0';
+  document.getElementById('stat-seen-rate-sub').textContent = `${seenRate}% of impressions scrolled it into view`;
+  const hoverRate = seen > 0 ? (hovers / seen * 100).toFixed(1) : '0.0';
+  document.getElementById('stat-hover-rate-sub').textContent = `${hoverRate}% of those who saw it opened the card`;
 
   // Charts (Overview tab)
   window._cd = d;
