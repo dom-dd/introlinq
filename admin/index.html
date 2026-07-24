@@ -1076,7 +1076,11 @@ function reminderTooltip(p) {
     ['Day 24', p.reminder_4_sent_at],
   ];
   const lines = stages.map(([label, sentAt]) => `${label}: ${fmt(sentAt)}`);
-  const action = p.reminders_paused ? 'Paused - click to resume' : 'Click to pause';
+  const action = p.first_widget_fire_at
+    ? 'Stopped automatically - widget went live'
+    : p.reminders_paused
+      ? 'Paused manually - click to resume'
+      : 'Active - click to pause';
   return lines.join('\n') + '\n\n' + action;
 }
 
@@ -1139,12 +1143,17 @@ async function loadPublishers() {
           <button onclick="loginAsPublisher('${esc(p.email)}')" title="Log in as this publisher" style="background:#f0f4ff;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4f6ef7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
           </button>
-          <button onclick="toggleReminders(${p.id}, ${!p.reminders_paused})" title="${esc(reminderTooltip(p))}" style="background:${p.reminders_paused ? '#eef2ff' : '#f4f4f8'};border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
-            ${p.reminders_paused
-              ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4f6ef7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
-              : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8888a8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
+          ${(()=>{
+            const bellSlash = color => `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+            const bell = color => `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`;
+            if (p.first_widget_fire_at) {
+              return `<span title="${esc(reminderTooltip(p))}" style="background:#f4f4f8;border-radius:50%;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;cursor:default">${bellSlash('#8888a8')}</span>`;
             }
-          </button>
+            if (p.reminders_paused) {
+              return `<button onclick="toggleReminders(${p.id}, false)" title="${esc(reminderTooltip(p))}" style="background:#eef2ff;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">${bellSlash('#4f6ef7')}</button>`;
+            }
+            return `<button onclick="toggleReminders(${p.id}, true)" title="${esc(reminderTooltip(p))}" style="background:#f0fdf4;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">${bell('#16a34a')}</button>`;
+          })()}
           <button onclick="togglePublisher(${p.id}, ${!p.active})" title="${p.active ? 'Deactivate' : 'Activate'}" style="background:${p.active ? 'var(--red-light)' : 'var(--green-light)'};border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${p.active ? 'var(--red)' : 'var(--green)'}" stroke-width="2.5" stroke-linecap="round"><path d="M18.36 6.64A9 9 0 1 1 5.64 6.64"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
           </button>
