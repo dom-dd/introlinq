@@ -1068,14 +1068,18 @@ function renderActiveStatusIcon(p) {
 }
 
 function reminderTooltip(p) {
-  const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' }) + ' ' + new Date(d).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : 'not sent yet';
+  const fmtDate = d => new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' });
+  const fmtDateTime = d => fmtDate(d) + ' ' + new Date(d).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+  const created = new Date(p.created_at);
   const stages = [
-    ['Day 1', p.reminder_1_sent_at],
-    ['Day 3', p.reminder_2_sent_at],
-    ['Day 10', p.reminder_3_sent_at],
-    ['Day 24', p.reminder_4_sent_at],
+    ['Day 1', 1, p.reminder_1_sent_at],
+    ['Day 3', 3, p.reminder_2_sent_at],
+    ['Day 10', 10, p.reminder_3_sent_at],
+    ['Day 24', 24, p.reminder_4_sent_at],
   ];
-  const lines = stages.map(([label, sentAt]) => `${label}: ${fmt(sentAt)}`);
+  const lines = stages.map(([label, days, sentAt]) => sentAt
+    ? `${label}: sent on ${fmtDateTime(sentAt)}`
+    : `${label}: scheduled for ${fmtDate(new Date(created.getTime() + days * 86400000))}`);
   const action = p.first_widget_fire_at
     ? 'Stopped automatically - widget went live'
     : p.reminders_paused
