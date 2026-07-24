@@ -424,7 +424,7 @@
       '@keyframes il-cue-tap{0%{transform:translate(-50%,-50%) scale(1)}35%{transform:translate(-50%,-50%) scale(.78)}65%{transform:translate(-50%,-50%) scale(1.05)}100%{transform:translate(-50%,-50%) scale(1)}}' +
       '@keyframes il-cue-out{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,calc(-50% + 22px))}}' +
       '#il-cue{position:absolute!important;z-index:2147483647!important;pointer-events:none!important;width:33px!important;height:30px!important;opacity:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))!important;' +
-      'animation:il-cue-in .8s ease forwards,il-cue-tap .6s ease .8s,il-cue-out .7s ease 1.9s forwards!important}' +
+      'animation:il-cue-in 1.1s ease forwards,il-cue-tap .8s ease 1.1s,il-cue-out 1s ease 2.4s forwards!important}' +
       '#il-cue img{width:100%!important;height:100%!important;display:block!important}' +
       '@keyframes il-pulse-glow{0%,100%{box-shadow:0 0 0 0 ' + hexToRgba(color, 0) + '}50%{box-shadow:0 0 0 6px ' + hexToRgba(color, 0.35) + '}}' +
       '.il-hl.il-cue-pulse{animation:il-pulse-glow 1s ease-in-out 2!important}';
@@ -562,10 +562,10 @@
     for (var i = 0; i < existing.length; i++) existing[i].remove();
   }
   var CUE_DWELL_MS = 2500;
-  // TESTING VALUE - repeats the play every 3s while still in view, instead
+  // TESTING VALUE - repeats the play every 7s while still in view, instead
   // of playing once and disappearing forever. Under evaluation on
   // /demo/introlinq; not a final decision on the real UX.
-  var CUE_REPEAT_MS = 3000;
+  var CUE_REPEAT_MS = 7000;
   function maybeShowDiscoveryCue(anchor) {
     if (typeof IntersectionObserver !== 'function') return;
     var play = function () {
@@ -618,14 +618,14 @@
     // against a white background, and had twice failed to read as a hand
     // at this size anyway). Swaps from the plain pointing hand to the
     // "click" artwork (burst lines) right as the tap bounce plays - see
-    // the il-cue-tap delay in injectStyles, which this 800ms matches.
+    // the il-cue-tap delay in injectStyles, which this 1100ms matches.
     var img = document.createElement('img');
     img.src = 'https://www.introlinq.com/cue-icons/cursor-over.png';
     img.alt = '';
     cue.appendChild(img);
     document.body.appendChild(cue);
-    setTimeout(function () { img.src = 'https://www.introlinq.com/cue-icons/cursor-click.png'; }, 800);
-    setTimeout(function () { cue.remove(); }, 2650);
+    setTimeout(function () { img.src = 'https://www.introlinq.com/cue-icons/cursor-click.png'; }, 1100);
+    setTimeout(function () { cue.remove(); }, 3450);
   }
 
   // A matched phrase can land in several DOM text nodes when the article's
