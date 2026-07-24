@@ -205,8 +205,14 @@ tr:last-child td{border-bottom:none}
 .payout-hint{font-size:0.75rem;color:var(--ink-muted);margin-top:0.5rem}
 
 /* ── Account settings ── */
-.account-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start}
+.account-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:1.5rem;align-items:start}
+/* Only the two name fields pair up - site name and website are both
+   often long (a full URL doesn't fit in a half-width column at this
+   panel's size), so they each stay full-width instead of getting
+   truncated the way they did in the original 2x2 layout. */
 .account-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 1rem}
+.account-field-full{grid-column:1 / -1}
+.current-email{font-size:1rem;font-weight:600;color:var(--ink);padding:0.75rem 0;word-break:break-all}
 @media (max-width:900px){
   .account-grid{grid-template-columns:1fr}
   .account-field-grid{grid-template-columns:1fr}
@@ -906,14 +912,14 @@ tr:last-child td{border-bottom:none}
           </div>
           <div style="padding:1.5rem">
             <div class="account-field-grid">
-              <div>
+              <div class="account-field-full">
                 <div class="setting-title">Site name</div>
                 <div class="payout-field">
                   <input type="text" class="payout-input" id="account-name-input" placeholder="Your site name">
                 </div>
               </div>
-              <div>
-                <div class="setting-title">Website</div>
+              <div class="account-field-full">
+                <div class="setting-title" style="margin-top:1rem">Website</div>
                 <div class="payout-field">
                   <input type="text" class="payout-input" id="account-domain-input" placeholder="https://yoursite.com">
                 </div>
@@ -945,8 +951,11 @@ tr:last-child td{border-bottom:none}
               <div class="section-sub">Used for your login link and account notifications</div>
             </div>
             <div style="padding:1.5rem">
+              <div class="setting-title">Current email</div>
+              <div class="current-email" id="current-email-display">-</div>
+              <div class="setting-title" style="margin-top:0.25rem">Change email</div>
               <div class="payout-field">
-                <input type="email" class="payout-input" id="account-email-input" placeholder="you@example.com" autocomplete="username">
+                <input type="email" class="payout-input" id="account-email-input" placeholder="Enter a new email address" autocomplete="username">
                 <button class="payout-save" onclick="saveEmail()">Save</button>
               </div>
               <div class="payout-hint">We'll email the old address to confirm, so you'll notice right away if this ever changes without you.</div>
@@ -1146,7 +1155,7 @@ async function loadDashboard() {
   document.getElementById('account-domain-input').value = p.domain || '';
   document.getElementById('account-first-name-input').value = p.contact_first_name || '';
   document.getElementById('account-last-name-input').value = p.contact_last_name || '';
-  document.getElementById('account-email-input').value = p.email || '';
+  document.getElementById('current-email-display').textContent = p.email || '-';
   document.getElementById('revenue-share-pct').textContent = Math.round((p.revenue_share || 0.70) * 100) + '%';
   renderBookingHistory(d.bookings);
 }
@@ -1415,7 +1424,8 @@ async function saveAccountDetails() {
 async function saveEmail() {
   const msgEl = document.getElementById('account-email-msg');
   msgEl.textContent = '';
-  const email = document.getElementById('account-email-input').value.trim();
+  const input = document.getElementById('account-email-input');
+  const email = input.value.trim();
   if (!email) return;
   const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
     method: 'PATCH',
@@ -1426,6 +1436,8 @@ async function saveEmail() {
   if (res.status === 401) { window.location.href = '/login'; return; }
   const body = await res.json().catch(() => ({}));
   if (res.ok) {
+    document.getElementById('current-email-display').textContent = body.email || email;
+    input.value = '';
     toast('Email updated');
   } else {
     msgEl.style.color = 'var(--red)';
