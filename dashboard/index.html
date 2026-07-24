@@ -17,9 +17,16 @@
   --sage:#3d7a5f;--sage-light:#edf5f0;
   --ink:#1a1a2e;--ink-soft:#4a4a6a;--ink-muted:#8888a8;
   --cream:#faf8f4;--white:#fff;
+  --page-bg:#e9e2d3;
   --border:rgba(26,26,46,0.10);--radius:10px;
 }
-body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh}
+/* page-bg is deliberately its own, more saturated tone rather than
+   reusing --cream - --cream is only 5-6 points off pure white and stays
+   that way for the subtle internal accents inside white cards (table
+   headers, hover rows, preview boxes); the outer page needs more
+   contrast against those white .section cards, which --cream alone
+   wasn't providing. */
+body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:var(--ink);min-height:100vh}
 
 /* ── Header ── */
 .header{background:var(--ink);padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between}
