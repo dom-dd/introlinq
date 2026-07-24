@@ -321,8 +321,42 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, has_password: true });
   }
 
+  // Email change - its own branch (not folded into the generic settings PATCH
+  // below) because it needs a uniqueness check with a friendly error and a
+  // security notification, neither of which the generic COALESCE update
+  // supports. The notification goes to the OLD address, not the new one -
+  // it's a tripwire ("did you mean to do this?"), not a confirm-your-new-
+  // email flow, so a hijacked session that changes the email still alerts
+  // whoever actually owns the inbox this account was reachable at before.
+  if (req.method === 'PATCH' && req.body.email) {
+    const newEmail = String(req.body.email).toLowerCase().trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      return res.status(400).json({ error: 'Enter a valid email address' });
+    }
+    const [current] = await sql`SELECT email, name FROM publishers WHERE slug = ${pub}`;
+    if (newEmail === current.email) {
+      return res.status(200).json({ ok: true, email: current.email });
+    }
+    const [existing] = await sql`SELECT id FROM publishers WHERE email = ${newEmail} AND slug != ${pub}`;
+    if (existing) {
+      return res.status(409).json({ error: 'That email is already registered to another account' });
+    }
+    await sql`UPDATE publishers SET email = ${newEmail} WHERE slug = ${pub}`;
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'IntroLinq <hello@introlinq.com>',
+        to: current.email,
+        subject: 'Your IntroLinq account email was changed',
+        html: emailChangedNotice(current.name, newEmail),
+      }),
+    }).catch(() => {});
+    return res.status(200).json({ ok: true, email: newEmail });
+  }
+
   if (req.method === 'PATCH') {
-    const { match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, enabled_partners, payment_email, active, carousel_title } = req.body;
+    const { match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, enabled_partners, payment_email, active, carousel_title, name, contact_first_name, contact_last_name, domain } = req.body;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS carousel_title TEXT`.catch(() => {});
     // 'fill' = tinted background + solid underline (original/default). 'underline'
     // = dotted underline only, no background wash - purely a rendering choice
@@ -345,9 +379,13 @@ export default async function handler(req, res) {
         enabled_partners = COALESCE(${enabled_partners ? sql.array(enabled_partners) : null}, enabled_partners),
         payment_email = COALESCE(${payment_email ?? null}, payment_email),
         active = COALESCE(${active ?? null}, active),
-        carousel_title = COALESCE(${carousel_title ?? null}, carousel_title)
+        carousel_title = COALESCE(${carousel_title ?? null}, carousel_title),
+        name = COALESCE(${name?.trim() || null}, name),
+        contact_first_name = COALESCE(${contact_first_name?.trim() || null}, contact_first_name),
+        contact_last_name = COALESCE(${contact_last_name?.trim() || null}, contact_last_name),
+        domain = COALESCE(${domain?.trim() || null}, domain)
       WHERE slug = ${pub} AND active = true
-      RETURNING match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, enabled_partners, payment_email, active, carousel_title
+      RETURNING match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, enabled_partners, payment_email, active, carousel_title, name, contact_first_name, contact_last_name, domain
     `;
     // Clear match cache if matching settings changed so new settings take effect immediately.
     // highlight_style is deliberately excluded - it's a pure rendering choice
@@ -393,6 +431,7 @@ export default async function handler(req, res) {
              COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners,
              COALESCE(revenue_share, 0.70) AS revenue_share,
              payment_email, carousel_title, first_widget_fire_at,
+             email, contact_first_name, contact_last_name,
              (password_hash IS NOT NULL) AS has_password
       FROM publishers WHERE slug = ${pub} AND active = true LIMIT 1
     `;
@@ -489,4 +528,19 @@ export default async function handler(req, res) {
   }
 
   return res.status(405).end();
+}
+
+function emailChangedNotice(name, newEmail) {
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#faf8f4;font-family:'Inter',system-ui,sans-serif">
+<div style="max-width:480px;margin:40px auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid rgba(26,26,46,0.08)">
+  <div style="background:#1a1a2e;padding:28px 32px">
+    <div style="font-family:Georgia,serif;font-size:1.25rem;color:#fff">Intro<span style="color:#e6a820">Linq</span></div>
+  </div>
+  <div style="padding:32px">
+    <p style="margin:0 0 8px;font-size:1rem;font-weight:600;color:#1a1a2e">Hi ${name},</p>
+    <p style="margin:0 0 16px;font-size:0.875rem;color:#8888a8;line-height:1.6">The login email on your IntroLinq account was just changed to <strong style="color:#1a1a2e">${newEmail}</strong>.</p>
+    <p style="margin:0;font-size:0.875rem;color:#8888a8;line-height:1.6">If this was you, no action needed. If you didn't make this change, reply to this email right away so we can help secure your account.</p>
+  </div>
+</div>
+</body></html>`;
 }

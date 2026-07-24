@@ -341,6 +341,7 @@ tr:last-child td{border-bottom:none}
     <button class="tab-btn" onclick="switchTab('widget',this)">Widget</button>
     <button class="tab-btn" onclick="switchTab('payouts',this)">Payouts</button>
     <button class="tab-btn" onclick="switchTab('matches',this)">Logs</button>
+    <button class="tab-btn" onclick="switchTab('account',this)">Account settings</button>
     <!-- Live banner - shown for a few days right after the widget's confirmed first fire, then fades out on its own since ongoing stats become the confirmation from then on -->
     <div class="live-banner" id="live-banner">
       <div class="live-banner-dot"></div>
@@ -864,6 +865,77 @@ tr:last-child td{border-bottom:none}
 
       <div class="section">
         <div class="section-header">
+          <div class="section-title">Booking history</div>
+          <div class="section-sub" id="booking-history-sub">Loading...</div>
+        </div>
+        <div id="booking-history-empty" style="display:none;padding:3rem;text-align:center;color:var(--ink-muted);font-size:0.875rem">No bookings yet - earnings will appear here once sessions are confirmed.</div>
+        <div style="overflow-x:auto" id="booking-history-table" style="display:none">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Partner</th>
+                <th>Expert</th>
+                <th>Page</th>
+                <th>Session</th>
+                <th>Your payout</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="booking-history-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Account settings ── -->
+    <div class="tab-panel" id="tab-account">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Account details</div>
+          <div class="section-sub">Your site and contact info</div>
+        </div>
+        <div style="padding:1.5rem;max-width:440px">
+          <div class="setting-title">Site name</div>
+          <div class="payout-field">
+            <input type="text" class="payout-input" id="account-name-input" placeholder="Your site name">
+          </div>
+          <div class="setting-title" style="margin-top:1rem">Website</div>
+          <div class="payout-field">
+            <input type="text" class="payout-input" id="account-domain-input" placeholder="https://yoursite.com">
+          </div>
+          <div class="setting-title" style="margin-top:1rem">Contact first name</div>
+          <div class="payout-field">
+            <input type="text" class="payout-input" id="account-first-name-input" placeholder="First name">
+          </div>
+          <div class="setting-title" style="margin-top:1rem">Contact last name</div>
+          <div class="payout-field">
+            <input type="text" class="payout-input" id="account-last-name-input" placeholder="Last name">
+          </div>
+          <div class="payout-field" style="margin-top:1.25rem">
+            <button class="payout-save" onclick="saveAccountDetails()">Save changes</button>
+          </div>
+          <div class="msg" id="account-details-msg" style="margin-top:0.5rem;font-size:0.8125rem"></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Email</div>
+          <div class="section-sub">Used for your login link and account notifications</div>
+        </div>
+        <div style="padding:1.5rem;max-width:440px">
+          <div class="payout-field">
+            <input type="email" class="payout-input" id="account-email-input" placeholder="you@example.com">
+            <button class="payout-save" onclick="saveEmail()">Save</button>
+          </div>
+          <div class="payout-hint">We'll email the old address to confirm, so you'll notice right away if this ever changes without you.</div>
+          <div class="msg" id="account-email-msg" style="margin-top:0.5rem;font-size:0.8125rem"></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
           <div class="section-title">Login</div>
           <div class="section-sub">By default you log in with a link we email you - no password needed</div>
         </div>
@@ -887,30 +959,6 @@ tr:last-child td{border-bottom:none}
             <div class="payout-hint"><a href="#" onclick="removePassword();return false" style="color:var(--red)">Remove password login</a></div>
           </div>
           <div class="msg" id="password-msg" style="margin-top:0.5rem;font-size:0.8125rem"></div>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Booking history</div>
-          <div class="section-sub" id="booking-history-sub">Loading...</div>
-        </div>
-        <div id="booking-history-empty" style="display:none;padding:3rem;text-align:center;color:var(--ink-muted);font-size:0.875rem">No bookings yet - earnings will appear here once sessions are confirmed.</div>
-        <div style="overflow-x:auto" id="booking-history-table" style="display:none">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Partner</th>
-                <th>Expert</th>
-                <th>Page</th>
-                <th>Session</th>
-                <th>Your payout</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="booking-history-tbody"></tbody>
-          </table>
         </div>
       </div>
     </div>
@@ -1065,6 +1113,11 @@ async function loadDashboard() {
   }
   document.getElementById('password-not-set').style.display = p.has_password ? 'none' : 'block';
   document.getElementById('password-set').style.display = p.has_password ? 'block' : 'none';
+  document.getElementById('account-name-input').value = p.name || '';
+  document.getElementById('account-domain-input').value = p.domain || '';
+  document.getElementById('account-first-name-input').value = p.contact_first_name || '';
+  document.getElementById('account-last-name-input').value = p.contact_last_name || '';
+  document.getElementById('account-email-input').value = p.email || '';
   document.getElementById('revenue-share-pct').textContent = Math.round((p.revenue_share || 0.70) * 100) + '%';
   renderBookingHistory(d.bookings);
 }
@@ -1301,6 +1354,53 @@ async function removePassword() {
     document.getElementById('password-set').style.display = 'none';
     document.getElementById('password-not-set').style.display = 'block';
     toast('Password login removed');
+  }
+}
+
+async function saveAccountDetails() {
+  const msgEl = document.getElementById('account-details-msg');
+  msgEl.textContent = '';
+  const body = {
+    name: document.getElementById('account-name-input').value.trim(),
+    domain: document.getElementById('account-domain-input').value.trim(),
+    contact_first_name: document.getElementById('account-first-name-input').value.trim(),
+    contact_last_name: document.getElementById('account-last-name-input').value.trim(),
+  };
+  const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(body)
+  });
+  if (res.status === 401) { window.location.href = '/login'; return; }
+  if (res.ok) {
+    document.getElementById('header-name').textContent = body.name || document.getElementById('header-name').textContent;
+    toast('Account details saved');
+  } else {
+    const errBody = await res.json().catch(() => ({}));
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = errBody.error || 'Could not save account details';
+  }
+}
+
+async function saveEmail() {
+  const msgEl = document.getElementById('account-email-msg');
+  msgEl.textContent = '';
+  const email = document.getElementById('account-email-input').value.trim();
+  if (!email) return;
+  const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ email })
+  });
+  if (res.status === 401) { window.location.href = '/login'; return; }
+  const body = await res.json().catch(() => ({}));
+  if (res.ok) {
+    toast('Email updated');
+  } else {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = body.error || 'Could not update email';
   }
 }
 
