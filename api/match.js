@@ -482,6 +482,17 @@ function truncateAtSentence(text, maxLen) {
   return (lastSpace > 0 ? slice.slice(0, lastSpace) : slice) + '...';
 }
 
+// Converts a 2-letter ISO 3166-1 country code to its flag emoji by combining
+// two Regional Indicator Symbols (U+1F1E6 = 'A', sequential from there) -
+// the standard technique renderers use to compose flag emoji from any pair
+// of letters, no lookup table of ~200 flags needed. Falls back to a plain
+// globe when the code is missing/malformed (readerCountry not resolved).
+function countryCodeToFlag(code) {
+  if (!code || code.length !== 2) return '🌍';
+  const points = code.toUpperCase().split('').map(c => 127397 + c.charCodeAt(0));
+  return String.fromCodePoint(...points);
+}
+
 // Posts a Slack notification for a page that showed experts to a reader -
 // either from a fresh AI scan (🔍, costs tokens) or served straight from
 // cache (⚡, free) - so cost and cache health are both visible in one feed.
@@ -495,6 +506,7 @@ async function postSlackNotification(sql, { publisher, page_url, page_title, mat
     if (pubRow?.name) pubName = pubRow.name;
   }
   const countryLabel = readerCountry ? (COUNTRY_NAMES[readerCountry] || readerCountry) : 'Unknown';
+  const countryFlag = countryCodeToFlag(readerCountry);
   const title = page_title ? page_title.slice(0, 80) : (page_url ? page_url.slice(0, 80) : 'homepage demo');
   const urlLine = (!publisher && page_url) ? `\n${page_url}` : '';
   const icon = cached ? '⚡' : '🔍';
@@ -504,7 +516,7 @@ async function postSlackNotification(sql, { publisher, page_url, page_title, mat
   await fetch(process.env.SLACK_WEBHOOK_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: `${icon} *${pubName}* · *${matchCount} expert${matchCount !== 1 ? 's' : ''} found* (${costLabel}) · 🌍 ${countryLabel}\n_${title}_${urlLine}` })
+    body: JSON.stringify({ text: `${icon} *${pubName}* · *${matchCount} expert${matchCount !== 1 ? 's' : ''} matched* (${costLabel}) · ${countryFlag} ${countryLabel}\n_${title}_${urlLine}` })
   }).catch(() => {});
 }
 
