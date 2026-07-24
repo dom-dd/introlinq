@@ -245,17 +245,6 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .footer-link:hover{color:var(--ink)}
 .footer-copy{font-size:0.75rem;color:var(--ink-muted)}
 
-/* Cookie banner */
-.cookie-banner{position:fixed;bottom:0;left:0;right:0;background:var(--ink);color:var(--white);padding:1.125rem 2rem;z-index:998;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;box-shadow:0 -4px 24px rgba(0,0,0,0.15)}
-.cookie-banner.hidden{display:none}
-.cookie-text{flex:1;font-size:0.8125rem;line-height:1.55;min-width:220px;color:rgba(255,255,255,0.75)}
-.cookie-text a{color:var(--sage-mid);text-decoration:underline;text-underline-offset:2px}
-.cookie-buttons{display:flex;gap:0.625rem;flex-shrink:0;flex-wrap:wrap}
-.cookie-btn{padding:0.45rem 1.1rem;border-radius:100px;font-size:0.8125rem;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;border:none;transition:opacity 0.15s}
-.cookie-btn-accept{background:var(--sage);color:var(--white)}
-.cookie-btn-reject{background:rgba(255,255,255,0.1);color:var(--white);border:1px solid rgba(255,255,255,0.2)!important}
-.cookie-btn-settings{background:none;color:rgba(255,255,255,0.5);text-decoration:underline;text-underline-offset:2px;padding:0.45rem 0.5rem}
-
 @media(max-width:900px){
   .two-col{grid-template-columns:1fr;gap:2rem}
   .left-col{gap:1.5rem}
@@ -712,15 +701,6 @@ function toggleFaq(btn) {
   if (!isOpen) item.classList.add('open');
 }
 
-// Cookie consent
-function setCookieConsent(val) {
-  localStorage.setItem('cookie_consent', val);
-  document.getElementById('cookie-banner').classList.add('hidden');
-}
-if (localStorage.getItem('cookie_consent')) {
-  document.getElementById('cookie-banner').classList.add('hidden');
-}
-
 // Exit intent
 let _exitShown = false;
 let _exitSubmitted = false;
@@ -777,16 +757,6 @@ async function handleExitSubmit(e) {
   observer.observe(heroBtn);
 })();
 </script>
-
-<!-- COOKIE BANNER -->
-<div id="cookie-banner" class="cookie-banner">
-  <p class="cookie-text">We use cookies to enhance your browsing experience and analyse our traffic. See our <a href="/cookies">Cookie Policy</a>.</p>
-  <div class="cookie-buttons">
-    <button class="cookie-btn cookie-btn-accept" onclick="setCookieConsent('accepted')">Accept All</button>
-    <button class="cookie-btn cookie-btn-reject" onclick="setCookieConsent('rejected')">Reject All</button>
-    <button class="cookie-btn cookie-btn-settings" onclick="window.location='/cookies'">Cookie Settings</button>
-  </div>
-</div>
 
 <!-- EXIT INTENT POPUP -->
 <div id="exit-popup" class="exit-overlay">
