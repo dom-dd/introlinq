@@ -394,6 +394,11 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS payment_email TEXT`;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS first_widget_fire_at TIMESTAMPTZ`;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS last_widget_fire_at TIMESTAMPTZ`;
+    // Admin-only mute for the automated activation-reminder sequence (see
+    // sendActivationReminders) - for publishers someone on the team is
+    // already talking to directly, where an automated "still not live?"
+    // email would be redundant or read as out of touch.
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS reminders_paused BOOLEAN DEFAULT false`;
 
     if (req.method === 'GET') {
       // Demo publisher accounts (power the /demo/*.html showcase pages' widgets)
@@ -454,7 +459,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PATCH') {
-      const { id, active, match_power, match_sensitivity, widget_color, accent_color, widget_size, enabled_partners, revenue_share } = req.body;
+      const { id, active, match_power, match_sensitivity, widget_color, accent_color, widget_size, enabled_partners, revenue_share, reminders_paused } = req.body;
       // Deliberately admin-only: dashboard.js's own PATCH (session-authenticated
       // as the publisher) never accepts this field - a publisher must never be
       // able to set their own commission rate.
@@ -470,7 +475,8 @@ export default async function handler(req, res) {
           accent_color = COALESCE(${accent_color ?? null}, accent_color),
           widget_size = COALESCE(${widget_size ?? null}, widget_size),
           enabled_partners = COALESCE(${enabled_partners ?? null}, enabled_partners),
-          revenue_share = COALESCE(${revenue_share ?? null}, revenue_share)
+          revenue_share = COALESCE(${revenue_share ?? null}, revenue_share),
+          reminders_paused = COALESCE(${reminders_paused ?? null}, reminders_paused)
         WHERE id = ${id} RETURNING *
       `;
       // Clear match cache for this publisher so new settings take effect immediately

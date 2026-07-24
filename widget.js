@@ -423,8 +423,17 @@
       '@keyframes il-cue-in{0%{opacity:0;transform:translate(-50%,calc(-50% + 22px))}100%{opacity:1;transform:translate(-50%,-50%)}}' +
       '@keyframes il-cue-tap{0%{transform:translate(-50%,-50%) scale(1)}35%{transform:translate(-50%,-50%) scale(.78)}65%{transform:translate(-50%,-50%) scale(1.05)}100%{transform:translate(-50%,-50%) scale(1)}}' +
       '@keyframes il-cue-out{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,calc(-50% + 22px))}}' +
-      '#il-cue{position:absolute!important;z-index:2147483647!important;pointer-events:none!important;width:33px!important;height:30px!important;opacity:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))!important;' +
-      'animation:il-cue-in 1.1s ease forwards,il-cue-tap .8s ease 1.1s,il-cue-out 1s ease 2.4s forwards!important}' +
+      '#il-cue{position:absolute!important;z-index:2147483647!important;pointer-events:none!important;width:33px!important;height:30px!important;opacity:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))!important}' +
+      // Animation lives on a separate class, added one tick after insertion
+      // (see showPhantomHand's forced reflow) rather than baked into #il-cue
+      // itself. Applying it in the SAME pass as the element's creation let
+      // the browser start the animation clock before the 0% (opacity:0,
+      // shifted-down) state ever actually painted, on the very first play
+      // of a page view - it would just appear at full opacity already in
+      // position, then run straight into the tap/out phases with no visible
+      // fade-in. Forcing a reflow between insertion and adding this class
+      // guarantees the starting state is committed first.
+      '#il-cue.il-cue-play{animation:il-cue-in 1.1s ease forwards,il-cue-tap .8s ease 1.1s,il-cue-out 1s ease 2.4s forwards!important}' +
       '#il-cue img{width:100%!important;height:100%!important;display:block!important}' +
       '@keyframes il-pulse-glow{0%,100%{box-shadow:0 0 0 0 ' + hexToRgba(color, 0) + '}50%{box-shadow:0 0 0 6px ' + hexToRgba(color, 0.35) + '}}' +
       '.il-hl.il-cue-pulse{animation:il-pulse-glow 1s ease-in-out 2!important}';
@@ -630,6 +639,8 @@
     img.alt = '';
     cue.appendChild(img);
     document.body.appendChild(cue);
+    void cue.offsetWidth; // force layout so the pre-animation state above is committed before il-cue-play starts the animation clock
+    cue.classList.add('il-cue-play');
     setTimeout(function () { img.src = 'https://www.introlinq.com/cue-icons/cursor-click.png'; }, 1100);
     setTimeout(function () { cue.remove(); }, 3450);
   }
