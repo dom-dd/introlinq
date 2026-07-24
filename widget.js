@@ -562,10 +562,10 @@
     for (var i = 0; i < existing.length; i++) existing[i].remove();
   }
   var CUE_DWELL_MS = 2500;
-  // TESTING VALUE - repeats the play every 7s while still in view, instead
+  // TESTING VALUE - repeats the play every 14s while still in view, instead
   // of playing once and disappearing forever. Under evaluation on
   // /demo/introlinq; not a final decision on the real UX.
-  var CUE_REPEAT_MS = 7000;
+  var CUE_REPEAT_MS = 14000;
   function maybeShowDiscoveryCue(anchor) {
     if (typeof IntersectionObserver !== 'function') return;
     var play = function () {
