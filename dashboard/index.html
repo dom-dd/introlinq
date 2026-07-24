@@ -926,7 +926,7 @@ tr:last-child td{border-bottom:none}
         </div>
         <div style="padding:1.5rem;max-width:440px">
           <div class="payout-field">
-            <input type="email" class="payout-input" id="account-email-input" placeholder="you@example.com">
+            <input type="email" class="payout-input" id="account-email-input" placeholder="you@example.com" autocomplete="username">
             <button class="payout-save" onclick="saveEmail()">Save</button>
           </div>
           <div class="payout-hint">We'll email the old address to confirm, so you'll notice right away if this ever changes without you.</div>
@@ -975,7 +975,14 @@ const PUB = params.get('pub') || '';
 let settings = { color: '#e6a820', accent: '#e6a820', size: 'medium', power: 'moderate', sensitivity: 'balanced' };
 
 if (!PUB) {
-  window.location.href = '/login';
+  // No ?pub= in the URL doesn't mean no valid session - a bookmark, typed
+  // URL, or browser autocomplete can land here without it even while a
+  // real 30-day session cookie is still perfectly valid. Check for one
+  // before giving up and sending them through login again.
+  fetch('/api/auth?action=me', { credentials: 'include' })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(d => { window.location.href = '/dashboard?pub=' + encodeURIComponent(d.slug); })
+    .catch(() => { window.location.href = '/login'; });
 } else {
   loadDashboard();
 }

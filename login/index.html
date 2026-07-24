@@ -36,17 +36,17 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
     <div class="logo">Intro<span>Linq</span></div>
   </div>
   <div class="card-body">
-    <div id="form-view">
+    <form id="form-view">
       <p class="title">Access your dashboard</p>
       <p class="sub" id="email-sub">Enter your email and we'll send you a login link.</p>
-      <input class="input" type="email" id="email-input" placeholder="you@example.com" autocomplete="email">
-      <input class="input" type="password" id="password-input" placeholder="Password" autocomplete="current-password" style="display:none;margin-top:10px">
-      <button class="btn" id="submit-btn" onclick="submitForm()">Continue</button>
+      <input class="input" type="email" id="email-input" name="email" placeholder="you@example.com" autocomplete="username" required>
+      <input class="input" type="password" id="password-input" name="password" placeholder="Password" autocomplete="current-password" style="display:none;margin-top:10px" required>
+      <button class="btn" type="submit" id="submit-btn">Continue</button>
       <div id="use-link-row" style="display:none;text-align:center;margin-top:12px">
         <a href="#" id="use-link-btn" style="font-size:0.8125rem;color:var(--ink-muted)" onclick="useEmailLink(event)">Email me a link instead</a>
       </div>
       <div class="msg" id="msg"></div>
-    </div>
+    </form>
     <div id="success-view" style="display:none;text-align:center">
       <div style="font-size:2rem;margin-bottom:12px">✉️</div>
       <p class="title">Check your email</p>
@@ -71,11 +71,13 @@ if (error) {
 // look up which kind of account this email belongs to.
 let awaitingPassword = false;
 
-document.getElementById('email-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') submitForm();
-});
-document.getElementById('password-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') submitForm();
+// A real <form> (not just onclick handlers) so the browser's own email-
+// format validation runs before submitForm() ever does, and so credential
+// managers correctly associate this email field (autocomplete="username")
+// with the password field below it instead of guessing wrong.
+document.getElementById('form-view').addEventListener('submit', e => {
+  e.preventDefault();
+  submitForm();
 });
 
 function setMsg(text, isError) {
@@ -159,11 +161,27 @@ async function sendEmailLink(email) {
   btn.disabled = true;
   btn.textContent = 'Sending...';
 
-  await fetch('/api/auth', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email })
-  });
+  let res;
+  try {
+    res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Continue';
+    setMsg('Something went wrong. Try again.', true);
+    return;
+  }
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    btn.disabled = false;
+    btn.textContent = 'Continue';
+    setMsg(body.error || 'Something went wrong. Try again.', true);
+    return;
+  }
 
   document.getElementById('sent-to').textContent = email;
   document.getElementById('form-view').style.display = 'none';

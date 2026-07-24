@@ -210,6 +210,13 @@ export default async function handler(req, res) {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email required' });
     const normalised = email.toLowerCase().trim();
+    // A malformed string ("openintro", not an email at all) gets a real
+    // error instead of the generic "check your email" - that's a pure
+    // format check, not an account-existence leak, so it doesn't weaken
+    // the enumeration protection below.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalised)) {
+      return res.status(400).json({ error: 'Enter a valid email address' });
+    }
 
     const [pub] = await sql`SELECT slug FROM publishers WHERE email = ${normalised} AND active = true LIMIT 1`;
     if (!pub) return res.status(200).json({ ok: true }); // Don't reveal whether email exists
