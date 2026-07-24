@@ -548,6 +548,14 @@ tr:last-child td{border-bottom:none}
                 </div>
               </div>
               <div class="setting-block">
+                <div class="setting-title">Discovery animation</div>
+                <div class="setting-desc">A brief hand-cursor nudge shown to readers so they notice a highlight can be hovered</div>
+                <label class="toggle" style="margin-top:0.125rem" title="Discovery animation">
+                  <input type="checkbox" id="discovery-cue-toggle" checked onchange="toggleDiscoveryCue(this.checked)">
+                  <div class="toggle-track"></div>
+                </label>
+              </div>
+              <div class="setting-block">
                 <div class="setting-title">Link colour</div>
                 <div class="setting-desc">Underline on highlighted phrases</div>
                 <div class="color-row">
@@ -977,6 +985,7 @@ async function loadDashboard() {
   settings.sensitivity = p.match_sensitivity || 'balanced';
   settings.highlight = p.highlight_style || 'fill';
   renderSettings();
+  document.getElementById('discovery-cue-toggle').checked = p.discovery_cue_enabled !== false;
   document.getElementById('carousel-title-input').value = p.carousel_title || '';
 
   if (d.partners && d.partners.length) {
@@ -1165,6 +1174,10 @@ async function saveSetting(field, value, activeEl) {
     if (res.status === 401) { window.location.href = '/login'; return; }
     if (res.ok) toast('Saved');
   }
+}
+
+function toggleDiscoveryCue(enabled) {
+  saveSetting('discovery_cue_enabled', enabled);
 }
 
 async function saveCarouselTitle() {

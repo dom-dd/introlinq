@@ -726,7 +726,7 @@ export default async function handler(req, res) {
     // admin recrawls the publisher.
     const [pubRows, cachedRows] = await Promise.all([
       publisher
-        ? sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null])
+        ? sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null])
         : Promise.resolve([null]),
       page_url
         ? sql`
@@ -753,7 +753,7 @@ export default async function handler(req, res) {
 
     let maxMatches = 3;
     let sensitivityInstruction = 'Match on broader topic overlap. If the expert\'s field is relevant to the section, include them. Prefer more matches over fewer.';
-    let pubConfig = { color: '#e6a820', accent: '#e6a820', size: 'medium', highlightStyle: 'fill' };
+    let pubConfig = { color: '#e6a820', accent: '#e6a820', size: 'medium', highlightStyle: 'fill', discoveryCue: true };
     let enabledPartners = null; // null = homepage demo
 
     if (pub) {
@@ -765,7 +765,7 @@ export default async function handler(req, res) {
         open: 'Match on broader topic overlap. If the expert\'s field is relevant to the section, include them. Prefer more matches over fewer.',
       };
       sensitivityInstruction = sensitivityMap[pub.match_sensitivity] ?? sensitivityMap.balanced;
-      pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium', highlightStyle: pub.highlight_style || 'fill' };
+      pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium', highlightStyle: pub.highlight_style || 'fill', discoveryCue: pub.discovery_cue_enabled !== false };
       enabledPartners = pub.enabled_partners || ['openintro'];
     }
 

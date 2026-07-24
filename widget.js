@@ -566,7 +566,13 @@
   // of playing once and disappearing forever. Under evaluation on
   // /demo/introlinq; not a final decision on the real UX.
   var CUE_REPEAT_MS = 14000;
-  function maybeShowDiscoveryCue(anchor) {
+  function maybeShowDiscoveryCue(anchor, cfg) {
+    // Publisher-controlled - see the "Discovery animation" toggle on the
+    // dashboard's Appearance & behaviour tab. Defaults to enabled (only
+    // an explicit false, never a missing/undefined field, turns it off)
+    // so it stays on for every existing publisher and every new signup
+    // unless they deliberately opt out.
+    if (cfg && cfg.discoveryCue === false) return;
     if (typeof IntersectionObserver !== 'function') return;
     var play = function () {
       if (cueLearned) return;
@@ -755,7 +761,7 @@
     // see attachGroupEvents for why.
     if (spans.length) {
       attachGroupEvents(spans, match, popup, cfg);
-      maybeShowDiscoveryCue(spans[0]);
+      maybeShowDiscoveryCue(spans[0], cfg);
     }
     return spans.length > 0;
   }
