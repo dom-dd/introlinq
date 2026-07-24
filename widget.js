@@ -423,9 +423,9 @@
       '@keyframes il-cue-in{0%{opacity:0;transform:translate(-50%,calc(-50% + 22px))}100%{opacity:1;transform:translate(-50%,-50%)}}' +
       '@keyframes il-cue-tap{0%{transform:translate(-50%,-50%) scale(1)}35%{transform:translate(-50%,-50%) scale(.78)}65%{transform:translate(-50%,-50%) scale(1.05)}100%{transform:translate(-50%,-50%) scale(1)}}' +
       '@keyframes il-cue-out{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,calc(-50% + 22px))}}' +
-      '#il-cue{position:absolute!important;z-index:2147483647!important;pointer-events:none!important;width:26px!important;height:32px!important;opacity:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))!important;' +
+      '#il-cue{position:absolute!important;z-index:2147483647!important;pointer-events:none!important;width:33px!important;height:30px!important;opacity:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))!important;' +
       'animation:il-cue-in .8s ease forwards,il-cue-tap .6s ease .8s,il-cue-out .7s ease 1.9s forwards!important}' +
-      '#il-cue svg{width:100%!important;height:100%!important;display:block!important}' +
+      '#il-cue img{width:100%!important;height:100%!important;display:block!important}' +
       '@keyframes il-pulse-glow{0%,100%{box-shadow:0 0 0 0 ' + hexToRgba(color, 0) + '}50%{box-shadow:0 0 0 6px ' + hexToRgba(color, 0.35) + '}}' +
       '.il-hl.il-cue-pulse{animation:il-pulse-glow 1s ease-in-out 2!important}';
     document.head.appendChild(s);
@@ -598,14 +598,19 @@
     cue.id = 'il-cue';
     cue.style.left = (rect.left + rect.width / 2 + scrollX) + 'px';
     cue.style.top = (rect.top + rect.height / 2 + scrollY) + 'px';
-    // Simple two-shape silhouette (a narrow capsule "finger" overlapping a
-    // wide capsule "palm/fist") rather than one hand-drawn path - much more
-    // predictable to actually read as a hand at 26x32px than a bespoke
-    // bezier outline. The container's drop-shadow (see injectStyles) gives
-    // it definition against any background without needing per-shape
-    // strokes, which would otherwise show a seam where the two overlap.
-    cue.innerHTML = '<svg viewBox="0 0 24 30"><rect x="9" y="1" width="6" height="16" rx="3" fill="#fff"/><rect x="4" y="14" width="16" height="15" rx="7.5" fill="#fff"/></svg>';
+    // Real cursor artwork rather than a hand-drawn shape - black outline +
+    // white fill reads on both light and dark article backgrounds without
+    // needing to be a solid colour (a plain white silhouette would vanish
+    // against a white background, and had twice failed to read as a hand
+    // at this size anyway). Swaps from the plain pointing hand to the
+    // "click" artwork (burst lines) right as the tap bounce plays - see
+    // the il-cue-tap delay in injectStyles, which this 800ms matches.
+    var img = document.createElement('img');
+    img.src = 'https://www.introlinq.com/cue-icons/cursor-over.png';
+    img.alt = '';
+    cue.appendChild(img);
     document.body.appendChild(cue);
+    setTimeout(function () { img.src = 'https://www.introlinq.com/cue-icons/cursor-click.png'; }, 800);
     setTimeout(function () { cue.remove(); }, 2650);
   }
 
