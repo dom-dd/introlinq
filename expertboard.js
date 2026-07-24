@@ -4,6 +4,10 @@
   var script = document.currentScript || document.querySelector('script[src*="expertboard.js"]');
   var PUB = (script && (script.getAttribute('data-publisher') || script.getAttribute('data-site'))) || window.IL_BOARD_PUBLISHER || null;
   if (!PUB) return;
+  // See widget.js for why this guard exists - protects against the tag being
+  // pasted twice (e.g. both the direct and GTM install snippets left in place).
+  if (window.__ilBoardInit) return;
+  window.__ilBoardInit = true;
 
   var API = 'https://www.introlinq.com/api/board?pub=' + encodeURIComponent(PUB);
   var TRACK = 'https://www.introlinq.com/api/dashboard?action=out';

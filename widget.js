@@ -5,6 +5,16 @@
   var script = document.currentScript || document.querySelector('script[src*="widget.js"]');
   var PUB = (script && (script.getAttribute('data-publisher') || script.getAttribute('data-site'))) || window.IL_PUBLISHER_ID || null;
   if (!PUB) return;
+  // Guards against the widget tag being pasted twice on the same page (e.g. the
+  // dashboard's GTM install snippet added alongside the direct <script data-publisher>
+  // one, both left in place). Each copy is a fully separate IIFE with its own private
+  // state, so without this a second copy would run its own createPopup(), which removes
+  // the FIRST copy's #il-pop and replaces it - any highlight already wired to that
+  // removed popup then does nothing on hover, while the popup itself still renders fine
+  // for whichever copy runs last. window-level (not closure-local) so it's shared
+  // across every separate script execution, not just repeated calls within one.
+  if (window.__ilWidgetInit) return;
+  window.__ilWidgetInit = true;
 
   var _bookLabels = {
     fr: 'Réserver un appel →', es: 'Reservar una llamada →', de: 'Gespräch buchen →',
