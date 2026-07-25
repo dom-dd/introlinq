@@ -378,7 +378,7 @@ tr:last-child td{border-bottom:none}
         <div class="stat-card">
           <div class="stat-label">Page visits</div>
           <div class="stat-value clickable" id="stat-articles" onclick="openPagesModal()">-</div>
-          <div class="stat-sub">pages where an expert was shown</div>
+          <div class="stat-sub">pages where a highlighted link was shown</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Links seen</div>
@@ -388,7 +388,7 @@ tr:last-child td{border-bottom:none}
         <div class="stat-card">
           <div class="stat-label">Hovers</div>
           <div class="stat-value" id="stat-hovers">-</div>
-          <div class="stat-sub" id="stat-hover-rate-sub">readers who saw the expert card</div>
+          <div class="stat-sub" id="stat-hover-rate-sub">readers who hovered the link to open the card</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Clicks</div>
@@ -420,7 +420,7 @@ tr:last-child td{border-bottom:none}
             <div class="chart-wrap"><canvas id="chart-impr"></canvas></div>
           </div>
           <div>
-            <div class="chart-label">Hovers <span style="font-weight:400;text-transform:none;letter-spacing:normal">(numbers show clicks)</span></div>
+            <div class="chart-label">Widget hovers <span style="font-weight:400;text-transform:none;letter-spacing:normal">(mouseover) - roll over a bar to see clicks</span></div>
             <div class="chart-wrap"><canvas id="chart-hovers"></canvas></div>
           </div>
         </div>
@@ -1643,7 +1643,23 @@ function initCharts(d) {
   hoversChart = new Chart(document.getElementById('chart-hovers'), {
     type: 'bar',
     data: { labels: [], datasets: [{ data: [], backgroundColor: '#3d7a5f', borderRadius: 4 }] },
-    options: { ...baseOpts, layout: { padding: { top: 18 } } },
+    options: {
+      ...baseOpts,
+      layout: { padding: { top: 18 } },
+      plugins: {
+        ...baseOpts.plugins,
+        tooltip: {
+          callbacks: {
+            title: t => t[0].label,
+            label: ctx => {
+              const hovers = ctx.parsed.y;
+              const clicks = (hoversChart.$clickCounts || [])[ctx.dataIndex] || 0;
+              return [`${hovers} widget hover${hovers === 1 ? '' : 's'}`, `${clicks} widget click${clicks === 1 ? '' : 's'}`];
+            }
+          }
+        }
+      }
+    },
     plugins: [clickLabelsPlugin]
   });
   imprChart = new Chart(document.getElementById('chart-impr'), {
@@ -1843,7 +1859,7 @@ function closePagesModal() {
 <div class="modal-overlay" id="pages-modal" onclick="if(event.target===this)closePagesModal()">
   <div class="modal">
     <div class="modal-head">
-      <div class="modal-title">Pages where an expert was shown</div>
+      <div class="modal-title">Pages where a highlighted link was shown</div>
       <button class="modal-close" onclick="closePagesModal()">✕</button>
     </div>
     <div class="modal-list" id="modal-page-list"></div>
