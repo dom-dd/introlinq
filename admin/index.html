@@ -280,12 +280,12 @@ tr:hover td{background:rgba(0,0,0,0.01)}
     <div class="tab-panel" id="tab-stats">
       <div class="stats-grid" style="grid-template-columns:repeat(6,1fr)">
         <div class="stat-card">
-          <div class="stat-label">Impressions</div>
+          <div class="stat-label">Page visits</div>
           <div class="stat-value" id="stat-total-impressions">-</div>
           <div class="stat-sub">since stats reset, real publishers</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Seen</div>
+          <div class="stat-label">Links seen</div>
           <div class="stat-value" id="stat-total-seen">-</div>
           <div class="stat-sub" id="stat-seen-rate-sub">seen rate: -</div>
         </div>
@@ -307,7 +307,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
         <div class="stat-card">
           <div class="stat-label">CTR</div>
           <div class="stat-value" id="stat-ctr">-</div>
-          <div class="stat-sub">clicks / impressions</div>
+          <div class="stat-sub">clicks / page visits</div>
         </div>
       </div>
 
@@ -315,7 +315,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
         <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
           <div>
             <div class="section-title">Platform performance</div>
-            <div class="section-sub">Clicks and impressions across every publisher</div>
+            <div class="section-sub">Clicks and page visits across every publisher</div>
           </div>
           <div class="period-btns">
             <button class="period-btn active" onclick="setPlatformPeriod('daily',this)">Daily</button>
@@ -329,7 +329,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
             <div class="chart-wrap"><canvas id="chart-platform-clicks"></canvas></div>
           </div>
           <div>
-            <div class="chart-label">Impressions</div>
+            <div class="chart-label">Page visits</div>
             <div class="chart-wrap"><canvas id="chart-platform-impr"></canvas></div>
           </div>
         </div>
@@ -824,7 +824,7 @@ async function loadAnalytics() {
   const ctr = t.impressions > 0 ? (t.clicks / t.impressions * 100).toFixed(1) : '0.0';
   document.getElementById('stat-ctr').textContent = `${ctr}%`;
   const seenRate = t.impressions > 0 ? (t.seen / t.impressions * 100).toFixed(1) : '0.0';
-  document.getElementById('stat-seen-rate-sub').textContent = `${seenRate}% of impressions`;
+  document.getElementById('stat-seen-rate-sub').textContent = `${seenRate}% of page visits`;
   const hoverRate = t.seen > 0 ? (t.hovers / t.seen * 100).toFixed(1) : '0.0';
   document.getElementById('stat-hover-rate-sub').textContent = `${hoverRate}% of those seen`;
   const hoverToClick = t.hovers > 0 ? (t.clicks / t.hovers * 100).toFixed(1) : '0.0';
@@ -1148,9 +1148,9 @@ async function loadPublishers() {
           const seenRate = imp > 0 ? (seen / imp * 100).toFixed(1) : '0.0';
           const hoverRate = seen > 0 ? (hov / seen * 100).toFixed(1) : '0.0';
           const hoverToClick = hov > 0 ? (clk / hov * 100).toFixed(1) : '0.0';
-          const hoverTitle = `${imp.toLocaleString()} impressions → ${seen.toLocaleString()} seen (${seenRate}%) → ${hov.toLocaleString()} hovers (${hoverRate}%) → ${clk.toLocaleString()} clicks (${hoverToClick}% of hovers)`;
+          const hoverTitle = `${imp.toLocaleString()} page visits → ${seen.toLocaleString()} links seen (${seenRate}%) → ${hov.toLocaleString()} hovers (${hoverRate}%) → ${clk.toLocaleString()} clicks (${hoverToClick}% of hovers)`;
           return `<div title="${esc(hoverTitle)}" style="font-size:0.75rem;color:var(--ink-soft);line-height:1.9;white-space:nowrap">
-            <span style="font-weight:500;color:var(--ink)">${imp.toLocaleString()}</span> imp &nbsp;
+            <span style="font-weight:500;color:var(--ink)">${imp.toLocaleString()}</span> visits &nbsp;
             <span style="font-weight:500;color:var(--ink)">${seen.toLocaleString()}</span> seen &nbsp;
             <span style="font-weight:500;color:var(--ink)">${hov.toLocaleString()}</span> hov &nbsp;
             <span style="font-weight:500;color:var(--ink)">${clk.toLocaleString()}</span> clk &nbsp;

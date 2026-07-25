@@ -376,14 +376,14 @@ tr:last-child td{border-bottom:none}
     <div class="tab-panel active" id="tab-overview">
       <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
         <div class="stat-card">
-          <div class="stat-label">Impressions</div>
+          <div class="stat-label">Page visits</div>
           <div class="stat-value clickable" id="stat-articles" onclick="openPagesModal()">-</div>
           <div class="stat-sub">pages where an expert was shown</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Seen</div>
+          <div class="stat-label">Links seen</div>
           <div class="stat-value" id="stat-seen">-</div>
-          <div class="stat-sub" id="stat-seen-rate-sub">the highlight was on their screen</div>
+          <div class="stat-sub" id="stat-seen-rate-sub">a highlighted link was on their screen</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Hovers</div>
@@ -406,7 +406,7 @@ tr:last-child td{border-bottom:none}
         <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
           <div>
             <div class="section-title">Performance</div>
-            <div class="section-sub">Impressions, seen and hovers over time</div>
+            <div class="section-sub">Page visits, links seen and hovers over time</div>
           </div>
           <div class="period-btns">
             <button class="period-btn active" onclick="setPeriod('daily',this)">Daily</button>
@@ -416,7 +416,7 @@ tr:last-child td{border-bottom:none}
         </div>
         <div class="chart-grid">
           <div>
-            <div class="chart-label">Impressions &amp; seen</div>
+            <div class="chart-label">Page visits &amp; links seen</div>
             <div class="chart-wrap"><canvas id="chart-impr"></canvas></div>
           </div>
           <div>
@@ -1066,7 +1066,7 @@ async function loadDashboard() {
   document.getElementById('stat-clicks').textContent = clicks.toLocaleString();
   document.getElementById('stat-ctr').textContent = ctr + '%';
   const seenRate = impressions > 0 ? (seen / impressions * 100).toFixed(1) : '0.0';
-  document.getElementById('stat-seen-rate-sub').textContent = `${seenRate}% of impressions scrolled it into view`;
+  document.getElementById('stat-seen-rate-sub').textContent = `${seenRate}% of page visits scrolled it into view`;
   const hoverRate = seen > 0 ? (hovers / seen * 100).toFixed(1) : '0.0';
   document.getElementById('stat-hover-rate-sub').textContent = `${hoverRate}% of those who saw it opened the card`;
 
@@ -1651,8 +1651,8 @@ function initCharts(d) {
     data: {
       labels: [],
       datasets: [
-        { label: 'Impressions', data: [], borderColor: '#1a1a2e', backgroundColor: 'rgba(26,26,46,0.06)', fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 4 },
-        { label: 'Seen', data: [], borderColor: '#e6a820', backgroundColor: 'rgba(230,168,32,0.06)', fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 4 }
+        { label: 'Page visits', data: [], borderColor: '#1a1a2e', backgroundColor: 'rgba(26,26,46,0.06)', fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 4 },
+        { label: 'Links seen', data: [], borderColor: '#e6a820', backgroundColor: 'rgba(230,168,32,0.06)', fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 4 }
       ]
     },
     options: {
