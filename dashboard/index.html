@@ -1103,7 +1103,7 @@ async function loadDashboard() {
     const fullDate = lastFire.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) + ', ' + lastFire.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     if (daysSinceFire > 7) {
       banner.classList.add('stale');
-      textEl.innerHTML = `<strong>No check-in since ${relativeTime(lastFire)}</strong> - make sure the widget is still installed.`;
+      textEl.innerHTML = `<strong>No check-in for ${Math.floor(daysSinceFire)} days</strong> - make sure the widget is still installed.`;
     } else {
       banner.classList.remove('stale');
       textEl.innerHTML = `<strong>Your widget is live</strong> - last checked ${relativeTime(lastFire)}.`;
