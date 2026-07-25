@@ -66,13 +66,25 @@ export default async function handler(req, res) {
 
   // GET ?token=xxx - verify magic link, create session, redirect to dashboard
   if (req.method === 'GET' && token) {
+    // Reuse of an already-used token is allowed for a short grace window right
+    // after first use. Real-world reason: some email providers/security
+    // gateways silently pre-fetch links in an email to scan them before the
+    // recipient ever opens it, which would otherwise permanently burn a
+    // strictly single-use token before the actual human clicks it - they'd
+    // see "This login link has expired" seconds after receiving the email
+    // and have no way to recover except requesting a whole new link. A link
+    // is still dead for good once this window passes or it truly expires.
     const [link] = await sql`
       SELECT * FROM magic_links
-      WHERE token = ${token} AND used_at IS NULL AND expires_at > NOW()
+      WHERE token = ${token}
+        AND expires_at > NOW()
+        AND (used_at IS NULL OR used_at > NOW() - INTERVAL '5 minutes')
     `;
     if (!link) return res.redirect(302, '/login?error=expired');
 
-    await sql`UPDATE magic_links SET used_at = NOW() WHERE token = ${token}`;
+    if (!link.used_at) {
+      await sql`UPDATE magic_links SET used_at = NOW() WHERE token = ${token}`;
+    }
 
     const [pub] = await sql`SELECT slug, name FROM publishers WHERE email = ${link.email} AND active = true LIMIT 1`;
     if (!pub) return res.redirect(302, '/login?error=notfound');
