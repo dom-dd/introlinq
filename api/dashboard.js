@@ -465,7 +465,7 @@ export default async function handler(req, res) {
              COALESCE(discovery_cue_enabled, true) AS discovery_cue_enabled,
              COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners,
              COALESCE(revenue_share, 0.70) AS revenue_share,
-             payment_email, carousel_title, first_widget_fire_at,
+             payment_email, carousel_title, first_widget_fire_at, last_widget_fire_at,
              email, contact_first_name, contact_last_name,
              (password_hash IS NOT NULL) AS has_password
       FROM publishers WHERE slug = ${pub} AND active = true LIMIT 1
