@@ -406,7 +406,7 @@ tr:last-child td{border-bottom:none}
         <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
           <div>
             <div class="section-title">Performance</div>
-            <div class="section-sub">Clicks and impressions over time</div>
+            <div class="section-sub">Impressions, seen and hovers over time</div>
           </div>
           <div class="period-btns">
             <button class="period-btn active" onclick="setPeriod('daily',this)">Daily</button>
@@ -416,12 +416,12 @@ tr:last-child td{border-bottom:none}
         </div>
         <div class="chart-grid">
           <div>
-            <div class="chart-label">Clicks</div>
-            <div class="chart-wrap"><canvas id="chart-clicks"></canvas></div>
+            <div class="chart-label">Impressions &amp; seen</div>
+            <div class="chart-wrap"><canvas id="chart-impr"></canvas></div>
           </div>
           <div>
-            <div class="chart-label">Impressions</div>
-            <div class="chart-wrap"><canvas id="chart-impr"></canvas></div>
+            <div class="chart-label">Hovers <span style="font-weight:400;text-transform:none;letter-spacing:normal">(numbers show clicks)</span></div>
+            <div class="chart-wrap"><canvas id="chart-hovers"></canvas></div>
           </div>
         </div>
       </div>
@@ -1564,7 +1564,29 @@ async function toggleExperts(slug, btn) {
 }
 
 // ── Charts ───────────────────────────────────────────────────────────────────
-let clicksChart, imprChart;
+let hoversChart, imprChart;
+
+// Draws each bar's click count as a small label above it (skipped when a
+// period had zero clicks, so the chart isn't covered in "0"s).
+const clickLabelsPlugin = {
+  id: 'clickLabels',
+  afterDatasetsDraw(chart) {
+    const clicks = chart.$clickCounts;
+    if (!clicks) return;
+    const meta = chart.getDatasetMeta(0);
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.font = '600 10px Inter, sans-serif';
+    ctx.fillStyle = '#8888a8';
+    ctx.textAlign = 'center';
+    meta.data.forEach((bar, i) => {
+      const count = clicks[i] || 0;
+      if (!count) return;
+      ctx.fillText(count, bar.x, bar.y - 6);
+    });
+    ctx.restore();
+  }
+};
 
 function fillDays(raw, n) {
   const map = {};
@@ -1608,7 +1630,7 @@ function fillMonths(raw) {
 }
 
 function initCharts(d) {
-  if (clicksChart) { clicksChart.destroy(); clicksChart = null; }
+  if (hoversChart) { hoversChart.destroy(); hoversChart = null; }
   if (imprChart) { imprChart.destroy(); imprChart = null; }
   const baseOpts = {
     responsive: true, maintainAspectRatio: false,
@@ -1618,15 +1640,28 @@ function initCharts(d) {
       y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 }, color: '#8888a8', precision: 0 } }
     }
   };
-  clicksChart = new Chart(document.getElementById('chart-clicks'), {
+  hoversChart = new Chart(document.getElementById('chart-hovers'), {
     type: 'bar',
     data: { labels: [], datasets: [{ data: [], backgroundColor: '#3d7a5f', borderRadius: 4 }] },
-    options: { ...baseOpts }
+    options: { ...baseOpts, layout: { padding: { top: 18 } } },
+    plugins: [clickLabelsPlugin]
   });
   imprChart = new Chart(document.getElementById('chart-impr'), {
     type: 'line',
-    data: { labels: [], datasets: [{ data: [], borderColor: '#1a1a2e', backgroundColor: 'rgba(26,26,46,0.06)', fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 4 }] },
-    options: { ...baseOpts }
+    data: {
+      labels: [],
+      datasets: [
+        { label: 'Impressions', data: [], borderColor: '#1a1a2e', backgroundColor: 'rgba(26,26,46,0.06)', fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 4 },
+        { label: 'Seen', data: [], borderColor: '#e6a820', backgroundColor: 'rgba(230,168,32,0.06)', fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 4 }
+      ]
+    },
+    options: {
+      ...baseOpts,
+      plugins: {
+        ...baseOpts.plugins,
+        legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 10, padding: 12, usePointStyle: true, font: { size: 11 }, color: '#8888a8' } }
+      }
+    }
   });
 }
 
@@ -1634,23 +1669,31 @@ function setPeriod(period, btn) {
   document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   const d = window._cd;
-  if (!d || !clicksChart) return;
-  let c, m;
+  if (!d || !hoversChart) return;
+  let h, imp, s, c;
   if (period === 'monthly') {
+    h = fillMonths(d.hovers_by_month || []);
+    imp = fillMonths(d.impressions_by_month || []);
+    s = fillMonths(d.seen_by_month || []);
     c = fillMonths(d.clicks_by_month || []);
-    m = fillMonths(d.impressions_by_month || []);
   } else if (period === 'weekly') {
+    h = fillWeeks(d.hovers_by_week || []);
+    imp = fillWeeks(d.impressions_by_week || []);
+    s = fillWeeks(d.seen_by_week || []);
     c = fillWeeks(d.clicks_by_week || []);
-    m = fillWeeks(d.impressions_by_week || []);
   } else {
+    h = fillDays(d.hovers_by_day || [], 30);
+    imp = fillDays(d.impressions_by_day || [], 30);
+    s = fillDays(d.seen_by_day || [], 30);
     c = fillDays(d.clicks_by_day || [], 30);
-    m = fillDays(d.impressions_by_day || [], 30);
   }
-  clicksChart.data.labels = c.labels;
-  clicksChart.data.datasets[0].data = c.data;
-  clicksChart.update();
-  imprChart.data.labels = m.labels;
-  imprChart.data.datasets[0].data = m.data;
+  hoversChart.data.labels = h.labels;
+  hoversChart.data.datasets[0].data = h.data;
+  hoversChart.$clickCounts = c.data;
+  hoversChart.update();
+  imprChart.data.labels = imp.labels;
+  imprChart.data.datasets[0].data = imp.data;
+  imprChart.data.datasets[1].data = s.data;
   imprChart.update();
 }
 
