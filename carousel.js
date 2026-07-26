@@ -4,10 +4,14 @@
   var script = document.currentScript || document.querySelector('script[src*="carousel.js"]');
   var PUB = (script && (script.getAttribute('data-publisher') || script.getAttribute('data-site'))) || window.IL_CAROUSEL_PUBLISHER || null;
   if (!PUB) return;
-  // See widget.js for why this guard exists - protects against the tag being
-  // pasted twice (e.g. both the direct and GTM install snippets left in place).
-  if (window.__ilCarouselInit) return;
-  window.__ilCarouselInit = true;
+  // Unlike widget.js, this has no singleton-guard: every element below is
+  // scoped under a per-instance random uid (container, arrows, track), so
+  // multiple carousel tags on one page - e.g. one mid-article, one at the
+  // end, a real request - run as fully independent instances with no shared
+  // state to clobber. A publisher who genuinely double-installs by mistake
+  // (GTM snippet left in alongside a direct one) just gets two identical
+  // carousels rendered side by side, not a broken one - a visible, harmless
+  // outcome they can simply notice and remove, not a silent failure.
 
   var API = 'https://www.introlinq.com/api/board?pub=' + encodeURIComponent(PUB);
   var TRACK = 'https://www.introlinq.com/api/dashboard?action=out';
