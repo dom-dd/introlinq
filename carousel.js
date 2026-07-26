@@ -56,7 +56,7 @@
     '#'+uid+' .ilc-powered a{color:#bbb;text-decoration:none}',
     '#'+uid+' .ilc-powered a:hover{color:#888}',
     '#'+uid+' .ilc-arrows{display:flex;gap:0.375rem;flex-shrink:0}',
-    '#'+uid+' .ilc-arrow{width:28px;height:28px;border-radius:50%;border:1.5px solid #e4e4ee;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#4a4a6a;transition:all .15s;flex-shrink:0}',
+    '#'+uid+' .ilc-arrow{width:28px;height:28px;border-radius:8px;border:1.5px solid #e4e4ee;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#4a4a6a;transition:all .15s;flex-shrink:0}',
     '#'+uid+' .ilc-arrow:hover{border-color:var(--ilc-color);color:var(--ilc-color)}',
     '#'+uid+' .ilc-track-wrap{overflow:hidden;position:relative}',
     '#'+uid+' .ilc-track-wrap::after{content:"";position:absolute;right:0;top:0;bottom:0;width:48px;background:linear-gradient(to right,transparent,var(--ilc-bg,#fff));pointer-events:none}',
