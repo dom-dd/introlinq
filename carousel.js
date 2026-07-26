@@ -45,13 +45,17 @@
     '#'+uid+'{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;box-sizing:border-box;color:#1a1a2e;line-height:normal;width:100%}',
     '#'+uid+' *{box-sizing:border-box}',
     '#'+uid+' .ilc-wrap{position:relative}',
-    '#'+uid+' .ilc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.875rem}',
-    '#'+uid+' .ilc-header-left{display:flex;align-items:baseline;gap:0.5rem}',
+    '#'+uid+' .ilc-header{display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem;margin-bottom:0.875rem}',
+    // flex-wrap + min-width:0 let the label and the "powered by" text drop onto
+    // separate lines when they don't both fit, instead of the label being
+    // squeezed by the non-shrinking "powered by" text into a sliver too narrow
+    // for even one word - which forced mid-word character breaks on mobile.
+    '#'+uid+' .ilc-header-left{display:flex;align-items:baseline;gap:0.5rem;flex-wrap:wrap;min-width:0;flex:1 1 auto}',
     '#'+uid+' .ilc-label{font-size:0.8125rem;font-weight:700;color:#8888a8;text-transform:uppercase;letter-spacing:0.06em}',
     '#'+uid+' .ilc-powered{font-size:0.62rem;color:#bbb;text-decoration:none;white-space:nowrap}',
     '#'+uid+' .ilc-powered a{color:#bbb;text-decoration:none}',
     '#'+uid+' .ilc-powered a:hover{color:#888}',
-    '#'+uid+' .ilc-arrows{display:flex;gap:0.375rem}',
+    '#'+uid+' .ilc-arrows{display:flex;gap:0.375rem;flex-shrink:0}',
     '#'+uid+' .ilc-arrow{width:28px;height:28px;border-radius:50%;border:1.5px solid #e4e4ee;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#4a4a6a;transition:all .15s;flex-shrink:0}',
     '#'+uid+' .ilc-arrow:hover{border-color:var(--ilc-color);color:var(--ilc-color)}',
     '#'+uid+' .ilc-track-wrap{overflow:hidden;position:relative}',
