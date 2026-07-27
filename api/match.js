@@ -1,4 +1,5 @@
 ﻿import { neon } from '@neondatabase/serverless';
+import { getClientIp, isBurstTraffic, ensureBotColumns } from './_botDetect.js';
 
 // match_cache is global per page now, not per reader country - country
 // fragmentation (every new country paying for its own fresh scan) turned
@@ -13,6 +14,7 @@
 const GLOBAL_CACHE_COUNTRY = 'XX';
 
 let logTableReady = false;
+let matchLogsBotColumnsReady = false;
 let cacheTableReady = false;
 let publisherActivityColumnsReady = false;
 let discoveryCueColumnReady = false;
@@ -284,15 +286,25 @@ function widgetLiveEmail(firstName) {
 // A cache hit still counts as an impression (log) and, when it actually
 // showed experts, a Slack ping. Shared by every cache-serving path - this
 // block used to be copy-pasted three times with drifting details.
-function logCachedImpression(sql, { publisher, page_url, page_title, matches, readerCountry }) {
+// Not awaited by its caller (fire-and-forget, same as before) - it just
+// awaits its own steps internally now so the burst check can run before
+// the INSERT decides is_bot.
+async function logCachedImpression(sql, { publisher, page_url, page_title, matches, readerCountry, ip }) {
   const phrases = matches.map(m => m.phrase);
   const expertNames = matches.map(m => m.expert?.name).filter(Boolean);
   const expertBookingUrls = matches.map(m => m.expert?.booking_url || null);
-  sql`INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, country_code, cost_usd)
-    VALUES (${publisher || null}, '[cached]', ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${readerCountry || null}, 0)
+  if (!matchLogsBotColumnsReady) {
+    await ensureBotColumns(sql, 'match_logs');
+    matchLogsBotColumnsReady = true;
+  }
+  const isBot = await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url });
+  sql`INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, country_code, cost_usd, ip, is_bot)
+    VALUES (${publisher || null}, '[cached]', ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${readerCountry || null}, 0, ${ip || null}, ${isBot})
   `.catch(() => {});
   markPublisherActivity(sql, publisher).catch(() => {});
-  postSlackNotification(sql, { publisher, page_url, page_title, matchCount: matches.length, readerCountry, cached: true }).catch(() => {});
+  if (!isBot) {
+    postSlackNotification(sql, { publisher, page_url, page_title, matchCount: matches.length, readerCountry, cached: true }).catch(() => {});
+  }
 }
 
 const COUNTRY_NAMES = { AF:'Afghanistan',AL:'Albania',DZ:'Algeria',AR:'Argentina',AU:'Australia',AT:'Austria',BE:'Belgium',BR:'Brazil',CA:'Canada',CL:'Chile',CN:'China',CO:'Colombia',HR:'Croatia',CZ:'Czechia',DK:'Denmark',EG:'Egypt',FI:'Finland',FR:'France',DE:'Germany',GH:'Ghana',GR:'Greece',HK:'Hong Kong',HU:'Hungary',IN:'India',ID:'Indonesia',IE:'Ireland',IL:'Israel',IT:'Italy',JP:'Japan',KE:'Kenya',MY:'Malaysia',MX:'Mexico',MA:'Morocco',NL:'Netherlands',NZ:'New Zealand',NG:'Nigeria',NO:'Norway',PK:'Pakistan',PH:'Philippines',PL:'Poland',PT:'Portugal',RO:'Romania',RU:'Russia',SA:'Saudi Arabia',SG:'Singapore',ZA:'South Africa',KR:'South Korea',ES:'Spain',SE:'Sweden',CH:'Switzerland',TW:'Taiwan',TH:'Thailand',TR:'Turkey',UA:'Ukraine',AE:'UAE',GB:'United Kingdom',US:'United States',VN:'Vietnam' };
@@ -600,6 +612,7 @@ async function handleReport(req, res) {
   try {
     const sql = neon(process.env.DATABASE_URL);
     const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
+    const ip = getClientIp(req);
 
     await ensureCacheTable(sql);
 
@@ -628,13 +641,21 @@ async function handleReport(req, res) {
 
     const reportCostUsd = typeof cost_usd === 'number' ? cost_usd : 0;
 
+    if (!matchLogsBotColumnsReady) {
+      await ensureBotColumns(sql, 'match_logs');
+      matchLogsBotColumnsReady = true;
+    }
+    const isBot = await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url });
+
     await sql`
-      INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, country_code, cost_usd)
-      VALUES (${publisher || null}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${noMatchLogReason}, ${readerCountry || null}, ${reportCostUsd})
+      INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, country_code, cost_usd, ip, is_bot)
+      VALUES (${publisher || null}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${noMatchLogReason}, ${readerCountry || null}, ${reportCostUsd}, ${ip || null}, ${isBot})
     `.catch(() => {});
     await markPublisherActivity(sql, publisher);
 
-    await postSlackNotification(sql, { publisher, page_url, page_title, matchCount: matches.length, readerCountry, cached: false, costUsd: reportCostUsd });
+    if (!isBot) {
+      await postSlackNotification(sql, { publisher, page_url, page_title, matchCount: matches.length, readerCountry, cached: false, costUsd: reportCostUsd });
+    }
 
     return res.status(200).json({ ok: true });
   } catch (err) {
@@ -712,6 +733,7 @@ export default async function handler(req, res) {
 
     const { publisher } = req.body;
     const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
+    const ip = getClientIp(req);
 
     if (page_url) await ensureCacheTable(sql);
 
@@ -819,7 +841,7 @@ export default async function handler(req, res) {
           // this cache path - only the quick (or a legacy full scan) logs and
           // notifies, so a cached page-view produces exactly one impression log
           // and one Slack message instead of one per parallel request.
-          if (!chunk) logCachedImpression(sql, { publisher, page_url, page_title, matches: hydrated, readerCountry });
+          if (!chunk) logCachedImpression(sql, { publisher, page_url, page_title, matches: hydrated, readerCountry, ip });
           return res.status(200).json({ matches: hydrated, config: pubConfig, cached: true });
         }
       }
@@ -1113,13 +1135,20 @@ Return only valid JSON, no other text:
       })(),
       (async () => {
         await ensureLogTable(sql);
+        if (!matchLogsBotColumnsReady) {
+          await ensureBotColumns(sql, 'match_logs');
+          matchLogsBotColumnsReady = true;
+        }
+        const isBot = await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url });
         await sql`
-          INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, country_code, cost_usd)
-          VALUES (${publisher}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${enriched.length}, ${page_url || null}, ${noMatchReason}, ${readerCountry || null}, ${costUsd})
+          INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, country_code, cost_usd, ip, is_bot)
+          VALUES (${publisher}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${enriched.length}, ${page_url || null}, ${noMatchReason}, ${readerCountry || null}, ${costUsd}, ${ip || null}, ${isBot})
         `;
+        if (!isBot) {
+          await postSlackNotification(sql, { publisher, page_url, page_title, matchCount: enriched.length, readerCountry, cached: false, costUsd });
+        }
       })(),
       markPublisherActivity(sql, publisher),
-      postSlackNotification(sql, { publisher, page_url, page_title, matchCount: enriched.length, readerCountry, cached: false, costUsd })
     ]).catch(() => {});
   } catch (err) {
     console.error(err);

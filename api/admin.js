@@ -1,6 +1,9 @@
 ﻿import { neon } from '@neondatabase/serverless';
 import { createMagicToken } from './auth.js';
 import { DECK_HTML_B64 } from './_deckContent.js';
+import { ensureBotColumns } from './_botDetect.js';
+
+let adminBotColumnsReady = false;
 
 function auth(req) {
   const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress;
@@ -296,28 +299,37 @@ export default async function handler(req, res) {
   const STATS_RESET_AT = '2026-07-24T23:15:00Z';
 
   if (resource === 'analytics') {
+    if (!adminBotColumnsReady) {
+      await Promise.all([
+        ensureBotColumns(sql, 'match_logs'),
+        ensureBotColumns(sql, 'click_logs'),
+        ensureBotColumns(sql, 'hover_logs'),
+        ensureBotColumns(sql, 'seen_logs'),
+      ]);
+      adminBotColumnsReady = true;
+    }
     const notDemo = sql`publisher NOT LIKE 'demo-%'`;
     const [totals, clicksByDay, imprByDay, hoversByDay, seenByDay, clicksByWeek, imprByWeek, hoversByWeek, seenByWeek, clicksByMonth, imprByMonth, hoversByMonth, seenByMonth] = await Promise.all([
       sql`
         SELECT
-          (SELECT COUNT(*) FROM match_logs WHERE match_count > 0 AND ${notDemo} AND created_at >= ${STATS_RESET_AT})::int AS impressions,
-          (SELECT COUNT(*) FROM click_logs WHERE ${notDemo} AND created_at >= ${STATS_RESET_AT})::int AS clicks,
-          (SELECT COUNT(*) FROM hover_logs WHERE ${notDemo})::int AS hovers,
-          (SELECT COUNT(*) FROM seen_logs WHERE ${notDemo})::int AS seen,
+          (SELECT COUNT(*) FROM match_logs WHERE match_count > 0 AND is_bot = false AND ${notDemo} AND created_at >= ${STATS_RESET_AT})::int AS impressions,
+          (SELECT COUNT(*) FROM click_logs WHERE is_bot = false AND ${notDemo} AND created_at >= ${STATS_RESET_AT})::int AS clicks,
+          (SELECT COUNT(*) FROM hover_logs WHERE is_bot = false AND ${notDemo})::int AS hovers,
+          (SELECT COUNT(*) FROM seen_logs WHERE is_bot = false AND ${notDemo})::int AS seen,
           (SELECT COUNT(*) FROM match_cache WHERE ${notDemo})::int AS pages_scanned
       `.catch(() => [{ impressions: 0, clicks: 0, hovers: 0, seen: 0, pages_scanned: 0 }]),
-      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM click_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '30 days' AND created_at >= ${STATS_RESET_AT} GROUP BY date ORDER BY date`,
-      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM match_logs WHERE match_count > 0 AND ${notDemo} AND created_at > NOW() - INTERVAL '30 days' AND created_at >= ${STATS_RESET_AT} GROUP BY date ORDER BY date`,
-      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM hover_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
-      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM seen_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
-      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM click_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '12 weeks' AND created_at >= ${STATS_RESET_AT} GROUP BY week_start ORDER BY week_start`,
-      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM match_logs WHERE match_count > 0 AND ${notDemo} AND created_at > NOW() - INTERVAL '12 weeks' AND created_at >= ${STATS_RESET_AT} GROUP BY week_start ORDER BY week_start`,
-      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM hover_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`.catch(() => []),
-      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM seen_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`.catch(() => []),
-      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM click_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '12 months' AND created_at >= ${STATS_RESET_AT} GROUP BY month_start, month ORDER BY month_start`,
-      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM match_logs WHERE match_count > 0 AND ${notDemo} AND created_at > NOW() - INTERVAL '12 months' AND created_at >= ${STATS_RESET_AT} GROUP BY month_start, month ORDER BY month_start`,
-      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM hover_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
-      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM seen_logs WHERE ${notDemo} AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
+      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM click_logs WHERE is_bot = false AND ${notDemo} AND created_at > NOW() - INTERVAL '30 days' AND created_at >= ${STATS_RESET_AT} GROUP BY date ORDER BY date`,
+      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM match_logs WHERE match_count > 0 AND is_bot = false AND ${notDemo} AND created_at > NOW() - INTERVAL '30 days' AND created_at >= ${STATS_RESET_AT} GROUP BY date ORDER BY date`,
+      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM hover_logs WHERE is_bot = false AND ${notDemo} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
+      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM seen_logs WHERE is_bot = false AND ${notDemo} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
+      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM click_logs WHERE is_bot = false AND ${notDemo} AND created_at > NOW() - INTERVAL '12 weeks' AND created_at >= ${STATS_RESET_AT} GROUP BY week_start ORDER BY week_start`,
+      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM match_logs WHERE match_count > 0 AND is_bot = false AND ${notDemo} AND created_at > NOW() - INTERVAL '12 weeks' AND created_at >= ${STATS_RESET_AT} GROUP BY week_start ORDER BY week_start`,
+      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM hover_logs WHERE is_bot = false AND ${notDemo} AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`.catch(() => []),
+      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM seen_logs WHERE is_bot = false AND ${notDemo} AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`.catch(() => []),
+      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM click_logs WHERE is_bot = false AND ${notDemo} AND created_at > NOW() - INTERVAL '12 months' AND created_at >= ${STATS_RESET_AT} GROUP BY month_start, month ORDER BY month_start`,
+      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM match_logs WHERE match_count > 0 AND is_bot = false AND ${notDemo} AND created_at > NOW() - INTERVAL '12 months' AND created_at >= ${STATS_RESET_AT} GROUP BY month_start, month ORDER BY month_start`,
+      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM hover_logs WHERE is_bot = false AND ${notDemo} AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
+      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM seen_logs WHERE is_bot = false AND ${notDemo} AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
     ]);
     return res.status(200).json({
       totals: totals[0],
@@ -392,6 +404,15 @@ export default async function handler(req, res) {
 
   // Publishers
   if (resource === 'publishers') {
+    if (!adminBotColumnsReady) {
+      await Promise.all([
+        ensureBotColumns(sql, 'match_logs'),
+        ensureBotColumns(sql, 'click_logs'),
+        ensureBotColumns(sql, 'hover_logs'),
+        ensureBotColumns(sql, 'seen_logs'),
+      ]);
+      adminBotColumnsReady = true;
+    }
     await sql`
       CREATE TABLE IF NOT EXISTS publishers (
         id SERIAL PRIMARY KEY,
@@ -432,10 +453,10 @@ export default async function handler(req, res) {
       // their own dashboard - not deleted, just filtered (see STATS_RESET_AT
       // comment above).
       const [matchStats, clickStats, hoverStats, seenStats] = await Promise.all([
-        sql`SELECT publisher, COUNT(*)::int AS impressions FROM match_logs WHERE match_count > 0 AND created_at >= ${STATS_RESET_AT} GROUP BY publisher`.catch(() => []),
-        sql`SELECT publisher, COUNT(*)::int AS clicks FROM click_logs WHERE created_at >= ${STATS_RESET_AT} GROUP BY publisher`.catch(() => []),
-        sql`SELECT publisher, COUNT(*)::int AS hovers FROM hover_logs GROUP BY publisher`.catch(() => []),
-        sql`SELECT publisher, COUNT(*)::int AS seen FROM seen_logs GROUP BY publisher`.catch(() => []),
+        sql`SELECT publisher, COUNT(*)::int AS impressions FROM match_logs WHERE match_count > 0 AND is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY publisher`.catch(() => []),
+        sql`SELECT publisher, COUNT(*)::int AS clicks FROM click_logs WHERE is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY publisher`.catch(() => []),
+        sql`SELECT publisher, COUNT(*)::int AS hovers FROM hover_logs WHERE is_bot = false GROUP BY publisher`.catch(() => []),
+        sql`SELECT publisher, COUNT(*)::int AS seen FROM seen_logs WHERE is_bot = false GROUP BY publisher`.catch(() => []),
       ]);
       const matchMap = Object.fromEntries(matchStats.map(r => [r.publisher, r.impressions]));
       const clickMap = Object.fromEntries(clickStats.map(r => [r.publisher, r.clicks]));

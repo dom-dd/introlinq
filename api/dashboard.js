@@ -1,6 +1,7 @@
 ﻿import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import { getClientIp, isBurstTraffic, ensureBotColumns } from './_botDetect.js';
 
 const PASSWORD_MIN_LENGTH = 8;
 
@@ -8,6 +9,10 @@ let clickTableReady = false;
 let hoverTableReady = false;
 let seenTableReady = false;
 let carouselSourceColumnReady = false;
+let clickBotColumnsReady = false;
+let hoverBotColumnsReady = false;
+let seenBotColumnsReady = false;
+let carouselBotColumnsReady = false;
 
 // Display name for the `pub` a partner sends on their webhook calls (e.g.
 // "open-intro") - falls back to a title-cased version of the raw slug for
@@ -30,6 +35,7 @@ export default async function handler(req, res) {
   if (!pub && action !== 'booking') return res.status(400).json({ error: 'Missing pub' });
 
   const sql = neon(process.env.DATABASE_URL);
+  const ip = getClientIp(req);
 
   // Booking webhook - called by partners (OpenIntro etc.) when a booking completes
   if (req.method === 'POST' && action === 'booking') {
@@ -178,6 +184,11 @@ export default async function handler(req, res) {
       sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS traffic_source TEXT`.catch(() => {}),
       sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS article_title TEXT`.catch(() => {}),
     ]);
+    if (!clickBotColumnsReady) {
+      await ensureBotColumns(sql, 'click_logs');
+      clickBotColumnsReady = true;
+    }
+    const isBot = await isBurstTraffic(sql, 'click_logs', { ip, publisher: pub, page_url: article });
 
     // Build partner URL with full attribution params
     let destUrl;
@@ -204,7 +215,7 @@ export default async function handler(req, res) {
     // concurrently with the click INSERT so the reader's added wait is
     // max(insert, slack) rather than their sum.
     const articleTitle = title ? String(title).slice(0, 80) : null;
-    const slackPromise = process.env.SLACK_WEBHOOK_URL
+    const slackPromise = (process.env.SLACK_WEBHOOK_URL && !isBot)
       ? fetch(process.env.SLACK_WEBHOOK_URL, {
           method: 'POST',
           signal: AbortSignal.timeout(1500),
@@ -214,9 +225,9 @@ export default async function handler(req, res) {
       : Promise.resolve();
 
     await Promise.all([
-      sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, article_title, phrase, lang, timezone, device, traffic_source)
+      sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, article_title, phrase, lang, timezone, device, traffic_source, ip, is_bot)
         VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${click_id}, ${article || null},
-                ${title || null}, ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null})
+                ${title || null}, ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null}, ${ip || null}, ${isBot})
       `.catch(() => {}),
       slackPromise,
     ]);
@@ -259,9 +270,14 @@ export default async function handler(req, res) {
       `;
       seenTableReady = true;
     }
+    if (!seenBotColumnsReady) {
+      await ensureBotColumns(sql, 'seen_logs');
+      seenBotColumnsReady = true;
+    }
+    const isBot = await isBurstTraffic(sql, 'seen_logs', { ip, publisher: pub, page_url: article });
     await sql`
-      INSERT INTO seen_logs (publisher, expert_id, expert_name, phrase, article_url, device)
-      VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${phrase || null}, ${article || null}, ${device || null})
+      INSERT INTO seen_logs (publisher, expert_id, expert_name, phrase, article_url, device, ip, is_bot)
+      VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${phrase || null}, ${article || null}, ${device || null}, ${ip || null}, ${isBot})
     `.catch(() => {});
     return res.status(200).end();
   }
@@ -292,9 +308,14 @@ export default async function handler(req, res) {
       `;
       hoverTableReady = true;
     }
+    if (!hoverBotColumnsReady) {
+      await ensureBotColumns(sql, 'hover_logs');
+      hoverBotColumnsReady = true;
+    }
+    const isBot = await isBurstTraffic(sql, 'hover_logs', { ip, publisher: pub, page_url: article });
     await sql`
-      INSERT INTO hover_logs (publisher, expert_id, expert_name, phrase, article_url, device)
-      VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${phrase || null}, ${article || null}, ${device || null})
+      INSERT INTO hover_logs (publisher, expert_id, expert_name, phrase, article_url, device, ip, is_bot)
+      VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${phrase || null}, ${article || null}, ${device || null}, ${ip || null}, ${isBot})
     `.catch(() => {});
     return res.status(200).end();
   }
@@ -318,9 +339,14 @@ export default async function handler(req, res) {
     }
     const names = Array.isArray(expert_names) ? expert_names.slice(0, 50) : [];
     const count = Number.isFinite(match_count) && match_count > 0 ? match_count : names.length;
+    if (!carouselBotColumnsReady) {
+      await ensureBotColumns(sql, 'match_logs');
+      carouselBotColumnsReady = true;
+    }
+    const isBot = await isBurstTraffic(sql, 'match_logs', { ip, publisher: pub, page_url: article });
     await sql`
-      INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, match_count, page_url, source)
-      VALUES (${pub}, '[carousel]', ${[]}, ${names}, ${count}, ${article || null}, 'carousel')
+      INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, match_count, page_url, source, ip, is_bot)
+      VALUES (${pub}, '[carousel]', ${[]}, ${names}, ${count}, ${article || null}, 'carousel', ${ip || null}, ${isBot})
     `.catch(() => {});
     return res.status(200).end();
   }
@@ -484,6 +510,15 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS page_url TEXT`.catch(() => {});
     await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS expert_booking_urls TEXT[]`.catch(() => {});
     await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS no_match_reason TEXT`.catch(() => {});
+    // Guarantees ip/is_bot exist on all 4 log tables before the stats queries
+    // below filter on is_bot - those queries silently return [] (via .catch)
+    // rather than error on a missing column, which would otherwise blank out
+    // a publisher's whole dashboard until some insert path happened to create
+    // the column first.
+    if (!clickBotColumnsReady) { await ensureBotColumns(sql, 'click_logs'); clickBotColumnsReady = true; }
+    if (!hoverBotColumnsReady) { await ensureBotColumns(sql, 'hover_logs'); hoverBotColumnsReady = true; }
+    if (!seenBotColumnsReady) { await ensureBotColumns(sql, 'seen_logs'); seenBotColumnsReady = true; }
+    if (!carouselBotColumnsReady) { await ensureBotColumns(sql, 'match_logs'); carouselBotColumnsReady = true; }
 
     const [publisher] = await sql`
       SELECT id, name, slug, domain, created_at,
@@ -535,33 +570,33 @@ export default async function handler(req, res) {
            clicksByDay, impressionsByDay, hoversByDay, seenByDay, clicksByWeek, impressionsByWeek, hoversByWeek, seenByWeek,
            clicksByMonth, impressionsByMonth, hoversByMonth, seenByMonth,
            topPhrases, topSources, topDevices, pageUrls] = await Promise.all([
-      sql`SELECT phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, created_at FROM match_logs WHERE publisher = ${pub} AND page_url IS NOT NULL AND (source IS NULL OR source <> 'carousel') AND created_at >= ${STATS_RESET_AT} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
-      sql`SELECT COUNT(*)::int AS total FROM click_logs WHERE publisher = ${pub} AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
-      sql`SELECT COUNT(*)::int AS total FROM hover_logs WHERE publisher = ${pub} AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
-      sql`SELECT COUNT(*)::int AS total FROM seen_logs WHERE publisher = ${pub} AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
+      sql`SELECT phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, created_at FROM match_logs WHERE publisher = ${pub} AND page_url IS NOT NULL AND (source IS NULL OR source <> 'carousel') AND is_bot = false AND created_at >= ${STATS_RESET_AT} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
+      sql`SELECT COUNT(*)::int AS total FROM click_logs WHERE publisher = ${pub} AND is_bot = false AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
+      sql`SELECT COUNT(*)::int AS total FROM hover_logs WHERE publisher = ${pub} AND is_bot = false AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
+      sql`SELECT COUNT(*)::int AS total FROM seen_logs WHERE publisher = ${pub} AND is_bot = false AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
       sql`SELECT id, slug, COALESCE(name, slug) AS name FROM providers WHERE is_demo IS NOT TRUE ORDER BY slug`,
       // Grouped per provider - this used to be one ungrouped COUNT(*) applied
       // identically to every partner in the list, so a small provider showed
       // the same (wrong) total as everyone else the moment there was more
       // than one provider in the table.
       sql`SELECT provider_id, COUNT(*)::int AS count FROM experts WHERE active = true GROUP BY provider_id`,
-      sql`SELECT COUNT(*)::int AS total FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
-      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '30 days' AND created_at >= ${STATS_RESET_AT} GROUP BY date ORDER BY date`.catch(() => []),
-      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND created_at > NOW() - INTERVAL '30 days' AND created_at >= ${STATS_RESET_AT} GROUP BY date ORDER BY date`.catch(() => []),
-      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM hover_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
-      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM seen_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
-      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '12 weeks' AND created_at >= ${STATS_RESET_AT} GROUP BY week_start ORDER BY week_start`.catch(() => []),
-      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND created_at > NOW() - INTERVAL '12 weeks' AND created_at >= ${STATS_RESET_AT} GROUP BY week_start ORDER BY week_start`.catch(() => []),
-      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM hover_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`.catch(() => []),
-      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM seen_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`.catch(() => []),
-      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '12 months' AND created_at >= ${STATS_RESET_AT} GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
-      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND created_at > NOW() - INTERVAL '12 months' AND created_at >= ${STATS_RESET_AT} GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
-      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM hover_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
-      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM seen_logs WHERE publisher = ${pub} AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
-      sql`SELECT phrase, COUNT(*)::int AS clicks FROM click_logs WHERE publisher = ${pub} AND phrase IS NOT NULL AND phrase != '' AND created_at >= ${STATS_RESET_AT} GROUP BY phrase ORDER BY clicks DESC LIMIT 5`.catch(() => []),
-      sql`SELECT traffic_source AS source, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND traffic_source IS NOT NULL AND created_at >= ${STATS_RESET_AT} GROUP BY traffic_source ORDER BY count DESC`.catch(() => []),
-      sql`SELECT device, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND device IS NOT NULL AND created_at >= ${STATS_RESET_AT} GROUP BY device ORDER BY count DESC`.catch(() => []),
-      sql`SELECT page_url, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND page_url IS NOT NULL AND created_at >= ${STATS_RESET_AT} GROUP BY page_url ORDER BY count DESC LIMIT 100`.catch(() => []),
+      sql`SELECT COUNT(*)::int AS total FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND is_bot = false AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
+      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '30 days' AND created_at >= ${STATS_RESET_AT} GROUP BY date ORDER BY date`.catch(() => []),
+      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND is_bot = false AND created_at > NOW() - INTERVAL '30 days' AND created_at >= ${STATS_RESET_AT} GROUP BY date ORDER BY date`.catch(() => []),
+      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM hover_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
+      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM seen_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
+      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '12 weeks' AND created_at >= ${STATS_RESET_AT} GROUP BY week_start ORDER BY week_start`.catch(() => []),
+      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND is_bot = false AND created_at > NOW() - INTERVAL '12 weeks' AND created_at >= ${STATS_RESET_AT} GROUP BY week_start ORDER BY week_start`.catch(() => []),
+      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM hover_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`.catch(() => []),
+      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM seen_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`.catch(() => []),
+      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '12 months' AND created_at >= ${STATS_RESET_AT} GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
+      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND is_bot = false AND created_at > NOW() - INTERVAL '12 months' AND created_at >= ${STATS_RESET_AT} GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
+      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM hover_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
+      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM seen_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
+      sql`SELECT phrase, COUNT(*)::int AS clicks FROM click_logs WHERE publisher = ${pub} AND phrase IS NOT NULL AND phrase != '' AND is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY phrase ORDER BY clicks DESC LIMIT 5`.catch(() => []),
+      sql`SELECT traffic_source AS source, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND traffic_source IS NOT NULL AND is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY traffic_source ORDER BY count DESC`.catch(() => []),
+      sql`SELECT device, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND device IS NOT NULL AND is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY device ORDER BY count DESC`.catch(() => []),
+      sql`SELECT page_url, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND page_url IS NOT NULL AND is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY page_url ORDER BY count DESC LIMIT 100`.catch(() => []),
     ]);
 
     const expertCountByProvider = new Map(expertCounts.map(r => [r.provider_id, r.count]));
