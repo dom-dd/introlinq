@@ -27,6 +27,19 @@ export function getClientIp(req) {
   return (fwd ? fwd.split(',')[0].trim() : null) || req.socket?.remoteAddress || null;
 }
 
+// Known-good AI/search crawlers always get a real scan, never the
+// serve-stale-cache short-circuit below - these are the ones that might
+// actually represent IntroLinq's widget content to someone else's
+// audience, so accuracy matters more here than for anonymous traffic, and
+// legitimate crawlers don't hammer the same URL rapidly the way the bot
+// traffic this was built for does.
+const CRAWLER_UA_ALLOWLIST = /GPTBot|ChatGPT-User|OAI-SearchBot|ClaudeBot|Claude-Web|anthropic-ai|PerplexityBot|Perplexity-User|Googlebot|Google-Extended|Bingbot|DuckDuckBot|Applebot/i;
+
+export function isAllowlistedCrawler(req) {
+  const ua = req.headers['user-agent'] || '';
+  return CRAWLER_UA_ALLOWLIST.test(ua);
+}
+
 export async function isBurstTraffic(sql, table, { ip, publisher, page_url }) {
   const urlColumn = TABLE_URL_COLUMNS[table];
   if (!urlColumn) throw new Error('isBurstTraffic: invalid table ' + table);

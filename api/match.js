@@ -1,5 +1,5 @@
 ﻿import { neon } from '@neondatabase/serverless';
-import { getClientIp, isBurstTraffic, ensureBotColumns } from './_botDetect.js';
+import { getClientIp, isBurstTraffic, ensureBotColumns, isAllowlistedCrawler } from './_botDetect.js';
 
 // match_cache is global per page now, not per reader country - country
 // fragmentation (every new country paying for its own fresh scan) turned
@@ -305,6 +305,27 @@ async function logCachedImpression(sql, { publisher, page_url, page_title, match
   if (!isBot) {
     postSlackNotification(sql, { publisher, page_url, page_title, matchCount: matches.length, readerCountry, cached: true }).catch(() => {});
   }
+}
+
+// Shared by both the normal cache-hit path and the burst short-circuit
+// below - the only difference is whether the entry looked fresh or stale
+// when it was decided this was safe to serve. Sends the response itself
+// and returns true on success; returns false (sending nothing) when the
+// cache row turned out to be unusable, so the caller falls through to a
+// real scan rather than serving a false empty result.
+async function tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, chunk, pubConfig, stale }) {
+  const referencedExperts = await loadExpertsByIds(sql, collectReferencedIds(cached.result.matches));
+  if (!referencedExperts) return false;
+  const hydrated = hydrateMatches(cached.result.matches, referencedExperts, enabledPartners);
+  const emptiedPositive = cached.has_match && hydrated.length === 0;
+  if (emptiedPositive) return false;
+  // A page-view fans out into one quick + N chunk requests that ALL hit
+  // this cache path - only the quick (or a legacy full scan) logs and
+  // notifies, so a cached page-view produces exactly one impression log
+  // and one Slack message instead of one per parallel request.
+  if (!chunk) logCachedImpression(sql, { publisher, page_url, page_title, matches: hydrated, readerCountry, ip });
+  res.status(200).json({ matches: hydrated, config: pubConfig, cached: true, ...(stale ? { stale: true } : {}) });
+  return true;
 }
 
 const COUNTRY_NAMES = { AF:'Afghanistan',AL:'Albania',DZ:'Algeria',AR:'Argentina',AU:'Australia',AT:'Austria',BE:'Belgium',BR:'Brazil',CA:'Canada',CL:'Chile',CN:'China',CO:'Colombia',HR:'Croatia',CZ:'Czechia',DK:'Denmark',EG:'Egypt',FI:'Finland',FR:'France',DE:'Germany',GH:'Ghana',GR:'Greece',HK:'Hong Kong',HU:'Hungary',IN:'India',ID:'Indonesia',IE:'Ireland',IL:'Israel',IT:'Italy',JP:'Japan',KE:'Kenya',MY:'Malaysia',MX:'Mexico',MA:'Morocco',NL:'Netherlands',NZ:'New Zealand',NG:'Nigeria',NO:'Norway',PK:'Pakistan',PH:'Philippines',PL:'Poland',PT:'Portugal',RO:'Romania',RU:'Russia',SA:'Saudi Arabia',SG:'Singapore',ZA:'South Africa',KR:'South Korea',ES:'Spain',SE:'Sweden',CH:'Switzerland',TW:'Taiwan',TH:'Thailand',TR:'Turkey',UA:'Ukraine',AE:'UAE',GB:'United Kingdom',US:'United States',VN:'Vietnam' };
@@ -819,31 +840,29 @@ export default async function handler(req, res) {
     // have a hash - old cache rows and old cached widget.js copies don't.
     const contentChanged = cached && cached.content_hash && contentHash && cached.content_hash !== contentHash;
     if (cached && !contentChanged) {
-      // Fetch only the experts this cached entry actually references (~6 on
-      // average) rather than the whole active roster - see the comment
-      // above the initial Promise.all for why. A null result means the
-      // fetch itself failed (not "zero experts") - fall through to the
-      // fresh-scan path below rather than serving a false empty result.
-      const referencedExperts = await loadExpertsByIds(sql, collectReferencedIds(cached.result.matches));
-      if (referencedExperts) {
-        // Hydrate slim {expert_id, reason} entries with each expert's CURRENT
-        // profile, dropping unpublished experts and partners this publisher
-        // has disabled. No AI cost - this is a map lookup per match.
-        const hydrated = hydrateMatches(cached.result.matches, referencedExperts, enabledPartners);
-        // If a positive entry hydrates to ZERO surviving experts, the cached
-        // answer no longer exists at all (everyone it matched has gone) -
-        // treat it as a cache miss and let the fresh scan below find current
-        // experts, then overwrite this entry via the normal report flow.
-        // Partial survival still serves (fewer matches beats a paid re-scan).
-        const emptiedPositive = cached.has_match && hydrated.length === 0;
-        if (!emptiedPositive) {
-          // A page-view fans out into one quick + N chunk requests that ALL hit
-          // this cache path - only the quick (or a legacy full scan) logs and
-          // notifies, so a cached page-view produces exactly one impression log
-          // and one Slack message instead of one per parallel request.
-          if (!chunk) logCachedImpression(sql, { publisher, page_url, page_title, matches: hydrated, readerCountry, ip });
-          return res.status(200).json({ matches: hydrated, config: pubConfig, cached: true });
-        }
+      // A null return means the referenced-experts fetch itself failed (not
+      // "zero experts") or the cached answer no longer has any surviving
+      // experts - fall through to the fresh-scan path below rather than
+      // serving a false empty result.
+      if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, chunk, pubConfig })) return;
+    }
+
+    // A cached answer exists but looks stale (hash drifted) AND this exact
+    // IP is already hammering this exact page - rather than pay for another
+    // AI rescan on every repeat hit (the same cost pattern that burned real
+    // money on challenges-tn before its rotating-ad-widget hash issue was
+    // fixed - this is a backstop for any OTHER, not-yet-diagnosed source of
+    // hash instability), serve the last known-good answer instead. A
+    // genuinely new, never-before-scanned page (cached === null) is NEVER
+    // short-circuited this way, no matter how bursty - first discovery of
+    // real content always gets a real scan. Known-good crawlers skip this
+    // check entirely and always get a fresh scan, since accuracy matters
+    // more for a bot that might represent this content to someone else's
+    // audience, and legitimate crawlers don't hammer one URL like this.
+    if (cached && contentChanged && !isAllowlistedCrawler(req)) {
+      const isBot = await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url });
+      if (isBot) {
+        if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, chunk, pubConfig, stale: true })) return;
       }
     }
 
