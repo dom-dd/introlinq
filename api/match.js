@@ -286,9 +286,13 @@ function widgetLiveEmail(firstName) {
 // A cache hit still counts as an impression (log) and, when it actually
 // showed experts, a Slack ping. Shared by every cache-serving path - this
 // block used to be copy-pasted three times with drifting details.
-// Not awaited by its caller (fire-and-forget, same as before) - it just
-// awaits its own steps internally now so the burst check can run before
-// the INSERT decides is_bot.
+// The INSERT is awaited by its caller now (unlike the pre-burst-detection
+// version) - work fired after a response is already sent isn't guaranteed
+// to run to completion on Vercel, and got silently dropped in testing once
+// this had ensureBotColumns + isBurstTraffic to await first, not just a
+// single fire-and-forget INSERT. markPublisherActivity/Slack stay
+// fire-and-forget - only the row this feature's correctness depends on
+// needs to reliably land.
 async function logCachedImpression(sql, { publisher, page_url, page_title, matches, readerCountry, ip }) {
   const phrases = matches.map(m => m.phrase);
   const expertNames = matches.map(m => m.expert?.name).filter(Boolean);
@@ -298,7 +302,7 @@ async function logCachedImpression(sql, { publisher, page_url, page_title, match
     matchLogsBotColumnsReady = true;
   }
   const isBot = await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url });
-  sql`INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, country_code, cost_usd, ip, is_bot)
+  await sql`INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, country_code, cost_usd, ip, is_bot)
     VALUES (${publisher || null}, '[cached]', ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${readerCountry || null}, 0, ${ip || null}, ${isBot})
   `.catch(() => {});
   markPublisherActivity(sql, publisher).catch(() => {});
@@ -322,8 +326,11 @@ async function tryServeFromCache(res, sql, { cached, enabledPartners, publisher,
   // A page-view fans out into one quick + N chunk requests that ALL hit
   // this cache path - only the quick (or a legacy full scan) logs and
   // notifies, so a cached page-view produces exactly one impression log
-  // and one Slack message instead of one per parallel request.
-  if (!chunk) logCachedImpression(sql, { publisher, page_url, page_title, matches: hydrated, readerCountry, ip });
+  // and one Slack message instead of one per parallel request. Awaited
+  // (adds one DB round trip to the response) so the log write reliably
+  // lands - see the comment on logCachedImpression for why that matters
+  // more than it used to.
+  if (!chunk) await logCachedImpression(sql, { publisher, page_url, page_title, matches: hydrated, readerCountry, ip });
   res.status(200).json({ matches: hydrated, config: pubConfig, cached: true, ...(stale ? { stale: true } : {}) });
   return true;
 }
