@@ -337,6 +337,18 @@
     return /^il[bc]?-/.test(id) || /(^|\s)il[bc]?-/.test(cls);
   }
 
+  // Google auto-ads (adsbygoogle / google-auto-placed / the aswift_* iframe
+  // host div) get injected directly into the article DOM on some sites and
+  // rotate their creative/labels on every single page load. Left in, that
+  // ad copy was both feeding the AI irrelevant "content" to match against
+  // and defeating the server's content-hash cache check - every visit
+  // looked like the article had been edited, forcing a full paid rescan.
+  function isAdContainer(p) {
+    var id = p.id || '';
+    var cls = (typeof p.className === 'string' ? p.className : '');
+    return /adsbygoogle|google-auto-placed|goog-rentr|google-aiuf|google-anno-skip/i.test(cls) || /^aswift_/i.test(id);
+  }
+
   function extractParagraphText(el) {
     var walker = document.createTreeWalker(
       el,
@@ -346,6 +358,7 @@
         while (p && p !== el) {
           if (/^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA|INPUT|CODE|PRE|A|H1|H2|H3|H4|H5|H6)$/.test(p.tagName)) return NodeFilter.FILTER_REJECT;
           if (isOwnWidget(p)) return NodeFilter.FILTER_REJECT;
+          if (isAdContainer(p)) return NodeFilter.FILTER_REJECT;
           p = p.parentElement;
         }
         return NodeFilter.FILTER_ACCEPT;
