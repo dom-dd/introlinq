@@ -15,6 +15,7 @@
 
   var API = 'https://www.introlinq.com/api/board?pub=' + encodeURIComponent(PUB);
   var TRACK = 'https://www.introlinq.com/api/dashboard?action=out';
+  var IMPRESSION = 'https://www.introlinq.com/api/dashboard?action=carousel_view&pub=' + encodeURIComponent(PUB);
 
   var _lang = (document.documentElement.lang || 'en').toLowerCase().slice(0, 2);
   var _bookLabels = { fr:'Réserver →',es:'Reservar →',de:'Buchen →',it:'Prenota →',pt:'Agendar →',nl:'Boeken →',pl:'Umów →',sv:'Boka →' };
@@ -84,6 +85,22 @@
     .then(function(data) {
       if (!data || !data.experts || !data.experts.length) { container.innerHTML = ''; return; }
       render(data);
+      // Impression: the carousel is a fixed, publisher-curated list rather
+      // than an AI-matched scan of the page, so unlike widget.js it has no
+      // other moment that logs a "this was shown" event. Fired once per
+      // page load right after a real render, mirroring the same
+      // match_logs impression the main widget writes on every scan - this
+      // is what keeps carousel clicks from outnumbering carousel
+      // impressions in the dashboard's CTR math.
+      fetch(IMPRESSION, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          expert_names: data.experts.map(function(e){ return e.name; }),
+          match_count: data.experts.length,
+          article: window.location.href.slice(0, 300)
+        })
+      }).catch(function(){});
     })
     .catch(function(){ container.innerHTML = ''; });
 

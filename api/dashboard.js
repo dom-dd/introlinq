@@ -7,6 +7,7 @@ const PASSWORD_MIN_LENGTH = 8;
 let clickTableReady = false;
 let hoverTableReady = false;
 let seenTableReady = false;
+let carouselSourceColumnReady = false;
 
 // Display name for the `pub` a partner sends on their webhook calls (e.g.
 // "open-intro") - falls back to a title-cased version of the raw slug for
@@ -298,6 +299,32 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+  // Carousel impression tracking - fired once by carousel.js the moment it
+  // successfully renders on a page. Unlike the main widget, the carousel
+  // shows a fixed, publisher-curated expert list rather than an AI content
+  // scan, so it never wrote a match_logs row - every carousel click landed
+  // in click_logs with no corresponding impression anywhere, which let CTR
+  // (clicks/impressions) run past 100%. This writes into match_logs (tagged
+  // source='carousel') specifically so it's picked up for free by the
+  // existing match_count>0 Impressions COUNT and day/week/month breakdowns
+  // below - it's excluded from the Recent Activity feed further down since
+  // it isn't a phrase-match run and would render there as a confusing
+  // empty-phrase / "no expert matched" row.
+  if (req.method === 'POST' && action === 'carousel_view') {
+    const { expert_names, match_count, article, device } = req.body || {};
+    if (!carouselSourceColumnReady) {
+      await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS source TEXT`.catch(() => {});
+      carouselSourceColumnReady = true;
+    }
+    const names = Array.isArray(expert_names) ? expert_names.slice(0, 50) : [];
+    const count = Number.isFinite(match_count) && match_count > 0 ? match_count : names.length;
+    await sql`
+      INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, match_count, page_url, source)
+      VALUES (${pub}, '[carousel]', ${[]}, ${names}, ${count}, ${article || null}, 'carousel')
+    `.catch(() => {});
+    return res.status(200).end();
+  }
+
   // GET and PATCH: require valid session cookie
   if (req.method === 'GET' || req.method === 'PATCH') {
     const sessionToken = getSessionToken(req);
@@ -508,7 +535,7 @@ export default async function handler(req, res) {
            clicksByDay, impressionsByDay, hoversByDay, seenByDay, clicksByWeek, impressionsByWeek, hoversByWeek, seenByWeek,
            clicksByMonth, impressionsByMonth, hoversByMonth, seenByMonth,
            topPhrases, topSources, topDevices, pageUrls] = await Promise.all([
-      sql`SELECT phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, created_at FROM match_logs WHERE publisher = ${pub} AND page_url IS NOT NULL AND created_at >= ${STATS_RESET_AT} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
+      sql`SELECT phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, created_at FROM match_logs WHERE publisher = ${pub} AND page_url IS NOT NULL AND (source IS NULL OR source <> 'carousel') AND created_at >= ${STATS_RESET_AT} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
       sql`SELECT COUNT(*)::int AS total FROM click_logs WHERE publisher = ${pub} AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
       sql`SELECT COUNT(*)::int AS total FROM hover_logs WHERE publisher = ${pub} AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
       sql`SELECT COUNT(*)::int AS total FROM seen_logs WHERE publisher = ${pub} AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
