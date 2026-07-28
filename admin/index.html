@@ -769,6 +769,8 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 <div class="toast" id="toast"></div>
 
 <script>
+const SCAN_CAP_LIMIT = 500; // must match SCAN_CAP_LIMIT in api/match.js
+
 async function login() {
   const res = await fetch('/api/admin?resource=auth');
   const data = await res.json();
@@ -1187,6 +1189,25 @@ async function loadPublishers() {
             }
             return `<button onclick="toggleReminders(${p.id}, true)" title="${esc(reminderTooltip(p))}" style="background:#f0fdf4;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">${bell('#16a34a')}</button>`;
           })()}
+          ${(()=>{
+            // New-publisher scan cap (see SCAN_CAP_LIMIT in match.js): 500
+            // pages max for any publisher not grandfathered/overridden.
+            // Green = still scanning freely, grey = cap reached (click to
+            // lift it), blue = manually lifted (click to re-enable it).
+            const layers = color => `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`;
+            const layersSlash = color => `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+            const scanned = p.scanned_pages || 0;
+            const matched = p.matched_pages || 0;
+            const noMatch = p.no_match_pages || 0;
+            const breakdown = `${matched} page${matched===1?'':'s'} with our widget on it, ${noMatch} scanned with no result (${scanned}/${SCAN_CAP_LIMIT} scanned)`;
+            if (p.scan_cap_override) {
+              return `<button onclick="toggleScanCap(${p.id}, false)" title="${esc('Scan cap lifted for this publisher - ' + breakdown + '. Click to re-enable the cap.')}" style="background:#eef2ff;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">${layers('#4f6ef7')}</button>`;
+            }
+            if (scanned >= SCAN_CAP_LIMIT) {
+              return `<button onclick="toggleScanCap(${p.id}, true)" title="${esc('Scan cap reached - ' + breakdown + '. Click to lift the cap.')}" style="background:#f4f4f8;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">${layersSlash('#8888a8')}</button>`;
+            }
+            return `<span title="${esc(breakdown)}" style="background:#f0fdf4;border-radius:50%;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;cursor:default">${layers('#16a34a')}</span>`;
+          })()}
           <button onclick="togglePublisher(${p.id}, ${!p.active})" title="${p.active ? 'Deactivate' : 'Activate'}" style="background:${p.active ? 'var(--red-light)' : 'var(--green-light)'};border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${p.active ? 'var(--red)' : 'var(--green)'}" stroke-width="2.5" stroke-linecap="round"><path d="M18.36 6.64A9 9 0 1 1 5.64 6.64"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
           </button>
@@ -1294,6 +1315,15 @@ async function toggleReminders(id, reminders_paused) {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest'},
     body: JSON.stringify({ id, reminders_paused })
+  });
+  loadPublishers();
+}
+
+async function toggleScanCap(id, scan_cap_override) {
+  await fetch('/api/admin?resource=publishers&action=scan-cap-override', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest'},
+    body: JSON.stringify({ id, scan_cap_override })
   });
   loadPublishers();
 }

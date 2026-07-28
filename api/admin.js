@@ -443,6 +443,12 @@ export default async function handler(req, res) {
     // already talking to directly, where an automated "still not live?"
     // email would be redundant or read as out of touch.
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS reminders_paused BOOLEAN DEFAULT false`;
+    // New-publisher scan cap (see SCAN_CAP_LIMIT in match.js): every
+    // publisher that already existed when this shipped was grandfathered in
+    // (backfilled to true in a one-off script - see project memory) since
+    // they'd already been scanning freely for a while with no cap in mind.
+    // Only publishers created after that point default to false (capped).
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS scan_cap_override BOOLEAN NOT NULL DEFAULT false`;
 
     if (req.method === 'GET') {
       // Demo publisher accounts (power the /demo/*.html showcase pages' widgets)
@@ -452,24 +458,45 @@ export default async function handler(req, res) {
       // Windowed to STATS_RESET_AT so these match what each publisher sees in
       // their own dashboard - not deleted, just filtered (see STATS_RESET_AT
       // comment above).
-      const [matchStats, clickStats, hoverStats, seenStats] = await Promise.all([
+      const [matchStats, clickStats, hoverStats, seenStats, cacheStats] = await Promise.all([
         sql`SELECT publisher, COUNT(*)::int AS impressions FROM match_logs WHERE match_count > 0 AND is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY publisher`.catch(() => []),
         sql`SELECT publisher, COUNT(*)::int AS clicks FROM click_logs WHERE is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY publisher`.catch(() => []),
         sql`SELECT publisher, COUNT(*)::int AS hovers FROM hover_logs WHERE is_bot = false GROUP BY publisher`.catch(() => []),
         sql`SELECT publisher, COUNT(*)::int AS seen FROM seen_logs WHERE is_bot = false GROUP BY publisher`.catch(() => []),
+        // Scan-cap status: total pages scanned (any verdict) vs. how many
+        // actually found a match, per publisher - powers the cap icon.
+        sql`SELECT publisher, COUNT(*)::int AS total, SUM(CASE WHEN has_match THEN 1 ELSE 0 END)::int AS matched FROM match_cache GROUP BY publisher`.catch(() => []),
       ]);
       const matchMap = Object.fromEntries(matchStats.map(r => [r.publisher, r.impressions]));
       const clickMap = Object.fromEntries(clickStats.map(r => [r.publisher, r.clicks]));
       const hoverMap = Object.fromEntries(hoverStats.map(r => [r.publisher, r.hovers]));
       const seenMap = Object.fromEntries(seenStats.map(r => [r.publisher, r.seen]));
-      const result = publishers.map(p => ({
-        ...p,
-        impressions: matchMap[p.slug] || 0,
-        clicks: clickMap[p.slug] || 0,
-        hovers: hoverMap[p.slug] || 0,
-        seen: seenMap[p.slug] || 0,
-      }));
+      const cacheMap = Object.fromEntries(cacheStats.map(r => [r.publisher, r]));
+      const result = publishers.map(p => {
+        const c = cacheMap[p.slug];
+        return {
+          ...p,
+          impressions: matchMap[p.slug] || 0,
+          clicks: clickMap[p.slug] || 0,
+          hovers: hoverMap[p.slug] || 0,
+          seen: seenMap[p.slug] || 0,
+          scanned_pages: c ? c.total : 0,
+          matched_pages: c ? c.matched : 0,
+          no_match_pages: c ? c.total - c.matched : 0,
+        };
+      });
       return res.status(200).json(result);
+    }
+
+    // Separate from the general PATCH handler below on purpose - that one
+    // unconditionally wipes the publisher's match_cache so config changes
+    // (match_power, colors, etc.) take effect immediately, which would
+    // defeat the entire point of a scan cap by forcing a full re-scan every
+    // time the cap gets toggled.
+    if (req.method === 'PATCH' && req.query.action === 'scan-cap-override') {
+      const { id, scan_cap_override } = req.body;
+      const [pub] = await sql`UPDATE publishers SET scan_cap_override = ${!!scan_cap_override} WHERE id = ${id} RETURNING id, slug, scan_cap_override`;
+      return res.status(200).json(pub);
     }
 
     if (req.method === 'POST') {

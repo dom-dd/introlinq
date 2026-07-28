@@ -18,9 +18,19 @@ let matchLogsBotColumnsReady = false;
 let cacheTableReady = false;
 let publisherActivityColumnsReady = false;
 let discoveryCueColumnReady = false;
+let scanCapColumnReady = false;
 let expertsCache = null;
 let expertsCacheTime = 0;
 const EXPERTS_TTL = 5 * 60 * 1000;
+
+// New publishers only scan up to this many distinct pages before further
+// fresh scans are blocked (existing publishers as of 2026-07-28 were
+// grandfathered in via scan_cap_override=true, since they'd already been
+// scanning freely for a while with no cap in mind - see project memory).
+// Counts every cache entry regardless of verdict (a "no match" scan still
+// cost real money), not just positive matches. Admin can lift this per
+// publisher via the scan-cap icon in the admin panel.
+const SCAN_CAP_LIMIT = 500;
 
 // Loads the full active-experts list (module-cached for EXPERTS_TTL). Used by
 // BOTH the fresh-scan path (to build the AI prompt) and the cache-hit path
@@ -494,6 +504,15 @@ function normalizePageUrl(raw) {
   try {
     const u = new URL(raw);
     u.hash = '';
+    // www./no-www and trailing-slash/no-trailing-slash are the same page to
+    // every real site (both resolve, neither redirects on most WordPress-
+    // style setups) but were previously treated as two separate cache
+    // entries - each variant paying for its own fresh scan the first time
+    // it's hit, even though it's identical content.
+    u.hostname = u.hostname.replace(/^www\./i, '');
+    if (u.pathname.length > 1 && u.pathname.endsWith('/')) {
+      u.pathname = u.pathname.slice(0, -1);
+    }
     const keep = [];
     for (const [k, v] of u.searchParams.entries()) {
       if (/^(utm_|mc_|pk_|piwik_|gad_)/i.test(k) || TRACKING_PARAM_EXACT.has(k.toLowerCase())) continue;
@@ -795,9 +814,13 @@ export default async function handler(req, res) {
       await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS discovery_cue_enabled BOOLEAN DEFAULT true`.catch(() => {});
       discoveryCueColumnReady = true;
     }
+    if (!scanCapColumnReady) {
+      await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS scan_cap_override BOOLEAN NOT NULL DEFAULT false`.catch(() => {});
+      scanCapColumnReady = true;
+    }
     const [pubRows, cachedRows] = await Promise.all([
       publisher
-        ? sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null])
+        ? sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, scan_cap_override, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null])
         : Promise.resolve([null]),
       page_url
         ? sql`
@@ -870,6 +893,21 @@ export default async function handler(req, res) {
       const isBot = await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url });
       if (isBot) {
         if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, chunk, pubConfig, stale: true })) return;
+      }
+    }
+
+    // New-publisher scan cap: once a non-exempt publisher has this many
+    // pages cached (any verdict - a "no match" scan still cost real money),
+    // stop running further fresh scans for them until an admin lifts it.
+    // Doesn't cache this outcome as a real answer - a page that hit the cap
+    // gets retried for real the next time it's visited after the cap is
+    // lifted or raised, not permanently written off as "no match". Only
+    // reachable here (not for a normal cache hit or the stale-cache
+    // short-circuit above), so already-cached pages are never affected.
+    if (pub && !pub.scan_cap_override) {
+      const capCheck = await sql`SELECT COUNT(*)::int AS n FROM match_cache WHERE publisher = ${publisher}`;
+      if (capCheck[0].n >= SCAN_CAP_LIMIT) {
+        return res.status(200).json({ matches: [], config: pubConfig, capped: true });
       }
     }
 
