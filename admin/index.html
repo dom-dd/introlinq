@@ -1049,16 +1049,16 @@ function renderPaymentStatusIcon(p) {
   return `<span title="${esc(tooltip)}" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:${bg};color:${color};flex-shrink:0;cursor:default">${icon}</span>`;
 }
 
-// Three-state pattern so the whole table can be scanned at a glance: grey
-// = never installed (nothing to flag, just not started), yellow = was
-// installed and firing but has gone quiet (script removed, site redesign,
-// bug - the tooltip + widget-removed-check.js's emails sort out which),
-// green = live. 14 days of silence is treated as "flag it" for this icon;
-// a single missed day is normal (low-traffic blogs, weekends). Note the
-// backend alert sequence (widget-removed-check.js) starts emailing the
-// publisher well before 14 days - this icon's threshold is just for the
-// dashboard's own at-a-glance read, kept conservative to avoid the icon
-// itself crying wolf over a normal quiet weekend.
+// Three-state pattern so the whole table can be scanned at a glance:
+// yellow = never installed (nothing broken, just not started yet), red =
+// was installed and firing but has gone quiet (script removed, site
+// redesign, bug - the tooltip + widget-removed-check.js's emails sort out
+// which), green = live. 14 days of silence is treated as "flag it" for
+// this icon; a single missed day is normal (low-traffic blogs, weekends).
+// Note the backend alert sequence (widget-removed-check.js) notifies well
+// before 14 days - this icon's threshold is just for the dashboard's own
+// at-a-glance read, kept conservative to avoid the icon itself crying wolf
+// over a normal quiet weekend.
 const WIDGET_STALE_MS = 14 * 24 * 60 * 60 * 1000;
 
 function renderWidgetStatusIcon(p) {
@@ -1070,12 +1070,12 @@ function renderWidgetStatusIcon(p) {
   let tooltip, color, bg;
   if (neverInstalled) {
     tooltip = `Widget has never fired - the embed code likely hasn't been added to their site yet.`;
-    color = '#8888a8';
-    bg = '#f4f4f8';
+    color = '#e6a820';
+    bg = '#fef3c7';
   } else if (wentQuiet) {
     tooltip = `Widget went live on ${fmt(new Date(p.first_widget_fire_at))} but hasn't fired since ${fmt(lastFire)} - it may have been removed.`;
-    color = '#d97706';
-    bg = '#fef3c7';
+    color = '#dc2626';
+    bg = '#fff1f1';
   } else {
     tooltip = `Widget is live and firing. First seen ${fmt(new Date(p.first_widget_fire_at))}, last seen ${fmt(lastFire)}.`;
     color = '#16a34a';
