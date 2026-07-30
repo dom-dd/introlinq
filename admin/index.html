@@ -1053,13 +1053,11 @@ function renderPaymentStatusIcon(p) {
 // yellow = never installed (nothing broken, just not started yet), red =
 // was installed and firing but has gone quiet (script removed, site
 // redesign, bug - the tooltip + widget-removed-check.js's emails sort out
-// which), green = live. 14 days of silence is treated as "flag it" for
-// this icon; a single missed day is normal (low-traffic blogs, weekends).
-// Note the backend alert sequence (widget-removed-check.js) notifies well
-// before 14 days - this icon's threshold is just for the dashboard's own
-// at-a-glance read, kept conservative to avoid the icon itself crying wolf
-// over a normal quiet weekend.
-const WIDGET_STALE_MS = 14 * 24 * 60 * 60 * 1000;
+// which), green = live. 3 days matches DAYS_SILENT in
+// api/cron/widget-removed-check.js - the icon should turn red exactly
+// when that job would flag/has flagged the same publisher as removed, not
+// on some separately-tuned dashboard-only schedule that disagrees with it.
+const WIDGET_STALE_MS = 3 * 24 * 60 * 60 * 1000;
 
 function renderWidgetStatusIcon(p) {
   const fmt = d => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
