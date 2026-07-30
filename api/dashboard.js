@@ -1,7 +1,7 @@
 ﻿import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import { getClientIp, isBurstTraffic, ensureBotColumns } from './_botDetect.js';
+import { getClientIp, isBurstTraffic, isSitewideBurst, ensureBotColumns } from './_botDetect.js';
 
 const PASSWORD_MIN_LENGTH = 8;
 
@@ -188,7 +188,8 @@ export default async function handler(req, res) {
       await ensureBotColumns(sql, 'click_logs');
       clickBotColumnsReady = true;
     }
-    const isBot = await isBurstTraffic(sql, 'click_logs', { ip, publisher: pub, page_url: article });
+    const isBot = (await isBurstTraffic(sql, 'click_logs', { ip, publisher: pub, page_url: article }))
+      || (await isSitewideBurst(sql, 'click_logs', { ip, publisher: pub }));
 
     // Build partner URL with full attribution params
     let destUrl;
@@ -274,7 +275,8 @@ export default async function handler(req, res) {
       await ensureBotColumns(sql, 'seen_logs');
       seenBotColumnsReady = true;
     }
-    const isBot = await isBurstTraffic(sql, 'seen_logs', { ip, publisher: pub, page_url: article });
+    const isBot = (await isBurstTraffic(sql, 'seen_logs', { ip, publisher: pub, page_url: article }))
+      || (await isSitewideBurst(sql, 'seen_logs', { ip, publisher: pub }));
     await sql`
       INSERT INTO seen_logs (publisher, expert_id, expert_name, phrase, article_url, device, ip, is_bot)
       VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${phrase || null}, ${article || null}, ${device || null}, ${ip || null}, ${isBot})
@@ -312,7 +314,8 @@ export default async function handler(req, res) {
       await ensureBotColumns(sql, 'hover_logs');
       hoverBotColumnsReady = true;
     }
-    const isBot = await isBurstTraffic(sql, 'hover_logs', { ip, publisher: pub, page_url: article });
+    const isBot = (await isBurstTraffic(sql, 'hover_logs', { ip, publisher: pub, page_url: article }))
+      || (await isSitewideBurst(sql, 'hover_logs', { ip, publisher: pub }));
     await sql`
       INSERT INTO hover_logs (publisher, expert_id, expert_name, phrase, article_url, device, ip, is_bot)
       VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${phrase || null}, ${article || null}, ${device || null}, ${ip || null}, ${isBot})
@@ -343,7 +346,8 @@ export default async function handler(req, res) {
       await ensureBotColumns(sql, 'match_logs');
       carouselBotColumnsReady = true;
     }
-    const isBot = await isBurstTraffic(sql, 'match_logs', { ip, publisher: pub, page_url: article });
+    const isBot = (await isBurstTraffic(sql, 'match_logs', { ip, publisher: pub, page_url: article }))
+      || (await isSitewideBurst(sql, 'match_logs', { ip, publisher: pub }));
     await sql`
       INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, match_count, page_url, source, ip, is_bot)
       VALUES (${pub}, '[carousel]', ${[]}, ${names}, ${count}, ${article || null}, 'carousel', ${ip || null}, ${isBot})

@@ -51,6 +51,30 @@ export async function isBurstTraffic(sql, table, { ip, publisher, page_url }) {
   return (rows[0]?.n || 0) >= BURST_THRESHOLD;
 }
 
+// Catches a different bot shape than isBurstTraffic above: one that
+// deliberately spreads its hits across many DIFFERENT pages of the same
+// publisher - often from a rotating pool of IPs - specifically to stay
+// under the per-page threshold. Found on tchelete: 195 IPs (all sequential
+// within one /24-ish block), each hitting ~35-45 different pages once
+// each, never repeating a page - invisible to the per-page check no matter
+// how low its threshold went. A real reader essentially never racks up
+// double-digit clicks/hovers/seens on ONE publisher's site in a day
+// regardless of how many different pages they're spread across - 10 is
+// comfortably above genuine engagement and comfortably below what every
+// bot IP in that incident actually did.
+const SITEWIDE_WINDOW_INTERVAL = '24 hours';
+const SITEWIDE_THRESHOLD = 10;
+
+export async function isSitewideBurst(sql, table, { ip, publisher }) {
+  if (!TABLE_URL_COLUMNS[table]) throw new Error('isSitewideBurst: invalid table ' + table);
+  if (!ip) return false;
+  const rows = await sql.query(
+    `SELECT COUNT(*)::int AS n FROM ${table} WHERE ip = $1 AND publisher = $2 AND created_at > NOW() - INTERVAL '${SITEWIDE_WINDOW_INTERVAL}'`,
+    [ip, publisher || '']
+  ).catch(() => [{ n: 0 }]);
+  return (rows[0]?.n || 0) >= SITEWIDE_THRESHOLD;
+}
+
 export async function ensureBotColumns(sql, table) {
   const urlColumn = TABLE_URL_COLUMNS[table];
   if (!urlColumn) throw new Error('ensureBotColumns: invalid table ' + table);
@@ -58,5 +82,8 @@ export async function ensureBotColumns(sql, table) {
     sql.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ip TEXT`).catch(() => {}),
     sql.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS is_bot BOOLEAN NOT NULL DEFAULT false`).catch(() => {}),
   ]);
-  await sql.query(`CREATE INDEX IF NOT EXISTS ${table}_ip_page_idx ON ${table}(ip, publisher, ${urlColumn}, created_at)`).catch(() => {});
+  await Promise.all([
+    sql.query(`CREATE INDEX IF NOT EXISTS ${table}_ip_page_idx ON ${table}(ip, publisher, ${urlColumn}, created_at)`).catch(() => {}),
+    sql.query(`CREATE INDEX IF NOT EXISTS ${table}_ip_pub_idx ON ${table}(ip, publisher, created_at)`).catch(() => {}),
+  ]);
 }
