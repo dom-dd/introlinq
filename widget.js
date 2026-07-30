@@ -16,18 +16,24 @@
   if (window.__ilWidgetInit) return;
   window.__ilWidgetInit = true;
 
+  // {name} is filled in per-match in fillPopup (the expert's first name) -
+  // these are templates, not final labels. "Speak with" reads as a lower-
+  // commitment ask than "Book a call" while still being honest about the
+  // destination. Pl/fi/tr avoid inflecting {name} directly (an arbitrary
+  // Latin name can't be reliably declined into those languages' cases), so
+  // they use a colon construction instead of a real preposition + name.
   var _bookLabels = {
-    fr: 'Réserver un appel →', es: 'Reservar una llamada →', de: 'Gespräch buchen →',
-    it: 'Prenota una chiamata →', pt: 'Agendar uma chamada →', nl: 'Gesprek boeken →',
-    pl: 'Umów rozmowę →', sv: 'Boka ett samtal →', no: 'Book en samtale →',
-    da: 'Book et opkald →', fi: 'Varaa puhelu →', ro: 'Rezervă un apel →',
-    tr: 'Görüşme rezerve et →', ar: 'احجز مكالمة →', zh: '预约通话 →',
-    ja: '通話を予約する →', ko: '통화 예약하기 →'
+    fr: 'Parler avec {name} →', es: 'Hablar con {name} →', de: 'Mit {name} sprechen →',
+    it: 'Parla con {name} →', pt: 'Falar com {name} →', nl: 'Spreek met {name} →',
+    pl: 'Porozmawiaj z: {name} →', sv: 'Prata med {name} →', no: 'Snakk med {name} →',
+    da: 'Tal med {name} →', fi: 'Keskustele: {name} →', ro: 'Vorbește cu {name} →',
+    tr: 'Konuş: {name} →', ar: 'تحدث مع {name} →', zh: '与{name}交谈 →',
+    ja: '{name}さんと話す →', ko: '{name}님과 상담하기 →'
   };
   // Defaults for the IL_PRELOADED_MATCHES path (no article text to detect from yet).
   // The normal flow overrides these from the article's own text once extracted.
   var _lang = (document.documentElement.lang || 'en').toLowerCase().slice(0, 2);
-  var BOOK_LABEL = _bookLabels[_lang] || 'Book a call →';
+  var BOOK_LABEL = _bookLabels[_lang] || 'Speak with {name} →';
 
   // Detects language from the article's own text rather than trusting the page's
   // <html lang> (often misconfigured on CMS sites) or the visitor's browser locale.
@@ -104,7 +110,7 @@
     if (!el || text.length < 150) return;
 
     _lang = detectLanguage(text);
-    BOOK_LABEL = _bookLabels[_lang] || 'Book a call →';
+    BOOK_LABEL = _bookLabels[_lang] || 'Speak with {name} →';
 
     if (window.IL_PRELOADED_MATCHES) {
       var pre = window.IL_PRELOADED_MATCHES;
@@ -776,6 +782,20 @@
         sp.addEventListener('mouseleave', function () { scheduleHide(popup); });
       });
     }
+    // Keyboard equivalent of click/mouseenter above, on the one focusable
+    // fragment (anchor === spans[0], the one with tabindex="0" - see
+    // wrapCombinedRange). Space also triggers native scroll on most
+    // elements, so it's prevented here same as a real link/button would.
+    anchor.addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Enter' && ev.key !== ' ') return;
+      ev.preventDefault();
+      stopDiscoveryCue();
+      trackHover(hoverTracked, m);
+      clearTimeout(hideTimer);
+      fillPopup(popup, m, cfg);
+      positionPopup(popup, anchor, cfg);
+      popup.classList.add('il-on');
+    });
   }
 
   function highlightMatches(container, matches, popup, cfg, usedRanges) {
@@ -857,6 +877,14 @@
       var span = document.createElement('span');
       span.className = 'il-hl';
       span.textContent = text.slice(from, to);
+      // role=link (every fragment, so a screen reader reading through the
+      // paragraph announces each piece consistently) + tabindex only on the
+      // first fragment (one tab stop per phrase, not one per DOM fragment -
+      // matches the popup's own first-fragment anchoring above) makes this
+      // keyboard/AT-reachable without becoming a real navigable <a> - see
+      // attachGroupEvents for the matching keydown handler.
+      span.setAttribute('role', 'link');
+      if (spans.length === 0) span.setAttribute('tabindex', '0');
       spans.push(span);
 
       if (from > 0) parent.insertBefore(document.createTextNode(text.slice(0, from)), node);
@@ -914,6 +942,12 @@
     var rs = document.getElementById('il-rs');
     if (rs) rs.textContent = match.reason;
     var bk = document.getElementById('il-bk');
+    // BOOK_LABEL is a template ("Speak with {name} →") - resolved per-match
+    // here rather than baked in at popup creation, since the popup DOM is a
+    // singleton reused across every expert on the page (see fillPopup's
+    // other fields above, same pattern).
+    var firstName = (e.name || '').split(' ')[0] || e.name;
+    bk.textContent = BOOK_LABEL.replace('{name}', firstName);
     var url = e.booking_url || '#';
     if (url !== '#') {
       bk.href = 'https://www.introlinq.com/api/dashboard?action=out'
