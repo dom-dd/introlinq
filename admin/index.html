@@ -769,7 +769,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 <div class="toast" id="toast"></div>
 
 <script>
-const SCAN_CAP_LIMIT = 500; // must match SCAN_CAP_LIMIT in api/match.js
+const SCAN_CAP_LIMIT = 250; // must match SCAN_CAP_LIMIT in api/match.js - per rolling 30-day window
 
 async function login() {
   const res = await fetch('/api/admin?resource=auth');
@@ -1049,28 +1049,38 @@ function renderPaymentStatusIcon(p) {
   return `<span title="${esc(tooltip)}" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:${bg};color:${color};flex-shrink:0;cursor:default">${icon}</span>`;
 }
 
-// Same always-shown pattern - green = healthy, so the whole table can be
-// scanned at a glance for who's live vs who needs a nudge. Red covers
-// both "never installed" and
-// "installed then went quiet" (script removed, site redesign, etc) - the
-// tooltip tells the two apart. 14 days of silence is treated as "flag it";
-// a single missed day is normal (low-traffic blogs, weekends).
+// Three-state pattern so the whole table can be scanned at a glance: grey
+// = never installed (nothing to flag, just not started), yellow = was
+// installed and firing but has gone quiet (script removed, site redesign,
+// bug - the tooltip + widget-removed-check.js's emails sort out which),
+// green = live. 14 days of silence is treated as "flag it" for this icon;
+// a single missed day is normal (low-traffic blogs, weekends). Note the
+// backend alert sequence (widget-removed-check.js) starts emailing the
+// publisher well before 14 days - this icon's threshold is just for the
+// dashboard's own at-a-glance read, kept conservative to avoid the icon
+// itself crying wolf over a normal quiet weekend.
 const WIDGET_STALE_MS = 14 * 24 * 60 * 60 * 1000;
 
 function renderWidgetStatusIcon(p) {
   const fmt = d => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
   const lastFire = p.last_widget_fire_at ? new Date(p.last_widget_fire_at) : null;
-  const isLive = !!lastFire && (Date.now() - lastFire.getTime()) < WIDGET_STALE_MS;
-  let tooltip;
-  if (!p.first_widget_fire_at) {
+  const neverInstalled = !p.first_widget_fire_at;
+  const isLive = !neverInstalled && !!lastFire && (Date.now() - lastFire.getTime()) < WIDGET_STALE_MS;
+  const wentQuiet = !neverInstalled && !isLive;
+  let tooltip, color, bg;
+  if (neverInstalled) {
     tooltip = `Widget has never fired - the embed code likely hasn't been added to their site yet.`;
-  } else if (!isLive) {
+    color = '#8888a8';
+    bg = '#f4f4f8';
+  } else if (wentQuiet) {
     tooltip = `Widget went live on ${fmt(new Date(p.first_widget_fire_at))} but hasn't fired since ${fmt(lastFire)} - it may have been removed.`;
+    color = '#d97706';
+    bg = '#fef3c7';
   } else {
     tooltip = `Widget is live and firing. First seen ${fmt(new Date(p.first_widget_fire_at))}, last seen ${fmt(lastFire)}.`;
+    color = '#16a34a';
+    bg = '#f0fdf4';
   }
-  const color = isLive ? '#16a34a' : '#dc2626';
-  const bg = isLive ? '#f0fdf4' : '#fef2f2';
   const icon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
   return `<span title="${esc(tooltip)}" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:${bg};color:${color};flex-shrink:0;cursor:default">${icon}</span>`;
 }
@@ -1190,20 +1200,23 @@ async function loadPublishers() {
             return `<button onclick="toggleReminders(${p.id}, true)" title="${esc(reminderTooltip(p))}" style="background:#f0fdf4;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">${bell('#16a34a')}</button>`;
           })()}
           ${(()=>{
-            // New-publisher scan cap (see SCAN_CAP_LIMIT in match.js): 500
-            // pages max for any publisher not grandfathered/overridden.
-            // Green = still scanning freely, grey = cap reached (click to
-            // lift it), blue = manually lifted (click to re-enable it).
+            // New-publisher scan cap (see SCAN_CAP_LIMIT in match.js): 250
+            // pages per rolling 30-day window for any publisher not
+            // grandfathered/overridden - not a lifetime total, so this can
+            // go from grey back to green on its own as old scans age out.
+            // Green = still scanning freely, grey = cap reached for this
+            // window (click to lift it), blue = manually lifted (click to
+            // re-enable it).
             const layers = color => `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`;
             const layersSlash = color => `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
-            const scanned = p.scanned_pages || 0;
+            const scannedRecent = p.scanned_last_30d || 0;
             const matched = p.matched_pages || 0;
             const noMatch = p.no_match_pages || 0;
-            const breakdown = `${matched} page${matched===1?'':'s'} with our widget on it, ${noMatch} scanned with no result (${scanned}/${SCAN_CAP_LIMIT} scanned)`;
+            const breakdown = `${matched} page${matched===1?'':'s'} with our widget on it, ${noMatch} scanned with no result overall (${scannedRecent}/${SCAN_CAP_LIMIT} scanned in the last 30 days)`;
             if (p.scan_cap_override) {
               return `<button onclick="toggleScanCap(${p.id}, false)" title="${esc('Scan cap lifted for this publisher - ' + breakdown + '. Click to re-enable the cap.')}" style="background:#eef2ff;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">${layers('#4f6ef7')}</button>`;
             }
-            if (scanned >= SCAN_CAP_LIMIT) {
+            if (scannedRecent >= SCAN_CAP_LIMIT) {
               return `<button onclick="toggleScanCap(${p.id}, true)" title="${esc('Scan cap reached - ' + breakdown + '. Click to lift the cap.')}" style="background:#f4f4f8;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">${layersSlash('#8888a8')}</button>`;
             }
             return `<span title="${esc(breakdown)}" style="background:#f0fdf4;border-radius:50%;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;cursor:default">${layers('#16a34a')}</span>`;

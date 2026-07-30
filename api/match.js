@@ -23,14 +23,25 @@ let expertsCache = null;
 let expertsCacheTime = 0;
 const EXPERTS_TTL = 5 * 60 * 1000;
 
-// New publishers only scan up to this many distinct pages before further
-// fresh scans are blocked (existing publishers as of 2026-07-28 were
-// grandfathered in via scan_cap_override=true, since they'd already been
-// scanning freely for a while with no cap in mind - see project memory).
-// Counts every cache entry regardless of verdict (a "no match" scan still
-// cost real money), not just positive matches. Admin can lift this per
-// publisher via the scan-cap icon in the admin panel.
-const SCAN_CAP_LIMIT = 500;
+// New publishers only scan up to this many distinct pages within a rolling
+// window before further fresh scans pause (existing publishers as of
+// 2026-07-28 were grandfathered in via scan_cap_override=true, since they'd
+// already been scanning freely for a while with no cap in mind - see project
+// memory). Deliberately a ROLLING window, not a lifetime total: a lifetime
+// cap permanently dead-ends a publisher once crossed - their newest articles
+// (the ones most likely to actually be read) would never get scanned again,
+// same as their oldest backlog page. A rolling window means last month's
+// scans age out and free up room each month, so ongoing new content always
+// gets a shot - it just competes with any not-yet-scanned backlog for that
+// month's allowance rather than jumping the queue. Counts every cache entry
+// regardless of verdict (a "no match" scan still cost real money), not just
+// positive matches. Admin can lift this per publisher via the scan-cap icon
+// in the admin panel. Window length lives directly in the query below
+// (Postgres INTERVAL literal) rather than as a template variable - the sql``
+// tag auto-parameterizes every ${} it sees, which breaks INTERVAL syntax if
+// a variable lands inside the quoted literal (see _botDetect.js's isBurstTraffic
+// for the same constraint, solved there with sql.query() instead).
+const SCAN_CAP_LIMIT = 250; // per rolling 30-day window (see query below)
 
 // Loads the full active-experts list (module-cached for EXPERTS_TTL). Used by
 // BOTH the fresh-scan path (to build the AI prompt) and the cache-hit path
@@ -221,12 +232,18 @@ async function markPublisherActivity(sql, publisher) {
   if (!publisherActivityColumnsReady) {
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS first_widget_fire_at TIMESTAMPTZ`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS last_widget_fire_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS widget_removed_notified_at TIMESTAMPTZ`.catch(() => {});
     publisherActivityColumnsReady = true;
   }
+  // Clearing widget_removed_notified_at on every fire (not just the first)
+  // is what lets widget-removed-check.js notify again if a publisher
+  // reinstalls and later goes quiet a second time - most calls just reset
+  // an already-null column, a no-op.
   const [row] = await sql`
     UPDATE publishers
     SET last_widget_fire_at = NOW(),
-        first_widget_fire_at = COALESCE(first_widget_fire_at, NOW())
+        first_widget_fire_at = COALESCE(first_widget_fire_at, NOW()),
+        widget_removed_notified_at = NULL
     WHERE slug = ${publisher}
     RETURNING name, email, (first_widget_fire_at = NOW()) AS just_went_live
   `.catch(() => [null]);
@@ -896,16 +913,18 @@ export default async function handler(req, res) {
       }
     }
 
-    // New-publisher scan cap: once a non-exempt publisher has this many
-    // pages cached (any verdict - a "no match" scan still cost real money),
-    // stop running further fresh scans for them until an admin lifts it.
-    // Doesn't cache this outcome as a real answer - a page that hit the cap
-    // gets retried for real the next time it's visited after the cap is
-    // lifted or raised, not permanently written off as "no match". Only
-    // reachable here (not for a normal cache hit or the stale-cache
-    // short-circuit above), so already-cached pages are never affected.
+    // New-publisher scan cap: once a non-exempt publisher has scanned this
+    // many pages within the rolling window (any verdict - a "no match" scan
+    // still cost real money), pause further fresh scans for them until the
+    // window rolls forward or an admin lifts it. Doesn't cache this outcome
+    // as a real answer - a page that hit the cap gets retried for real the
+    // next time it's visited after room frees up, not permanently written
+    // off as "no match". Only reachable here (not for a normal cache hit or
+    // the stale-cache short-circuit above), so already-cached pages are
+    // never affected.
     if (pub && !pub.scan_cap_override) {
-      const capCheck = await sql`SELECT COUNT(*)::int AS n FROM match_cache WHERE publisher = ${publisher}`;
+      const capCheck = await sql`SELECT COUNT(*)::int AS n FROM match_cache
+        WHERE publisher = ${publisher} AND cached_at > NOW() - INTERVAL '30 days'`;
       if (capCheck[0].n >= SCAN_CAP_LIMIT) {
         return res.status(200).json({ matches: [], config: pubConfig, capped: true });
       }

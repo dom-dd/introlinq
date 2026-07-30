@@ -464,8 +464,15 @@ export default async function handler(req, res) {
         sql`SELECT publisher, COUNT(*)::int AS hovers FROM hover_logs WHERE is_bot = false GROUP BY publisher`.catch(() => []),
         sql`SELECT publisher, COUNT(*)::int AS seen FROM seen_logs WHERE is_bot = false GROUP BY publisher`.catch(() => []),
         // Scan-cap status: total pages scanned (any verdict) vs. how many
-        // actually found a match, per publisher - powers the cap icon.
-        sql`SELECT publisher, COUNT(*)::int AS total, SUM(CASE WHEN has_match THEN 1 ELSE 0 END)::int AS matched FROM match_cache GROUP BY publisher`.catch(() => []),
+        // actually found a match, per publisher - powers the cap icon's
+        // tooltip breakdown. last_30d is the number that actually determines
+        // the icon's colour/state - the cap in match.js is a rolling 30-day
+        // window, not a lifetime total (see SCAN_CAP_LIMIT there), so total
+        // alone would show a publisher as permanently capped even in months
+        // where they have full room again.
+        sql`SELECT publisher, COUNT(*)::int AS total, SUM(CASE WHEN has_match THEN 1 ELSE 0 END)::int AS matched,
+              COUNT(*) FILTER (WHERE cached_at > NOW() - INTERVAL '30 days')::int AS last_30d
+            FROM match_cache GROUP BY publisher`.catch(() => []),
       ]);
       const matchMap = Object.fromEntries(matchStats.map(r => [r.publisher, r.impressions]));
       const clickMap = Object.fromEntries(clickStats.map(r => [r.publisher, r.clicks]));
@@ -483,6 +490,7 @@ export default async function handler(req, res) {
           scanned_pages: c ? c.total : 0,
           matched_pages: c ? c.matched : 0,
           no_match_pages: c ? c.total - c.matched : 0,
+          scanned_last_30d: c ? c.last_30d : 0,
         };
       });
       return res.status(200).json(result);
