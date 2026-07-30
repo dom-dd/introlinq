@@ -27,6 +27,58 @@ export function getClientIp(req) {
   return (fwd ? fwd.split(',')[0].trim() : null) || req.socket?.remoteAddress || null;
 }
 
+// Server-side infrastructure blocks for platforms whose automated systems
+// are known to visit every outbound link on a page - not a real reader's
+// own device (which shows up on their ISP/mobile carrier, not a tech
+// company's corporate ASN), so no volume threshold is needed here the way
+// isBurstTraffic/isSitewideBurst need one - a single hit from a known
+// crawler range is enough. Deliberately a short, explicit, manually-
+// maintained list (not a live lookup - see below) rather than broad or
+// automatic, so a wrong entry here is easy to spot and remove.
+//
+// 57.141.0.0/16: confirmed via ipinfo.io as AS32934 (Facebook/Meta) on
+// 2026-07-30, after tchelete's carousel got hit by ~5,950 clicks from 195
+// IPs across this exact range in one day - source was 100% "carousel",
+// one hit per distinct expert per page, matching Meta's link-preview/
+// safety-scanning behaviour (visiting every clickable link on a page that
+// was shared on Facebook/Instagram/WhatsApp), not real readers.
+const KNOWN_CRAWLER_RANGES = [
+  { cidr: '57.141.0.0/16', note: 'Facebook/Meta (AS32934) - link preview/safety crawler, confirmed 2026-07-30' },
+];
+
+function ipToInt(ip) {
+  const parts = (ip || '').split('.');
+  if (parts.length !== 4) return null;
+  let n = 0;
+  for (const p of parts) {
+    const octet = Number(p);
+    if (!Number.isInteger(octet) || octet < 0 || octet > 255) return null;
+    n = (n << 8) | octet;
+  }
+  return n >>> 0;
+}
+
+function isIpInCidr(ip, cidr) {
+  const [range, bitsStr] = cidr.split('/');
+  const ipInt = ipToInt(ip);
+  const rangeInt = ipToInt(range);
+  const bits = Number(bitsStr);
+  if (ipInt === null || rangeInt === null || !Number.isInteger(bits)) return false;
+  const mask = bits === 0 ? 0 : (0xFFFFFFFF << (32 - bits)) >>> 0;
+  return (ipInt & mask) === (rangeInt & mask);
+}
+
+// Deliberately NOT a live lookup (e.g. an ipinfo.io call) - that would add
+// external-network latency and a third-party dependency to every single
+// tracked request, and risks hitting that provider's rate limits under
+// real traffic. This only ever checks against the small hardcoded list
+// above, so it's instant and has no failure mode beyond "list needs a new
+// entry someday".
+export function isKnownCrawlerIp(ip) {
+  if (!ip) return false;
+  return KNOWN_CRAWLER_RANGES.some(r => isIpInCidr(ip, r.cidr));
+}
+
 // Known-good AI/search crawlers always get a real scan, never the
 // serve-stale-cache short-circuit below - these are the ones that might
 // actually represent IntroLinq's widget content to someone else's

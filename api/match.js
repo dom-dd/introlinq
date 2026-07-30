@@ -1,5 +1,5 @@
 ﻿import { neon } from '@neondatabase/serverless';
-import { getClientIp, isBurstTraffic, ensureBotColumns, isAllowlistedCrawler } from './_botDetect.js';
+import { getClientIp, isBurstTraffic, isKnownCrawlerIp, ensureBotColumns, isAllowlistedCrawler } from './_botDetect.js';
 
 // match_cache is global per page now, not per reader country - country
 // fragmentation (every new country paying for its own fresh scan) turned
@@ -890,7 +890,7 @@ export default async function handler(req, res) {
     // more for a bot that might represent this content to someone else's
     // audience, and legitimate crawlers don't hammer one URL like this.
     if (cached && contentChanged && !isAllowlistedCrawler(req)) {
-      const isBot = await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url });
+      const isBot = isKnownCrawlerIp(ip) || (await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url }));
       if (isBot) {
         if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, chunk, pubConfig, stale: true })) return;
       }
