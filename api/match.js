@@ -19,6 +19,7 @@ let cacheTableReady = false;
 let publisherActivityColumnsReady = false;
 let discoveryCueColumnReady = false;
 let scanCapColumnReady = false;
+let aiCallLogTableReady = false;
 let expertsCache = null;
 let expertsCacheTime = 0;
 const EXPERTS_TTL = 5 * 60 * 1000;
@@ -205,6 +206,39 @@ function usageCostUSD(usage) {
     + (usage.cache_read_input_tokens || 0) * p.cacheRead;
 }
 
+async function ensureAiCallLogTable(sql) {
+  if (aiCallLogTableReady) return;
+  await sql`CREATE TABLE IF NOT EXISTS ai_call_logs (
+    id SERIAL PRIMARY KEY,
+    publisher TEXT,
+    page_url TEXT,
+    call_type TEXT,
+    input_tokens INT,
+    output_tokens INT,
+    cache_creation_input_tokens INT,
+    cache_read_input_tokens INT,
+    cost_usd NUMERIC,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  )`.catch(() => {});
+  aiCallLogTableReady = true;
+}
+
+// Logged the instant an Anthropic response comes back, for every quick/chunk/full
+// call - unlike match_logs.cost_usd, which only gets a number when the BROWSER
+// successfully sums every quick+chunk cost and posts a final report. A reader who
+// navigates away mid-scan means that report never happens, even though Anthropic
+// already billed for a real completed generation - this table is what makes that
+// spend visible instead of permanently unaccounted for. Never throws: a failure to
+// log a cost shouldn't turn into a failure to serve the match that already ran.
+async function logAiCall(sql, { publisher, pageUrl, callType, usage, costUsd }) {
+  await ensureAiCallLogTable(sql);
+  const u = usage || {};
+  await sql`
+    INSERT INTO ai_call_logs (publisher, page_url, call_type, input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens, cost_usd)
+    VALUES (${publisher || null}, ${pageUrl || null}, ${callType}, ${u.input_tokens || 0}, ${u.output_tokens || 0}, ${u.cache_creation_input_tokens || 0}, ${u.cache_read_input_tokens || 0}, ${costUsd || 0})
+  `.catch(() => {});
+}
+
 // One-time-per-instance schema check for match_logs. The ALTER TABLE
 // statements used to run on EVERY report request (they sat outside the
 // ready-flag guard) - four wasted sequential DB round trips per page view.
@@ -219,8 +253,10 @@ async function ensureLogTable(sql) {
   logTableReady = true;
 }
 
-// Called on every impression (cache hit or fresh scan) for a real,
-// registered publisher. first_widget_fire_at is set only once - the
+// Called whenever the widget successfully reaches this endpoint for a real,
+// registered publisher - a cache-hit impression, or simply a request that
+// went on to trigger (or find already in flight) a background scan.
+// first_widget_fire_at is set only once - the
 // COALESCE keeps whatever value it already had, and NOW() is evaluated
 // once per statement in Postgres, so comparing it back against the exact
 // same NOW() reliably detects "this call is the one that just set it" vs
@@ -344,20 +380,17 @@ async function logCachedImpression(sql, { publisher, page_url, page_title, match
 // and returns true on success; returns false (sending nothing) when the
 // cache row turned out to be unusable, so the caller falls through to a
 // real scan rather than serving a false empty result.
-async function tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, chunk, pubConfig, stale }) {
+async function tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig, stale }) {
   const referencedExperts = await loadExpertsByIds(sql, collectReferencedIds(cached.result.matches));
   if (!referencedExperts) return false;
   const hydrated = hydrateMatches(cached.result.matches, referencedExperts, enabledPartners);
   const emptiedPositive = cached.has_match && hydrated.length === 0;
   if (emptiedPositive) return false;
-  // A page-view fans out into one quick + N chunk requests that ALL hit
-  // this cache path - only the quick (or a legacy full scan) logs and
-  // notifies, so a cached page-view produces exactly one impression log
-  // and one Slack message instead of one per parallel request. Awaited
-  // (adds one DB round trip to the response) so the log write reliably
-  // lands - see the comment on logCachedImpression for why that matters
-  // more than it used to.
-  if (!chunk) await logCachedImpression(sql, { publisher, page_url, page_title, matches: hydrated, readerCountry, ip });
+  // One request per page-view now (no more quick/chunk fan-out), so this
+  // always logs - no per-piece dedup guard needed anymore. Awaited so the log
+  // write reliably lands - see the comment on logCachedImpression for why
+  // that matters more than it used to.
+  await logCachedImpression(sql, { publisher, page_url, page_title, matches: hydrated, readerCountry, ip });
   res.status(200).json({ matches: hydrated, config: pubConfig, cached: true, ...(stale ? { stale: true } : {}) });
   return true;
 }
@@ -632,6 +665,60 @@ async function upsertCacheResult(sql, { pageUrl, countryCode, publisher, matches
   `.catch(() => {});
 }
 
+// Folds ONE quick/chunk piece's DOM-verified matches into the page's cache entry
+// the instant that piece renders - merged with whatever's already there, not a
+// blind overwrite (a naive upsertCacheResult call here would REPLACE the cache
+// with just this piece's matches and silently lose an earlier piece's). This is
+// what stops an abandoned page-view from throwing away a genuinely good, already-
+// paid-for match: previously, caching only happened after the WHOLE page-view
+// (quick + every chunk) survived long enough for the client to merge and report
+// everything at once - if the reader closed the tab before that, the match was
+// found, cost money, and was then discarded, and the next visitor re-paid for the
+// same page from scratch. Only called with matches the widget already confirmed
+// actually highlight in the live DOM (see widget.js) - a chunk finding nothing
+// says nothing about the rest of the article, so it must never write a negative
+// verdict; only the full end-of-visit report (which saw every chunk) may confirm
+// a true page-wide "no match".
+async function mergeMatchesIntoCache(sql, { pageUrl, publisher, contentHash, newMatches }) {
+  if (!pageUrl || !newMatches || newMatches.length === 0) return;
+  const [existing] = await sql`
+    SELECT result FROM match_cache
+    WHERE page_url = ${pageUrl} AND publisher = ${publisher || ''} AND country_code = ${GLOBAL_CACHE_COUNTRY}
+  `.catch(() => [null]);
+  const existingMatches = existing?.result?.matches || [];
+  const seen = new Set(existingMatches.map(m => m.expert_id ?? m.expert?.id).filter(id => id != null));
+  const merged = existingMatches.concat(newMatches.filter(m => {
+    const id = m.expert_id ?? m.expert?.id;
+    if (id == null || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  }));
+  await upsertCacheResult(sql, { pageUrl, countryCode: GLOBAL_CACHE_COUNTRY, publisher, matches: merged, contentHash }).catch(() => {});
+}
+
+// Lightweight sibling of handleReport: caches one piece's already-rendered
+// matches and nothing else - no match_logs row, no Slack, no publisher-activity
+// bump. Those all stay exclusively tied to the one final consolidated report per
+// page-view (handleReport), so impression counts and notifications are unaffected
+// by how many of these partial calls fire.
+async function handlePartialCache(req, res) {
+  const { publisher, matches } = req.body;
+  const page_url = normalizePageUrl(req.body.page_url);
+  const contentHash = typeof req.body.content_hash === 'string' ? req.body.content_hash.slice(0, 64) : null;
+  if (!page_url || !Array.isArray(matches) || matches.length === 0) {
+    return res.status(200).json({ ok: true });
+  }
+  try {
+    const sql = neon(process.env.DATABASE_URL);
+    await ensureCacheTable(sql);
+    await mergeMatchesIntoCache(sql, { pageUrl: page_url, publisher, contentHash, newMatches: matches });
+    return res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(200).json({ ok: true });
+  }
+}
+
 async function ensureCacheTable(sql) {
   if (cacheTableReady) return;
   await sql`CREATE TABLE IF NOT EXISTS match_cache (
@@ -662,6 +749,52 @@ async function ensureCacheTable(sql) {
   await sql`ALTER TABLE match_cache DROP CONSTRAINT IF EXISTS match_cache_page_url_country_code_publisher_key`.catch(() => {});
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS match_cache_unique ON match_cache(page_url, country_code, publisher)`.catch(() => {});
   cacheTableReady = true;
+}
+
+let scanLocksTableReady = false;
+
+async function ensureScanLocksTable(sql) {
+  if (scanLocksTableReady) return;
+  await sql`CREATE TABLE IF NOT EXISTS scan_locks (
+    page_url TEXT NOT NULL,
+    publisher TEXT NOT NULL DEFAULT '',
+    country_code TEXT NOT NULL DEFAULT '',
+    started_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (page_url, publisher, country_code)
+  )`.catch(() => {});
+  scanLocksTableReady = true;
+}
+
+// Atomically claims the right to run a background scan for this exact page, so
+// a burst of visitors hitting the same brand-new (or just-changed) page within
+// the same few seconds triggers exactly ONE scan instead of one per visitor.
+// The INSERT ... ON CONFLICT ... RETURNING pattern is what makes this safe
+// under concurrency: Postgres serializes conflicting writes to the same row,
+// so of several simultaneous callers only one's UPDATE can see started_at as
+// still "stale enough" to satisfy the WHERE clause and get a row back -
+// everyone else's write matches nothing and they get an empty result back,
+// with no explicit locking needed. The 2-minute staleness window is a literal
+// here, not a template variable, for the same INTERVAL-syntax reason
+// documented on SCAN_CAP_LIMIT above - it comfortably exceeds the slowest
+// realistic single-article scan (vercel.json caps this function at 60s), so a
+// genuinely crashed or timed-out attempt self-heals instead of leaving the
+// page permanently unscannable.
+async function claimScanLock(sql, { pageUrl, publisher, countryCode }) {
+  const rows = await sql`
+    INSERT INTO scan_locks (page_url, publisher, country_code, started_at)
+    VALUES (${pageUrl}, ${publisher || ''}, ${countryCode}, NOW())
+    ON CONFLICT (page_url, publisher, country_code) DO UPDATE
+      SET started_at = NOW()
+      WHERE scan_locks.started_at < NOW() - INTERVAL '2 minutes'
+    RETURNING 1
+  `.catch(() => []);
+  return rows.length > 0;
+}
+
+async function releaseScanLock(sql, { pageUrl, publisher, countryCode }) {
+  await sql`
+    DELETE FROM scan_locks WHERE page_url = ${pageUrl} AND publisher = ${publisher || ''} AND country_code = ${countryCode}
+  `.catch(() => {});
 }
 
 // Client has already merged results from the quick pass + all article chunks.
@@ -774,19 +907,27 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // report/partialCache are dead paths as of the background-scan redesign
+  // (the current widget.js never sends either) - kept only for backward
+  // compatibility with any not-yet-updated cached copy of the old widget
+  // still fetching quick/chunk-style requests out in the wild. staleCache is
+  // very much still live - the current widget still sends it on a drifted
+  // cache hit (see widget.js's postScan).
   if (req.body && req.body.report === true) {
     return handleReport(req, res);
   }
   if (req.body && req.body.staleCache === true) {
     return handleStaleCache(req, res);
   }
+  if (req.body && req.body.partialCache === true) {
+    return handlePartialCache(req, res);
+  }
 
-  const { article, page_title, quick, chunk, lang } = req.body;
+  const { article, page_title, lang } = req.body;
   const page_url = normalizePageUrl(req.body.page_url);
-  // Hash of the FULL article text, computed once by the widget and sent with
-  // every request of the page-view (quick, chunks and the final report all
-  // carry the same value). Compared against the hash stored with the cached
-  // result - see the mismatch check below.
+  // Hash of the article text, computed once by the widget and sent with the
+  // request. Compared against the hash stored with the cached result - see
+  // the mismatch check below - to detect an article edited at the same URL.
   const contentHash = typeof req.body.content_hash === 'string' ? req.body.content_hash.slice(0, 64) : null;
   if (!article || article.trim().length < 50) {
     return res.status(400).json({ error: 'Article text is too short' });
@@ -891,7 +1032,7 @@ export default async function handler(req, res) {
       // "zero experts") or the cached answer no longer has any surviving
       // experts - fall through to the fresh-scan path below rather than
       // serving a false empty result.
-      if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, chunk, pubConfig })) return;
+      if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig })) return;
     }
 
     // A cached answer exists but looks stale (hash drifted) AND this exact
@@ -909,7 +1050,7 @@ export default async function handler(req, res) {
     if (cached && contentChanged && !isAllowlistedCrawler(req)) {
       const isBot = isKnownCrawlerIp(ip) || (await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url }));
       if (isBot) {
-        if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, chunk, pubConfig, stale: true })) return;
+        if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig, stale: true })) return;
       }
     }
 
@@ -930,99 +1071,104 @@ export default async function handler(req, res) {
       }
     }
 
-    // Reaching here means a fresh AI scan is genuinely about to run (cache
-    // miss, content changed, emptied positive, or the targeted fetch above
-    // failed) - THIS is where the full active roster is actually needed, as
-    // the AI's candidate pool. A DB hiccup here must look like a failure to
-    // the client, not a successful empty result - otherwise it's
-    // indistinguishable from a genuine "no experts matched" and can poison
-    // the match cache with a false negative (see widget.js's `complete`
-    // tracking in handleReport).
-    const allExperts = await loadExperts(sql);
-    if (!allExperts) {
-      return res.status(503).json({ error: 'Experts data temporarily unavailable' });
+    // Reaching here means a fresh scan is genuinely warranted (cache miss,
+    // content changed, or the cached answer emptied out) - but nobody waits
+    // for it anymore. Claim the exclusive right to run it for this exact
+    // page, respond immediately either way, and only the winner of that claim
+    // actually calls Anthropic - in the background, after the response is
+    // already on the wire. The reader whose visit triggers this never sees
+    // the result of their own visit; by the time anyone else arrives, the
+    // page is already cached. See claimScanLock's comment for why a burst of
+    // simultaneous visitors to the same new page still only costs one scan.
+    if (!page_url) {
+      // No page_url means no page identity to hang a background scan or a
+      // lock on - nothing to do.
+      return res.status(200).json({ matches: [], config: pubConfig });
     }
+    await ensureScanLocksTable(sql);
+    const claimed = await claimScanLock(sql, { pageUrl: page_url, publisher, countryCode: GLOBAL_CACHE_COUNTRY });
 
-    // Quick pass scans only the article intro for a fast first paint; cap matches so the
-    // small token budget can't truncate the JSON. Chunk passes cover the rest of the
-    // article; the client merges everything and reports it once.
-    if (quick && !chunk) maxMatches = Math.min(maxMatches, 3);
-    // Cap per-chunk matches: generation time scales with output tokens, and an
-    // uncapped "unlimited" (15) budget made single chunks take 17-19s. Several
-    // chunks each contributing up to 8 still yields 20+ unique experts after the
-    // client dedupes, at roughly half the per-request latency.
-    if (chunk) maxMatches = Math.min(maxMatches, 8);
+    res.status(200).json({ matches: [], config: pubConfig, pending: true });
+    // The widget successfully reached us either way (claimed the scan or not) -
+    // that's the real-world signal this is meant to catch. Awaited so it
+    // reliably lands even though the function may return right after (see the
+    // !claimed branch below) - see the comment on this function for why.
+    await markPublisherActivity(sql, publisher);
 
-    // Filter by group: real publishers see their enabled providers only; homepage demo sees non-demo experts
-    let experts = [...allExperts].filter(e =>
-      enabledPartners
-        ? enabledPartners.includes(e.provider_slug || 'openintro')
-        : !e.is_demo_provider
-    );
+    if (!claimed) return; // another request already owns this page's scan
 
-    if (experts.length === 0) {
-      return res.status(200).json({ matches: [] });
-    }
+    try {
+      // THIS is where the full active roster is actually needed, as the AI's
+      // candidate pool. Any failure from here on is background work nobody's
+      // waiting on - caught below and logged, never touching `res` again.
+      const allExperts = await loadExperts(sql);
+      if (!allExperts) return;
 
-    // Fairness without randomness: rotate the (id-ordered) list by a daily
-    // offset, so no expert permanently owns the top positions the model
-    // attends to most - but within any given day the order is identical
-    // across all requests/instances, keeping the prompt prefix cacheable.
-    // (The old same-country-first sort is gone: it silently reordered the
-    // list per reader, defeating caching, without ever telling the model
-    // that order mattered. The reader's country is now stated explicitly in
-    // the prompt instead.)
-    const rotation = Math.floor(Date.now() / 86400000) % experts.length;
-    experts = experts.slice(rotation).concat(experts.slice(0, rotation));
+      // Filter by group: real publishers see their enabled providers only; homepage demo sees non-demo experts
+      let experts = [...allExperts].filter(e =>
+        enabledPartners
+          ? enabledPartners.includes(e.provider_slug || 'openintro')
+          : !e.is_demo_provider
+      );
 
-    // bio is a hand-crafted credential one-liner (dense signal); the old
-    // description_long.slice(0,150) usually cut off mid-word before reaching
-    // any credentials. Include both: bio + description truncated at a
-    // sentence boundary. Price dropped - it never informs the match decision
-    // and cost tokens on every expert.
-    const expertsList = experts.map(e => {
-      const role = [e.position, e.company].filter(Boolean).join(' at ');
-      const langs = (e.languages || []).join(', ');
-      // Trimmed from 400 - highlights (below) now carry more of the dense-
-      // signal weight this used to shoulder alone, so the long-form
-      // description doesn't need as much room.
-      const desc = truncateAtSentence(e.description_long || '', 250);
-      const services = (e.services || []).slice(0, 3).join('; ');
-      // Curated, pre-summarized achievement bullets - denser matching
-      // signal per token than freeform description text. Capped at 4 for
-      // the same reason services is capped at 3: unbounded per-expert
-      // content scales badly across the whole roster in one prompt.
-      const highlights = (e.highlights || []).slice(0, 4).join('; ');
-      const about = [e.bio, desc].filter(Boolean).join(' - ');
-      return `ID:${e.id} | ${e.name}${role ? ` (${role})` : ''} | Languages: ${langs} | About: ${about}${highlights ? ` | Highlights: ${highlights}` : ''} | Services: ${services}`;
-    }).join('\n\n');
+      if (experts.length === 0) return;
 
-    // Trust the widget's language detection (run once on the full article) when
-    // provided, so every chunk request agrees — otherwise detect per-request
-    // (used by the homepage demo, which doesn't send a pre-detected lang).
-    const articleLangCode = (lang && LANG_NAMES[lang]) ? lang : detectArticleLanguage(article);
-    const articleLangName = LANG_NAMES[articleLangCode] || 'English';
+      // Fairness without randomness: rotate the (id-ordered) list by a daily
+      // offset, so no expert permanently owns the top positions the model
+      // attends to most - but within any given day the order is identical
+      // across all requests/instances, keeping the prompt prefix cacheable.
+      // (The old same-country-first sort is gone: it silently reordered the
+      // list per reader, defeating caching, without ever telling the model
+      // that order mattered. The reader's country is now stated explicitly in
+      // the prompt instead.)
+      const rotation = Math.floor(Date.now() / 86400000) % experts.length;
+      experts = experts.slice(rotation).concat(experts.slice(0, rotation));
 
-    // Only mention other languages when the article is actually non-English:
-    // naming "vous/Sie" in the prompt for English articles made the model
-    // occasionally swap words ("If vous need...") or answer in French/German.
-    const languageInstruction = articleLangCode === 'en'
-      ? 'The article is in English. Write every "reason" field entirely in natural English. Expert names, company names, or bios may be in other languages - ignore that; the reason must be 100% English.'
-      : `The article is in ${articleLangName}. Strongly prioritise experts who speak ${articleLangName}. Write every "reason" field entirely in ${articleLangName} - never mix languages within a sentence. Use formal address, never informal.`;
+      // bio is a hand-crafted credential one-liner (dense signal); the old
+      // description_long.slice(0,150) usually cut off mid-word before reaching
+      // any credentials. Include both: bio + description truncated at a
+      // sentence boundary. Price dropped - it never informs the match decision
+      // and cost tokens on every expert.
+      const expertsList = experts.map(e => {
+        const role = [e.position, e.company].filter(Boolean).join(' at ');
+        const langs = (e.languages || []).join(', ');
+        // Trimmed from 400 - highlights (below) now carry more of the dense-
+        // signal weight this used to shoulder alone, so the long-form
+        // description doesn't need as much room.
+        const desc = truncateAtSentence(e.description_long || '', 250);
+        const services = (e.services || []).slice(0, 3).join('; ');
+        // Curated, pre-summarized achievement bullets - denser matching
+        // signal per token than freeform description text. Capped at 4 for
+        // the same reason services is capped at 3: unbounded per-expert
+        // content scales badly across the whole roster in one prompt.
+        const highlights = (e.highlights || []).slice(0, 4).join('; ');
+        const about = [e.bio, desc].filter(Boolean).join(' - ');
+        return `ID:${e.id} | ${e.name}${role ? ` (${role})` : ''} | Languages: ${langs} | About: ${about}${highlights ? ` | Highlights: ${highlights}` : ''} | Services: ${services}`;
+      }).join('\n\n');
 
-    // The prompt is split into two blocks so Anthropic prompt caching can
-    // work: the static block (instructions + the full experts list - the
-    // vast bulk of the tokens) is byte-identical for every request of the
-    // same publisher on the same day, so it's cached (ttl: '1h', re-warmed by
-    // any request within that hour) and re-billed at ~10% on a hit. Sparse
-    // per-publisher traffic meant the old 5-min default TTL missed ~37% of
-    // requests that a 1h TTL now catches (see cost analysis, 2026-07-19).
-    // Everything per-request (article text, its
-    // language, the reader's country, match count, the shuffled opener/
-    // closer styles) lives in the dynamic block AFTER the cache breakpoint.
-    // Anything added to the static block must be stable per publisher+day
-    // or it silently kills the cache hit rate.
-    const staticPrompt = `You are the matching engine for IntroLinq, a platform that connects blog READERS with experts they can book a 1:1 call with.
+      // Detect once per scan - there's only one scan per page-view now, so no
+      // need to trust a widget-precomputed value across multiple requests the
+      // way the old quick/chunk split did.
+      const articleLangCode = (lang && LANG_NAMES[lang]) ? lang : detectArticleLanguage(article);
+      const articleLangName = LANG_NAMES[articleLangCode] || 'English';
+
+      // Only mention other languages when the article is actually non-English:
+      // naming "vous/Sie" in the prompt for English articles made the model
+      // occasionally swap words ("If vous need...") or answer in French/German.
+      const languageInstruction = articleLangCode === 'en'
+        ? 'The article is in English. Write every "reason" field entirely in natural English. Expert names, company names, or bios may be in other languages - ignore that; the reason must be 100% English.'
+        : `The article is in ${articleLangName}. Strongly prioritise experts who speak ${articleLangName}. Write every "reason" field entirely in ${articleLangName} - never mix languages within a sentence. Use formal address, never informal.`;
+
+      // The prompt is split into two blocks so Anthropic prompt caching can
+      // work: the static block (instructions + the full experts list - the
+      // vast bulk of the tokens) is byte-identical for every scan of the
+      // same publisher on the same day, so it's cached (ttl: '1h', re-warmed
+      // by any request within that hour) and re-billed at ~10% on a hit.
+      // Everything per-request (article text, its language, match count, the
+      // shuffled opener/closer styles) lives in the dynamic block AFTER the
+      // cache breakpoint. Anything added to the static block must be stable
+      // per publisher+day or it silently kills the cache hit rate.
+      const staticPrompt = `You are the matching engine for IntroLinq, a platform that connects blog READERS with experts they can book a 1:1 call with.
 
 Your job: identify moments in the article where a reader - someone trying to learn, make a decision, or solve a problem - would benefit from a personal consultation with a specific expert. ${sensitivityInstruction}
 
@@ -1054,26 +1200,26 @@ ALTERNATES: when OTHER experts from the list are ALSO a genuinely strong fit for
 Available experts:
 ${expertsList}`;
 
-    // No reader-country hint in the prompt anymore: the match this scan
-    // produces gets cached globally and shown identically to every country,
-    // so biasing it toward whichever reader happened to trigger the scan
-    // would just be arbitrary noise, not a real signal about the audience.
-    const titleLine = page_title ? `Article title: ${String(page_title).slice(0, 150)}\n\n` : '';
+      // No reader-country hint in the prompt: the match this scan produces
+      // gets cached globally and shown identically to every country, so
+      // biasing it toward whichever reader happened to trigger the scan
+      // would just be arbitrary noise, not a real signal about the audience.
+      const titleLine = page_title ? `Article title: ${String(page_title).slice(0, 150)}\n\n` : '';
 
-    // The card shows the expert's credential one-liner above the reason. For
-    // non-English articles it would appear in English next to a translated
-    // reason, so the model translates it per match; English articles skip
-    // this entirely and the widget falls back to the stored bio (no extra
-    // output tokens for the common case).
-    const wantsCredential = articleLangCode !== 'en';
-    const credentialInstruction = wantsCredential
-      ? `\nFor each match, also include a "credential" field: the expert's one-line track record (the first sentence of their About) faithfully translated into ${articleLangName}. Keep all numbers, currency amounts, and company names exactly as they are. Translate only - no embellishment, no additions.\n`
-      : '';
-    const credentialSchema = wantsCredential
-      ? `,"credential":"the expert's one-line track record translated into ${articleLangName}"`
-      : '';
+      // The card shows the expert's credential one-liner above the reason. For
+      // non-English articles it would appear in English next to a translated
+      // reason, so the model translates it per match; English articles skip
+      // this entirely and the widget falls back to the stored bio (no extra
+      // output tokens for the common case).
+      const wantsCredential = articleLangCode !== 'en';
+      const credentialInstruction = wantsCredential
+        ? `\nFor each match, also include a "credential" field: the expert's one-line track record (the first sentence of their About) faithfully translated into ${articleLangName}. Keep all numbers, currency amounts, and company names exactly as they are. Translate only - no embellishment, no additions.\n`
+        : '';
+      const credentialSchema = wantsCredential
+        ? `,"credential":"the expert's one-line track record translated into ${articleLangName}"`
+        : '';
 
-    const dynamicPrompt = `IMPORTANT: ${languageInstruction}
+      const dynamicPrompt = `IMPORTANT: ${languageInstruction}
 ${credentialInstruction}
 ${titleLine}Return up to ${maxMatches} matches.
 
@@ -1084,155 +1230,137 @@ Each "reason" must also END with a soft call-to-action inviting the reader to ac
 ${pickReasonClosers(Math.max(maxMatches, 6)).map((c, i) => `${i + 1}. ${c}`).join('\n')}
 
 Article:
-${article.slice(0, 10000)}
+${article.slice(0, 60000)}
 
 Return only valid JSON, no other text:
 {"matches":[{"phrase":"exact substring from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person, opening with the specific challenge rather than a generic reader description - e.g. 'Negotiating your first term sheet without giving away too much equity is tricky - Phil has backed 200+ startups and can walk you through it.'"${credentialSchema},"alternates":[{"expert_id":2,"reason":"same standards, naming THIS expert"${credentialSchema}}]}],"no_match_reason":"Only include this field when matches is empty. One short phrase explaining why - e.g. 'News article', 'Product announcement', 'Company profile / press release', 'No actionable reader challenge identified', 'Pure statistics reporting'"}}`;
 
-    // maxDuration for this function is 60s (vercel.json) - it used to sit on
-    // the 10s Hobby default while chunk generations regularly took 8-19s,
-    // which is where most "partial scan failure" reports came from: Vercel
-    // killed the function mid-generation, the widget's one retry often died
-    // the same way, and the page's result was never cached. The 45s abort
-    // below keeps one hung upstream call from silently eating the whole
-    // budget: it surfaces as a 500 the widget knows how to retry.
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      signal: AbortSignal.timeout(45000),
-      headers: {
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        // Budgets sized for matches PLUS their alternates (each alternate is
-        // another full reason sentence) - undersized budgets truncate the
-        // JSON mid-output and the salvage regex can only recover part of it.
-        max_tokens: quick ? 768 : (maxMatches <= 4 ? 1536 : maxMatches <= 10 ? 3072 : 4096),
-        // 0.7 was set to fix repetitive "As a first-time founder..." openers,
-        // before REASON_OPENERS/REASON_CLOSERS existed to assign style
-        // deterministically per match. That variety no longer depends on
-        // temperature, so high temperature was only adding noise to the
-        // match/no-match judgment itself - the same article could swing from
-        // 19 matches to 0 between runs. Lowered for a more consistent verdict
-        // while keeping enough variation that phrasing doesn't feel robotic.
-        temperature: 0.3,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'text', text: staticPrompt, cache_control: { type: 'ephemeral', ttl: '1h' } },
-            { type: 'text', text: dynamicPrompt }
-          ]
-        }]
-      })
-    });
-
-    if (!response.ok) {
-      const err = await response.text();
-      console.error('Anthropic API error:', err);
-      return res.status(500).json({ error: 'AI matching failed' });
-    }
-
-    const aiResult = await response.json();
-    // Cache effectiveness is invisible without this: cache_read_input_tokens
-    // should be large (the whole static block) on all but the first request
-    // of a publisher+day. If it's persistently 0, something reintroduced
-    // per-request bytes into the static block.
-    console.log('[ai-usage]', quick ? 'quick' : chunk ? 'chunk' : 'full', JSON.stringify(aiResult.usage || {}));
-    const text = aiResult.content?.[0]?.text || '{"matches":[]}';
-
-    let parsed;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      try {
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { matches: [] };
-      } catch {
-        // Output was truncated mid-JSON: salvage the complete match objects
-        const objs = [...text.matchAll(/\{[^{}]*"phrase"[^{}]*\}/g)]
-          .map(m => { try { return JSON.parse(m[0]); } catch { return null; } })
-          .filter(Boolean);
-        parsed = { matches: objs };
-      }
-    }
-
-    const expertMap = Object.fromEntries(experts.map(e => [e.id, e]));
-    const seenExperts = new Set();
-    const enriched = (parsed.matches || [])
-      .filter(m => m.phrase && expertMap[m.expert_id])
-      .filter(m => { if (seenExperts.has(m.expert_id)) return false; seenExperts.add(m.expert_id); return true; })
-      .map(m => {
-        const expert = expertMap[m.expert_id];
-        const reason = stripEmDash(fixReasonName(m.reason, expert, experts));
-        const out = { phrase: m.phrase, reason, expert };
-        // Translated credential line for non-English articles (see
-        // credentialInstruction). Flows through report -> cache -> widget
-        // alongside the reason; the widget falls back to the stored English
-        // bio when absent (English articles, old cache entries).
-        if (typeof m.credential === 'string' && m.credential.trim()) {
-          out.credential = stripEmDash(m.credential.trim()).slice(0, 220);
-        }
-        // Interchangeable candidates for the same phrase (see the ALTERNATES
-        // prompt rule). Not displayed on this fresh response - the widget
-        // shows the primary - but they ride along through report -> cache so
-        // serve-time rotation can pick any surviving candidate per visit.
-        // Same validation as primaries: real expert, globally unique, reason
-        // names its own expert.
-        const alts = (Array.isArray(m.alternates) ? m.alternates : [])
-          .filter(a => a && expertMap[a.expert_id] && typeof a.reason === 'string')
-          .filter(a => { if (seenExperts.has(a.expert_id)) return false; seenExperts.add(a.expert_id); return true; })
-          .slice(0, 2)
-          .map(a => {
-            const altOut = { expert_id: a.expert_id, reason: stripEmDash(fixReasonName(a.reason, expertMap[a.expert_id], experts)) };
-            if (typeof a.credential === 'string' && a.credential.trim()) {
-              altOut.credential = stripEmDash(a.credential.trim()).slice(0, 220);
-            }
-            return altOut;
-          });
-        if (alts.length > 0) out.alts = alts;
-        return out;
+      // Response is already sent - nothing here races a live visitor anymore,
+      // so this just needs to fit inside vercel.json's 60s function ceiling.
+      // 50s leaves headroom for the cache write, cost log, and Slack call
+      // that follow.
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        signal: AbortSignal.timeout(50000),
+        headers: {
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          // Budgets sized for matches PLUS their alternates (each alternate is
+          // another full reason sentence) - undersized budgets truncate the
+          // JSON mid-output and the salvage regex can only recover part of it.
+          max_tokens: maxMatches <= 4 ? 1536 : maxMatches <= 10 ? 3072 : 4096,
+          // 0.7 was set to fix repetitive "As a first-time founder..." openers,
+          // before REASON_OPENERS/REASON_CLOSERS existed to assign style
+          // deterministically per match. That variety no longer depends on
+          // temperature, so high temperature was only adding noise to the
+          // match/no-match judgment itself - the same article could swing from
+          // 19 matches to 0 between runs. Lowered for a more consistent verdict
+          // while keeping enough variation that phrasing doesn't feel robotic.
+          temperature: 0.3,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: staticPrompt, cache_control: { type: 'ephemeral', ttl: '1h' } },
+              { type: 'text', text: dynamicPrompt }
+            ]
+          }]
+        })
       });
 
-    const preview = article.slice(0, 120).replace(/\s+/g, ' ');
-    const phrases = enriched.map(m => m.phrase);
-    const expertNames = enriched.map(m => m.expert.name);
-    const expertBookingUrls = enriched.map(m => m.expert.booking_url || null);
-    const noMatchReason = enriched.length === 0 ? (parsed.no_match_reason || null) : null;
+      if (!response.ok) {
+        const err = await response.text();
+        console.error('Anthropic API error:', err);
+        return;
+      }
 
-    const costUsd = usageCostUSD(aiResult.usage);
+      const aiResult = await response.json();
+      // Cache effectiveness is invisible without this: cache_read_input_tokens
+      // should be large (the whole static block) on all but the first scan
+      // of a publisher+day. If it's persistently 0, something reintroduced
+      // per-request bytes into the static block.
+      console.log('[ai-usage]', 'background', JSON.stringify(aiResult.usage || {}));
+      const text = aiResult.content?.[0]?.text || '{"matches":[]}';
 
-    // Respond immediately — client gets result now; function stays alive to finish background work
-    res.status(200).json({ matches: enriched, config: pubConfig, no_match_reason: noMatchReason || undefined, cost_usd: costUsd });
-
-    // Quick and chunk requests skip all of this — the client merges every chunk's
-    // results and sends one consolidated report (cache/log/Slack) at the end.
-    if (quick || chunk) return;
-
-    // Await keeps the Vercel function alive until DB writes and Slack complete
-    await Promise.allSettled([
-      (async () => {
-        if (!page_url) return;
-        await upsertCacheResult(sql, { pageUrl: page_url, countryCode: GLOBAL_CACHE_COUNTRY, publisher, matches: enriched, contentHash });
-      })(),
-      (async () => {
-        await ensureLogTable(sql);
-        if (!matchLogsBotColumnsReady) {
-          await ensureBotColumns(sql, 'match_logs');
-          matchLogsBotColumnsReady = true;
+      let parsed;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        try {
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { matches: [] };
+        } catch {
+          // Output was truncated mid-JSON: salvage the complete match objects
+          const objs = [...text.matchAll(/\{[^{}]*"phrase"[^{}]*\}/g)]
+            .map(m => { try { return JSON.parse(m[0]); } catch { return null; } })
+            .filter(Boolean);
+          parsed = { matches: objs };
         }
-        const isBot = await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url });
-        await sql`
-          INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, country_code, cost_usd, ip, is_bot)
-          VALUES (${publisher}, ${preview}, ${phrases}, ${expertNames}, ${expertBookingUrls}, ${enriched.length}, ${page_url || null}, ${noMatchReason}, ${readerCountry || null}, ${costUsd}, ${ip || null}, ${isBot})
-        `;
-        if (!isBot) {
-          await postSlackNotification(sql, { publisher, page_url, page_title, matchCount: enriched.length, readerCountry, cached: false, costUsd });
-        }
-      })(),
-      markPublisherActivity(sql, publisher),
-    ]).catch(() => {});
+      }
+
+      const expertMap = Object.fromEntries(experts.map(e => [e.id, e]));
+      const seenExperts = new Set();
+      const enriched = (parsed.matches || [])
+        .filter(m => m.phrase && expertMap[m.expert_id])
+        .filter(m => { if (seenExperts.has(m.expert_id)) return false; seenExperts.add(m.expert_id); return true; })
+        .map(m => {
+          const expert = expertMap[m.expert_id];
+          const reason = stripEmDash(fixReasonName(m.reason, expert, experts));
+          const out = { phrase: m.phrase, reason, expert };
+          // Translated credential line for non-English articles (see
+          // credentialInstruction). Flows through cache so serve-time
+          // hydration can show it; the widget falls back to the stored
+          // English bio when absent (English articles, old cache entries).
+          if (typeof m.credential === 'string' && m.credential.trim()) {
+            out.credential = stripEmDash(m.credential.trim()).slice(0, 220);
+          }
+          // Interchangeable candidates for the same phrase (see the ALTERNATES
+          // prompt rule) - ride along through the cache so serve-time rotation
+          // can pick any surviving candidate per visit. Same validation as
+          // primaries: real expert, globally unique, reason names its own expert.
+          const alts = (Array.isArray(m.alternates) ? m.alternates : [])
+            .filter(a => a && expertMap[a.expert_id] && typeof a.reason === 'string')
+            .filter(a => { if (seenExperts.has(a.expert_id)) return false; seenExperts.add(a.expert_id); return true; })
+            .slice(0, 2)
+            .map(a => {
+              const altOut = { expert_id: a.expert_id, reason: stripEmDash(fixReasonName(a.reason, expertMap[a.expert_id], experts)) };
+              if (typeof a.credential === 'string' && a.credential.trim()) {
+                altOut.credential = stripEmDash(a.credential.trim()).slice(0, 220);
+              }
+              return altOut;
+            });
+          if (alts.length > 0) out.alts = alts;
+          return out;
+        });
+
+      const costUsd = usageCostUSD(aiResult.usage);
+      // Real money Anthropic already charged for the instant this line runs -
+      // logged unconditionally, independent of everything below it succeeding.
+      await logAiCall(sql, { publisher, pageUrl: page_url, callType: 'background', usage: aiResult.usage, costUsd });
+      await upsertCacheResult(sql, { pageUrl: page_url, countryCode: GLOBAL_CACHE_COUNTRY, publisher, matches: enriched, contentHash });
+
+      // No match_logs row here, deliberately: nobody actually saw this scan's
+      // result - the reader who triggered it already got the empty `pending`
+      // response above. match_logs.match_count is an IMPRESSION count
+      // elsewhere in this codebase (the admin dashboard sums it as
+      // impressions shown to readers), and logging one here would count
+      // something nobody saw. The next real visitor hits this now-populated
+      // cache and logs a normal impression through the existing
+      // tryServeFromCache path, same as always. Slack still gets the same
+      // "a scan just happened" visibility it always has, gated by the same
+      // bot check as every other fresh-scan notification.
+      const isBot = await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url });
+      if (!isBot) {
+        await postSlackNotification(sql, { publisher, page_url, page_title, matchCount: enriched.length, readerCountry, cached: false, costUsd });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      await releaseScanLock(sql, { pageUrl: page_url, publisher, countryCode: GLOBAL_CACHE_COUNTRY });
+    }
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Something went wrong' });

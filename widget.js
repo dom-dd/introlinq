@@ -132,10 +132,9 @@
     // Attempts to highlight each match and returns only the ones that
     // actually rendered. Matches whose phrase can't be found in the DOM (the
     // AI paraphrased instead of quoting, or the range collided with an
-    // earlier highlight) are excluded - and critically, NOT marked as seen,
-    // so the same expert gets another chance if a later chunk finds them at
-    // a different phrase. Only what the reader can actually see gets
-    // reported and cached; invisible matches used to get cached forever.
+    // earlier highlight) are excluded. Only what the reader can actually see
+    // counts for the stale-cache check below - invisible matches would
+    // otherwise look like a real impression.
     function applyMatches(data) {
       if (!data || !data.matches || !data.matches.length) return;
       sharedCfg = sharedCfg || data.config || {};
@@ -157,8 +156,8 @@
       return shown;
     }
 
-    // FNV-1a hash of the article text, sent with every scan/report request so
-    // the server can detect an article that was EDITED at the same URL (the
+    // FNV-1a hash of the article text, sent with the scan request so the
+    // server can detect an article that was EDITED at the same URL (the
     // cached result no longer describes this text and must be rescanned).
     // Whitespace is collapsed first so formatting churn doesn't read as a
     // content change.
@@ -172,137 +171,57 @@
       return h.toString(16);
     }
 
-    // No cache pre-flight round trip: the scan requests below carry page_url
-    // and the server short-circuits each one from the match cache directly
-    // (flagged cached:true in the response). Cached pages cost one round
-    // trip instead of two; uncached pages start their AI scan ~0.5-1s sooner.
-    runFullScan();
+    var pageUrl = window.location.href;
+    var contentHash = hashText(text);
 
-    function runFullScan() {
-      var reportMatches = [];
-      var gotAnyResponse = false;
-      var failedCount = 0;
-      var sawCached = false;
-      var totalCostUsd = 0;
-      // Every cache-hit response returns the SAME full hydrated set (each of
-      // quick/chunk independently reads the same cache row) - collecting the
-      // union of expert ids across them is "how many the server thinks this
-      // page has". Compared against reportMatches (what actually rendered)
-      // at the end, this is the only way to detect a cache entry whose
-      // phrases no longer exist in the live DOM - a cache hit never gets the
-      // fresh-scan report's "here's what really rendered" round trip.
-      var cachedExpectedIds = {};
-      var cachedExpectedCount = 0;
-
-      function collect(data) {
-        if (data) gotAnyResponse = true;
-        else failedCount++;
-        if (data && data.cached) {
-          sawCached = true;
-          (data.matches || []).forEach(function (m) {
-            var id = m.expert && m.expert.id;
-            if (id && !cachedExpectedIds[id]) { cachedExpectedIds[id] = true; cachedExpectedCount++; }
-          });
-        }
-        if (data && typeof data.cost_usd === 'number') totalCostUsd += data.cost_usd;
-        var newMatches = applyMatches(data);
-        if (newMatches) reportMatches = reportMatches.concat(newMatches);
+    // One request for the whole article, whatever its length - no more
+    // quick/chunk split, since nobody waits on the AI call anymore (see
+    // api/match.js: a cache miss claims the page for a background scan and
+    // responds immediately with nothing to show; the reader who triggers it
+    // never sees the result of their own visit, and the page is cached by
+    // the time anyone else arrives). Retries once after a short delay on any
+    // failure - a fresh deploy cold-starts every serverless function, and a
+    // page load right then can see this transiently fail.
+    function postScan() {
+      var body = { article: text, publisher: PUB, page_url: pageUrl, page_title: document.title, lang: _lang, content_hash: contentHash };
+      function attempt() {
+        return fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        }).then(function (r) { return r.ok ? r.json() : null; });
       }
-
-      // Reads the article in chunks so any length is covered without one oversized,
-      // slow request: each chunk resolves and shows its experts as soon as it's ready.
-      // Chunks start where the quick pass ends (minus the usual overlap) instead of
-      // at 0 - the intro was being scanned twice on every page. Very short articles
-      // still get one full chunk: quick is capped at 3 matches, so the chunk pass is
-      // what lets a short page reach the publisher's full match budget.
-      var QUICK_LEN = 1500;
-      var CHUNK_SIZE = 9000;
-      var CHUNK_OVERLAP = 300;
-      var chunkSource = text.length <= QUICK_LEN ? text : text.slice(QUICK_LEN - CHUNK_OVERLAP);
-      var chunkTexts = [];
-      if (chunkSource.length <= CHUNK_SIZE) {
-        chunkTexts.push(chunkSource);
-      } else {
-        var step = CHUNK_SIZE - CHUNK_OVERLAP;
-        for (var pos = 0; pos < chunkSource.length; pos += step) {
-          chunkTexts.push(chunkSource.slice(pos, pos + CHUNK_SIZE));
-          if (pos + CHUNK_SIZE >= chunkSource.length) break;
-        }
-      }
-
-      // POSTs one scan request, retrying once after a short delay on any
-      // failure - a fresh deploy cold-starts every serverless function, and a
-      // page load right then can see its parallel requests transiently fail.
-      // Only counts toward failedCount when the retry also fails.
-      function postScan(body) {
-        function attempt() {
-          return fetch(API, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-          }).then(function (r) { return r.ok ? r.json() : null; });
-        }
-        return attempt()
-          .catch(function () { return null; })
-          .then(function (data) {
-            if (data) return data;
-            return new Promise(function (resolve) { setTimeout(resolve, 1500); })
-              .then(attempt)
-              .catch(function () { return null; });
-          })
-          .then(collect);
-      }
-
-      var pending = [];
-      var pageUrl = window.location.href;
-      // One hash of the FULL text for the whole page-view: quick, every chunk
-      // and the report must all carry the SAME value or the server would see
-      // a mismatch against the cached row and rescan on every visit.
-      var contentHash = hashText(text);
-
-      // Quick: article intro, capped - shows the first experts fast. page_url
-      // lets the server serve the whole thing from cache when available.
-      pending.push(postScan({ article: text.slice(0, QUICK_LEN), publisher: PUB, page_url: pageUrl, page_title: document.title, quick: true, lang: _lang, content_hash: contentHash }));
-
-      // Each chunk covers the rest of the article; all fire in parallel, each adding
-      // experts to the page as soon as it resolves
-      chunkTexts.forEach(function (chunkText) {
-        pending.push(postScan({ article: chunkText, publisher: PUB, page_url: pageUrl, page_title: document.title, chunk: true, lang: _lang, content_hash: contentHash }));
-      });
-
-      // Once every chunk has resolved, report the merged, deduplicated result once -
-      // this is what gets cached, logged, and posted to Slack. `complete` tells the
-      // server whether every chunk actually succeeded - if some failed (a transient
-      // API error, a timeout), a 0-match result is a partial-failure artifact, not a
-      // real "no experts here" verdict, and must not be cached as one. When the
-      // responses came from the server's cache there's nothing new to persist -
-      // reporting would just rewrite the same entry (and Slack already notified).
-      Promise.all(pending.map(function (p) { return p.catch(function () {}); })).then(function () {
-        if (!gotAnyResponse) return;
-        if (sawCached) {
-          // The server said this page has experts (cachedExpectedCount) but
-          // NONE of their phrases could be found in the live DOM - the exact
-          // wording drifted since this was scanned (a CMS re-render, an ad
-          // shifting surrounding text, anything), and a cache hit has no
-          // other way to ever learn that happened. Tell the server to throw
-          // the entry away so the NEXT visitor gets a fresh, working scan
-          // instead of the same silent failure repeating indefinitely.
-          if (cachedExpectedCount > 0 && reportMatches.length === 0) {
+      attempt()
+        .catch(function () { return null; })
+        .then(function (data) {
+          if (data) return data;
+          return new Promise(function (resolve) { setTimeout(resolve, 1500); })
+            .then(attempt)
+            .catch(function () { return null; });
+        })
+        .then(function (data) {
+          // Nothing to render this visit, either because the page is still
+          // pending its background scan, or both attempts failed outright -
+          // there's nothing further to do; no polling, no follow-up request.
+          if (!data || !data.cached) return;
+          var shown = applyMatches(data);
+          // The server said this page has experts, but none of their phrases
+          // could be found in the live DOM - the exact wording drifted since
+          // it was scanned (a CMS re-render, an ad shifting surrounding text,
+          // anything), and a cache hit has no other way to ever learn that
+          // happened. Tell the server to throw the entry away so the NEXT
+          // visitor gets a fresh scan instead of the same silent failure
+          // repeating indefinitely.
+          if (data.matches.length > 0 && (!shown || shown.length === 0)) {
             fetch(API, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ staleCache: true, publisher: PUB, page_url: pageUrl })
             }).catch(function () {});
           }
-          return;
-        }
-        fetch(API, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ report: true, publisher: PUB, page_url: pageUrl, page_title: document.title, matches: reportMatches, complete: failedCount === 0, cost_usd: totalCostUsd, content_hash: contentHash })
-        }).catch(function () {});
-      });
+        });
     }
+    postScan();
   }
 
   function findArticle() {
