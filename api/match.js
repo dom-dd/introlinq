@@ -295,9 +295,12 @@ async function markPublisherActivity(sql, publisher) {
 // the publisher - reassures the publisher themselves that it worked. A lot
 // of people paste the snippet and have no way to know whether it actually
 // took; this is the "yes, it's working" confirmation for that anxiety.
+// Posts to #introlinq-notifications, not #introlinq-general - a go-live is
+// rare and real, unlike the constant scan/match traffic postSlackNotification
+// (below) posts to general.
 async function notifyPublisherWentLive(name, email, publisher) {
-  if (process.env.SLACK_WEBHOOK_URL) {
-    fetch(process.env.SLACK_WEBHOOK_URL, {
+  if (process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL) {
+    fetch(process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: `🎉 *${name}* just went live - their widget fired for the first time. Installation confirmed!` }),
@@ -607,6 +610,10 @@ function countryCodeToFlag(code) {
 // cache (⚡, free) - so cost and cache health are both visible in one feed.
 // Only called when matches were actually shown; silent on 0-match events
 // to avoid spamming the channel with every no-match news article.
+// Deliberately stays on #introlinq-general (SLACK_WEBHOOK_URL) - this is
+// the high-volume "constant matching" noise, not a real event; see
+// notifyPublisherWentLive above and the other API files for what moved to
+// #introlinq-notifications (SLACK_NOTIFICATIONS_WEBHOOK_URL).
 async function postSlackNotification(sql, { publisher, page_url, page_title, matchCount, readerCountry, cached, costUsd }) {
   if (!process.env.SLACK_WEBHOOK_URL || matchCount === 0) return;
   let pubName = publisher || '/app';

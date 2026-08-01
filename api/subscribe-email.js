@@ -45,12 +45,13 @@ export default async function handler(req, res) {
       html: `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#faf8f4;font-family:'Inter',system-ui,sans-serif"><table width="100%" cellpadding="0" cellspacing="0" style="background:#faf8f4;padding:40px 20px"><tr><td align="center"><table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid rgba(26,26,46,0.10)"><tr><td style="padding:40px 48px"><h2 style="font-family:Georgia,serif;font-size:22px;color:#1a1a2e;margin:0 0 24px">New exit popup signup</h2><table cellpadding="0" cellspacing="0" width="100%"><tr><td style="padding:10px 0;border-bottom:1px solid rgba(26,26,46,0.06);font-size:14px;color:#8888a8;width:140px">Email</td><td style="padding:10px 0;border-bottom:1px solid rgba(26,26,46,0.06);font-size:14px;color:#1a1a2e;font-weight:500">${email}</td></tr><tr><td style="padding:10px 0;font-size:14px;color:#8888a8">Country</td><td style="padding:10px 0;font-size:14px;color:#1a1a2e;font-weight:500">${country || '-'}</td></tr></table></td></tr></table></td></tr></table></body></html>`,
     });
 
-    if (process.env.SLACK_WEBHOOK_URL) {
+    // #introlinq-notifications (real events), not #introlinq-general.
+    if (process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL) {
       const flag = country ? ` → :flag-${country.toLowerCase()}:` : '';
-      await fetch(process.env.SLACK_WEBHOOK_URL, {
+      await fetch(process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: `📧 *Exit popup signup*${flag}\n• Email: ${email}` })
+        body: JSON.stringify({ text: `📧 *Mailing list signup*${flag}\n• Email: ${email}` })
       });
     }
 

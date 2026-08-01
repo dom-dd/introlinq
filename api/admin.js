@@ -12,11 +12,15 @@ function auth(req) {
 }
 
 // Fire-and-forget - a Slack outage or missing webhook URL must never block
-// or fail the brief itself, so all errors are swallowed here.
+// or fail the brief itself, so all errors are swallowed here. Posts to
+// #introlinq-notifications (real, human-triggered events), not the
+// #introlinq-general feed the widget's own scan/match activity uses -
+// see SLACK_NOTIFICATIONS_WEBHOOK_URL in the other API files for the rest
+// of that split.
 async function notifySlack(text) {
-  if (!process.env.SLACK_WEBHOOK_URL) return;
+  if (!process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL) return;
   try {
-    await fetch(process.env.SLACK_WEBHOOK_URL, {
+    await fetch(process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),

@@ -81,10 +81,11 @@ export default async function handler(req, res) {
       html: alertEmail({ name, email, blogUrl, monthly_visitors, country }),
     });
 
-    // 5. Slack notification
-    if (process.env.SLACK_WEBHOOK_URL) {
+    // 5. Slack notification - #introlinq-notifications (real events), not
+    // #introlinq-general.
+    if (process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL) {
       const flag = country ? ` → :flag-${country.toLowerCase()}:` : '';
-      await fetch(process.env.SLACK_WEBHOOK_URL, {
+      await fetch(process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

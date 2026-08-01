@@ -50,6 +50,21 @@ async function issueSession(sql, res, pub) {
   res.setHeader('Set-Cookie', `il_session=${sessionToken}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`);
 }
 
+// #introlinq-notifications (real events), not the #introlinq-general feed
+// the widget's scan/match activity uses. Awaited, same reason as the /brief
+// notifications in admin.js - a serverless function can be frozen the
+// instant the response (here, the redirect) is sent.
+async function notifyLogin(pubName, method) {
+  if (!process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL) return;
+  try {
+    await fetch(process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: `🔓 *${pubName}* logged in (${method})` }),
+    });
+  } catch {}
+}
+
 export async function createMagicToken(sql, email, expiresInMs) {
   await ensureTables(sql);
   const token = crypto.randomBytes(32).toString('hex');
@@ -90,6 +105,7 @@ export default async function handler(req, res) {
     if (!pub) return res.redirect(302, '/login?error=notfound');
 
     await issueSession(sql, res, pub);
+    await notifyLogin(pub.name, 'magic link');
     return res.redirect(302, `/dashboard?pub=${pub.slug}`);
   }
 
@@ -158,9 +174,10 @@ export default async function handler(req, res) {
       })
     }).catch(() => {});
 
-    // Slack notification
-    if (process.env.SLACK_WEBHOOK_URL) {
-      fetch(process.env.SLACK_WEBHOOK_URL, {
+    // Slack notification - #introlinq-notifications (real events), not the
+    // #introlinq-general feed the widget's scan/match activity uses.
+    if (process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL) {
+      fetch(process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: `📝 New publisher signed up (not yet installed): *${name.trim()}* (${normalised}) - ${cleanDomain}` })
@@ -214,6 +231,7 @@ export default async function handler(req, res) {
 
     await sql`UPDATE publishers SET password_fail_count = 0, password_locked_until = NULL WHERE id = ${pub.id}`;
     await issueSession(sql, res, pub);
+    await notifyLogin(pub.name, 'password');
     return res.status(200).json({ ok: true, slug: pub.slug });
   }
 

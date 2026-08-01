@@ -52,9 +52,10 @@ export default async function handler(req, res) {
     `;
     const newViewId = result[0].id;
 
-    if (process.env.SLACK_WEBHOOK_URL) {
+    // #introlinq-notifications (real events), not #introlinq-general.
+    if (process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL) {
       const flag = country ? ` → :flag-${country.toLowerCase()}:` : '';
-      fetch(process.env.SLACK_WEBHOOK_URL, {
+      fetch(process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: `👋 *New visitor*${flag}` })

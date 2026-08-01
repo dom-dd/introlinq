@@ -150,10 +150,11 @@ export default async function handler(req, res) {
     }
 
     // Slack - fires for test calls (so partners can verify delivery) and for
-    // real, newly-recorded bookings; skipped on a deduped retry.
-    if (process.env.SLACK_WEBHOOK_URL && (test || inserted)) {
+    // real, newly-recorded bookings; skipped on a deduped retry. Posts to
+    // #introlinq-notifications (real events), not #introlinq-general.
+    if (process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL && (test || inserted)) {
       const testTag = test ? ' · *[TEST]*' : '';
-      await fetch(process.env.SLACK_WEBHOOK_URL, {
+      await fetch(process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: `💰 *New booking*${testTag} - ${resolvedExpert} · ${currency} ${Number(booking_amount).toFixed(2)} · ${publisher.name} · Payout: ${currency} ${payout.toFixed(2)}${articleTitle ? ` · _${articleTitle}_` : ''}` }),
@@ -217,8 +218,8 @@ export default async function handler(req, res) {
     // concurrently with the click INSERT so the reader's added wait is
     // max(insert, slack) rather than their sum.
     const articleTitle = title ? String(title).slice(0, 80) : null;
-    const slackPromise = (process.env.SLACK_WEBHOOK_URL && !isBot)
-      ? fetch(process.env.SLACK_WEBHOOK_URL, {
+    const slackPromise = (process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL && !isBot)
+      ? fetch(process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL, {
           method: 'POST',
           signal: AbortSignal.timeout(1500),
           headers: { 'Content-Type': 'application/json' },
