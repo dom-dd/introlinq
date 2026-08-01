@@ -723,25 +723,25 @@
           positionPopup(popup, anchor, cfg);
           popup.classList.add('il-on');
         });
-        // Pinned cards ignore mouseleave entirely - see the click handler
-        // below for why.
+        // Pinned cards (opened via keyboard - see the keydown handler
+        // below) ignore mouseleave entirely.
         sp.addEventListener('mouseleave', function () {
           if (!popup.classList.contains('il-pinned')) scheduleHide(popup);
         });
-        // The popup renders 10px below the text (positionPopup) and hides
-        // 150ms after mouseleave - tracing that gap fast enough, especially
-        // on a diagonal path toward a small button, is a real precision
-        // demand and a plausible reason clicks are so much rarer than
-        // hovers. A click "pins" the card open regardless of where the
-        // mouse goes next, removing the timing/path requirement entirely -
-        // see createPopup's document click listener for how it un-pins.
+        // Hover already reveals the card on desktop, so a click here is the
+        // reader having already seen who the expert is and deciding to go -
+        // it commits straight to the booking link (fillPopup first as a
+        // defensive no-op in case a click somehow fires before mouseenter
+        // ever did) rather than re-showing the same card they just saw.
+        // Not applied on touch/keyboard below - neither gets a hover
+        // preview first, so opening the card is the only context those
+        // readers get before deciding.
         sp.addEventListener('click', function () {
           stopDiscoveryCue();
           trackHover(hoverTracked, m);
-          clearTimeout(hideTimer);
           fillPopup(popup, m, cfg);
-          positionPopup(popup, anchor, cfg);
-          popup.classList.add('il-on', 'il-pinned');
+          var bk = document.getElementById('il-bk');
+          if (bk && bk.getAttribute('href') !== '#') bk.click();
         });
       });
     }
