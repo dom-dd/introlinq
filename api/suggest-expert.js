@@ -13,6 +13,15 @@ const OPENINTRO_SUGGEST_API = 'https://open-intro.com/api/introlinq/suggest-expe
 // quoted literal (see match.js's scan-cap query for the same constraint).
 const RATE_LIMIT_MAX = 5;
 
+// Must match the <select> options in dashboard/index.html exactly - kept
+// here too since a direct API call bypasses the dropdown entirely.
+const CATEGORIES = [
+  'Business & Entrepreneurship', 'Marketing & Sales', 'Finance & Investing',
+  'Technology & Product', 'Legal', 'Health & Medicine', 'Fitness & Wellness',
+  'Music', 'Art & Design', 'Media & Entertainment', 'Education & Coaching',
+  'Real Estate', 'Other',
+];
+
 function getSessionToken(req) {
   const cookies = req.headers.cookie || '';
   const match = cookies.match(/il_session=([^;]+)/);
@@ -78,8 +87,20 @@ export default async function handler(req, res) {
   }
 
   const { name, email, profileUrl, category } = req.body || {};
-  if (!name || !email) {
-    return res.status(400).json({ error: 'name and email are required' });
+  if (!name || !email || !profileUrl || !category) {
+    return res.status(400).json({ error: 'name, email, profileUrl, and category are required' });
+  }
+  if (!CATEGORIES.includes(category)) {
+    return res.status(400).json({ error: 'category is not a recognized option' });
+  }
+  // Client-side type="url" is trivially bypassed (direct API call, or just
+  // typing into a text-like field before the browser validates) - this is
+  // the actual boundary. The URL constructor throws on anything that isn't
+  // a well-formed absolute URL, which a plain string like "asdf" fails.
+  try {
+    new URL(profileUrl);
+  } catch {
+    return res.status(400).json({ error: 'profileUrl must be a valid URL' });
   }
 
   const ip = getClientIp(req);

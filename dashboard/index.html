@@ -1938,9 +1938,16 @@ async function submitSuggestExpert(e) {
   const profileUrl = document.getElementById('se-profile').value.trim();
   const category = document.getElementById('se-category').value;
 
-  if (!name || !email) {
+  if (!name || !email || !profileUrl || !category) {
     msgEl.className = 'se-msg se-msg-error';
     msgEl.textContent = 'Please fill in all required fields.';
+    return;
+  }
+  try {
+    new URL(profileUrl);
+  } catch {
+    msgEl.className = 'se-msg se-msg-error';
+    msgEl.textContent = 'Please enter a valid profile link (starting with https://).';
     return;
   }
 
@@ -2037,16 +2044,16 @@ function closePagesModal() {
           </div>
         </div>
         <div class="se-field">
-          <div class="setting-title">Profile link</div>
+          <div class="setting-title">Profile link <span class="se-required">*</span></div>
           <div class="payout-field">
-            <input type="text" class="payout-input" id="se-profile" placeholder="LinkedIn, website, Instagram...">
+            <input type="url" class="payout-input" id="se-profile" required placeholder="https://linkedin.com/in/... or their website">
           </div>
         </div>
         <div class="se-field">
-          <div class="setting-title">Category</div>
+          <div class="setting-title">Category <span class="se-required">*</span></div>
           <div class="payout-field">
-            <select class="payout-input" id="se-category">
-              <option value="">Select a category (optional)</option>
+            <select class="payout-input" id="se-category" required>
+              <option value="" disabled selected>Select a category</option>
               <option value="Business &amp; Entrepreneurship">Business &amp; Entrepreneurship</option>
               <option value="Marketing &amp; Sales">Marketing &amp; Sales</option>
               <option value="Finance &amp; Investing">Finance &amp; Investing</option>
