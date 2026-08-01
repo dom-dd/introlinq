@@ -33,6 +33,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .logo{font-family:'DM Serif Display',serif;font-size:1.125rem;color:var(--white)}
 .logo span{color:var(--gold)}
 .pub-name{font-size:0.8125rem;color:rgba(255,255,255,0.5)}
+.suggest-expert-btn{background:none;border:1px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:600;font-family:'Inter',sans-serif;padding:0.35rem 0.875rem;border-radius:100px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.suggest-expert-btn:hover{background:var(--gold);color:var(--ink)}
 
 /* ── Tabs ── */
 .tab-bar{background:var(--white);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;gap:0}
@@ -57,6 +59,17 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .modal-page-url:hover{text-decoration:underline}
 .modal-page-count{font-size:0.75rem;color:var(--ink-muted);white-space:nowrap;background:var(--white);border:1px solid var(--border);border-radius:100px;padding:0.1rem 0.5rem}
 .modal-empty{font-size:0.875rem;color:var(--ink-muted);text-align:center;padding:2rem}
+
+/* ── Suggest an Expert modal ── */
+.se-field{margin-bottom:1rem}
+.se-field:last-of-type{margin-bottom:0}
+.se-required{color:var(--gold)}
+.se-hint{font-size:0.75rem;color:var(--ink-muted);margin-top:0.75rem;margin-bottom:1.25rem;padding-top:0.75rem;border-top:1px solid var(--border)}
+.se-submit{width:100%;background:var(--gold);color:var(--ink);border:none;padding:0.75rem;border-radius:8px;font-size:0.9375rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;margin-top:0.25rem;transition:opacity .15s}
+.se-submit:hover{opacity:0.85}
+.se-submit:disabled{opacity:0.6;cursor:default}
+.se-msg{min-height:1.25rem;font-size:0.8125rem;margin-top:0.625rem;text-align:center}
+.se-msg-error{color:var(--red, #dc2626)}
 .stat-value.clickable{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:4px}
 .stat-value.clickable:hover{color:var(--sage)}
 .tab-panel{display:none}
@@ -341,6 +354,7 @@ tr:last-child td{border-bottom:none}
   <div class="logo">Intro<span>Linq</span></div>
   <div style="display:flex;align-items:center;gap:1rem">
     <div class="pub-name" id="header-name"></div>
+    <button class="suggest-expert-btn" onclick="openSuggestExpertModal()">Suggest an Expert</button>
     <button onclick="logout()" style="background:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);font-size:0.75rem;font-family:'Inter',sans-serif;padding:0.35rem 0.75rem;border-radius:100px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='rgba(255,255,255,0.5)';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(255,255,255,0.2)';this.style.color='rgba(255,255,255,0.6)'">Log out</button>
   </div>
 </div>
@@ -1065,6 +1079,13 @@ async function loadDashboard() {
 
   // Store page URLs for modal
   _pageUrls = d.page_urls || [];
+
+  // Pre-fill for the Suggest an Expert modal - contact_first_name/last_name
+  // is the actual person's name; d.publisher.name is the SITE name (e.g.
+  // "The Growth Journal"), so it's deliberately not used as a fallback here -
+  // a wrong pre-fill is worse than an empty field the publisher fills in themselves.
+  _suggesterName = [d.publisher.contact_first_name, d.publisher.contact_last_name].filter(Boolean).join(' ');
+  _suggesterEmail = d.publisher.email || '';
 
   // Overview stats
   const impressions = d.total_impressions || 0;
@@ -1871,6 +1892,89 @@ function relativeTime(d) {
 
 var _pageUrls = [];
 
+// ── Suggest an Expert modal ─────────────────────────────────────────────────
+
+var _suggesterName = '';
+var _suggesterEmail = '';
+
+function openSuggestExpertModal() {
+  document.getElementById('suggest-expert-form').reset();
+  document.getElementById('se-name').value = '';
+  document.getElementById('se-email').value = '';
+  document.getElementById('se-profile').value = '';
+  document.getElementById('se-category').value = '';
+  document.getElementById('se-suggester-name').value = _suggesterName;
+  document.getElementById('se-suggester-email').value = _suggesterEmail;
+  const msgEl = document.getElementById('se-msg');
+  msgEl.textContent = '';
+  msgEl.className = 'se-msg';
+  const btn = document.getElementById('se-submit');
+  btn.disabled = false;
+  btn.textContent = 'Submit suggestion';
+  document.getElementById('suggest-expert-modal').classList.add('open');
+  document.addEventListener('keydown', suggestExpertEscHandler);
+  // Focus the first field once the modal has actually become visible -
+  // an element can't take focus while its container is still opacity:0/
+  // pointer-events:none (see .modal-overlay), which is what .open removes.
+  requestAnimationFrame(() => document.getElementById('se-name').focus());
+}
+
+function closeSuggestExpertModal() {
+  document.getElementById('suggest-expert-modal').classList.remove('open');
+  document.removeEventListener('keydown', suggestExpertEscHandler);
+}
+
+function suggestExpertEscHandler(e) {
+  if (e.key === 'Escape') closeSuggestExpertModal();
+}
+
+async function submitSuggestExpert(e) {
+  e.preventDefault();
+  const msgEl = document.getElementById('se-msg');
+  const btn = document.getElementById('se-submit');
+
+  const name = document.getElementById('se-name').value.trim();
+  const email = document.getElementById('se-email').value.trim();
+  const profileUrl = document.getElementById('se-profile').value.trim();
+  const category = document.getElementById('se-category').value;
+  const suggesterName = document.getElementById('se-suggester-name').value.trim();
+  const suggesterEmail = document.getElementById('se-suggester-email').value.trim();
+
+  if (!name || !email || !suggesterName || !suggesterEmail) {
+    msgEl.className = 'se-msg se-msg-error';
+    msgEl.textContent = 'Please fill in all required fields.';
+    return;
+  }
+
+  msgEl.className = 'se-msg';
+  msgEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  try {
+    const res = await fetch('/api/suggest-expert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ name, email, profileUrl, category, suggesterName, suggesterEmail }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (res.ok && body.ok) {
+      closeSuggestExpertModal();
+      toast('Thanks! Your suggestion has been sent to OpenIntro.');
+    } else {
+      msgEl.className = 'se-msg se-msg-error';
+      msgEl.textContent = body.error || 'Something went wrong - please try again.';
+    }
+  } catch (err) {
+    msgEl.className = 'se-msg se-msg-error';
+    msgEl.textContent = 'Network error - please check your connection and try again.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Submit suggestion';
+  }
+}
+
 function openPagesModal() {
   const list = document.getElementById('modal-page-list');
   if (!_pageUrls.length) {
@@ -1899,6 +2003,74 @@ function closePagesModal() {
       <button class="modal-close" onclick="closePagesModal()">✕</button>
     </div>
     <div class="modal-list" id="modal-page-list"></div>
+  </div>
+</div>
+
+<!-- Suggest an Expert modal -->
+<div class="modal-overlay" id="suggest-expert-modal" onclick="if(event.target===this)closeSuggestExpertModal()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="se-title" style="max-height:90vh">
+    <div class="modal-head">
+      <div class="modal-title" id="se-title">Suggest an Expert</div>
+      <button class="modal-close" onclick="closeSuggestExpertModal()" aria-label="Close">✕</button>
+    </div>
+    <div style="overflow-y:auto">
+      <form id="suggest-expert-form" onsubmit="submitSuggestExpert(event)">
+        <div class="se-field">
+          <div class="setting-title">Full name <span class="se-required">*</span></div>
+          <div class="payout-field">
+            <input type="text" class="payout-input" id="se-name" required placeholder="Who are you suggesting?">
+          </div>
+        </div>
+        <div class="se-field">
+          <div class="setting-title">Email <span class="se-required">*</span></div>
+          <div class="payout-field">
+            <input type="email" class="payout-input" id="se-email" required placeholder="their@email.com">
+          </div>
+        </div>
+        <div class="se-field">
+          <div class="setting-title">Profile link</div>
+          <div class="payout-field">
+            <input type="text" class="payout-input" id="se-profile" placeholder="LinkedIn, website, Instagram...">
+          </div>
+        </div>
+        <div class="se-field">
+          <div class="setting-title">Category</div>
+          <div class="payout-field">
+            <select class="payout-input" id="se-category">
+              <option value="">Select a category (optional)</option>
+              <option value="Business &amp; Entrepreneurship">Business &amp; Entrepreneurship</option>
+              <option value="Marketing &amp; Sales">Marketing &amp; Sales</option>
+              <option value="Finance &amp; Investing">Finance &amp; Investing</option>
+              <option value="Technology &amp; Product">Technology &amp; Product</option>
+              <option value="Legal">Legal</option>
+              <option value="Health &amp; Medicine">Health &amp; Medicine</option>
+              <option value="Fitness &amp; Wellness">Fitness &amp; Wellness</option>
+              <option value="Music">Music</option>
+              <option value="Art &amp; Design">Art &amp; Design</option>
+              <option value="Media &amp; Entertainment">Media &amp; Entertainment</option>
+              <option value="Education &amp; Coaching">Education &amp; Coaching</option>
+              <option value="Real Estate">Real Estate</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="se-hint">Your details, so OpenIntro can confirm the outcome with you</div>
+        <div class="se-field">
+          <div class="setting-title">Your name <span class="se-required">*</span></div>
+          <div class="payout-field">
+            <input type="text" class="payout-input" id="se-suggester-name" required placeholder="Your name">
+          </div>
+        </div>
+        <div class="se-field">
+          <div class="setting-title">Your email <span class="se-required">*</span></div>
+          <div class="payout-field">
+            <input type="email" class="payout-input" id="se-suggester-email" required placeholder="you@email.com">
+          </div>
+        </div>
+        <button type="submit" class="se-submit" id="se-submit">Submit suggestion</button>
+        <div class="se-msg" id="se-msg" role="status" aria-live="polite"></div>
+      </form>
+    </div>
   </div>
 </div>
 
