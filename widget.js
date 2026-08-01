@@ -428,15 +428,40 @@
       '<div id="il-pv" style="font-size:8.5px!important;color:#8888a8!important;text-align:center;margin-top:6px;letter-spacing:.02em"></div>';
     document.body.appendChild(p);
     p.addEventListener('mouseenter', function () { clearTimeout(hideTimer); });
-    p.addEventListener('mouseleave', function () { scheduleHide(p); });
+    p.addEventListener('mouseleave', function () {
+      if (!p.classList.contains('il-pinned')) scheduleHide(p);
+    });
+    // Whole-card click-through: the small "Speak with X" button was the
+    // only clickable element in a card this size - excluding the close
+    // button and the partnership attribution (both have their own
+    // destinations), a click anywhere else on the open card now activates
+    // the same link #il-bk already points to, via the real anchor's own
+    // .click() so its target=_blank/rel/href behave exactly as if the
+    // reader had hit the button directly.
+    p.addEventListener('click', function (ev) {
+      if (ev.target.closest && ev.target.closest('#il-cl, #il-pv a, #il-bk')) return;
+      var bk = document.getElementById('il-bk');
+      if (bk && bk.getAttribute('href') !== '#') bk.click();
+    });
     if ('ontouchstart' in window) {
       var cl = document.getElementById('il-cl');
       if (cl) {
         cl.style.display = 'block';
-        cl.addEventListener('click', function (ev) { ev.stopPropagation(); p.classList.remove('il-on'); });
+        cl.addEventListener('click', function (ev) { ev.stopPropagation(); p.classList.remove('il-on', 'il-pinned'); });
       }
       p.addEventListener('click', function (ev) { ev.stopPropagation(); });
-      document.addEventListener('click', function () { p.classList.remove('il-on'); });
+      document.addEventListener('click', function () { p.classList.remove('il-on', 'il-pinned'); });
+    } else {
+      // Un-pins a card opened by clicking the highlighted phrase (see
+      // attachGroupEvents) - anywhere outside the card AND outside any
+      // highlight closes it; clicking a different highlight re-pins the
+      // (shared) popup to that match instead via its own click handler.
+      document.addEventListener('click', function (ev) {
+        if (!p.classList.contains('il-pinned')) return;
+        if (ev.target.closest && ev.target.closest('#il-pop, .il-hl')) return;
+        p.classList.remove('il-pinned');
+        scheduleHide(p);
+      });
     }
     return p;
   }
@@ -698,7 +723,26 @@
           positionPopup(popup, anchor, cfg);
           popup.classList.add('il-on');
         });
-        sp.addEventListener('mouseleave', function () { scheduleHide(popup); });
+        // Pinned cards ignore mouseleave entirely - see the click handler
+        // below for why.
+        sp.addEventListener('mouseleave', function () {
+          if (!popup.classList.contains('il-pinned')) scheduleHide(popup);
+        });
+        // The popup renders 10px below the text (positionPopup) and hides
+        // 150ms after mouseleave - tracing that gap fast enough, especially
+        // on a diagonal path toward a small button, is a real precision
+        // demand and a plausible reason clicks are so much rarer than
+        // hovers. A click "pins" the card open regardless of where the
+        // mouse goes next, removing the timing/path requirement entirely -
+        // see createPopup's document click listener for how it un-pins.
+        sp.addEventListener('click', function () {
+          stopDiscoveryCue();
+          trackHover(hoverTracked, m);
+          clearTimeout(hideTimer);
+          fillPopup(popup, m, cfg);
+          positionPopup(popup, anchor, cfg);
+          popup.classList.add('il-on', 'il-pinned');
+        });
       });
     }
     // Keyboard equivalent of click/mouseenter above, on the one focusable
@@ -713,7 +757,7 @@
       clearTimeout(hideTimer);
       fillPopup(popup, m, cfg);
       positionPopup(popup, anchor, cfg);
-      popup.classList.add('il-on');
+      popup.classList.add('il-on', 'il-pinned');
     });
   }
 
