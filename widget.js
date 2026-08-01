@@ -431,18 +431,6 @@
     p.addEventListener('mouseleave', function () {
       if (!p.classList.contains('il-pinned')) scheduleHide(p);
     });
-    // Whole-card click-through: the small "Speak with X" button was the
-    // only clickable element in a card this size - excluding the close
-    // button and the partnership attribution (both have their own
-    // destinations), a click anywhere else on the open card now activates
-    // the same link #il-bk already points to, via the real anchor's own
-    // .click() so its target=_blank/rel/href behave exactly as if the
-    // reader had hit the button directly.
-    p.addEventListener('click', function (ev) {
-      if (ev.target.closest && ev.target.closest('#il-cl, #il-pv a, #il-bk')) return;
-      var bk = document.getElementById('il-bk');
-      if (bk && bk.getAttribute('href') !== '#') bk.click();
-    });
     if ('ontouchstart' in window) {
       var cl = document.getElementById('il-cl');
       if (cl) {
@@ -452,10 +440,9 @@
       p.addEventListener('click', function (ev) { ev.stopPropagation(); });
       document.addEventListener('click', function () { p.classList.remove('il-on', 'il-pinned'); });
     } else {
-      // Un-pins a card opened by clicking the highlighted phrase (see
-      // attachGroupEvents) - anywhere outside the card AND outside any
-      // highlight closes it; clicking a different highlight re-pins the
-      // (shared) popup to that match instead via its own click handler.
+      // Un-pins a card opened via keyboard (see attachGroupEvents' keydown
+      // handler - the only thing that still sets il-pinned on desktop) -
+      // anywhere outside the card AND outside any highlight closes it.
       document.addEventListener('click', function (ev) {
         if (!p.classList.contains('il-pinned')) return;
         if (ev.target.closest && ev.target.closest('#il-pop, .il-hl')) return;
