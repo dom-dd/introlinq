@@ -153,6 +153,14 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .exit-badge{display:inline-block;font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;background:var(--gold);color:var(--white);padding:0.2rem 0.6rem;border-radius:100px;margin-bottom:1rem}
 .exit-title{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--ink);margin:0 0 0.5rem;letter-spacing:-0.02em;line-height:1.2}
 .exit-sub{color:var(--ink-soft);margin:0 0 1.5rem;line-height:1.65;font-size:0.9375rem}
+.exit-primary-cta{display:block;width:100%;box-sizing:border-box;text-align:center;background:#16a34a;color:#fff;text-decoration:none;padding:1rem;border-radius:100px;font-size:1rem;font-weight:700;font-family:'Inter',sans-serif;box-shadow:0 4px 18px rgba(22,163,74,0.45),0 1px 4px rgba(0,0,0,0.1);transition:transform 0.15s,box-shadow 0.15s;letter-spacing:0.01em}
+.exit-primary-cta:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(22,163,74,0.55),0 2px 6px rgba(0,0,0,0.1)}
+.exit-secondary-label{text-align:center;font-size:0.8rem;color:var(--ink-muted);margin:1rem 0 0.625rem}
+.exit-secondary-form{display:flex;gap:0.5rem}
+.exit-secondary-input{flex:1;min-width:0;padding:0.6rem 0.875rem;border:1.5px solid rgba(26,26,46,0.2);border-radius:100px;font-size:0.85rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--white);outline:none;transition:border-color 0.15s}
+.exit-secondary-input:focus{border-color:var(--sage)}
+.exit-secondary-submit{background:none;border:1.5px solid var(--sage);color:var(--sage);padding:0.6rem 1.125rem;border-radius:100px;font-size:0.8125rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:background 0.15s}
+.exit-secondary-submit:hover{background:var(--sage-light)}
 
 /* Product screenshots */
 .screens-section{margin-top:4.5rem;text-align:center}
@@ -780,12 +788,12 @@ async function handleExitSubmit(e) {
     });
     if (!res.ok) throw new Error();
     _exitSubmitted = true;
-    form.style.display = 'none';
+    document.getElementById('exit-secondary').style.display = 'none';
     document.getElementById('exit-success').style.display = 'block';
     if (window._ilViewId) fetch('/api/track', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action: 'convert', viewId: window._ilViewId }) }).catch(()=>{});
     setTimeout(closeExitPopup, 3000);
   } catch {
-    btn.textContent = 'Save my spot';
+    btn.textContent = 'Join';
     btn.disabled = false;
     alert('Something went wrong - please try again.');
   }
@@ -840,16 +848,19 @@ document.getElementById('footer-email')?.addEventListener('keydown', e => {
     <button class="exit-close" onclick="closeExitPopup()" aria-label="Close">✕</button>
     <div class="exit-badge">50% commission, every booking</div>
     <h2 class="exit-title">Don't leave empty-handed.</h2>
-    <p class="exit-sub">Keep 50% of every booking your readers make - it takes 10 seconds to get started.</p>
-    <form id="exit-form" onsubmit="handleExitSubmit(event)">
-      <input class="form-input" type="email" name="email" placeholder="Your email address" required>
-      <button class="form-submit" type="submit">Save my spot</button>
-    </form>
-    <p style="text-align:center;font-size:0.8rem;color:var(--ink-muted);margin-top:0.875rem">Ready now? <a href="/signup" style="color:var(--sage);font-weight:600;text-decoration:none">Create your account instead →</a></p>
+    <p class="exit-sub">Create your free account and start earning on every booking your readers make.</p>
+    <a href="/signup" class="exit-primary-cta">Create my account →</a>
+    <div id="exit-secondary">
+      <p class="exit-secondary-label">Not ready yet? Join our mailing list instead.</p>
+      <form id="exit-form" class="exit-secondary-form" onsubmit="handleExitSubmit(event)">
+        <input class="exit-secondary-input" type="email" name="email" placeholder="Your email address" required>
+        <button class="exit-secondary-submit" type="submit">Join</button>
+      </form>
+    </div>
     <div id="exit-success" style="display:none;text-align:center;padding:1.5rem 0 0.5rem">
       <div style="font-size:2rem;margin-bottom:0.5rem">✓</div>
-      <p style="font-weight:600;color:var(--ink);margin:0 0 0.25rem">You're in!</p>
-      <p style="color:var(--ink-soft);font-size:0.875rem;margin:0">Check your inbox to confirm - or <a href="/signup" style="color:var(--sage);font-weight:600">create your account now</a> and skip the wait.</p>
+      <p style="font-weight:600;color:var(--ink);margin:0 0 0.25rem">You're subscribed!</p>
+      <p style="color:var(--ink-soft);font-size:0.875rem;margin:0">We'll email you when there's something worth knowing - or <a href="/signup" style="color:var(--sage);font-weight:600">create your account now →</a></p>
     </div>
   </div>
 </div>
