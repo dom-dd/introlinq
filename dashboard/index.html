@@ -61,10 +61,18 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .modal-empty{font-size:0.875rem;color:var(--ink-muted);text-align:center;padding:2rem}
 
 /* ── Suggest an Expert modal ── */
+.se-partnership{display:flex;align-items:center;justify-content:center;gap:0.75rem;margin-bottom:1rem}
+.se-logo{width:28px;height:28px;border-radius:6px;object-fit:contain}
+.se-partnership-arrow{color:var(--ink-muted);font-size:1rem}
+.se-intro-text{font-size:0.8125rem;color:var(--ink-soft);line-height:1.5;text-align:center;margin:0 0 0.75rem}
+.se-details{margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.se-details summary{font-size:0.8125rem;font-weight:600;color:var(--sage);cursor:pointer;text-align:center;list-style:none}
+.se-details summary::-webkit-details-marker{display:none}
+.se-details summary:hover{text-decoration:underline}
+.se-details p{font-size:0.8125rem;color:var(--ink-soft);line-height:1.55;margin:0.75rem 0 0}
 .se-field{margin-bottom:1rem}
 .se-field:last-of-type{margin-bottom:0}
 .se-required{color:var(--gold)}
-.se-hint{font-size:0.75rem;color:var(--ink-muted);margin-top:0.75rem;margin-bottom:1.25rem;padding-top:0.75rem;border-top:1px solid var(--border)}
 .se-submit{width:100%;background:var(--gold);color:var(--ink);border:none;padding:0.75rem;border-radius:8px;font-size:0.9375rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;margin-top:0.25rem;transition:opacity .15s}
 .se-submit:hover{opacity:0.85}
 .se-submit:disabled{opacity:0.6;cursor:default}
@@ -1080,13 +1088,6 @@ async function loadDashboard() {
   // Store page URLs for modal
   _pageUrls = d.page_urls || [];
 
-  // Pre-fill for the Suggest an Expert modal - contact_first_name/last_name
-  // is the actual person's name; d.publisher.name is the SITE name (e.g.
-  // "The Growth Journal"), so it's deliberately not used as a fallback here -
-  // a wrong pre-fill is worse than an empty field the publisher fills in themselves.
-  _suggesterName = [d.publisher.contact_first_name, d.publisher.contact_last_name].filter(Boolean).join(' ');
-  _suggesterEmail = d.publisher.email || '';
-
   // Overview stats
   const impressions = d.total_impressions || 0;
   const seen = d.seen || 0;
@@ -1893,9 +1894,10 @@ function relativeTime(d) {
 var _pageUrls = [];
 
 // ── Suggest an Expert modal ─────────────────────────────────────────────────
-
-var _suggesterName = '';
-var _suggesterEmail = '';
+// Who's submitting (name/email) and which IntroLinq account they're posting
+// from (partnerName) are never collected here - the publisher is already
+// logged in, so the backend derives all three from their session instead of
+// trusting anything the client could send. See api/suggest-expert.js.
 
 function openSuggestExpertModal() {
   document.getElementById('suggest-expert-form').reset();
@@ -1903,8 +1905,6 @@ function openSuggestExpertModal() {
   document.getElementById('se-email').value = '';
   document.getElementById('se-profile').value = '';
   document.getElementById('se-category').value = '';
-  document.getElementById('se-suggester-name').value = _suggesterName;
-  document.getElementById('se-suggester-email').value = _suggesterEmail;
   const msgEl = document.getElementById('se-msg');
   msgEl.textContent = '';
   msgEl.className = 'se-msg';
@@ -1937,10 +1937,8 @@ async function submitSuggestExpert(e) {
   const email = document.getElementById('se-email').value.trim();
   const profileUrl = document.getElementById('se-profile').value.trim();
   const category = document.getElementById('se-category').value;
-  const suggesterName = document.getElementById('se-suggester-name').value.trim();
-  const suggesterEmail = document.getElementById('se-suggester-email').value.trim();
 
-  if (!name || !email || !suggesterName || !suggesterEmail) {
+  if (!name || !email) {
     msgEl.className = 'se-msg se-msg-error';
     msgEl.textContent = 'Please fill in all required fields.';
     return;
@@ -1956,8 +1954,9 @@ async function submitSuggestExpert(e) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ name, email, profileUrl, category, suggesterName, suggesterEmail }),
+      body: JSON.stringify({ name, email, profileUrl, category }),
     });
+    if (res.status === 401) { window.location.href = '/login'; return; }
     const body = await res.json().catch(() => ({}));
     if (res.ok && body.ok) {
       closeSuggestExpertModal();
@@ -2014,6 +2013,16 @@ function closePagesModal() {
       <button class="modal-close" onclick="closeSuggestExpertModal()" aria-label="Close">✕</button>
     </div>
     <div style="overflow-y:auto">
+      <div class="se-partnership">
+        <img src="https://www.introlinq.com/favicon.svg" alt="" class="se-logo">
+        <span class="se-partnership-arrow">→</span>
+        <img src="/networks%20logos/OpenIntro-icon.png" alt="" class="se-logo">
+      </div>
+      <p class="se-intro-text">IntroLinq is partnered with OpenIntro to help bring more experts onto the platform. If you know someone who'd be a great fit, suggest them below - or suggest yourself.</p>
+      <details class="se-details">
+        <summary>How this works</summary>
+        <p>OpenIntro connects readers with experts for 1:1 bookings, and is expanding beyond business into a wide range of categories. Once you submit a suggestion, OpenIntro's team reviews it - if they think it's a fit, they'll contact that person directly to invite them to join (no form for the person to fill in). Either way, you'll hear back on the outcome.</p>
+      </details>
       <form id="suggest-expert-form" onsubmit="submitSuggestExpert(event)">
         <div class="se-field">
           <div class="setting-title">Full name <span class="se-required">*</span></div>
@@ -2052,19 +2061,6 @@ function closePagesModal() {
               <option value="Real Estate">Real Estate</option>
               <option value="Other">Other</option>
             </select>
-          </div>
-        </div>
-        <div class="se-hint">Your details, so OpenIntro can confirm the outcome with you</div>
-        <div class="se-field">
-          <div class="setting-title">Your name <span class="se-required">*</span></div>
-          <div class="payout-field">
-            <input type="text" class="payout-input" id="se-suggester-name" required placeholder="Your name">
-          </div>
-        </div>
-        <div class="se-field">
-          <div class="setting-title">Your email <span class="se-required">*</span></div>
-          <div class="payout-field">
-            <input type="email" class="payout-input" id="se-suggester-email" required placeholder="you@email.com">
           </div>
         </div>
         <button type="submit" class="se-submit" id="se-submit">Submit suggestion</button>

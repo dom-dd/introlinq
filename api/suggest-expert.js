@@ -13,6 +13,12 @@ const OPENINTRO_SUGGEST_API = 'https://open-intro.com/api/introlinq/suggest-expe
 // quoted literal (see match.js's scan-cap query for the same constraint).
 const RATE_LIMIT_MAX = 5;
 
+function getSessionToken(req) {
+  const cookies = req.headers.cookie || '';
+  const match = cookies.match(/il_session=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 let tableReady = false;
 async function ensureTable(sql) {
   if (tableReady) return;
@@ -30,10 +36,12 @@ async function ensureTable(sql) {
     category TEXT,
     suggester_name TEXT,
     suggester_email TEXT,
+    partner_name TEXT,
     status TEXT NOT NULL,
     application_id TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
   )`;
+  await sql`ALTER TABLE expert_suggestions ADD COLUMN IF NOT EXISTS partner_name TEXT`.catch(() => {});
   tableReady = true;
 }
 
@@ -42,13 +50,39 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { name, email, profileUrl, category, suggesterName, suggesterEmail } = req.body || {};
-  if (!name || !email || !suggesterName || !suggesterEmail) {
-    return res.status(400).json({ error: 'name, email, suggesterName, and suggesterEmail are required' });
+  const sql = neon(process.env.DATABASE_URL);
+
+  // suggesterName/suggesterEmail/partnerName are derived from the logged-in
+  // publisher's own session, never taken from the request body - the
+  // dashboard form doesn't even show them as editable fields anymore, and a
+  // client-submitted value here would be trivially spoofable (wrong person,
+  // wrong account) if it were trusted instead.
+  const sessionToken = getSessionToken(req);
+  if (!sessionToken) return res.status(401).json({ error: 'Not authenticated' });
+  const [session] = await sql`
+    SELECT publisher_slug FROM sessions WHERE token = ${sessionToken} AND expires_at > NOW()
+  `.catch(() => [null]);
+  if (!session) return res.status(401).json({ error: 'Not authenticated' });
+
+  const [publisher] = await sql`
+    SELECT name, email, contact_first_name, contact_last_name
+    FROM publishers WHERE slug = ${session.publisher_slug} AND active = true LIMIT 1
+  `.catch(() => [null]);
+  if (!publisher) return res.status(401).json({ error: 'Not authenticated' });
+
+  const suggesterName = [publisher.contact_first_name, publisher.contact_last_name].filter(Boolean).join(' ');
+  const suggesterEmail = publisher.email;
+  const partnerName = publisher.name;
+  if (!suggesterName || !suggesterEmail) {
+    return res.status(400).json({ error: 'Add your contact name and email under Account settings before suggesting an expert.' });
+  }
+
+  const { name, email, profileUrl, category } = req.body || {};
+  if (!name || !email) {
+    return res.status(400).json({ error: 'name and email are required' });
   }
 
   const ip = getClientIp(req);
-  const sql = neon(process.env.DATABASE_URL);
   await ensureTable(sql);
 
   if (ip) {
@@ -68,6 +102,7 @@ export default async function handler(req, res) {
     category: category || null,
     suggesterName,
     suggesterEmail,
+    partnerName,
   };
 
   let openIntroRes;
@@ -86,15 +121,15 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('suggest-expert relay to OpenIntro failed:', err);
     await sql`
-      INSERT INTO expert_suggestions (ip, name, email, profile_url, category, suggester_name, suggester_email, status)
-      VALUES (${ip}, ${name}, ${email}, ${profileUrl || null}, ${category || null}, ${suggesterName}, ${suggesterEmail}, 'relay_failed')
+      INSERT INTO expert_suggestions (ip, name, email, profile_url, category, suggester_name, suggester_email, partner_name, status)
+      VALUES (${ip}, ${name}, ${email}, ${profileUrl || null}, ${category || null}, ${suggesterName}, ${suggesterEmail}, ${partnerName}, 'relay_failed')
     `.catch(() => {});
     return res.status(502).json({ error: "Couldn't reach OpenIntro right now - please try again shortly." });
   }
 
   await sql`
-    INSERT INTO expert_suggestions (ip, name, email, profile_url, category, suggester_name, suggester_email, status, application_id)
-    VALUES (${ip}, ${name}, ${email}, ${profileUrl || null}, ${category || null}, ${suggesterName}, ${suggesterEmail},
+    INSERT INTO expert_suggestions (ip, name, email, profile_url, category, suggester_name, suggester_email, partner_name, status, application_id)
+    VALUES (${ip}, ${name}, ${email}, ${profileUrl || null}, ${category || null}, ${suggesterName}, ${suggesterEmail}, ${partnerName},
             ${openIntroRes.ok ? 'sent' : 'openintro_rejected'}, ${openIntroBody.applicationId || null})
   `.catch(() => {});
 
