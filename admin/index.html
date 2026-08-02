@@ -1886,18 +1886,35 @@ function outreachEmailTemplates(c) {
 
 const OUTREACH_EMAIL_TITLES = { intro: 'Intro email', followup1: 'Follow-up 1', followup2: 'Follow-up 2 (final)' };
 
+let _oemContactEmail = '';
+
 function openOutreachEmailModal(id, stage) {
   const c = _outreach.find(x => x.id === id);
   if (!c) return;
   const tpl = outreachEmailTemplates(c)[stage];
+  _oemContactEmail = c.contact_email || '';
   document.getElementById('oem-title').textContent = `${OUTREACH_EMAIL_TITLES[stage]} - ${c.domain}`;
   document.getElementById('oem-subject').value = tpl.subject;
   document.getElementById('oem-body').value = tpl.body;
+  document.getElementById('oem-no-email-hint').style.display = _oemContactEmail ? 'none' : 'block';
+  updateOutreachMailtoLink();
   document.getElementById('outreach-email-modal').classList.add('open');
 }
 
 function closeOutreachEmailModal() {
   document.getElementById('outreach-email-modal').classList.remove('open');
+}
+
+// mailto: uses manual encodeURIComponent rather than URLSearchParams -
+// URLSearchParams encodes spaces as "+" (form-encoding convention), which
+// some mail clients show literally instead of decoding as a space in a
+// mailto body. Re-run on every edit to the subject/body fields so the link
+// always matches what's currently on screen, not just what it opened with.
+function updateOutreachMailtoLink() {
+  const subject = document.getElementById('oem-subject').value;
+  const body = document.getElementById('oem-body').value;
+  const to = _oemContactEmail ? encodeURIComponent(_oemContactEmail) : '';
+  document.getElementById('oem-mailto').href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 function copyOutreachEmailField(fieldId, label) {
@@ -2434,19 +2451,21 @@ login();
       <button class="modal-close" onclick="closeOutreachEmailModal()" aria-label="Close">✕</button>
     </div>
     <div style="overflow-y:auto">
+      <a id="oem-mailto" href="#" class="btn btn-primary" style="width:100%;box-sizing:border-box;display:block;text-align:center;text-decoration:none;margin-bottom:0.4rem">Open in email app</a>
+      <div id="oem-no-email-hint" style="display:none;font-size:0.7rem;color:var(--ink-muted);text-align:center;margin-bottom:0.75rem">No email saved for this contact yet - it'll open blank, add the address yourself, or fill in their email above first.</div>
+      <div style="font-size:0.7rem;color:var(--ink-muted);text-align:center;margin-bottom:1.25rem">Opens your default mail app pre-filled - review before sending. Edit below first if you want to change anything.</div>
       <div class="form-group" style="margin-bottom:0.875rem">
         <label class="form-label">Subject</label>
         <div style="display:flex;gap:0.5rem;margin-top:0.35rem">
-          <input class="form-input" id="oem-subject" style="flex:1" onfocus="this.select()">
+          <input class="form-input" id="oem-subject" style="flex:1" onfocus="this.select()" oninput="updateOutreachMailtoLink()">
           <button class="btn btn-ghost btn-sm" onclick="copyOutreachEmailField('oem-subject','Subject')">Copy</button>
         </div>
       </div>
       <div class="form-group" style="margin-bottom:1rem">
         <label class="form-label">Body</label>
-        <textarea id="oem-body" rows="12" class="form-input" style="width:100%;box-sizing:border-box;margin-top:0.35rem;font-family:'Inter',sans-serif;resize:vertical;line-height:1.5"></textarea>
+        <textarea id="oem-body" rows="12" class="form-input" style="width:100%;box-sizing:border-box;margin-top:0.35rem;font-family:'Inter',sans-serif;resize:vertical;line-height:1.5" oninput="updateOutreachMailtoLink()"></textarea>
       </div>
-      <button class="btn btn-primary" style="width:100%" onclick="copyOutreachEmailField('oem-body','Body')">Copy body</button>
-      <div style="font-size:0.7rem;color:var(--ink-muted);margin-top:0.6rem;text-align:center">Both fields are editable before copying - nothing here is sent automatically.</div>
+      <button class="btn btn-ghost" style="width:100%" onclick="copyOutreachEmailField('oem-body','Body')">Or just copy the body</button>
     </div>
   </div>
 </div>
