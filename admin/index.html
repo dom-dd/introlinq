@@ -94,6 +94,19 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .btn-danger{background:var(--red-light);color:var(--red);border:1px solid rgba(220,38,38,0.2)}
 .btn-sm{padding:0.3rem 0.75rem;font-size:0.75rem}
 
+/* Modal overlay (outreach email preview) - this file's OTHER modals
+   (subscriber-edit, group-edit) use their own inline display:none/flex
+   toggling instead of a shared class, which is why this wasn't already
+   here - the outreach modal was built reusing dashboard/index.html's
+   .modal-overlay/.open pattern, so it needs its own copy of that CSS. */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,26,46,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:auto}
+.modal{background:var(--white);border-radius:var(--radius);padding:1.75rem;width:min(600px,90vw);max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.15)}
+.modal-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:1.25rem}
+.modal-title{font-family:'DM Serif Display',serif;font-size:1.125rem;color:var(--ink)}
+.modal-close{background:none;border:none;font-size:1.25rem;cursor:pointer;color:var(--ink-muted);line-height:1;padding:0}
+.modal-close:hover{color:var(--ink)}
+
 /* Add publisher form */
 #add-form{display:none;padding:1.5rem 2rem 1.75rem;border-bottom:1px solid var(--border);background:var(--white)}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem}
