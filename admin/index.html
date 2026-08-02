@@ -1918,16 +1918,19 @@ function closeOutreachEmailModal() {
   document.getElementById('outreach-email-modal').classList.remove('open');
 }
 
-// mailto: uses manual encodeURIComponent rather than URLSearchParams -
-// URLSearchParams encodes spaces as "+" (form-encoding convention), which
-// some mail clients show literally instead of decoding as a space in a
-// mailto body. Re-run on every edit to the subject/body fields so the link
-// always matches what's currently on screen, not just what it opened with.
+// Gmail's own compose URL, not mailto: - mailto only works if Chrome has
+// been explicitly granted permission to hand those links to Gmail (a
+// one-time browser setting most people never touch), which is exactly why
+// "Open in email app" did nothing. This is a normal https:// link that
+// opens Gmail's compose view directly in a new tab, pre-filled - no
+// protocol handler registration needed. Re-run on every edit to the
+// subject/body fields so the link always matches what's on screen.
 function updateOutreachMailtoLink() {
   const subject = document.getElementById('oem-subject').value;
   const body = document.getElementById('oem-body').value;
-  const to = _oemContactEmail ? encodeURIComponent(_oemContactEmail) : '';
-  document.getElementById('oem-mailto').href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const params = new URLSearchParams({ view: 'cm', fs: '1', su: subject, body });
+  if (_oemContactEmail) params.set('to', _oemContactEmail);
+  document.getElementById('oem-mailto').href = `https://mail.google.com/mail/?${params.toString()}`;
 }
 
 function copyOutreachEmailField(fieldId, label) {
@@ -2464,9 +2467,9 @@ login();
       <button class="modal-close" onclick="closeOutreachEmailModal()" aria-label="Close">✕</button>
     </div>
     <div style="overflow-y:auto">
-      <a id="oem-mailto" href="#" class="btn btn-primary" style="width:100%;box-sizing:border-box;display:block;text-align:center;text-decoration:none;margin-bottom:0.4rem">Open in email app</a>
+      <a id="oem-mailto" href="#" target="_blank" rel="noopener" class="btn btn-primary" style="width:100%;box-sizing:border-box;display:block;text-align:center;text-decoration:none;margin-bottom:0.4rem">Open in Gmail</a>
       <div id="oem-no-email-hint" style="display:none;font-size:0.7rem;color:var(--ink-muted);text-align:center;margin-bottom:0.75rem">No email saved for this contact yet - it'll open blank, add the address yourself, or fill in their email above first.</div>
-      <div style="font-size:0.7rem;color:var(--ink-muted);text-align:center;margin-bottom:1.25rem">Opens your default mail app pre-filled - review before sending. Edit below first if you want to change anything.</div>
+      <div style="font-size:0.7rem;color:var(--ink-muted);text-align:center;margin-bottom:1.25rem">Opens a pre-filled draft in Gmail (new tab) - review before sending. Edit below first if you want to change anything.</div>
       <div class="form-group" style="margin-bottom:0.875rem">
         <label class="form-label">Subject</label>
         <div style="display:flex;gap:0.5rem;margin-top:0.35rem">
