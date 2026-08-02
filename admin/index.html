@@ -173,7 +173,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
   <div class="admin-body">
 
     <!-- Stats -->
-    <div class="stats-grid">
+    <div class="stats-grid" id="global-stats-grid">
       <div class="stat-card">
         <div class="stat-label">Publishers</div>
         <div class="stat-value" id="stat-publishers">-</div>
@@ -443,9 +443,10 @@ tr:hover td{background:rgba(0,0,0,0.01)}
               <th style="width:110px">Status</th>
               <th style="width:130px">Next follow-up</th>
               <th style="width:190px">Action</th>
+              <th style="width:150px">Emails</th>
               <th>Notes</th>
             </tr></thead>
-            <tbody id="outreach-due-tbody"><tr><td colspan="6" class="empty">Loading...</td></tr></tbody>
+            <tbody id="outreach-due-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -462,9 +463,10 @@ tr:hover td{background:rgba(0,0,0,0.01)}
               <th style="width:110px">Status</th>
               <th style="width:130px">Next follow-up</th>
               <th style="width:190px">Action</th>
+              <th style="width:150px">Emails</th>
               <th>Notes</th>
             </tr></thead>
-            <tbody id="outreach-todo-tbody"><tr><td colspan="6" class="empty">Loading...</td></tr></tbody>
+            <tbody id="outreach-todo-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
           </table>
         </div>
         <div style="padding:0.75rem 1.25rem;border-top:1px solid var(--border)">
@@ -484,9 +486,10 @@ tr:hover td{background:rgba(0,0,0,0.01)}
               <th style="width:110px">Status</th>
               <th style="width:130px">Next follow-up</th>
               <th style="width:190px">Action</th>
+              <th style="width:150px">Emails</th>
               <th>Notes</th>
             </tr></thead>
-            <tbody id="outreach-waiting-tbody"><tr><td colspan="6" class="empty">Loading...</td></tr></tbody>
+            <tbody id="outreach-waiting-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -503,9 +506,10 @@ tr:hover td{background:rgba(0,0,0,0.01)}
               <th style="width:110px">Status</th>
               <th style="width:130px">Next follow-up</th>
               <th style="width:190px">Action</th>
+              <th style="width:150px">Emails</th>
               <th>Notes</th>
             </tr></thead>
-            <tbody id="outreach-closed-tbody"><tr><td colspan="6" class="empty">Loading...</td></tr></tbody>
+            <tbody id="outreach-closed-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -896,6 +900,7 @@ function switchTab(name, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('global-stats-grid').style.display = (name === 'publishers' || name === 'stats') ? '' : 'none';
   if (name === 'experts') loadHeadlines();
   if (name === 'cache') loadCache();
   if (name === 'stats') loadAnalytics();
@@ -1787,7 +1792,7 @@ const OUTREACH_STATUS_LABELS = {
   replied_interested: 'Interested',
   replied_not_interested: 'Not interested (replied)',
   signed_up: 'Signed up',
-  not_interested: 'Not interested',
+  not_a_fit: 'Not a fit',
 };
 const OUTREACH_STATUS_COLORS = {
   discovered: 'var(--ink-muted)',
@@ -1797,9 +1802,9 @@ const OUTREACH_STATUS_COLORS = {
   replied_interested: 'var(--sage)',
   signed_up: 'var(--sage)',
   replied_not_interested: 'var(--red, #dc2626)',
-  not_interested: 'var(--red, #dc2626)',
+  not_a_fit: 'var(--ink-muted)',
 };
-const OUTREACH_RESOLVED = ['replied_interested', 'replied_not_interested', 'signed_up', 'not_interested'];
+const OUTREACH_RESOLVED = ['replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
 
 async function loadOutreach() {
   const res = await fetch('/api/admin?resource=outreach', { headers: { 'x-requested-with': 'xmlhttprequest' } });
@@ -1837,23 +1842,68 @@ function renderOutreach() {
   document.getElementById('outreach-closed-title').textContent = `Closed (${buckets.closed.length})`;
 
   document.getElementById('outreach-due-tbody').innerHTML = buckets.due.length
-    ? buckets.due.map(outreachRow).join('') : '<tr><td colspan="6" class="empty">Nothing due right now.</td></tr>';
+    ? buckets.due.map(outreachRow).join('') : '<tr><td colspan="7" class="empty">Nothing due right now.</td></tr>';
 
   const todoShown = buckets.todo.slice(0, _outreachTodoLimit);
   document.getElementById('outreach-todo-tbody').innerHTML = todoShown.length
-    ? todoShown.map(outreachRow).join('') : '<tr><td colspan="6" class="empty">Nothing left to contact.</td></tr>';
+    ? todoShown.map(outreachRow).join('') : '<tr><td colspan="7" class="empty">Nothing left to contact.</td></tr>';
   document.getElementById('outreach-todo-more').style.display = buckets.todo.length > _outreachTodoLimit ? 'inline-block' : 'none';
 
   document.getElementById('outreach-waiting-tbody').innerHTML = buckets.waiting.length
-    ? buckets.waiting.map(outreachRow).join('') : '<tr><td colspan="6" class="empty">No one waiting on a reply.</td></tr>';
+    ? buckets.waiting.map(outreachRow).join('') : '<tr><td colspan="7" class="empty">No one waiting on a reply.</td></tr>';
 
   document.getElementById('outreach-closed-tbody').innerHTML = buckets.closed.length
-    ? buckets.closed.map(outreachRow).join('') : '<tr><td colspan="6" class="empty">Nothing closed yet.</td></tr>';
+    ? buckets.closed.map(outreachRow).join('') : '<tr><td colspan="7" class="empty">Nothing closed yet.</td></tr>';
 }
 
 function showMoreOutreachTodo() {
   _outreachTodoLimit += 30;
   renderOutreach();
+}
+
+// Company name uses the raw domain, not `title` - title is an SEO article
+// title scraped from the search result ("Managing Remote Teams: How the
+// World's..."), never a usable company/blog name. First name only (not the
+// full contact_name) reads more naturally in a greeting.
+function outreachEmailTemplates(c) {
+  const firstName = (c.contact_name || '').trim().split(' ')[0] || 'there';
+  const company = c.domain;
+  return {
+    intro: {
+      subject: `Quick idea for ${company}`,
+      body: `Hi ${firstName},\n\nI came across ${company} and thought there might be a good fit with something we're building at IntroLinq.\n\nWe help blogs like yours turn existing articles into a new revenue stream - readers who need expert advice on a topic get matched with a relevant expert they can book a call with, and you earn 50% commission on every booking. No extra content to write, no upfront cost - it runs quietly in the background once it's installed (one line of code, a couple of minutes).\n\nWould you be open to a quick look? Happy to send more details or hop on a call, whatever's easier.\n\nBest,\nDom`,
+    },
+    followup1: {
+      subject: `Re: Quick idea for ${company}`,
+      body: `Hi ${firstName},\n\nJust wanted to bump this in case it got buried - I reached out about IntroLinq, a way to turn ${company}'s existing articles into a new revenue stream (readers get matched with experts to book calls with, you earn 50% commission, zero extra work).\n\nNo pressure at all if it's not a fit - just didn't want it to slip through the cracks. Happy to answer any questions.\n\nBest,\nDom`,
+    },
+    followup2: {
+      subject: `Re: Quick idea for ${company}`,
+      body: `Hi ${firstName},\n\nLast note from me on this one - I don't want to keep cluttering your inbox.\n\nIf turning ${company}'s content into a passive revenue stream is ever something you'd want to explore, the door's always open: https://www.introlinq.com. Either way, wishing you all the best with the site.\n\nDom`,
+    },
+  };
+}
+
+const OUTREACH_EMAIL_TITLES = { intro: 'Intro email', followup1: 'Follow-up 1', followup2: 'Follow-up 2 (final)' };
+
+function openOutreachEmailModal(id, stage) {
+  const c = _outreach.find(x => x.id === id);
+  if (!c) return;
+  const tpl = outreachEmailTemplates(c)[stage];
+  document.getElementById('oem-title').textContent = `${OUTREACH_EMAIL_TITLES[stage]} - ${c.domain}`;
+  document.getElementById('oem-subject').value = tpl.subject;
+  document.getElementById('oem-body').value = tpl.body;
+  document.getElementById('outreach-email-modal').classList.add('open');
+}
+
+function closeOutreachEmailModal() {
+  document.getElementById('outreach-email-modal').classList.remove('open');
+}
+
+function copyOutreachEmailField(fieldId, label) {
+  const el = document.getElementById(fieldId);
+  navigator.clipboard.writeText(el.value);
+  toast(`${label} copied`);
 }
 
 function outreachActionButton(c) {
@@ -1884,6 +1934,13 @@ function outreachRow(c) {
         <input type="date" value="${c.next_followup_at ? c.next_followup_at.slice(0, 10) : ''}" onchange="outreachSetFollowup(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE}">
       </td>
       <td>${outreachActionButton(c)}</td>
+      <td>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <button class="btn btn-ghost btn-sm" onclick="openOutreachEmailModal(${c.id},'intro')">Intro</button>
+          <button class="btn btn-ghost btn-sm" onclick="openOutreachEmailModal(${c.id},'followup1')">Follow-up 1</button>
+          <button class="btn btn-ghost btn-sm" onclick="openOutreachEmailModal(${c.id},'followup2')">Follow-up 2</button>
+        </div>
+      </td>
       <td><input type="text" value="${esc(c.outreach_notes || '')}" placeholder="Notes" onblur="outreachSaveNotes(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE};width:100%"></td>
     </tr>
   `;
@@ -2365,6 +2422,31 @@ login();
     <div class="form-actions" style="margin-top:1.25rem">
       <button class="btn btn-primary" onclick="saveSubscriberEdit()">Save changes</button>
       <button class="btn btn-ghost" onclick="closeSubscriberEditModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Outreach email preview modal -->
+<div class="modal-overlay" id="outreach-email-modal" onclick="if(event.target===this)closeOutreachEmailModal()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="oem-title" style="max-height:88vh;width:min(560px,92vw)">
+    <div class="modal-head">
+      <div class="modal-title" id="oem-title">Email</div>
+      <button class="modal-close" onclick="closeOutreachEmailModal()" aria-label="Close">✕</button>
+    </div>
+    <div style="overflow-y:auto">
+      <div class="form-group" style="margin-bottom:0.875rem">
+        <label class="form-label">Subject</label>
+        <div style="display:flex;gap:0.5rem;margin-top:0.35rem">
+          <input class="form-input" id="oem-subject" style="flex:1" onfocus="this.select()">
+          <button class="btn btn-ghost btn-sm" onclick="copyOutreachEmailField('oem-subject','Subject')">Copy</button>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:1rem">
+        <label class="form-label">Body</label>
+        <textarea id="oem-body" rows="12" class="form-input" style="width:100%;box-sizing:border-box;margin-top:0.35rem;font-family:'Inter',sans-serif;resize:vertical;line-height:1.5"></textarea>
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="copyOutreachEmailField('oem-body','Body')">Copy body</button>
+      <div style="font-size:0.7rem;color:var(--ink-muted);margin-top:0.6rem;text-align:center">Both fields are editable before copying - nothing here is sent automatically.</div>
     </div>
   </div>
 </div>

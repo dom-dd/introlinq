@@ -444,12 +444,15 @@ export default async function handler(req, res) {
       } else if (action === 'set_next_followup') {
         await sql`UPDATE candidate_publishers SET next_followup_at = ${value || null} WHERE id = ${id}`;
       } else if (action === 'set_status') {
-        const allowed = ['discovered', 'emailed', 'followed_up_1', 'followed_up_2', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_interested'];
+        const allowed = ['discovered', 'emailed', 'followed_up_1', 'followed_up_2', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
         if (!allowed.includes(value)) return res.status(400).json({ error: 'invalid status' });
-        // A resolved outcome (interested/not/signed up) means no further
-        // action is expected - clearing next_followup_at drops the row out
-        // of the "due" section instead of it going stale and looking overdue.
-        const resolved = ['replied_interested', 'replied_not_interested', 'signed_up', 'not_interested'].includes(value);
+        // A resolved outcome means no further action is expected - clearing
+        // next_followup_at drops the row out of the "due" section instead of
+        // it going stale and looking overdue. not_a_fit is a screening
+        // decision (a "write for us" page, wrong audience, etc.) rather than
+        // a reply - can be applied from any stage, most often straight from
+        // "not yet contacted" without ever emailing them.
+        const resolved = ['replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'].includes(value);
         if (resolved) {
           await sql`UPDATE candidate_publishers SET status = ${value}, next_followup_at = NULL WHERE id = ${id}`;
         } else {
