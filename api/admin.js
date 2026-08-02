@@ -406,6 +406,75 @@ export default async function handler(req, res) {
     return res.status(200).json(rows);
   }
 
+  // Outreach tracking for candidate_publishers (the SerpAPI discovery
+  // pipeline's leads - see run-discovery above). Deliberately reuses the
+  // table's existing `status` column for the outreach stage instead of
+  // adding a second status-shaped column that could drift out of sync -
+  // 'discovered' (its long-standing default) doubles as "not yet
+  // contacted" here. contact_name/contact_email are NOT populated by
+  // discovery (SerpAPI only ever returns domain-level results, never a
+  // person) - filled in by hand here once someone's actually done the
+  // legwork of finding a contact on the site itself.
+  if (resource === 'outreach') {
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_name TEXT`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_email TEXT`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS followup_1_sent_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS followup_2_sent_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS next_followup_at DATE`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS outreach_notes TEXT`.catch(() => {});
+
+    if (req.method === 'PATCH') {
+      const { id, action, value } = req.body || {};
+      if (!id || !action) return res.status(400).json({ error: 'id and action required' });
+
+      // Each "mark sent" step stamps its own timestamp, advances the status,
+      // and suggests a next-follow-up date a few days out - editable
+      // afterward via set_next_followup, never re-computed automatically,
+      // so a manual override here is never silently clobbered by a later
+      // step. Follow-up 2 clears next_followup_at instead of suggesting a
+      // 3rd date - past that point it's a deliberate manual decision, not
+      // an assumed cadence.
+      if (action === 'mark_email_sent') {
+        await sql`UPDATE candidate_publishers SET email_sent_at = NOW(), status = 'emailed', next_followup_at = CURRENT_DATE + 4 WHERE id = ${id}`;
+      } else if (action === 'mark_followup_1') {
+        await sql`UPDATE candidate_publishers SET followup_1_sent_at = NOW(), status = 'followed_up_1', next_followup_at = CURRENT_DATE + 5 WHERE id = ${id}`;
+      } else if (action === 'mark_followup_2') {
+        await sql`UPDATE candidate_publishers SET followup_2_sent_at = NOW(), status = 'followed_up_2', next_followup_at = NULL WHERE id = ${id}`;
+      } else if (action === 'set_next_followup') {
+        await sql`UPDATE candidate_publishers SET next_followup_at = ${value || null} WHERE id = ${id}`;
+      } else if (action === 'set_status') {
+        const allowed = ['discovered', 'emailed', 'followed_up_1', 'followed_up_2', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_interested'];
+        if (!allowed.includes(value)) return res.status(400).json({ error: 'invalid status' });
+        // A resolved outcome (interested/not/signed up) means no further
+        // action is expected - clearing next_followup_at drops the row out
+        // of the "due" section instead of it going stale and looking overdue.
+        const resolved = ['replied_interested', 'replied_not_interested', 'signed_up', 'not_interested'].includes(value);
+        if (resolved) {
+          await sql`UPDATE candidate_publishers SET status = ${value}, next_followup_at = NULL WHERE id = ${id}`;
+        } else {
+          await sql`UPDATE candidate_publishers SET status = ${value} WHERE id = ${id}`;
+        }
+      } else if (action === 'set_contact') {
+        const { contact_name, contact_email } = req.body || {};
+        await sql`UPDATE candidate_publishers SET contact_name = ${contact_name || null}, contact_email = ${contact_email || null} WHERE id = ${id}`;
+      } else if (action === 'set_notes') {
+        await sql`UPDATE candidate_publishers SET outreach_notes = ${value || null} WHERE id = ${id}`;
+      } else {
+        return res.status(400).json({ error: 'unknown action' });
+      }
+      return res.status(200).json({ ok: true });
+    }
+
+    const rows = await sql`
+      SELECT id, domain, homepage_url, title, status, priority_score, contact_name, contact_email,
+             email_sent_at, followup_1_sent_at, followup_2_sent_at, next_followup_at, outreach_notes, created_at
+      FROM candidate_publishers
+      ORDER BY priority_score DESC NULLS LAST, created_at DESC
+    `;
+    return res.status(200).json(rows);
+  }
+
   // Publishers
   if (resource === 'publishers') {
     if (!adminBotColumnsReady) {

@@ -162,6 +162,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
     <button class="tab-btn active" onclick="switchTab('publishers',this)">Publishers</button>
     <button class="tab-btn" onclick="switchTab('stats',this)">Stats</button>
     <button class="tab-btn" onclick="switchTab('waitlist',this)">Waitlist</button>
+    <button class="tab-btn" onclick="switchTab('outreach',this)">Outreach</button>
     <button class="tab-btn" onclick="switchTab('bookings',this)">Bookings</button>
     <button class="tab-btn" onclick="switchTab('logs',this)">Logs</button>
     <button class="tab-btn" onclick="switchTab('cache',this)">Cache</button>
@@ -423,6 +424,88 @@ tr:hover td{background:rgba(0,0,0,0.01)}
             <tbody id="subscribers-installed-tbody">
               <tr><td colspan="10" class="empty">Loading...</td></tr>
             </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Outreach tab -->
+    <div class="tab-panel" id="tab-outreach">
+      <div class="section" style="margin-bottom:1.5rem">
+        <div class="section-header">
+          <div class="section-title" id="outreach-due-title">Due for follow-up</div>
+        </div>
+        <div class="section-body" style="overflow-x:auto">
+          <table style="min-width:1000px">
+            <thead><tr>
+              <th style="width:220px">Blog</th>
+              <th style="width:180px">Contact</th>
+              <th style="width:110px">Status</th>
+              <th style="width:130px">Next follow-up</th>
+              <th style="width:190px">Action</th>
+              <th>Notes</th>
+            </tr></thead>
+            <tbody id="outreach-due-tbody"><tr><td colspan="6" class="empty">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section" style="margin-bottom:1.5rem">
+        <div class="section-header">
+          <div class="section-title" id="outreach-todo-title">Not yet contacted</div>
+        </div>
+        <div class="section-body" style="overflow-x:auto">
+          <table style="min-width:1000px">
+            <thead><tr>
+              <th style="width:220px">Blog</th>
+              <th style="width:180px">Contact</th>
+              <th style="width:110px">Status</th>
+              <th style="width:130px">Next follow-up</th>
+              <th style="width:190px">Action</th>
+              <th>Notes</th>
+            </tr></thead>
+            <tbody id="outreach-todo-tbody"><tr><td colspan="6" class="empty">Loading...</td></tr></tbody>
+          </table>
+        </div>
+        <div style="padding:0.75rem 1.25rem;border-top:1px solid var(--border)">
+          <button class="btn btn-ghost btn-sm" id="outreach-todo-more" onclick="showMoreOutreachTodo()" style="display:none">Show more</button>
+        </div>
+      </div>
+
+      <div class="section" style="margin-bottom:1.5rem">
+        <div class="section-header">
+          <div class="section-title" id="outreach-waiting-title">Waiting (contacted, not due yet)</div>
+        </div>
+        <div class="section-body" style="overflow-x:auto">
+          <table style="min-width:1000px">
+            <thead><tr>
+              <th style="width:220px">Blog</th>
+              <th style="width:180px">Contact</th>
+              <th style="width:110px">Status</th>
+              <th style="width:130px">Next follow-up</th>
+              <th style="width:190px">Action</th>
+              <th>Notes</th>
+            </tr></thead>
+            <tbody id="outreach-waiting-tbody"><tr><td colspan="6" class="empty">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title" id="outreach-closed-title">Closed</div>
+        </div>
+        <div class="section-body" style="overflow-x:auto">
+          <table style="min-width:1000px">
+            <thead><tr>
+              <th style="width:220px">Blog</th>
+              <th style="width:180px">Contact</th>
+              <th style="width:110px">Status</th>
+              <th style="width:130px">Next follow-up</th>
+              <th style="width:190px">Action</th>
+              <th>Notes</th>
+            </tr></thead>
+            <tbody id="outreach-closed-tbody"><tr><td colspan="6" class="empty">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -816,6 +899,7 @@ function switchTab(name, btn) {
   if (name === 'experts') loadHeadlines();
   if (name === 'cache') loadCache();
   if (name === 'stats') loadAnalytics();
+  if (name === 'outreach' && !_outreachLoaded) { _outreachLoaded = true; loadOutreach(); }
 }
 
 // ── Platform analytics ──────────────────────────────────────────────────
@@ -1686,6 +1770,165 @@ async function saveSubscriberEdit() {
   closeSubscriberEditModal();
   loadSubscribers();
   toast('Signup details saved');
+}
+
+// ── Outreach ─────────────────────────────────────────────────────────────
+
+let _outreachLoaded = false;
+let _outreach = [];
+let _outreachTodoLimit = 30;
+
+const OUTREACH_INPUT_STYLE = 'width:100%;box-sizing:border-box;padding:0.3rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:Inter,sans-serif;color:var(--ink)';
+const OUTREACH_STATUS_LABELS = {
+  discovered: 'Not contacted',
+  emailed: 'Emailed',
+  followed_up_1: 'Follow-up 1 sent',
+  followed_up_2: 'Follow-up 2 sent',
+  replied_interested: 'Interested',
+  replied_not_interested: 'Not interested (replied)',
+  signed_up: 'Signed up',
+  not_interested: 'Not interested',
+};
+const OUTREACH_STATUS_COLORS = {
+  discovered: 'var(--ink-muted)',
+  emailed: '#4f6ef7',
+  followed_up_1: '#4f6ef7',
+  followed_up_2: '#4f6ef7',
+  replied_interested: 'var(--sage)',
+  signed_up: 'var(--sage)',
+  replied_not_interested: 'var(--red, #dc2626)',
+  not_interested: 'var(--red, #dc2626)',
+};
+const OUTREACH_RESOLVED = ['replied_interested', 'replied_not_interested', 'signed_up', 'not_interested'];
+
+async function loadOutreach() {
+  const res = await fetch('/api/admin?resource=outreach', { headers: { 'x-requested-with': 'xmlhttprequest' } });
+  _outreach = await res.json();
+  renderOutreach();
+}
+
+// Single classification pass so "due" (has a follow-up date that's arrived)
+// always wins over "not yet contacted" or "waiting" - a row only ever
+// belongs to exactly one section at a time.
+function outreachBucket(c, today) {
+  if (OUTREACH_RESOLVED.includes(c.status)) return 'closed';
+  if (c.next_followup_at && c.next_followup_at.slice(0, 10) <= today) return 'due';
+  if (c.status === 'discovered') return 'todo';
+  return 'waiting';
+}
+
+function renderOutreach() {
+  const today = new Date().toISOString().slice(0, 10);
+  const buckets = { due: [], todo: [], waiting: [], closed: [] };
+  for (const c of _outreach) buckets[outreachBucket(c, today)].push(c);
+
+  buckets.due.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
+  // priority_score is unpopulated until the (separate, manual) classify
+  // step runs - falls back to newest-discovered-first so the list is still
+  // usably ordered in the meantime, and starts respecting real scores the
+  // moment they exist with no code change needed here.
+  buckets.todo.sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0) || new Date(b.created_at) - new Date(a.created_at));
+  buckets.waiting.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
+  buckets.closed.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  document.getElementById('outreach-due-title').textContent = `Due for follow-up (${buckets.due.length})`;
+  document.getElementById('outreach-todo-title').textContent = `Not yet contacted (${buckets.todo.length})`;
+  document.getElementById('outreach-waiting-title').textContent = `Waiting - contacted, not due yet (${buckets.waiting.length})`;
+  document.getElementById('outreach-closed-title').textContent = `Closed (${buckets.closed.length})`;
+
+  document.getElementById('outreach-due-tbody').innerHTML = buckets.due.length
+    ? buckets.due.map(outreachRow).join('') : '<tr><td colspan="6" class="empty">Nothing due right now.</td></tr>';
+
+  const todoShown = buckets.todo.slice(0, _outreachTodoLimit);
+  document.getElementById('outreach-todo-tbody').innerHTML = todoShown.length
+    ? todoShown.map(outreachRow).join('') : '<tr><td colspan="6" class="empty">Nothing left to contact.</td></tr>';
+  document.getElementById('outreach-todo-more').style.display = buckets.todo.length > _outreachTodoLimit ? 'inline-block' : 'none';
+
+  document.getElementById('outreach-waiting-tbody').innerHTML = buckets.waiting.length
+    ? buckets.waiting.map(outreachRow).join('') : '<tr><td colspan="6" class="empty">No one waiting on a reply.</td></tr>';
+
+  document.getElementById('outreach-closed-tbody').innerHTML = buckets.closed.length
+    ? buckets.closed.map(outreachRow).join('') : '<tr><td colspan="6" class="empty">Nothing closed yet.</td></tr>';
+}
+
+function showMoreOutreachTodo() {
+  _outreachTodoLimit += 30;
+  renderOutreach();
+}
+
+function outreachActionButton(c) {
+  if (c.status === 'discovered') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_email_sent')">Mark email sent</button>`;
+  if (c.status === 'emailed') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_followup_1')">Mark follow-up 1 sent</button>`;
+  if (c.status === 'followed_up_1') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_followup_2')">Mark follow-up 2 sent</button>`;
+  return '';
+}
+
+function outreachRow(c) {
+  const title = c.title ? esc(c.title.slice(0, 60)) : '';
+  const statusOptions = Object.entries(OUTREACH_STATUS_LABELS)
+    .map(([v, label]) => `<option value="${v}" ${c.status === v ? 'selected' : ''}>${esc(label)}</option>`).join('');
+  return `
+    <tr>
+      <td>
+        <a href="${esc(c.homepage_url)}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:600;font-size:0.8125rem;text-decoration:none">${esc(c.domain)}</a>
+        ${title ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px">${title}</div>` : ''}
+      </td>
+      <td>
+        <input type="text" value="${esc(c.contact_name || '')}" placeholder="Name" onblur="outreachSaveContact(${c.id}, this.value, null)" style="${OUTREACH_INPUT_STYLE};margin-bottom:3px">
+        <input type="email" value="${esc(c.contact_email || '')}" placeholder="Email" onblur="outreachSaveContact(${c.id}, null, this.value)" style="${OUTREACH_INPUT_STYLE}">
+      </td>
+      <td>
+        <select onchange="outreachSetStatus(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE};color:${OUTREACH_STATUS_COLORS[c.status] || 'var(--ink)'};font-weight:600">${statusOptions}</select>
+      </td>
+      <td>
+        <input type="date" value="${c.next_followup_at ? c.next_followup_at.slice(0, 10) : ''}" onchange="outreachSetFollowup(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE}">
+      </td>
+      <td>${outreachActionButton(c)}</td>
+      <td><input type="text" value="${esc(c.outreach_notes || '')}" placeholder="Notes" onblur="outreachSaveNotes(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE};width:100%"></td>
+    </tr>
+  `;
+}
+
+async function outreachPatch(body) {
+  await fetch('/api/admin?resource=outreach', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify(body),
+  });
+}
+
+async function outreachMark(id, action) {
+  await outreachPatch({ id, action });
+  await loadOutreach();
+}
+
+async function outreachSetStatus(id, value) {
+  await outreachPatch({ id, action: 'set_status', value });
+  await loadOutreach();
+}
+
+async function outreachSetFollowup(id, value) {
+  await outreachPatch({ id, action: 'set_next_followup', value });
+  await loadOutreach();
+}
+
+// Only one of name/email is ever non-null (whichever input just blurred) -
+// the other falls back to the current cached value so blurring one field
+// never wipes the other out. Doesn't trigger a full reload/re-render since
+// contact details never change which section a row belongs in, and a
+// re-render mid-edit would be a jarring way to lose focus on the next field.
+async function outreachSaveContact(id, name, email) {
+  const c = _outreach.find(x => x.id === id);
+  const contact_name = name !== null ? name : (c?.contact_name || '');
+  const contact_email = email !== null ? email : (c?.contact_email || '');
+  await outreachPatch({ id, action: 'set_contact', contact_name, contact_email });
+  if (c) { c.contact_name = contact_name; c.contact_email = contact_email; }
+}
+
+async function outreachSaveNotes(id, value) {
+  await outreachPatch({ id, action: 'set_notes', value });
+  const c = _outreach.find(x => x.id === id);
+  if (c) c.outreach_notes = value;
 }
 
 let _allBookings = [];
