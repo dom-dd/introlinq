@@ -575,7 +575,7 @@ export default async function handler(req, res) {
     // the comment on this constant in api/admin.js.
     const STATS_RESET_AT = '2026-07-24T23:15:00Z';
 
-    const [logsMatched, logsNoMatch, clickData, hoverData, seenData, providers, expertCounts, totalImpressions,
+    const [logsMatched, logsNoMatch, clickData, hoverData, seenData, providers, expertCounts, totalImpressions, totalImpressionsRaw,
            clicksByDay, impressionsByDay, hoversByDay, seenByDay, clicksByWeek, impressionsByWeek, hoversByWeek, seenByWeek,
            clicksByMonth, impressionsByMonth, hoversByMonth, seenByMonth,
            totalExpertShown, expertShownByDay, expertShownByWeek, expertShownByMonth,
@@ -609,6 +609,11 @@ export default async function handler(req, res) {
       // wearing the broadest-sounding label. That definition still exists,
       // it's just correctly named "Expert shown" now (below).
       sql`SELECT COUNT(*)::int AS total FROM match_logs WHERE publisher = ${pub} AND is_bot = false AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
+      // Same query with no is_bot filter - lets the dashboard show how many
+      // detected bot visits were excluded from Page visits above, rather
+      // than silently dropping them with no explanation of the gap between
+      // what a publisher might see elsewhere and what's shown here.
+      sql`SELECT COUNT(*)::int AS total FROM match_logs WHERE publisher = ${pub} AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '30 days' AND created_at >= ${STATS_RESET_AT} GROUP BY date ORDER BY date`.catch(() => []),
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '30 days' AND created_at >= ${STATS_RESET_AT} GROUP BY date ORDER BY date`.catch(() => []),
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM hover_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
@@ -650,6 +655,7 @@ export default async function handler(req, res) {
       hovers: hoverData[0]?.total || 0,
       seen: seenData[0]?.total || 0,
       total_impressions: totalImpressions[0]?.total || 0,
+      total_impressions_raw: totalImpressionsRaw[0]?.total || 0,
       total_expert_shown: totalExpertShown[0]?.total || 0,
       partners: partnersWithStatus,
       bookings: bookingSummary,

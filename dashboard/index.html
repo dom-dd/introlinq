@@ -86,7 +86,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 /* ── Stat cards ── */
 .stats-grid{display:grid;gap:1rem;margin-bottom:2rem}
 .stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem}
-.stat-label{font-size:0.75rem;color:var(--ink-muted);font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.375rem}
+.stat-label{font-size:0.75rem;color:var(--ink-muted);font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.375rem;display:flex;align-items:center;gap:4px}
+.stat-info-icon{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:var(--border);color:var(--ink-muted);font-size:0.6rem;font-weight:700;font-style:normal;text-transform:none;letter-spacing:normal;cursor:help;flex-shrink:0}
+.stat-bot-note{font-size:0.68rem;color:#b45309;margin-top:0.375rem;cursor:help;display:none}
 .stat-value{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--ink);line-height:1}
 .stat-sub{font-size:0.7rem;color:var(--ink-muted);margin-top:0.375rem}
 
@@ -417,9 +419,10 @@ tr:last-child td{border-bottom:none}
     <div class="tab-panel active" id="tab-overview">
       <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
         <div class="stat-card">
-          <div class="stat-label">Page visits</div>
+          <div class="stat-label">Page visits<span class="stat-info-icon" title="Counts every page load on a page where the widget is installed and ran - not your site's total traffic. Pages without the widget aren't counted.">i</span></div>
           <div class="stat-value clickable" id="stat-articles" onclick="openPagesModal()">-</div>
           <div class="stat-sub">every page load where the widget ran</div>
+          <div class="stat-bot-note" id="stat-bot-note"></div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Links seen</div>
@@ -1118,6 +1121,22 @@ async function loadDashboard() {
   const ctrBase = d.total_expert_shown || 0;
   const ctr = ctrBase > 0 ? (clicks / ctrBase * 100).toFixed(1) : '0.0';
   document.getElementById('stat-articles').textContent = impressions.toLocaleString();
+  // Bot exclusion note - only shown when there's actually something to
+  // explain. total_impressions_raw is the same count with no is_bot
+  // filter, so the gap between it and total_impressions IS the number of
+  // detected bot visits (crawlers, link-preview scanners, etc.) already
+  // excluded from every number on this page - this just makes that
+  // exclusion visible instead of a silent, unexplained gap between what a
+  // publisher might see elsewhere and what's shown here.
+  const botExcluded = (d.total_impressions_raw || 0) - impressions;
+  const botNote = document.getElementById('stat-bot-note');
+  if (botExcluded > 0) {
+    botNote.textContent = `excluding ${botExcluded.toLocaleString()} detected bot visit${botExcluded === 1 ? '' : 's'}`;
+    botNote.title = `Our system detected traffic matching known bot/crawler patterns (e.g. social media link-preview scanners) and excluded it from every number on this page. Including those, the raw total would be ${(d.total_impressions_raw || 0).toLocaleString()}.`;
+    botNote.style.display = 'block';
+  } else {
+    botNote.style.display = 'none';
+  }
   document.getElementById('stat-seen').textContent = seen.toLocaleString();
   document.getElementById('stat-hovers').textContent = hovers.toLocaleString();
   document.getElementById('stat-clicks').textContent = clicks.toLocaleString();
