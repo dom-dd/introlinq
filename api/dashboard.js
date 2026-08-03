@@ -578,6 +578,7 @@ export default async function handler(req, res) {
     const [logsMatched, logsNoMatch, clickData, hoverData, seenData, providers, expertCounts, totalImpressions,
            clicksByDay, impressionsByDay, hoversByDay, seenByDay, clicksByWeek, impressionsByWeek, hoversByWeek, seenByWeek,
            clicksByMonth, impressionsByMonth, hoversByMonth, seenByMonth,
+           totalExpertShown, expertShownByDay, expertShownByWeek, expertShownByMonth,
            topPhrases, topSources, topDevices, pageUrls] = await Promise.all([
       // Split into two queries rather than one chronological "last 50" -
       // a busy, low-match-rate site (mostly-news publishers correctly get
@@ -598,19 +599,35 @@ export default async function handler(req, res) {
       // the same (wrong) total as everyone else the moment there was more
       // than one provider in the table.
       sql`SELECT provider_id, COUNT(*)::int AS count FROM experts WHERE active = true GROUP BY provider_id`,
-      sql`SELECT COUNT(*)::int AS total FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND is_bot = false AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
+      // "Page visits" - EVERY widget fire, matched or not (no match_count
+      // filter). Every genuine page load produces exactly one match_logs
+      // row regardless of outcome - the cache-hit path and the fresh-scan
+      // report path each log once - so this is a real, honest page-visit
+      // count, not an approximation. Previously this filtered to
+      // match_count > 0, which quietly made "Page visits" mean "pages
+      // where an expert was shown" - the narrowest number in the funnel,
+      // wearing the broadest-sounding label. That definition still exists,
+      // it's just correctly named "Expert shown" now (below).
+      sql`SELECT COUNT(*)::int AS total FROM match_logs WHERE publisher = ${pub} AND is_bot = false AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '30 days' AND created_at >= ${STATS_RESET_AT} GROUP BY date ORDER BY date`.catch(() => []),
-      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND is_bot = false AND created_at > NOW() - INTERVAL '30 days' AND created_at >= ${STATS_RESET_AT} GROUP BY date ORDER BY date`.catch(() => []),
+      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '30 days' AND created_at >= ${STATS_RESET_AT} GROUP BY date ORDER BY date`.catch(() => []),
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM hover_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
       sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM seen_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date`.catch(() => []),
       sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '12 weeks' AND created_at >= ${STATS_RESET_AT} GROUP BY week_start ORDER BY week_start`.catch(() => []),
-      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND is_bot = false AND created_at > NOW() - INTERVAL '12 weeks' AND created_at >= ${STATS_RESET_AT} GROUP BY week_start ORDER BY week_start`.catch(() => []),
+      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '12 weeks' AND created_at >= ${STATS_RESET_AT} GROUP BY week_start ORDER BY week_start`.catch(() => []),
       sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM hover_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`.catch(() => []),
       sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM seen_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '12 weeks' GROUP BY week_start ORDER BY week_start`.catch(() => []),
       sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '12 months' AND created_at >= ${STATS_RESET_AT} GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
-      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND is_bot = false AND created_at > NOW() - INTERVAL '12 months' AND created_at >= ${STATS_RESET_AT} GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
+      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '12 months' AND created_at >= ${STATS_RESET_AT} GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
       sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM hover_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
       sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM seen_logs WHERE publisher = ${pub} AND is_bot = false AND created_at > NOW() - INTERVAL '12 months' GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
+      // "Expert shown" - the OLD "Page visits" definition (match_count > 0),
+      // now correctly named: of all the pages the widget ran on, how many
+      // actually had an expert to display. Subset of Page visits above.
+      sql`SELECT COUNT(*)::int AS total FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND is_bot = false AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
+      sql`SELECT DATE_TRUNC('day', created_at)::date AS date, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND is_bot = false AND created_at > NOW() - INTERVAL '30 days' AND created_at >= ${STATS_RESET_AT} GROUP BY date ORDER BY date`.catch(() => []),
+      sql`SELECT DATE_TRUNC('week', created_at)::date AS week_start, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND is_bot = false AND created_at > NOW() - INTERVAL '12 weeks' AND created_at >= ${STATS_RESET_AT} GROUP BY week_start ORDER BY week_start`.catch(() => []),
+      sql`SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YY') AS month, DATE_TRUNC('month', created_at) AS month_start, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND is_bot = false AND created_at > NOW() - INTERVAL '12 months' AND created_at >= ${STATS_RESET_AT} GROUP BY month_start, month ORDER BY month_start`.catch(() => []),
       sql`SELECT phrase, COUNT(*)::int AS clicks FROM click_logs WHERE publisher = ${pub} AND phrase IS NOT NULL AND phrase != '' AND is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY phrase ORDER BY clicks DESC LIMIT 5`.catch(() => []),
       sql`SELECT traffic_source AS source, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND traffic_source IS NOT NULL AND is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY traffic_source ORDER BY count DESC`.catch(() => []),
       sql`SELECT device, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND device IS NOT NULL AND is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY device ORDER BY count DESC`.catch(() => []),
@@ -633,6 +650,7 @@ export default async function handler(req, res) {
       hovers: hoverData[0]?.total || 0,
       seen: seenData[0]?.total || 0,
       total_impressions: totalImpressions[0]?.total || 0,
+      total_expert_shown: totalExpertShown[0]?.total || 0,
       partners: partnersWithStatus,
       bookings: bookingSummary,
       clicks_by_day: clicksByDay,
@@ -647,6 +665,9 @@ export default async function handler(req, res) {
       impressions_by_month: impressionsByMonth,
       hovers_by_month: hoversByMonth,
       seen_by_month: seenByMonth,
+      expert_shown_by_day: expertShownByDay,
+      expert_shown_by_week: expertShownByWeek,
+      expert_shown_by_month: expertShownByMonth,
       top_phrases: topPhrases,
       traffic_sources: topSources,
       devices: topDevices,

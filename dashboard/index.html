@@ -255,6 +255,10 @@ tr:last-child td{border-bottom:none}
 @media (max-width:900px){
   .account-grid{grid-template-columns:1fr}
   .account-field-grid{grid-template-columns:1fr}
+  #tab-overview .stats-grid{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:560px){
+  #tab-overview .stats-grid{grid-template-columns:repeat(2,1fr)}
 }
 
 /* ── Misc ── */
@@ -424,12 +428,18 @@ tr:last-child td{border-bottom:none}
           <button class="period-btn" onclick="setPeriod('monthly',this)">Monthly</button>
         </div>
       </div>
-      <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
+      <div class="stats-grid" style="grid-template-columns:repeat(6,1fr)">
         <div class="stat-card">
           <div class="stat-label">Page visits</div>
           <div class="stat-value clickable" id="stat-articles" onclick="openPagesModal()">-</div>
-          <div class="stat-sub">pages where a highlighted link was shown</div>
+          <div class="stat-sub">every page load where the widget ran</div>
           <div class="stat-delta" id="stat-articles-delta"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Expert shown</div>
+          <div class="stat-value" id="stat-expert-shown">-</div>
+          <div class="stat-sub">of those, had an expert to display</div>
+          <div class="stat-delta" id="stat-expert-shown-delta"></div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Links seen</div>
@@ -1742,22 +1752,25 @@ function setPeriod(period, btn) {
   btn.classList.add('active');
   const d = window._cd;
   if (!d || !hoversChart) return;
-  let h, imp, s, c;
+  let h, imp, s, c, es;
   if (period === 'monthly') {
     h = fillMonths(d.hovers_by_month || []);
     imp = fillMonths(d.impressions_by_month || []);
     s = fillMonths(d.seen_by_month || []);
     c = fillMonths(d.clicks_by_month || []);
+    es = fillMonths(d.expert_shown_by_month || []);
   } else if (period === 'weekly') {
     h = fillWeeks(d.hovers_by_week || []);
     imp = fillWeeks(d.impressions_by_week || []);
     s = fillWeeks(d.seen_by_week || []);
     c = fillWeeks(d.clicks_by_week || []);
+    es = fillWeeks(d.expert_shown_by_week || []);
   } else {
     h = fillDays(d.hovers_by_day || [], 30);
     imp = fillDays(d.impressions_by_day || [], 30);
     s = fillDays(d.seen_by_day || [], 30);
     c = fillDays(d.clicks_by_day || [], 30);
+    es = fillDays(d.expert_shown_by_day || [], 30);
   }
   hoversChart.data.labels = h.labels;
   hoversChart.data.datasets[0].data = h.data;
@@ -1778,25 +1791,32 @@ function setPeriod(period, btn) {
   const last = arr => arr[arr.length - 1] || 0;
   const prev = arr => arr[arr.length - 2] || 0;
   const impCur = last(imp.data), impPrev = prev(imp.data);
+  const esCur = last(es.data), esPrev = prev(es.data);
   const seenCur = last(s.data), seenPrev = prev(s.data);
   const hovCur = last(h.data), hovPrev = prev(h.data);
   const clickCur = last(c.data), clickPrev = prev(c.data);
-  const ctrCur = impCur > 0 ? (clickCur / impCur * 100) : 0;
-  const ctrPrev = impPrev > 0 ? (clickPrev / impPrev * 100) : 0;
+  // CTR and the seen-rate sub-text are both scoped to "Expert shown", not
+  // the broader "Page visits" - you can't scroll a highlight into view (or
+  // click a link) on a page that never had an expert to show in the first
+  // place, so Page visits is the wrong denominator for either.
+  const ctrCur = esCur > 0 ? (clickCur / esCur * 100) : 0;
+  const ctrPrev = esPrev > 0 ? (clickPrev / esPrev * 100) : 0;
 
   document.getElementById('stat-articles').textContent = impCur.toLocaleString();
+  document.getElementById('stat-expert-shown').textContent = esCur.toLocaleString();
   document.getElementById('stat-seen').textContent = seenCur.toLocaleString();
   document.getElementById('stat-hovers').textContent = hovCur.toLocaleString();
   document.getElementById('stat-clicks').textContent = clickCur.toLocaleString();
   document.getElementById('stat-ctr').textContent = ctrCur.toFixed(1) + '%';
 
-  const seenRate = impCur > 0 ? (seenCur / impCur * 100).toFixed(1) : '0.0';
-  document.getElementById('stat-seen-rate-sub').textContent = `${seenRate}% of page visits scrolled it into view`;
+  const seenRate = esCur > 0 ? (seenCur / esCur * 100).toFixed(1) : '0.0';
+  document.getElementById('stat-seen-rate-sub').textContent = `${seenRate}% of pages with an expert scrolled it into view`;
   const hoverRate = seenCur > 0 ? (hovCur / seenCur * 100).toFixed(1) : '0.0';
   document.getElementById('stat-hover-rate-sub').textContent = `${hoverRate}% of those who saw it opened the card`;
 
   const sincePeriodLabel = period === 'monthly' ? 'last month' : period === 'weekly' ? 'last week' : 'yesterday';
   renderStatDelta('stat-articles-delta', impCur, impPrev, sincePeriodLabel);
+  renderStatDelta('stat-expert-shown-delta', esCur, esPrev, sincePeriodLabel);
   renderStatDelta('stat-seen-delta', seenCur, seenPrev, sincePeriodLabel);
   renderStatDelta('stat-hovers-delta', hovCur, hovPrev, sincePeriodLabel);
   renderStatDelta('stat-clicks-delta', clickCur, clickPrev, sincePeriodLabel);

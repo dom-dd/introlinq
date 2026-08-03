@@ -30,18 +30,25 @@ export default async function handler(req, res) {
     const email = TEST_MODE ? TEST_EMAIL : pub.email;
     const firstName = pub.contact_first_name || pub.name;
 
-    const [impressions, clicks, topPages, topExperts] = await Promise.all([
+    const [impressions, seen, hovers, clicks, topPages, topExperts] = await Promise.all([
       sql`SELECT COUNT(*)::int AS count FROM match_logs WHERE publisher = ${slug} AND match_count > 0 AND created_at >= NOW() - INTERVAL '7 days'`.catch(() => [{ count: 0 }]),
+      sql`SELECT COUNT(*)::int AS count FROM seen_logs WHERE publisher = ${slug} AND created_at >= NOW() - INTERVAL '7 days'`.catch(() => [{ count: 0 }]),
+      sql`SELECT COUNT(*)::int AS count FROM hover_logs WHERE publisher = ${slug} AND created_at >= NOW() - INTERVAL '7 days'`.catch(() => [{ count: 0 }]),
       sql`SELECT COUNT(*)::int AS count FROM click_logs WHERE publisher = ${slug} AND created_at >= NOW() - INTERVAL '7 days'`.catch(() => [{ count: 0 }]),
       sql`SELECT page_url, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${slug} AND match_count > 0 AND created_at >= NOW() - INTERVAL '7 days' AND page_url IS NOT NULL GROUP BY page_url ORDER BY count DESC LIMIT 5`.catch(() => []),
       sql`SELECT expert_name, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${slug} AND created_at >= NOW() - INTERVAL '7 days' AND expert_name IS NOT NULL GROUP BY expert_name ORDER BY count DESC LIMIT 5`.catch(() => []),
     ]);
 
-    const weekImpressions = impressions[0]?.count || 0;
+    // "Expert shown" - same match_count > 0 definition the email always
+    // used under the "Impressions" label, just correctly named now to
+    // match the dashboard's own relabeling (see api/dashboard.js).
+    const weekExpertShown = impressions[0]?.count || 0;
+    const weekSeen = seen[0]?.count || 0;
+    const weekHovers = hovers[0]?.count || 0;
     const weekClicks = clicks[0]?.count || 0;
-    const ctr = weekImpressions > 0 ? ((weekClicks / weekImpressions) * 100).toFixed(1) : '0.0';
+    const ctr = weekExpertShown > 0 ? ((weekClicks / weekExpertShown) * 100).toFixed(1) : '0.0';
 
-    const html = buildEmail(firstName, weekImpressions, weekClicks, ctr, topPages, topExperts);
+    const html = buildEmail(firstName, weekExpertShown, weekSeen, weekHovers, weekClicks, ctr, topPages, topExperts);
 
     const emailRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -52,18 +59,25 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         from: 'IntroLinq <hello@introlinq.com>',
         to: email,
-        subject: `Your IntroLinq weekly report - ${weekImpressions} impressions, ${weekClicks} clicks`,
+        subject: `Your IntroLinq weekly report - ${weekExpertShown} experts shown, ${weekClicks} clicks`,
         html,
       }),
     });
 
-    results.push({ publisher: slug, email, impressions: weekImpressions, clicks: weekClicks, sent: emailRes.ok });
+    results.push({ publisher: slug, email, expert_shown: weekExpertShown, clicks: weekClicks, sent: emailRes.ok });
   }
 
   return res.status(200).json({ sent: results.length, results });
 }
 
-function buildEmail(name, impressions, clicks, ctr, topPages, topExperts) {
+function statTile(value, label, color) {
+  return `<div style="flex:1;background:#f7f7fb;border-radius:10px;padding:16px 20px;text-align:center">
+    <div style="font-size:28px;font-weight:700;color:${color || '#1a1a2e'}">${value}</div>
+    <div style="font-size:12px;color:#8888a8;margin-top:2px">${label}</div>
+  </div>`;
+}
+
+function buildEmail(name, expertShown, seen, hovers, clicks, ctr, topPages, topExperts) {
   const pagesHtml = topPages.length
     ? topPages.map(p => `
         <tr>
@@ -89,19 +103,14 @@ function buildEmail(name, impressions, clicks, ctr, topPages, topExperts) {
   <div style="padding:32px">
     <p style="margin:0 0 24px;font-size:15px;color:#1a1a2e">Hi ${name}, here's how your widget performed this week.</p>
 
+    <div style="display:flex;gap:12px;margin-bottom:12px">
+      ${statTile(expertShown, 'Expert shown')}
+      ${statTile(seen, 'Links seen')}
+      ${statTile(hovers, 'Hovers')}
+    </div>
     <div style="display:flex;gap:12px;margin-bottom:28px">
-      <div style="flex:1;background:#f7f7fb;border-radius:10px;padding:16px 20px;text-align:center">
-        <div style="font-size:28px;font-weight:700;color:#1a1a2e">${impressions}</div>
-        <div style="font-size:12px;color:#8888a8;margin-top:2px">Impressions</div>
-      </div>
-      <div style="flex:1;background:#f7f7fb;border-radius:10px;padding:16px 20px;text-align:center">
-        <div style="font-size:28px;font-weight:700;color:#1a1a2e">${clicks}</div>
-        <div style="font-size:12px;color:#8888a8;margin-top:2px">Clicks</div>
-      </div>
-      <div style="flex:1;background:#f7f7fb;border-radius:10px;padding:16px 20px;text-align:center">
-        <div style="font-size:28px;font-weight:700;color:#e6a820">${ctr}%</div>
-        <div style="font-size:12px;color:#8888a8;margin-top:2px">Click rate</div>
-      </div>
+      ${statTile(clicks, 'Clicks')}
+      ${statTile(ctr + '%', 'Click rate', '#e6a820')}
     </div>
 
     <p style="margin:0 0 10px;font-size:12px;font-weight:600;color:#8888a8;text-transform:uppercase;letter-spacing:.05em">Top pages</p>
