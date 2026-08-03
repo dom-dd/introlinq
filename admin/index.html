@@ -1874,12 +1874,15 @@ function showMoreOutreachTodo() {
   renderOutreach();
 }
 
-// Plain text only - Gmail's compose URL (see updateOutreachMailtoLink)
-// can't render the real logo+table HTML signature, only plain text. Gmail
-// still auto-linkifies a bare URL like this once it's in the compose box,
-// so the site link works even though "IntroLinq" itself can't be the
-// clickable text in plain text.
-const OUTREACH_SIGNATURE = `Dominic Dumont\nFounder & CEO\nIntroLinq - https://www.introlinq.com/signup`;
+// Deliberately no signature baked in here. Gmail's compose URL only
+// accepts plain text and skips its own as-you-type link detection when the
+// body is pre-filled this way (confirmed live - a bare URL just sits there
+// unclickable, not auto-linkified as normal typed/pasted text would be) -
+// so a plain-text stand-in can't reproduce the real logo+table signature
+// or even a working link, and would just leave a dead duplicate once the
+// real one gets inserted. Sign off with "Best," and click Gmail's own
+// "Insert signature" button in the compose toolbar instead - that pulls in
+// the actual saved signature, correctly, every time.
 
 // Company name uses the raw domain, not `title` - title is an SEO article
 // title scraped from the search result ("Managing Remote Teams: How the
@@ -1891,15 +1894,15 @@ function outreachEmailTemplates(c) {
   return {
     intro: {
       subject: `Quick idea for ${company}`,
-      body: `Hi ${firstName},\n\nI came across ${company} and thought there might be a good fit with something we're building at IntroLinq.\n\nWe help blogs like yours turn existing articles into a new revenue stream - readers who need expert advice on a topic get matched with a relevant expert they can book a call with, and you earn 50% commission on every booking. No extra content to write, no upfront cost - it runs quietly in the background once it's installed (one line of code, a couple of minutes).\n\nWould you be open to a quick look? Happy to send more details or hop on a call, whatever's easier.\n\nBest,\n${OUTREACH_SIGNATURE}`,
+      body: `Hi ${firstName},\n\nI came across ${company} and thought there might be a good fit with something we're building at IntroLinq.\n\nWe help blogs like yours turn existing articles into a new revenue stream - readers who need expert advice on a topic get matched with a relevant expert they can book a call with, and you earn 50% commission on every booking. No extra content to write, no upfront cost - it runs quietly in the background once it's installed (one line of code, a couple of minutes).\n\nWould you be open to a quick look? Happy to send more details or hop on a call, whatever's easier.\n\nBest,\n`,
     },
     followup1: {
       subject: `Re: Quick idea for ${company}`,
-      body: `Hi ${firstName},\n\nJust wanted to bump this in case it got buried - I reached out about IntroLinq, a way to turn ${company}'s existing articles into a new revenue stream (readers get matched with experts to book calls with, you earn 50% commission, zero extra work).\n\nNo pressure at all if it's not a fit - just didn't want it to slip through the cracks. Happy to answer any questions.\n\nBest,\n${OUTREACH_SIGNATURE}`,
+      body: `Hi ${firstName},\n\nJust wanted to bump this in case it got buried - I reached out about IntroLinq, a way to turn ${company}'s existing articles into a new revenue stream (readers get matched with experts to book calls with, you earn 50% commission, zero extra work).\n\nNo pressure at all if it's not a fit - just didn't want it to slip through the cracks. Happy to answer any questions.\n\nBest,\n`,
     },
     followup2: {
       subject: `Re: Quick idea for ${company}`,
-      body: `Hi ${firstName},\n\nLast note from me on this one - I don't want to keep cluttering your inbox.\n\nIf turning ${company}'s content into a passive revenue stream is ever something you'd want to explore, the door's always open. Either way, wishing you all the best with the site.\n\nBest,\n${OUTREACH_SIGNATURE}`,
+      body: `Hi ${firstName},\n\nLast note from me on this one - I don't want to keep cluttering your inbox.\n\nIf turning ${company}'s content into a passive revenue stream is ever something you'd want to explore, the door's always open. Either way, wishing you all the best with the site.\n\nBest,\n`,
     },
   };
 }
