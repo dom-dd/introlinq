@@ -11,9 +11,17 @@ export default async function handler(req, res) {
 
   const sql = neon(process.env.DATABASE_URL);
 
+  // Demo accounts aren't real publishers - excluded the same way admin.js's
+  // publisher list already does. Never-installed publishers are excluded
+  // too: this is a report on how an installed widget performed, not an
+  // install nudge - that's activation-reminders.js's job, worded for it.
+  // A "0 impressions, 0 clicks" report to someone who's never installed
+  // anything reads as a broken product, not a reminder. Once they install
+  // (first_widget_fire_at gets set), they start receiving real reports
+  // from the next scheduled run onward.
   const publishers = TEST_MODE
     ? await sql`SELECT * FROM publishers WHERE slug = ${TEST_PUBLISHER} AND active = true`
-    : await sql`SELECT * FROM publishers WHERE active = true`;
+    : await sql`SELECT * FROM publishers WHERE active = true AND slug NOT LIKE 'demo-%' AND first_widget_fire_at IS NOT NULL`;
 
   const results = [];
 
