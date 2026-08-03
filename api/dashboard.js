@@ -575,11 +575,20 @@ export default async function handler(req, res) {
     // the comment on this constant in api/admin.js.
     const STATS_RESET_AT = '2026-07-24T23:15:00Z';
 
-    const [logs, clickData, hoverData, seenData, providers, expertCounts, totalImpressions,
+    const [logsMatched, logsNoMatch, clickData, hoverData, seenData, providers, expertCounts, totalImpressions,
            clicksByDay, impressionsByDay, hoversByDay, seenByDay, clicksByWeek, impressionsByWeek, hoversByWeek, seenByWeek,
            clicksByMonth, impressionsByMonth, hoversByMonth, seenByMonth,
            topPhrases, topSources, topDevices, pageUrls] = await Promise.all([
-      sql`SELECT phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, created_at FROM match_logs WHERE publisher = ${pub} AND page_url IS NOT NULL AND (source IS NULL OR source <> 'carousel') AND is_bot = false AND created_at >= ${STATS_RESET_AT} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
+      // Split into two queries rather than one chronological "last 50" -
+      // a busy, low-match-rate site (mostly-news publishers correctly get
+      // few matches - see match.js's "NEVER match news" rule) can easily
+      // have its last 50 raw fires be 100% no-match, which made the
+      // Matched tab look empty/broken even when real matches exist further
+      // back. Each half gets its own genuine most-recent-50, so Matched
+      // always shows real history instead of whatever the chronological
+      // stream happened to contain.
+      sql`SELECT phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, created_at FROM match_logs WHERE publisher = ${pub} AND page_url IS NOT NULL AND (source IS NULL OR source <> 'carousel') AND is_bot = false AND match_count > 0 AND created_at >= ${STATS_RESET_AT} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
+      sql`SELECT phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, created_at FROM match_logs WHERE publisher = ${pub} AND page_url IS NOT NULL AND (source IS NULL OR source <> 'carousel') AND is_bot = false AND match_count = 0 AND created_at >= ${STATS_RESET_AT} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
       sql`SELECT COUNT(*)::int AS total FROM click_logs WHERE publisher = ${pub} AND is_bot = false AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
       sql`SELECT COUNT(*)::int AS total FROM hover_logs WHERE publisher = ${pub} AND is_bot = false AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
       sql`SELECT COUNT(*)::int AS total FROM seen_logs WHERE publisher = ${pub} AND is_bot = false AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
@@ -618,7 +627,8 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       publisher,
-      logs,
+      logs_matched: logsMatched,
+      logs_no_match: logsNoMatch,
       clicks: clickData[0]?.total || 0,
       hovers: hoverData[0]?.total || 0,
       seen: seenData[0]?.total || 0,

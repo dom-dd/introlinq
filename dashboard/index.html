@@ -489,7 +489,7 @@ tr:last-child td{border-bottom:none}
     <div class="tab-panel" id="tab-matches">
       <div class="section-header" style="padding:1.25rem 0 0.75rem">
         <div class="section-title">Widget logs</div>
-        <div class="section-sub">Last 50 times the widget ran on your site</div>
+        <div class="section-sub">Your last 50 matches and last 50 no-match runs</div>
       </div>
       <div class="wtab-nav" style="margin-bottom:1rem">
         <button class="wtab-btn active" id="logs-filter-matched" onclick="setLogsFilter('matched',this)">Matched</button>
@@ -1122,11 +1122,15 @@ async function loadDashboard() {
   renderInsights(d);
 
   // Logs
-  renderLogs(d.logs || []);
+  renderLogs(d.logs_matched || [], d.logs_no_match || []);
 
-  // Setup banner - show until widget has fired at least once (regardless of match outcome)
+  // Setup banner - show until widget has fired at least once (regardless of match outcome).
+  // Uses first_widget_fire_at rather than inferring from the log arrays -
+  // those are additionally filtered by STATS_RESET_AT/is_bot/page_url, so
+  // an early or bot-flagged fire could under-report "ever installed" if
+  // reconstructed from them instead.
   const embedCode = `<script src="https://www.introlinq.com/widget.js" data-publisher="${esc(d.publisher.slug)}"><\/script>`;
-  if (!(d.logs && d.logs.length)) {
+  if (!d.publisher.first_widget_fire_at) {
     document.getElementById('setup-banner').style.display = 'block';
     document.getElementById('setup-embed-code').textContent = embedCode;
     document.getElementById('setup-install-link').href = `/install?pub=${encodeURIComponent(d.publisher.slug)}`;
@@ -1768,7 +1772,8 @@ function setPeriod(period, btn) {
   imprChart.update();
 }
 
-let _allLogs = [];
+let _logsMatched = [];
+let _logsNoMatch = [];
 let _logsFilter = 'matched';
 
 // Defaults to "Matched" rather than the unfiltered list - most pages on any
@@ -1776,8 +1781,15 @@ let _logsFilter = 'matched';
 // feed is dominated by "No expert matched" rows. A publisher opening this
 // tab wants to see the widget's wins first, not wade through noise to find
 // them.
-function renderLogs(logs) {
-  _allLogs = logs;
+//
+// Fed by two SEPARATE most-recent-50 queries (see api/dashboard.js), not
+// one chronological "last 50" split client-side - a busy, low-match-rate
+// site could easily have its last 50 raw fires be 100% no-match, which
+// made the Matched tab look empty/broken even when real matches exist
+// further back in time. Each half gets its own genuine most-recent-50.
+function renderLogs(matched, noMatch) {
+  _logsMatched = matched;
+  _logsNoMatch = noMatch;
   renderLogsFiltered();
 }
 
@@ -1790,20 +1802,22 @@ function setLogsFilter(filter, btn) {
 
 function renderLogsFiltered() {
   const el = document.getElementById('logs-list');
-  const matchedCount = _allLogs.filter(l => (l.phrases || []).length > 0).length;
-  const noMatchCount = _allLogs.length - matchedCount;
-  document.getElementById('logs-filter-matched').textContent = `Matched (${matchedCount})`;
-  document.getElementById('logs-filter-no_match').textContent = `No match (${noMatchCount})`;
-  document.getElementById('logs-filter-all').textContent = `All (${_allLogs.length})`;
+  const totalCount = _logsMatched.length + _logsNoMatch.length;
+  document.getElementById('logs-filter-matched').textContent = `Matched (${_logsMatched.length})`;
+  document.getElementById('logs-filter-no_match').textContent = `No match (${_logsNoMatch.length})`;
+  document.getElementById('logs-filter-all').textContent = `All (${totalCount})`;
 
-  if (!_allLogs.length) {
+  if (!totalCount) {
     el.innerHTML = '<div class="logs-empty">No widget runs yet - install the embed code to get started.</div>';
     return;
   }
 
-  const logs = _logsFilter === 'all' ? _allLogs
-    : _logsFilter === 'matched' ? _allLogs.filter(l => (l.phrases || []).length > 0)
-    : _allLogs.filter(l => (l.phrases || []).length === 0);
+  // "All" merges both most-recent-50 pools and re-sorts by time - each
+  // pool was independently limited to 50, so this can show up to 100 rows,
+  // not a strict "last 50 overall".
+  const logs = _logsFilter === 'matched' ? _logsMatched
+    : _logsFilter === 'no_match' ? _logsNoMatch
+    : [..._logsMatched, ..._logsNoMatch].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   if (!logs.length) {
     el.innerHTML = `<div class="logs-empty">${_logsFilter === 'matched' ? 'No matches yet - check back once the widget has run on a few more pages.' : 'Nothing in this view yet.'}</div>`;
