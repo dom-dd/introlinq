@@ -89,11 +89,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .stat-label{font-size:0.75rem;color:var(--ink-muted);font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.375rem}
 .stat-value{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--ink);line-height:1}
 .stat-sub{font-size:0.7rem;color:var(--ink-muted);margin-top:0.375rem}
-.stat-top-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem}
-.stat-delta{display:inline-flex;align-items:center;gap:2px;font-size:0.7rem;font-weight:600;padding:0.15rem 0.5rem;border-radius:100px;margin-top:0.5rem}
-.stat-delta.up{background:#dcfce7;color:#166534}
-.stat-delta.down{background:#fff7ed;color:#b45309}
-.stat-delta.new{background:#eef2ff;color:#4f6ef7}
 
 /* ── Sections ── */
 .section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1.5rem;overflow:hidden}
@@ -420,57 +415,45 @@ tr:last-child td{border-bottom:none}
 
     <!-- ── Overview ── -->
     <div class="tab-panel active" id="tab-overview">
-      <div class="stat-top-row">
-        <div class="section-sub" style="margin:0">Showing today vs yesterday, this week vs last week, or this month vs last month - pick a period.</div>
-        <div class="period-btns">
-          <button class="period-btn active" onclick="setPeriod('daily',this)">Daily</button>
-          <button class="period-btn" onclick="setPeriod('weekly',this)">Weekly</button>
-          <button class="period-btn" onclick="setPeriod('monthly',this)">Monthly</button>
-        </div>
-      </div>
-      <div class="stats-grid" style="grid-template-columns:repeat(6,1fr)">
+      <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
         <div class="stat-card">
           <div class="stat-label">Page visits</div>
           <div class="stat-value clickable" id="stat-articles" onclick="openPagesModal()">-</div>
           <div class="stat-sub">every page load where the widget ran</div>
-          <div class="stat-delta" id="stat-articles-delta"></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Expert shown</div>
-          <div class="stat-value" id="stat-expert-shown">-</div>
-          <div class="stat-sub">of those, had an expert to display</div>
-          <div class="stat-delta" id="stat-expert-shown-delta"></div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Links seen</div>
           <div class="stat-value" id="stat-seen">-</div>
           <div class="stat-sub" id="stat-seen-rate-sub">a highlighted link was on their screen</div>
-          <div class="stat-delta" id="stat-seen-delta"></div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Hovers</div>
           <div class="stat-value" id="stat-hovers">-</div>
           <div class="stat-sub" id="stat-hover-rate-sub">readers who hovered the link to open the card</div>
-          <div class="stat-delta" id="stat-hovers-delta"></div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Clicks</div>
           <div class="stat-value" id="stat-clicks">-</div>
           <div class="stat-sub">Book a call clicks</div>
-          <div class="stat-delta" id="stat-clicks-delta"></div>
         </div>
         <div class="stat-card">
           <div class="stat-label">CTR</div>
           <div class="stat-value" id="stat-ctr">-</div>
           <div class="stat-sub">click-through rate</div>
-          <div class="stat-delta" id="stat-ctr-delta"></div>
         </div>
       </div>
 
       <div class="section">
-        <div class="section-header">
-          <div class="section-title">Performance</div>
-          <div class="section-sub">Page visits, links seen and hovers over time - follows the period selected above</div>
+        <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="section-title">Performance</div>
+            <div class="section-sub">Page visits, links seen and hovers over time</div>
+          </div>
+          <div class="period-btns">
+            <button class="period-btn active" onclick="setPeriod('daily',this)">Daily</button>
+            <button class="period-btn" onclick="setPeriod('weekly',this)">Weekly</button>
+            <button class="period-btn" onclick="setPeriod('monthly',this)">Monthly</button>
+          </div>
         </div>
         <div class="chart-grid">
           <div>
@@ -1117,9 +1100,34 @@ async function loadDashboard() {
   // Store page URLs for modal
   _pageUrls = d.page_urls || [];
 
-  // Overview stats + charts - both driven by the single period toggle now
-  // (see setPeriod), rather than the stat cards showing a fixed all-time
-  // total while only the charts below responded to Daily/Weekly/Monthly.
+  // Overview stats - fixed all-time totals (since STATS_RESET_AT), not
+  // period-scoped. A combined period toggle driving both these cards and
+  // the charts below was tried and reverted - it wasn't clear which
+  // specific day/week/month was being shown, and early-in-period
+  // comparisons (e.g. "-91% since last month" on the 3rd of the month)
+  // read as alarming rather than informative. The Daily/Weekly/Monthly
+  // toggle now only affects the Performance charts, as it did originally.
+  const impressions = d.total_impressions || 0;
+  const seen = d.seen || 0;
+  const hovers = d.hovers || 0;
+  const clicks = d.clicks || 0;
+  // CTR is scoped to "Expert shown" (match_count > 0), not the broader
+  // Page visits - you can't click a link on a page that never had an
+  // expert to show in the first place, so Page visits is the wrong
+  // denominator here even though it isn't shown as its own card.
+  const ctrBase = d.total_expert_shown || 0;
+  const ctr = ctrBase > 0 ? (clicks / ctrBase * 100).toFixed(1) : '0.0';
+  document.getElementById('stat-articles').textContent = impressions.toLocaleString();
+  document.getElementById('stat-seen').textContent = seen.toLocaleString();
+  document.getElementById('stat-hovers').textContent = hovers.toLocaleString();
+  document.getElementById('stat-clicks').textContent = clicks.toLocaleString();
+  document.getElementById('stat-ctr').textContent = ctr + '%';
+  const seenRate = ctrBase > 0 ? (seen / ctrBase * 100).toFixed(1) : '0.0';
+  document.getElementById('stat-seen-rate-sub').textContent = `${seenRate}% of pages with an expert scrolled it into view`;
+  const hoverRate = seen > 0 ? (hovers / seen * 100).toFixed(1) : '0.0';
+  document.getElementById('stat-hover-rate-sub').textContent = `${hoverRate}% of those who saw it opened the card`;
+
+  // Charts (Overview tab)
   window._cd = d;
   initCharts(d);
   setPeriod('daily', document.querySelector('.period-btn.active'));
@@ -1752,25 +1760,22 @@ function setPeriod(period, btn) {
   btn.classList.add('active');
   const d = window._cd;
   if (!d || !hoversChart) return;
-  let h, imp, s, c, es;
+  let h, imp, s, c;
   if (period === 'monthly') {
     h = fillMonths(d.hovers_by_month || []);
     imp = fillMonths(d.impressions_by_month || []);
     s = fillMonths(d.seen_by_month || []);
     c = fillMonths(d.clicks_by_month || []);
-    es = fillMonths(d.expert_shown_by_month || []);
   } else if (period === 'weekly') {
     h = fillWeeks(d.hovers_by_week || []);
     imp = fillWeeks(d.impressions_by_week || []);
     s = fillWeeks(d.seen_by_week || []);
     c = fillWeeks(d.clicks_by_week || []);
-    es = fillWeeks(d.expert_shown_by_week || []);
   } else {
     h = fillDays(d.hovers_by_day || [], 30);
     imp = fillDays(d.impressions_by_day || [], 30);
     s = fillDays(d.seen_by_day || [], 30);
     c = fillDays(d.clicks_by_day || [], 30);
-    es = fillDays(d.expert_shown_by_day || [], 30);
   }
   hoversChart.data.labels = h.labels;
   hoversChart.data.datasets[0].data = h.data;
@@ -1780,65 +1785,6 @@ function setPeriod(period, btn) {
   imprChart.data.datasets[0].data = imp.data;
   imprChart.data.datasets[1].data = s.data;
   imprChart.update();
-
-  // Same period toggle drives the 5 stat cards above, not just these
-  // charts - previously they always showed one fixed all-time total no
-  // matter what Daily/Weekly/Monthly was selected, so the page never made
-  // clear what timeframe you were actually looking at. h/imp/s/c are
-  // already the exact dense series the charts just used - last entry is
-  // the current (today/this week/this month), second-to-last is the
-  // immediately preceding one, for all three period types uniformly.
-  const last = arr => arr[arr.length - 1] || 0;
-  const prev = arr => arr[arr.length - 2] || 0;
-  const impCur = last(imp.data), impPrev = prev(imp.data);
-  const esCur = last(es.data), esPrev = prev(es.data);
-  const seenCur = last(s.data), seenPrev = prev(s.data);
-  const hovCur = last(h.data), hovPrev = prev(h.data);
-  const clickCur = last(c.data), clickPrev = prev(c.data);
-  // CTR and the seen-rate sub-text are both scoped to "Expert shown", not
-  // the broader "Page visits" - you can't scroll a highlight into view (or
-  // click a link) on a page that never had an expert to show in the first
-  // place, so Page visits is the wrong denominator for either.
-  const ctrCur = esCur > 0 ? (clickCur / esCur * 100) : 0;
-  const ctrPrev = esPrev > 0 ? (clickPrev / esPrev * 100) : 0;
-
-  document.getElementById('stat-articles').textContent = impCur.toLocaleString();
-  document.getElementById('stat-expert-shown').textContent = esCur.toLocaleString();
-  document.getElementById('stat-seen').textContent = seenCur.toLocaleString();
-  document.getElementById('stat-hovers').textContent = hovCur.toLocaleString();
-  document.getElementById('stat-clicks').textContent = clickCur.toLocaleString();
-  document.getElementById('stat-ctr').textContent = ctrCur.toFixed(1) + '%';
-
-  const seenRate = esCur > 0 ? (seenCur / esCur * 100).toFixed(1) : '0.0';
-  document.getElementById('stat-seen-rate-sub').textContent = `${seenRate}% of pages with an expert scrolled it into view`;
-  const hoverRate = seenCur > 0 ? (hovCur / seenCur * 100).toFixed(1) : '0.0';
-  document.getElementById('stat-hover-rate-sub').textContent = `${hoverRate}% of those who saw it opened the card`;
-
-  const sincePeriodLabel = period === 'monthly' ? 'last month' : period === 'weekly' ? 'last week' : 'yesterday';
-  renderStatDelta('stat-articles-delta', impCur, impPrev, sincePeriodLabel);
-  renderStatDelta('stat-expert-shown-delta', esCur, esPrev, sincePeriodLabel);
-  renderStatDelta('stat-seen-delta', seenCur, seenPrev, sincePeriodLabel);
-  renderStatDelta('stat-hovers-delta', hovCur, hovPrev, sincePeriodLabel);
-  renderStatDelta('stat-clicks-delta', clickCur, clickPrev, sincePeriodLabel);
-  renderStatDelta('stat-ctr-delta', ctrCur, ctrPrev, sincePeriodLabel, true);
-}
-
-// pctPoints: CTR is already a percentage, so its own change is expressed in
-// percentage POINTS (e.g. "5% -> 6%" is "+1pp", not a relative "+20%") -
-// conflating the two reads as a different, wrong number for that one card.
-function renderStatDelta(elId, current, previous, sinceLabel, pctPoints) {
-  const el = document.getElementById(elId);
-  if (!previous) {
-    if (!current) { el.textContent = ''; el.className = 'stat-delta'; return; }
-    el.textContent = 'New';
-    el.className = 'stat-delta new';
-    return;
-  }
-  const diff = pctPoints ? current - previous : (current - previous) / previous * 100;
-  const up = diff >= 0;
-  const formatted = pctPoints ? `${Math.abs(diff).toFixed(1)}pp` : `${Math.abs(diff).toFixed(1)}%`;
-  el.textContent = `${up ? '↗' : '↘'} ${formatted} since ${sinceLabel}`;
-  el.className = 'stat-delta ' + (up ? 'up' : 'down');
 }
 
 let _logsMatched = [];
