@@ -1,5 +1,5 @@
 ﻿import { neon } from '@neondatabase/serverless';
-import { getClientIp, isBurstTraffic, isKnownCrawlerIp, ensureBotColumns, isAllowlistedCrawler } from './_botDetect.js';
+import { getClientIp, isBurstTraffic, isSitewideBurst, isKnownCrawlerIp, ensureBotColumns, isAllowlistedCrawler } from './_botDetect.js';
 
 // match_cache is global per page now, not per reader country - country
 // fragmentation (every new country paying for its own fresh scan) turned
@@ -367,7 +367,16 @@ async function logCachedImpression(sql, { publisher, page_url, page_title, match
     await ensureBotColumns(sql, 'match_logs');
     matchLogsBotColumnsReady = true;
   }
-  const isBot = await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url });
+  // Same full bot-detection stack as dashboard.js's click/hover/seen/carousel
+  // handlers (isKnownCrawlerIp + isSitewideBurst, not just isBurstTraffic) -
+  // this was the one place still missing them, which meant a crawler
+  // spreading across many different pages once each (Meta's exact pattern
+  // on tchelete - see isKnownCrawlerIp's own comment) sailed through
+  // untagged into match_logs, inflating Page visits/Expert shown for the
+  // publishers it hit hardest even after click_logs was fixed.
+  const isBot = isKnownCrawlerIp(ip)
+    || (await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url }))
+    || (await isSitewideBurst(sql, 'match_logs', { ip, publisher }));
   await sql`INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, country_code, cost_usd, ip, is_bot)
     VALUES (${publisher || null}, '[cached]', ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${readerCountry || null}, 0, ${ip || null}, ${isBot})
   `.catch(() => {});
@@ -849,7 +858,9 @@ async function handleReport(req, res) {
       await ensureBotColumns(sql, 'match_logs');
       matchLogsBotColumnsReady = true;
     }
-    const isBot = await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url });
+    const isBot = isKnownCrawlerIp(ip)
+      || (await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url }))
+      || (await isSitewideBurst(sql, 'match_logs', { ip, publisher }));
 
     await sql`
       INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, country_code, cost_usd, ip, is_bot)
@@ -1193,6 +1204,9 @@ NEVER match:
 - Statistics being reported, not explained
 - Phrases where a company describes what it is doing (not what the reader needs to do)
 - Vague keyword overlap where the expert's services don't clearly fit the specific moment
+- Alerts or warnings that inform the reader of a risk or event without asking them to decide anything right now (e.g. "cyberattacks are rising", a rating agency's verdict on a country, a regulator's ruling) - being informed of something is not the same as facing a decision
+
+THE TEST FOR NEWS VS A REAL MATCH: ask whose problem the sentence is actually about. If the one making a decision or taking action is a company, government, agency, or other third party - and the reader is simply being told about it - this is news, even when the topic (finance, tech, cybersecurity, hiring...) overlaps with an expert's field. A valid match requires the READER to be the one who needs to act, not a spectator to someone else's. Real examples of news that must NOT match, despite already violating the rules above: a company reorganizing an internal division, a rating agency maintaining a country's credit rating, a startup's funding round, a manufacturer confirming a joint venture, a vendor's report that a category of attack or risk is rising. Every one of these describes something happening TO or BY someone else, with the reader as a bystander - matching them is exactly the failure mode this rule exists to prevent.
 
 DOMAIN FIT - this rule overrides everything above, including the matching sensitivity: an expert is only a valid match if their own field of work covers the reader's SPECIFIC problem. Never connect a generalist business expert to a specialist topic through a chain of reasoning. Real examples of forbidden stretches: a negotiation coach matched to "responding to Google reviews", a financial-modeling advisor matched to "tracking SEO metrics", a brand designer matched to "choosing profile photos for a business listing" - each sounds clever but the expert does not actually work in that field, and a reader who books the wrong specialist loses trust in every future suggestion. The test: would this expert themselves list the reader's problem as something they help clients with? If none of the available experts genuinely work in the article's domain, return fewer matches or zero - zero is a correct and common answer, not a failure. Sensitivity controls how many GOOD matches to return, never whether a bad match is acceptable.
 
@@ -1359,7 +1373,9 @@ Return only valid JSON, no other text:
       // tryServeFromCache path, same as always. Slack still gets the same
       // "a scan just happened" visibility it always has, gated by the same
       // bot check as every other fresh-scan notification.
-      const isBot = await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url });
+      const isBot = isKnownCrawlerIp(ip)
+        || (await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url }))
+        || (await isSitewideBurst(sql, 'match_logs', { ip, publisher }));
       if (!isBot) {
         await postSlackNotification(sql, { publisher, page_url, page_title, matchCount: enriched.length, readerCountry, cached: false, costUsd });
       }
