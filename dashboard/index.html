@@ -110,7 +110,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .log-row td{padding:0.75rem 1rem;font-size:0.8125rem;border-bottom:1px solid var(--border);vertical-align:middle}
 .log-row.open td{border-bottom:none}
 .log-time{white-space:nowrap;color:var(--ink-muted);font-size:0.75rem}
-.log-page{display:block;color:var(--sage);max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.log-page-cell{display:flex;align-items:center;gap:0.5rem;max-width:420px}
+.log-page{display:block;color:var(--sage);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.log-open-link{flex-shrink:0;color:var(--ink-muted);text-decoration:none;font-size:0.8125rem;line-height:1;padding:2px;border-radius:4px;transition:color .15s,background .15s}
+.log-open-link:hover{color:var(--ink);background:var(--cream)}
 .log-badge{display:inline-flex;align-items:center;gap:0.375rem;font-size:0.75rem;font-weight:600;padding:0.2rem 0.625rem;border-radius:100px;white-space:nowrap}
 .log-badge.matched{background:#dcfce7;color:#166534}
 .log-badge.no-match{background:#f1f5f9;color:var(--ink-muted)}
@@ -487,6 +490,11 @@ tr:last-child td{border-bottom:none}
       <div class="section-header" style="padding:1.25rem 0 0.75rem">
         <div class="section-title">Widget logs</div>
         <div class="section-sub">Last 50 times the widget ran on your site</div>
+      </div>
+      <div class="wtab-nav" style="margin-bottom:1rem">
+        <button class="wtab-btn active" id="logs-filter-matched" onclick="setLogsFilter('matched',this)">Matched</button>
+        <button class="wtab-btn" id="logs-filter-no_match" onclick="setLogsFilter('no_match',this)">No match</button>
+        <button class="wtab-btn" id="logs-filter-all" onclick="setLogsFilter('all',this)">All</button>
       </div>
       <div id="logs-list"><div class="logs-empty">Loading…</div></div>
     </div>
@@ -1760,10 +1768,45 @@ function setPeriod(period, btn) {
   imprChart.update();
 }
 
+let _allLogs = [];
+let _logsFilter = 'matched';
+
+// Defaults to "Matched" rather than the unfiltered list - most pages on any
+// blog won't match an expert (that's expected, not a problem), so a raw
+// feed is dominated by "No expert matched" rows. A publisher opening this
+// tab wants to see the widget's wins first, not wade through noise to find
+// them.
 function renderLogs(logs) {
+  _allLogs = logs;
+  renderLogsFiltered();
+}
+
+function setLogsFilter(filter, btn) {
+  _logsFilter = filter;
+  document.querySelectorAll('#tab-matches .wtab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLogsFiltered();
+}
+
+function renderLogsFiltered() {
   const el = document.getElementById('logs-list');
-  if (!logs.length) {
+  const matchedCount = _allLogs.filter(l => (l.phrases || []).length > 0).length;
+  const noMatchCount = _allLogs.length - matchedCount;
+  document.getElementById('logs-filter-matched').textContent = `Matched (${matchedCount})`;
+  document.getElementById('logs-filter-no_match').textContent = `No match (${noMatchCount})`;
+  document.getElementById('logs-filter-all').textContent = `All (${_allLogs.length})`;
+
+  if (!_allLogs.length) {
     el.innerHTML = '<div class="logs-empty">No widget runs yet - install the embed code to get started.</div>';
+    return;
+  }
+
+  const logs = _logsFilter === 'all' ? _allLogs
+    : _logsFilter === 'matched' ? _allLogs.filter(l => (l.phrases || []).length > 0)
+    : _allLogs.filter(l => (l.phrases || []).length === 0);
+
+  if (!logs.length) {
+    el.innerHTML = `<div class="logs-empty">${_logsFilter === 'matched' ? 'No matches yet - check back once the widget has run on a few more pages.' : 'Nothing in this view yet.'}</div>`;
     return;
   }
 
@@ -1776,8 +1819,14 @@ function renderLogs(logs) {
     const urls = l.expert_booking_urls || [];
     const matched = phrases.length > 0;
 
+    // stopPropagation on the open-link button - it sits inside the row's
+    // own onclick="toggleLog(...)" target, and without it a click would
+    // both open the page in a new tab AND expand/collapse the detail row.
+    const openLink = l.page_url
+      ? `<a href="${esc(l.page_url)}" target="_blank" rel="noopener" class="log-open-link" onclick="event.stopPropagation()" title="Open page in a new tab">↗</a>`
+      : '';
     const pageCell = l.page_url
-      ? `<span class="log-page" title="${esc(l.page_url)}">${esc(l.page_url.replace(/^https?:\/\//,''))}</span>`
+      ? `<div class="log-page-cell"><span class="log-page" title="${esc(l.page_url)}">${esc(l.page_url.replace(/^https?:\/\//,''))}</span>${openLink}</div>`
       : '<span style="color:var(--ink-muted);font-size:0.75rem">-</span>';
 
     const badge = matched
