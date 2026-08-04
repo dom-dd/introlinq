@@ -462,6 +462,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
         <button class="outreach-subtab" onclick="switchOutreachSubtab('partner',this)">Potential partners</button>
         <button class="outreach-subtab" onclick="switchOutreachSubtab('todo',this)">Not yet contacted</button>
         <button class="outreach-subtab" onclick="switchOutreachSubtab('closed',this)">Closed</button>
+        <button class="outreach-subtab" onclick="switchOutreachSubtab('openintro',this)">Potential OpenIntro partner</button>
       </div>
 
       <div class="outreach-subpanel active" id="outreach-sub-due">
@@ -616,6 +617,28 @@ tr:hover td{background:rgba(0,0,0,0.01)}
                 <th>Notes</th>
               </tr></thead>
               <tbody id="outreach-closed-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-openintro">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-openintro-title">Potential OpenIntro partner</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:110px">Status</th>
+                <th style="width:130px">Next follow-up</th>
+                <th style="width:190px">Action</th>
+                <th style="width:150px">Emails</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-openintro-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -1899,6 +1922,7 @@ const OUTREACH_STATUS_LABELS = {
   important: 'Important',
   contact_later: 'Contact later',
   partner: 'Potential partner',
+  openintro_partner: 'Potential OpenIntro partner',
   replied_interested: 'Interested',
   replied_not_interested: 'Not interested (replied)',
   signed_up: 'Signed up',
@@ -1912,6 +1936,7 @@ const OUTREACH_STATUS_COLORS = {
   important: '#e6a820',
   contact_later: '#4f6ef7',
   partner: '#8b5cf6',
+  openintro_partner: '#0d9488',
   replied_interested: 'var(--sage)',
   signed_up: 'var(--sage)',
   replied_not_interested: 'var(--red, #dc2626)',
@@ -1939,19 +1964,21 @@ function outreachBucket(c, today) {
   if (c.status === 'important') return 'important';
   if (c.status === 'contact_later') return 'later';
   if (c.status === 'partner') return 'partner';
+  if (c.status === 'openintro_partner') return 'openintro';
   if (c.status === 'discovered') return 'todo';
   return 'waiting';
 }
 
 function renderOutreach() {
   const today = new Date().toISOString().slice(0, 10);
-  const buckets = { due: [], later: [], important: [], partner: [], todo: [], waiting: [], closed: [] };
+  const buckets = { due: [], later: [], important: [], partner: [], openintro: [], todo: [], waiting: [], closed: [] };
   for (const c of _outreach) buckets[outreachBucket(c, today)].push(c);
 
   buckets.due.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
   buckets.later.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
   buckets.important.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.partner.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.openintro.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   // priority_score is unpopulated until the (separate, manual) classify
   // step runs - falls back to newest-discovered-first so the list is still
   // usably ordered in the meantime, and starts respecting real scores the
@@ -1964,6 +1991,7 @@ function renderOutreach() {
   document.getElementById('outreach-later-title').textContent = `To contact later (${buckets.later.length})`;
   document.getElementById('outreach-important-title').textContent = `Important (${buckets.important.length})`;
   document.getElementById('outreach-partner-title').textContent = `Potential partners (${buckets.partner.length})`;
+  document.getElementById('outreach-openintro-title').textContent = `Potential OpenIntro partner (${buckets.openintro.length})`;
   document.getElementById('outreach-todo-title').textContent = `Not yet contacted (${buckets.todo.length})`;
   document.getElementById('outreach-waiting-title').textContent = `To follow up (${buckets.waiting.length})`;
   document.getElementById('outreach-closed-title').textContent = `Closed (${buckets.closed.length})`;
@@ -1979,6 +2007,9 @@ function renderOutreach() {
 
   document.getElementById('outreach-partner-tbody').innerHTML = buckets.partner.length
     ? buckets.partner.map(outreachRow).join('') : '<tr><td colspan="7" class="empty">No potential partners flagged yet.</td></tr>';
+
+  document.getElementById('outreach-openintro-tbody').innerHTML = buckets.openintro.length
+    ? buckets.openintro.map(outreachRow).join('') : '<tr><td colspan="7" class="empty">No potential OpenIntro partners flagged yet.</td></tr>';
 
   const todoShown = buckets.todo.slice(0, _outreachTodoLimit);
   document.getElementById('outreach-todo-tbody').innerHTML = todoShown.length
