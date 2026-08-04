@@ -21,9 +21,23 @@ export default async function handler(req, res) {
 
   if (id && /^\d+$/.test(id)) {
     try {
+      const candidateId = parseInt(id, 10);
       const sql = neon(process.env.DATABASE_URL);
       await ensureTable(sql);
-      await sql`INSERT INTO outreach_clicks (candidate_id) VALUES (${parseInt(id, 10)})`;
+      const [candidate] = await sql`SELECT domain, company_name FROM candidate_publishers WHERE id = ${candidateId}`;
+      await sql`INSERT INTO outreach_clicks (candidate_id) VALUES (${candidateId})`;
+
+      // Awaited (not fire-and-forget) - a serverless function can be frozen
+      // the instant the response is sent, same reasoning as the /brief and
+      // login notifications elsewhere in the codebase.
+      if (candidate && process.env.SLACK_EMAIL_CLICKS_WEBHOOK_URL) {
+        const label = candidate.company_name || candidate.domain;
+        await fetch(process.env.SLACK_EMAIL_CLICKS_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: `🔗 *${label}* clicked the link in your outreach email` }),
+        }).catch(() => {});
+      }
     } catch {}
   }
 

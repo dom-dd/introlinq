@@ -24,6 +24,7 @@ async function ensureColumns() {
   await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS lead_type TEXT`;
   await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS service_keyword TEXT`;
   await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS team_size TEXT`;
+  await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS company_name TEXT`;
 }
 
 async function classifyBatch(rows) {
@@ -50,13 +51,15 @@ Also estimate "team_size" from the title/snippet wording:
 - "unclear": genuinely can't tell from the title/snippet alone
 This is a rough guess from limited text, not a confident read - best-effort only.
 
+Also give a "company_name": the clean, human-readable brand or company name for this site - not the article/page title. Titles often follow an "Article headline | Brand Name" or "Article headline - Brand Name" pattern; pull the brand name from that suffix when present. When there's no such suffix, infer a reasonable name from the domain itself (e.g. "smallbizhub.com" -> "SmallBizHub" or "Small Biz Hub", whichever reads more naturally), capitalized properly, no taglines or slogans. Always provide your best guess - never null.
+
 Sites:
 ${list}
 
 "lead_type" must be EXACTLY one of these four words, nothing else: publisher, vendor, competitor, unclear. Never put a team_size value like "solo" in the lead_type field.
 
 Return ONLY valid JSON, no other text, in the same order as listed:
-{"results":[{"domain":"...","lead_type":"publisher|vendor|competitor|unclear","service_keyword":"..."|null,"team_size":"solo|small-team|large-team|unclear"}]}`;
+{"results":[{"domain":"...","lead_type":"publisher|vendor|competitor|unclear","service_keyword":"..."|null,"team_size":"solo|small-team|large-team|unclear","company_name":"..."}]}`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -131,7 +134,8 @@ async function main() {
 
         await sql`
           UPDATE candidate_publishers
-          SET lead_type = ${leadType}, service_keyword = ${res.service_keyword || null}, team_size = ${teamSize}
+          SET lead_type = ${leadType}, service_keyword = ${res.service_keyword || null}, team_size = ${teamSize},
+              company_name = ${(res.company_name || '').trim() || null}
           WHERE id = ${row.id}
         `;
         done++;

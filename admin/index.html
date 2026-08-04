@@ -1890,7 +1890,7 @@ function showMoreOutreachTodo() {
 // full contact_name) reads more naturally in a greeting.
 function outreachEmailTemplates(c) {
   const firstName = (c.contact_name || '').trim().split(' ')[0] || 'there';
-  const company = (c.company_name || '').trim() || c.title || c.domain;
+  const company = (c.company_name || '').trim() || prettifyDomain(c.domain);
   // Routes through /api/r so a click can be attributed back to this
   // candidate (logged, then redirected to the real homepage) - see
   // outreachClickIcon for where that shows up.
@@ -1967,6 +1967,22 @@ function outreachClickIcon(c) {
   </span>`;
 }
 
+// Best-effort guess at a human-readable brand name from the bare domain -
+// title-cases the registrable label and drops common non-brand subdomain
+// prefixes (hiring.monster.com -> Monster). Can't reliably split compound
+// words or detect acronyms, so it's still often wrong - only ever used as
+// a starting point; company_name (once set) always takes over, and this
+// is never itself persisted.
+function prettifyDomain(domain) {
+  if (!domain) return '';
+  const GENERIC_SUBDOMAINS = ['www', 'blog', 'hiring', 'careers', 'jobs', 'shop', 'app', 'my', 'get', 'about', 'news'];
+  let parts = domain.split('.');
+  if (parts.length > 2 && GENERIC_SUBDOMAINS.includes(parts[0])) parts = parts.slice(1);
+  const label = parts.length > 1 ? parts[parts.length - 2] : parts[0];
+  return label.replace(/[-_]+/g, ' ').split(' ').filter(Boolean)
+    .map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+}
+
 function outreachRow(c) {
   const title = c.title ? esc(c.title.slice(0, 60)) : '';
   const statusOptions = Object.entries(OUTREACH_STATUS_LABELS)
@@ -1976,7 +1992,7 @@ function outreachRow(c) {
       <td>
         <a href="${esc(c.homepage_url)}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:600;font-size:0.8125rem;text-decoration:none">${esc(c.domain)}</a>${outreachClickIcon(c)}
         ${title ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px">${title}</div>` : ''}
-        <input type="text" value="${esc(c.company_name || c.title || '')}" placeholder="Company name (used in emails)" onblur="outreachSaveCompanyName(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE};margin-top:4px">
+        <input type="text" value="${esc(c.company_name || prettifyDomain(c.domain))}" placeholder="Company name (used in emails)" onblur="outreachSaveCompanyName(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE};margin-top:4px">
       </td>
       <td>
         <input type="text" value="${esc(c.contact_name || '')}" placeholder="Name" onblur="outreachSaveContact(${c.id}, this.value, null)" style="${OUTREACH_INPUT_STYLE};margin-bottom:3px">
