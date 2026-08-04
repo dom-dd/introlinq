@@ -42,8 +42,19 @@ export function getClientIp(req) {
 // one hit per distinct expert per page, matching Meta's link-preview/
 // safety-scanning behaviour (visiting every clickable link on a page that
 // was shared on Facebook/Instagram/WhatsApp), not real readers.
+// 66.249.64.0/19: Google's own officially documented Googlebot range
+// (developers.google.com/search/docs/crawling-indexing/verifying-googlebot).
+// Already caught going forward by isAllowlistedCrawler's User-Agent check,
+// but that signal isn't stored anywhere per-row, so a historical row has no
+// way to prove which UA made it - this IP-range entry is what lets the
+// retroactive is_bot backfill recover Googlebot traffic that predates the
+// User-Agent check being wired in. Confirmed 2026-08-03 on challenges-tn:
+// 66.249.65.195-198 each hit hundreds of distinct pages in a systematic
+// ~1:1 page:hit pattern, the classic signature of a real crawl rather than
+// a handful of repeat readers.
 const KNOWN_CRAWLER_RANGES = [
   { cidr: '57.141.0.0/16', note: 'Facebook/Meta (AS32934) - link preview/safety crawler, confirmed 2026-07-30' },
+  { cidr: '66.249.64.0/19', note: 'Google (AS15169) - Googlebot crawl range, confirmed 2026-08-03' },
 ];
 
 function ipToInt(ip) {
