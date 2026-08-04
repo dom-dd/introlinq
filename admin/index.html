@@ -1891,10 +1891,14 @@ function showMoreOutreachTodo() {
 function outreachEmailTemplates(c) {
   const firstName = (c.contact_name || '').trim().split(' ')[0] || 'there';
   const company = (c.company_name || '').trim() || c.title || c.domain;
+  // Routes through /api/r so a click can be attributed back to this
+  // candidate (logged, then redirected to the real homepage) - see
+  // outreachClickIcon for where that shows up.
+  const trackedLink = `https://www.introlinq.com/api/r?id=${c.id}`;
   return {
     intro: {
       subject: `Affiliation proposal - IntroLinq x ${company}`,
-      body: `Hi ${firstName},\n\nI am Dom - founder of Introlinq.com. We are a new company enabling publishers and bloggers to generate a new revenue stream from their content.\nI came across ${company} and think it would be a great fit.\n\nOur widget automatically scans your pages (old and new), matching keywords and topics - and creating affiliate links to bookable, vetted industry experts on our partners sites.\nIf a reader books - within a 90 day cookie period - we split the commission 50/50 with you.\n\nIt's 100% free, no maintenance required, and setup takes a couple of minutes.\n\nHere's the platform: www.introlinq.com\n\nFeel free to register or I'd be happy to send more details or hop on a call if you'd prefer.\nLooking forward to hearing your thoughts.\n\nBest,\nDom`,
+      body: `Hi ${firstName},\n\nI am Dom - founder of Introlinq.com. We are a new company enabling publishers and bloggers to generate a new revenue stream from their content.\nI came across ${company} and think it would be a great fit.\n\nOur widget automatically scans your pages (old and new), matching keywords and topics - and creating affiliate links to bookable, vetted industry experts on our partners sites.\nIf a reader books - within a 90 day cookie period - we split the commission 50/50 with you.\n\nIt's 100% free, no maintenance required, and setup takes a couple of minutes.\n\nHere's the platform: ${trackedLink}\n\nFeel free to register or I'd be happy to send more details or hop on a call if you'd prefer.\nLooking forward to hearing your thoughts.\n\nBest,\nDom`,
     },
     followup1: {
       subject: `Re: Quick idea for ${company}`,
@@ -1907,46 +1911,38 @@ function outreachEmailTemplates(c) {
   };
 }
 
-const OUTREACH_EMAIL_TITLES = { intro: 'Intro email', followup1: 'Follow-up 1', followup2: 'Follow-up 2 (final)' };
+const OUTREACH_EMAIL_TITLES = { intro: 'Intro email', followup1: 'First follow-up', followup2: 'Second follow-up' };
 
-let _oemContactEmail = '';
+// Which stage's button should show, based on where the candidate actually
+// is in the sequence - null once follow-up 2 is sent (or the candidate is
+// resolved), since there's nothing left to send.
+function outreachNextStage(c) {
+  if (c.status === 'discovered') return 'intro';
+  if (c.status === 'emailed') return 'followup1';
+  if (c.status === 'followed_up_1') return 'followup2';
+  return null;
+}
 
-function openOutreachEmailModal(id, stage) {
+function outreachEmailButton(c) {
+  const stage = outreachNextStage(c);
+  if (!stage) return '';
+  return `<button class="btn btn-ghost btn-sm" onclick="openOutreachEmailInGmail(${c.id},'${stage}')">${OUTREACH_EMAIL_TITLES[stage]}</button>`;
+}
+
+// Opens Gmail's compose view directly, pre-filled, in a new tab - no
+// preview step first (that extra click-through added nothing most of the
+// time; edit in Gmail itself before hitting send if something needs
+// changing). Gmail's own compose URL, not mailto: - mailto only works if
+// Chrome has been explicitly granted permission to hand those links to
+// Gmail, a one-time browser setting most people never touch.
+function openOutreachEmailInGmail(id, stage) {
   const c = _outreach.find(x => x.id === id);
   if (!c) return;
   const tpl = outreachEmailTemplates(c)[stage];
-  _oemContactEmail = c.contact_email || '';
-  document.getElementById('oem-title').textContent = `${OUTREACH_EMAIL_TITLES[stage]} - ${c.domain}`;
-  document.getElementById('oem-subject').value = tpl.subject;
-  document.getElementById('oem-body').value = tpl.body;
-  document.getElementById('oem-no-email-hint').style.display = _oemContactEmail ? 'none' : 'block';
-  updateOutreachMailtoLink();
-  document.getElementById('outreach-email-modal').classList.add('open');
-}
-
-function closeOutreachEmailModal() {
-  document.getElementById('outreach-email-modal').classList.remove('open');
-}
-
-// Gmail's own compose URL, not mailto: - mailto only works if Chrome has
-// been explicitly granted permission to hand those links to Gmail (a
-// one-time browser setting most people never touch), which is exactly why
-// "Open in email app" did nothing. This is a normal https:// link that
-// opens Gmail's compose view directly in a new tab, pre-filled - no
-// protocol handler registration needed. Re-run on every edit to the
-// subject/body fields so the link always matches what's on screen.
-function updateOutreachMailtoLink() {
-  const subject = document.getElementById('oem-subject').value;
-  const body = document.getElementById('oem-body').value;
-  const params = new URLSearchParams({ view: 'cm', fs: '1', su: subject, body });
-  if (_oemContactEmail) params.set('to', _oemContactEmail);
-  document.getElementById('oem-mailto').href = `https://mail.google.com/mail/?${params.toString()}`;
-}
-
-function copyOutreachEmailField(fieldId, label) {
-  const el = document.getElementById(fieldId);
-  navigator.clipboard.writeText(el.value);
-  toast(`${label} copied`);
+  const params = new URLSearchParams({ view: 'cm', fs: '1', su: tpl.subject, body: tpl.body });
+  if (c.contact_email) params.set('to', c.contact_email);
+  else toast('No email saved for this contact - opening blank, add the address in Gmail');
+  window.open(`https://mail.google.com/mail/?${params.toString()}`, '_blank');
 }
 
 function outreachActionButton(c) {
@@ -1956,6 +1952,21 @@ function outreachActionButton(c) {
   return '';
 }
 
+// Grey when the tracked link (see outreachEmailTemplates) has never been
+// clicked, green once it has - native title attribute shows every click
+// time on hover rather than building a custom tooltip for it.
+function outreachClickIcon(c) {
+  const times = c.click_times || [];
+  const clicked = times.length > 0;
+  const color = clicked ? '#3d7a5f' : '#c4c4d4';
+  const title = clicked
+    ? `Clicked ${times.length} time${times.length === 1 ? '' : 's'}:\n` + times.map(t => new Date(t).toLocaleString('en-GB')).join('\n')
+    : 'Link not clicked yet';
+  return `<span title="${esc(title)}" style="display:inline-block;vertical-align:middle;margin-left:5px">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+  </span>`;
+}
+
 function outreachRow(c) {
   const title = c.title ? esc(c.title.slice(0, 60)) : '';
   const statusOptions = Object.entries(OUTREACH_STATUS_LABELS)
@@ -1963,7 +1974,7 @@ function outreachRow(c) {
   return `
     <tr>
       <td>
-        <a href="${esc(c.homepage_url)}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:600;font-size:0.8125rem;text-decoration:none">${esc(c.domain)}</a>
+        <a href="${esc(c.homepage_url)}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:600;font-size:0.8125rem;text-decoration:none">${esc(c.domain)}</a>${outreachClickIcon(c)}
         ${title ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px">${title}</div>` : ''}
         <input type="text" value="${esc(c.company_name || c.title || '')}" placeholder="Company name (used in emails)" onblur="outreachSaveCompanyName(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE};margin-top:4px">
       </td>
@@ -1978,13 +1989,7 @@ function outreachRow(c) {
         <input type="date" value="${c.next_followup_at ? c.next_followup_at.slice(0, 10) : ''}" onchange="outreachSetFollowup(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE}">
       </td>
       <td>${outreachActionButton(c)}</td>
-      <td>
-        <div style="display:flex;flex-direction:column;gap:3px">
-          <button class="btn btn-ghost btn-sm" onclick="openOutreachEmailModal(${c.id},'intro')">Intro</button>
-          <button class="btn btn-ghost btn-sm" onclick="openOutreachEmailModal(${c.id},'followup1')">Follow-up 1</button>
-          <button class="btn btn-ghost btn-sm" onclick="openOutreachEmailModal(${c.id},'followup2')">Follow-up 2</button>
-        </div>
-      </td>
+      <td>${outreachEmailButton(c)}</td>
       <td><input type="text" value="${esc(c.outreach_notes || '')}" placeholder="Notes" onblur="outreachSaveNotes(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE};width:100%"></td>
     </tr>
   `;
@@ -2476,32 +2481,6 @@ login();
   </div>
 </div>
 
-<!-- Outreach email preview modal -->
-<div class="modal-overlay" id="outreach-email-modal" onclick="if(event.target===this)closeOutreachEmailModal()">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="oem-title" style="max-height:88vh;width:min(560px,92vw)">
-    <div class="modal-head">
-      <div class="modal-title" id="oem-title">Email</div>
-      <button class="modal-close" onclick="closeOutreachEmailModal()" aria-label="Close">✕</button>
-    </div>
-    <div style="overflow-y:auto">
-      <a id="oem-mailto" href="#" target="_blank" rel="noopener" class="btn btn-primary" style="width:100%;box-sizing:border-box;display:block;text-align:center;text-decoration:none;margin-bottom:0.4rem">Open in Gmail</a>
-      <div id="oem-no-email-hint" style="display:none;font-size:0.7rem;color:var(--ink-muted);text-align:center;margin-bottom:0.75rem">No email saved for this contact yet - it'll open blank, add the address yourself, or fill in their email above first.</div>
-      <div style="font-size:0.7rem;color:var(--ink-muted);text-align:center;margin-bottom:1.25rem">Opens a pre-filled draft in Gmail (new tab) - review before sending. Edit below first if you want to change anything.</div>
-      <div class="form-group" style="margin-bottom:0.875rem">
-        <label class="form-label">Subject</label>
-        <div style="display:flex;gap:0.5rem;margin-top:0.35rem">
-          <input class="form-input" id="oem-subject" style="flex:1" onfocus="this.select()" oninput="updateOutreachMailtoLink()">
-          <button class="btn btn-ghost btn-sm" onclick="copyOutreachEmailField('oem-subject','Subject')">Copy</button>
-        </div>
-      </div>
-      <div class="form-group" style="margin-bottom:1rem">
-        <label class="form-label">Body</label>
-        <textarea id="oem-body" rows="12" class="form-input" style="width:100%;box-sizing:border-box;margin-top:0.35rem;font-family:'Inter',sans-serif;resize:vertical;line-height:1.5" oninput="updateOutreachMailtoLink()"></textarea>
-      </div>
-      <button class="btn btn-ghost" style="width:100%" onclick="copyOutreachEmailField('oem-body','Body')">Or just copy the body</button>
-    </div>
-  </div>
-</div>
 
 <script>
 let _editingGroupId = null;

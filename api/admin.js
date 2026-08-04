@@ -424,6 +424,11 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS followup_2_sent_at TIMESTAMPTZ`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS next_followup_at DATE`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS outreach_notes TEXT`.catch(() => {});
+    await sql`CREATE TABLE IF NOT EXISTS outreach_clicks (
+      id SERIAL PRIMARY KEY,
+      candidate_id INT NOT NULL REFERENCES candidate_publishers(id),
+      clicked_at TIMESTAMPTZ DEFAULT NOW()
+    )`.catch(() => {});
 
     if (req.method === 'PATCH') {
       const { id, action, value } = req.body || {};
@@ -472,11 +477,18 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
+    // click_times aggregates outreach_clicks per candidate - GROUP BY cp.id
+    // alone is valid here since id is candidate_publishers' primary key, so
+    // every other cp.* column is functionally dependent on it (Postgres
+    // allows selecting them un-aggregated under that rule).
     const rows = await sql`
-      SELECT id, domain, homepage_url, title, status, priority_score, contact_name, contact_email, company_name,
-             email_sent_at, followup_1_sent_at, followup_2_sent_at, next_followup_at, outreach_notes, created_at
-      FROM candidate_publishers
-      ORDER BY priority_score DESC NULLS LAST, created_at DESC
+      SELECT cp.id, cp.domain, cp.homepage_url, cp.title, cp.status, cp.priority_score, cp.contact_name, cp.contact_email, cp.company_name,
+             cp.email_sent_at, cp.followup_1_sent_at, cp.followup_2_sent_at, cp.next_followup_at, cp.outreach_notes, cp.created_at,
+             COALESCE(json_agg(oc.clicked_at ORDER BY oc.clicked_at) FILTER (WHERE oc.clicked_at IS NOT NULL), '[]') AS click_times
+      FROM candidate_publishers cp
+      LEFT JOIN outreach_clicks oc ON oc.candidate_id = cp.id
+      GROUP BY cp.id
+      ORDER BY cp.priority_score DESC NULLS LAST, cp.created_at DESC
     `;
     return res.status(200).json(rows);
   }
