@@ -418,6 +418,7 @@ export default async function handler(req, res) {
   if (resource === 'outreach') {
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_name TEXT`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_email TEXT`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS company_name TEXT`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMPTZ`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS followup_1_sent_at TIMESTAMPTZ`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS followup_2_sent_at TIMESTAMPTZ`.catch(() => {});
@@ -461,6 +462,8 @@ export default async function handler(req, res) {
       } else if (action === 'set_contact') {
         const { contact_name, contact_email } = req.body || {};
         await sql`UPDATE candidate_publishers SET contact_name = ${contact_name || null}, contact_email = ${contact_email || null} WHERE id = ${id}`;
+      } else if (action === 'set_company_name') {
+        await sql`UPDATE candidate_publishers SET company_name = ${value || null} WHERE id = ${id}`;
       } else if (action === 'set_notes') {
         await sql`UPDATE candidate_publishers SET outreach_notes = ${value || null} WHERE id = ${id}`;
       } else {
@@ -470,7 +473,7 @@ export default async function handler(req, res) {
     }
 
     const rows = await sql`
-      SELECT id, domain, homepage_url, title, status, priority_score, contact_name, contact_email,
+      SELECT id, domain, homepage_url, title, status, priority_score, contact_name, contact_email, company_name,
              email_sent_at, followup_1_sent_at, followup_2_sent_at, next_followup_at, outreach_notes, created_at
       FROM candidate_publishers
       ORDER BY priority_score DESC NULLS LAST, created_at DESC

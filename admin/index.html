@@ -1890,7 +1890,7 @@ function showMoreOutreachTodo() {
 // full contact_name) reads more naturally in a greeting.
 function outreachEmailTemplates(c) {
   const firstName = (c.contact_name || '').trim().split(' ')[0] || 'there';
-  const company = c.domain;
+  const company = (c.company_name || '').trim() || c.title || c.domain;
   return {
     intro: {
       subject: `Affiliation proposal - IntroLinq x ${company}`,
@@ -1965,6 +1965,7 @@ function outreachRow(c) {
       <td>
         <a href="${esc(c.homepage_url)}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:600;font-size:0.8125rem;text-decoration:none">${esc(c.domain)}</a>
         ${title ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px">${title}</div>` : ''}
+        <input type="text" value="${esc(c.company_name || c.title || '')}" placeholder="Company name (used in emails)" onblur="outreachSaveCompanyName(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE};margin-top:4px">
       </td>
       <td>
         <input type="text" value="${esc(c.contact_name || '')}" placeholder="Name" onblur="outreachSaveContact(${c.id}, this.value, null)" style="${OUTREACH_INPUT_STYLE};margin-bottom:3px">
@@ -2023,6 +2024,12 @@ async function outreachSaveContact(id, name, email) {
   const contact_email = email !== null ? email : (c?.contact_email || '');
   await outreachPatch({ id, action: 'set_contact', contact_name, contact_email });
   if (c) { c.contact_name = contact_name; c.contact_email = contact_email; }
+}
+
+async function outreachSaveCompanyName(id, value) {
+  await outreachPatch({ id, action: 'set_company_name', value });
+  const c = _outreach.find(x => x.id === id);
+  if (c) c.company_name = value;
 }
 
 async function outreachSaveNotes(id, value) {
