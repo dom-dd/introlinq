@@ -69,6 +69,7 @@
     + '.il-chat-send-form input{flex:1;border:1px solid rgba(26,26,46,0.14);border-radius:100px;padding:9px 14px;font-size:0.8125rem;font-family:inherit;outline:none}'
     + '.il-chat-send-form input:focus{border-color:#3d7a5f}'
     + '.il-chat-send-form button{width:34px;height:34px;border-radius:50%;background:#1a1a2e;border:none;color:#fff;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}'
+    + '#il-chat-new-convo{width:100%;height:auto;border-radius:100px;font-weight:600;font-size:0.8125rem;padding:10px}'
     + '.il-chat-send-form button:disabled{opacity:0.5;cursor:default}'
     + '@media(max-width:420px){#il-chat-root{right:12px;bottom:12px}.il-chat-panel,.il-chat-greeting{right:-4px}}';
   var styleEl = document.createElement('style');
@@ -131,7 +132,7 @@
       + '<textarea name="message" placeholder="Ask me anything..." required></textarea>'
       + '<p class="il-chat-error" id="il-chat-gate-error" hidden></p>'
       + '<button type="submit">Send</button>'
-      + '<p class="il-chat-hint">Our team is online and will reply as soon as possible - this chat is answered by a real person, not AI. Feel free to close this window any time - we’ll email your answer to you.</p>'
+      + '<p class="il-chat-hint">Our team is online and will reply as soon as possible - this chat is answered by a real person, not AI. Keep this window open to see the reply.</p>'
       + '</form>';
     document.getElementById('il-chat-gate-form').addEventListener('submit', onGateSubmit);
   }
@@ -237,15 +238,30 @@
       if (r.status === 404) { resetConversation(); return null; }
       return r.json();
     }).then(function (data) {
-      if (!data || !data.messages) return;
-      data.messages.forEach(function (m) {
-        if (renderedIds[m.id]) return;
-        renderedIds[m.id] = true;
-        appendMessage(m.sender, m.body);
-        state.since = m.created_at;
-      });
+      if (!data) return;
+      if (data.messages) {
+        data.messages.forEach(function (m) {
+          if (renderedIds[m.id]) return;
+          renderedIds[m.id] = true;
+          appendMessage(m.sender, m.body);
+          state.since = m.created_at;
+        });
+      }
+      if (data.status === 'closed') showClosedState();
       saveState();
     }).catch(function () {});
+  }
+
+  // Swaps the send form for a "start a new conversation" button once IntroLinq
+  // has ended the thread (replied "/close" in Slack) - keeps polling from
+  // running forever against a conversation nobody's going to reply to again.
+  function showClosedState() {
+    stopPolling();
+    var formEl = document.getElementById('il-chat-send-form');
+    if (!formEl || formEl.dataset.closed) return;
+    formEl.dataset.closed = '1';
+    formEl.innerHTML = '<button type="button" id="il-chat-new-convo">Start a new conversation</button>';
+    document.getElementById('il-chat-new-convo').addEventListener('click', resetConversation);
   }
 
   function startPolling() {

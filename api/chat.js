@@ -1,8 +1,5 @@
 import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
-import { Resend } from 'resend';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 let tableReady = false;
 
@@ -20,6 +17,7 @@ async function ensureTables(sql) {
     created_at TIMESTAMPTZ DEFAULT NOW(),
     last_message_at TIMESTAMPTZ DEFAULT NOW()
   )`;
+  await sql`ALTER TABLE chat_conversations ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'open'`.catch(() => {});
   await sql`CREATE TABLE IF NOT EXISTS chat_messages (
     id SERIAL PRIMARY KEY,
     conversation_id INT NOT NULL REFERENCES chat_conversations(id),
@@ -60,15 +58,6 @@ async function slackPost({ channel, text, thread_ts }) {
     body: JSON.stringify({ channel, text, thread_ts }),
   });
   return res.json();
-}
-
-async function sendReplyEmail(toEmail, toName, replyText) {
-  await resend.emails.send({
-    from: 'IntroLinq <hello@introlinq.com>',
-    to: toEmail,
-    subject: 'Re: your question to IntroLinq',
-    html: replyEmail(toName, replyText),
-  }).catch(() => {});
 }
 
 export default async function handler(req, res) {
@@ -137,7 +126,7 @@ export default async function handler(req, res) {
     const { conversationId, visitorToken, since } = req.query;
     if (!conversationId || !visitorToken) return res.status(400).json({ error: 'Missing fields' });
 
-    const [conv] = await sql`SELECT id FROM chat_conversations WHERE id = ${conversationId} AND visitor_token = ${visitorToken}`;
+    const [conv] = await sql`SELECT id, status FROM chat_conversations WHERE id = ${conversationId} AND visitor_token = ${visitorToken}`;
     if (!conv) return res.status(404).json({ error: 'Conversation not found' });
 
     const sinceDate = since ? new Date(since) : new Date(0);
@@ -146,7 +135,7 @@ export default async function handler(req, res) {
       WHERE conversation_id = ${conv.id} AND created_at > ${sinceDate}
       ORDER BY created_at ASC
     `;
-    return res.status(200).json({ messages });
+    return res.status(200).json({ messages, status: conv.status });
   }
 
   // POST ?action=slack-events&key=... - Slack Events API request URL. `key`
@@ -173,9 +162,15 @@ export default async function handler(req, res) {
         WHERE slack_channel = ${event.channel} AND slack_thread_ts = ${event.thread_ts}
       `;
       if (conv) {
-        await sql`INSERT INTO chat_messages (conversation_id, sender, body) VALUES (${conv.id}, 'agent', ${event.text || ''})`;
-        await sql`UPDATE chat_conversations SET last_message_at = NOW() WHERE id = ${conv.id}`;
-        if (conv.visitor_email) await sendReplyEmail(conv.visitor_email, conv.visitor_name, event.text || '');
+        // Replying with "!close" (optionally followed by a closing note) ends
+        // the conversation from the widget's side - any other reply reopens
+        // it, so there's no separate "reopen" step to remember. Not "/close"
+        // - Slack's client intercepts any leading "/" as a slash-command
+        // attempt and refuses to send it at all inside a thread.
+        const closeMatch = /^!close\b\s*(.*)/is.exec((event.text || '').trim());
+        const finalText = closeMatch ? (closeMatch[1].trim() || "This conversation has ended - feel free to start a new one anytime.") : (event.text || '');
+        await sql`INSERT INTO chat_messages (conversation_id, sender, body) VALUES (${conv.id}, 'agent', ${finalText})`;
+        await sql`UPDATE chat_conversations SET status = ${closeMatch ? 'closed' : 'open'}, last_message_at = NOW() WHERE id = ${conv.id}`;
       }
     }
 
@@ -183,22 +178,4 @@ export default async function handler(req, res) {
   }
 
   return res.status(404).end();
-}
-
-function replyEmail(name, replyText) {
-  const firstName = (name || '').split(' ')[0] || 'there';
-  const safeReply = (replyText || '').replace(/\n/g, '<br>');
-  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#faf8f4;font-family:'Inter',system-ui,sans-serif">
-<div style="max-width:480px;margin:40px auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid rgba(26,26,46,0.08)">
-  <div style="background:#1a1a2e;padding:28px 32px">
-    <div style="font-family:Georgia,serif;font-size:1.25rem;color:#fff">Intro<span style="color:#e6a820">Linq</span></div>
-  </div>
-  <div style="padding:32px">
-    <p style="margin:0 0 8px;font-size:1rem;font-weight:600;color:#1a1a2e">Hi ${firstName},</p>
-    <p style="margin:0 0 20px;font-size:0.875rem;color:#8888a8;line-height:1.6">You asked us something on introlinq.com - here's our reply:</p>
-    <div style="margin:0 0 20px;padding:16px;background:#faf8f4;border-radius:8px;border:1px solid rgba(26,26,46,0.08);font-size:0.9375rem;color:#1a1a2e;line-height:1.6">${safeReply}</div>
-    <p style="margin:0;font-size:0.8125rem;color:#8888a8;line-height:1.6">Just reply to this email if you have a follow-up question.</p>
-  </div>
-</div>
-</body></html>`;
 }
