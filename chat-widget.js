@@ -11,6 +11,8 @@
   var renderedIds = {};
   var pollTimer = null;
   var isPublisher = false;
+  var publisherName = '';
+  var publisherEmail = '';
 
   function loadState() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
@@ -55,6 +57,8 @@
     + '.il-chat-gate button{background:#e6a820;color:#1a1a2e;border:none;border-radius:100px;padding:10px;font-weight:700;font-size:0.8125rem;cursor:pointer;font-family:inherit}'
     + '.il-chat-gate button:disabled{opacity:0.6;cursor:default}'
     + '.il-chat-hint{font-size:0.6875rem;color:#8888a8;line-height:1.5;margin:0}'
+    + '.il-chat-identity{font-size:0.8125rem;color:#1a1a2e;background:#fff;border:1px solid rgba(26,26,46,0.08);border-radius:10px;padding:10px 12px;margin:0}'
+    + '.il-chat-identity span{display:block;font-size:0.75rem;color:#8888a8;margin-top:2px}'
     + '.il-chat-error{font-size:0.75rem;color:#c0392b;margin:0}'
     + '.il-chat-thread{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:8px}'
     + '.il-chat-msg{max-width:80%;padding:8px 12px;border-radius:14px;font-size:0.8125rem;line-height:1.45;white-space:pre-wrap;word-break:break-word}'
@@ -106,7 +110,7 @@
     var online = isOnline();
     bubbleDot.classList.toggle('on', online);
     headerDot.classList.toggle('on', online);
-    statusText.textContent = online ? 'Online now' : 'Away — leave a message';
+    statusText.textContent = online ? 'Online now' : 'Away - leave a message';
   }
   refreshOnlineStatus();
   setInterval(refreshOnlineStatus, 60000);
@@ -119,13 +123,15 @@
   function renderGate() {
     body.innerHTML = ''
       + '<form class="il-chat-gate" id="il-chat-gate-form">'
-      + (isPublisher ? '' : ''
-          + '<input name="name" placeholder="Full name" value="' + escapeAttr(state.name) + '" required>'
-          + '<input name="email" type="email" placeholder="Email address" value="' + escapeAttr(state.email) + '" required>')
+      + (isPublisher
+          ? '<p class="il-chat-identity">Chatting as ' + escapeAttr(publisherName) + '<span>' + escapeAttr(publisherEmail) + '</span></p>'
+          : ''
+            + '<input name="name" placeholder="Full name" value="' + escapeAttr(state.name) + '" required>'
+            + '<input name="email" type="email" placeholder="Email address" value="' + escapeAttr(state.email) + '" required>')
       + '<textarea name="message" placeholder="Ask me anything..." required></textarea>'
       + '<p class="il-chat-error" id="il-chat-gate-error" hidden></p>'
       + '<button type="submit">Send</button>'
-      + '<p class="il-chat-hint">Our team is online and will reply as soon as possible — this chat is answered by a real person, not AI. Feel free to close this window any time — we’ll email your answer to you.</p>'
+      + '<p class="il-chat-hint">Our team is online and will reply as soon as possible - this chat is answered by a real person, not AI. Feel free to close this window any time - we’ll email your answer to you.</p>'
       + '</form>';
     document.getElementById('il-chat-gate-form').addEventListener('submit', onGateSubmit);
   }
@@ -151,7 +157,7 @@
     }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
       .then(function (res) {
         if (!res.ok) {
-          errorEl.textContent = res.data.error || 'Something went wrong — please try again.';
+          errorEl.textContent = res.data.error || 'Something went wrong - please try again.';
           errorEl.hidden = false;
           btn.disabled = false;
           return;
@@ -164,7 +170,7 @@
         startPolling();
       })
       .catch(function () {
-        errorEl.textContent = 'Something went wrong — please try again.';
+        errorEl.textContent = 'Something went wrong - please try again.';
         errorEl.hidden = false;
         btn.disabled = false;
       });
@@ -273,7 +279,13 @@
 
   // ---- init ----
   fetch('/api/auth?action=me', { credentials: 'same-origin' })
-    .then(function (r) { isPublisher = r.ok; })
+    .then(function (r) {
+      isPublisher = r.ok;
+      return r.ok ? r.json() : null;
+    })
+    .then(function (data) {
+      if (data) { publisherName = data.name || ''; publisherEmail = data.email || ''; }
+    })
     .catch(function () {})
     .finally(function () {
       var alreadyGreeted = false;

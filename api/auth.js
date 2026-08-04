@@ -109,16 +109,18 @@ export default async function handler(req, res) {
     return res.redirect(302, `/dashboard?pub=${pub.slug}`);
   }
 
-  // GET ?action=me - return session info (used by dashboard page on load)
+  // GET ?action=me - return session info (used by dashboard page on load,
+  // and by chat-widget.js to show a known-publisher's identity in the chat)
   if (req.method === 'GET' && action === 'me') {
     const sessionToken = getSessionToken(req);
     if (!sessionToken) return res.status(401).json({ error: 'Not authenticated' });
     const [session] = await sql`
-      SELECT publisher_slug, publisher_name FROM sessions
-      WHERE token = ${sessionToken} AND expires_at > NOW()
+      SELECT s.publisher_slug, s.publisher_name, p.email
+      FROM sessions s JOIN publishers p ON p.slug = s.publisher_slug
+      WHERE s.token = ${sessionToken} AND s.expires_at > NOW()
     `;
     if (!session) return res.status(401).json({ error: 'Session expired' });
-    return res.status(200).json({ slug: session.publisher_slug, name: session.publisher_name });
+    return res.status(200).json({ slug: session.publisher_slug, name: session.publisher_name, email: session.email });
   }
 
   // POST ?action=signup - self-service publisher signup
