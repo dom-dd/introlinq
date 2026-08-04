@@ -70,6 +70,16 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .tab-panel{display:none}
 .tab-panel.active{display:block}
 
+/* Outreach sub-tabs - same look as the main tab bar, but scoped to its own
+   classes (not .tab-btn/.tab-panel) so switching the main tabs doesn't also
+   reset which outreach sub-view was showing. */
+.outreach-subtab-bar{display:flex;gap:0;flex-wrap:wrap;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
+.outreach-subtab{padding:0.625rem 1rem;font-size:0.8125rem;font-weight:500;color:var(--ink-muted);border:none;background:none;cursor:pointer;font-family:'Inter',sans-serif;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;white-space:nowrap}
+.outreach-subtab:hover{color:var(--ink)}
+.outreach-subtab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
+.outreach-subpanel{display:none}
+.outreach-subpanel.active{display:block}
+
 /* Log result filter pills */
 .log-filter-bar{display:flex;gap:0.5rem;margin-bottom:1rem}
 .log-filter-btn{padding:0.4rem 0.875rem;font-size:0.8125rem;font-weight:500;color:var(--ink-muted);border:1.5px solid rgba(26,26,46,0.15);background:none;border-radius:100px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
@@ -444,146 +454,170 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 
     <!-- Outreach tab -->
     <div class="tab-panel" id="tab-outreach">
-      <div class="section" style="margin-bottom:1.5rem">
-        <div class="section-header">
-          <div class="section-title" id="outreach-due-title">Due for follow-up</div>
-        </div>
-        <div class="section-body" style="overflow-x:auto">
-          <table style="min-width:1000px">
-            <thead><tr>
-              <th style="width:220px">Blog</th>
-              <th style="width:180px">Contact</th>
-              <th style="width:110px">Status</th>
-              <th style="width:130px">Next follow-up</th>
-              <th style="width:190px">Action</th>
-              <th style="width:150px">Emails</th>
-              <th>Notes</th>
-            </tr></thead>
-            <tbody id="outreach-due-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
-          </table>
+      <div class="outreach-subtab-bar">
+        <button class="outreach-subtab active" onclick="switchOutreachSubtab('due',this)">Due for follow-up</button>
+        <button class="outreach-subtab" onclick="switchOutreachSubtab('waiting',this)">To follow up</button>
+        <button class="outreach-subtab" onclick="switchOutreachSubtab('later',this)">To contact later</button>
+        <button class="outreach-subtab" onclick="switchOutreachSubtab('important',this)">Important</button>
+        <button class="outreach-subtab" onclick="switchOutreachSubtab('partner',this)">Potential partners</button>
+        <button class="outreach-subtab" onclick="switchOutreachSubtab('todo',this)">Not yet contacted</button>
+        <button class="outreach-subtab" onclick="switchOutreachSubtab('closed',this)">Closed</button>
+      </div>
+
+      <div class="outreach-subpanel active" id="outreach-sub-due">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-due-title">Due for follow-up</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:110px">Status</th>
+                <th style="width:130px">Next follow-up</th>
+                <th style="width:190px">Action</th>
+                <th style="width:150px">Emails</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-due-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      <div class="section" style="margin-bottom:1.5rem">
-        <div class="section-header">
-          <div class="section-title" id="outreach-later-title">To contact later</div>
-        </div>
-        <div class="section-body" style="overflow-x:auto">
-          <table style="min-width:1000px">
-            <thead><tr>
-              <th style="width:220px">Blog</th>
-              <th style="width:180px">Contact</th>
-              <th style="width:110px">Status</th>
-              <th style="width:130px">Next follow-up</th>
-              <th style="width:190px">Action</th>
-              <th style="width:150px">Emails</th>
-              <th>Notes</th>
-            </tr></thead>
-            <tbody id="outreach-later-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="section" style="margin-bottom:1.5rem">
-        <div class="section-header">
-          <div class="section-title" id="outreach-important-title">Important</div>
-        </div>
-        <div class="section-body" style="overflow-x:auto">
-          <table style="min-width:1000px">
-            <thead><tr>
-              <th style="width:220px">Blog</th>
-              <th style="width:180px">Contact</th>
-              <th style="width:110px">Status</th>
-              <th style="width:130px">Next follow-up</th>
-              <th style="width:190px">Action</th>
-              <th style="width:150px">Emails</th>
-              <th>Notes</th>
-            </tr></thead>
-            <tbody id="outreach-important-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
-          </table>
+      <div class="outreach-subpanel" id="outreach-sub-waiting">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-waiting-title">To follow up</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:110px">Status</th>
+                <th style="width:130px">Next follow-up</th>
+                <th style="width:190px">Action</th>
+                <th style="width:150px">Emails</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-waiting-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      <div class="section" style="margin-bottom:1.5rem">
-        <div class="section-header">
-          <div class="section-title" id="outreach-partner-title">Potential partners</div>
-        </div>
-        <div class="section-body" style="overflow-x:auto">
-          <table style="min-width:1000px">
-            <thead><tr>
-              <th style="width:220px">Blog</th>
-              <th style="width:180px">Contact</th>
-              <th style="width:110px">Status</th>
-              <th style="width:130px">Next follow-up</th>
-              <th style="width:190px">Action</th>
-              <th style="width:150px">Emails</th>
-              <th>Notes</th>
-            </tr></thead>
-            <tbody id="outreach-partner-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="section" style="margin-bottom:1.5rem">
-        <div class="section-header">
-          <div class="section-title" id="outreach-todo-title">Not yet contacted</div>
-        </div>
-        <div class="section-body" style="overflow-x:auto">
-          <table style="min-width:1000px">
-            <thead><tr>
-              <th style="width:220px">Blog</th>
-              <th style="width:180px">Contact</th>
-              <th style="width:110px">Status</th>
-              <th style="width:130px">Next follow-up</th>
-              <th style="width:190px">Action</th>
-              <th style="width:150px">Emails</th>
-              <th>Notes</th>
-            </tr></thead>
-            <tbody id="outreach-todo-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
-          </table>
-        </div>
-        <div style="padding:0.75rem 1.25rem;border-top:1px solid var(--border)">
-          <button class="btn btn-ghost btn-sm" id="outreach-todo-more" onclick="showMoreOutreachTodo()" style="display:none">Show more</button>
+      <div class="outreach-subpanel" id="outreach-sub-later">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-later-title">To contact later</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:110px">Status</th>
+                <th style="width:130px">Next follow-up</th>
+                <th style="width:190px">Action</th>
+                <th style="width:150px">Emails</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-later-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      <div class="section" style="margin-bottom:1.5rem">
-        <div class="section-header">
-          <div class="section-title" id="outreach-waiting-title">Waiting (contacted, not due yet)</div>
-        </div>
-        <div class="section-body" style="overflow-x:auto">
-          <table style="min-width:1000px">
-            <thead><tr>
-              <th style="width:220px">Blog</th>
-              <th style="width:180px">Contact</th>
-              <th style="width:110px">Status</th>
-              <th style="width:130px">Next follow-up</th>
-              <th style="width:190px">Action</th>
-              <th style="width:150px">Emails</th>
-              <th>Notes</th>
-            </tr></thead>
-            <tbody id="outreach-waiting-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
-          </table>
+      <div class="outreach-subpanel" id="outreach-sub-important">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-important-title">Important</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:110px">Status</th>
+                <th style="width:130px">Next follow-up</th>
+                <th style="width:190px">Action</th>
+                <th style="width:150px">Emails</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-important-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title" id="outreach-closed-title">Closed</div>
+      <div class="outreach-subpanel" id="outreach-sub-partner">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-partner-title">Potential partners</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:110px">Status</th>
+                <th style="width:130px">Next follow-up</th>
+                <th style="width:190px">Action</th>
+                <th style="width:150px">Emails</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-partner-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
+            </table>
+          </div>
         </div>
-        <div class="section-body" style="overflow-x:auto">
-          <table style="min-width:1000px">
-            <thead><tr>
-              <th style="width:220px">Blog</th>
-              <th style="width:180px">Contact</th>
-              <th style="width:110px">Status</th>
-              <th style="width:130px">Next follow-up</th>
-              <th style="width:190px">Action</th>
-              <th style="width:150px">Emails</th>
-              <th>Notes</th>
-            </tr></thead>
-            <tbody id="outreach-closed-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
-          </table>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-todo">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-todo-title">Not yet contacted</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:110px">Status</th>
+                <th style="width:130px">Next follow-up</th>
+                <th style="width:190px">Action</th>
+                <th style="width:150px">Emails</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-todo-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
+            </table>
+          </div>
+          <div style="padding:0.75rem 1.25rem;border-top:1px solid var(--border)">
+            <button class="btn btn-ghost btn-sm" id="outreach-todo-more" onclick="showMoreOutreachTodo()" style="display:none">Show more</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-closed">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-closed-title">Closed</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:110px">Status</th>
+                <th style="width:130px">Next follow-up</th>
+                <th style="width:190px">Action</th>
+                <th style="width:150px">Emails</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-closed-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -1931,7 +1965,7 @@ function renderOutreach() {
   document.getElementById('outreach-important-title').textContent = `Important (${buckets.important.length})`;
   document.getElementById('outreach-partner-title').textContent = `Potential partners (${buckets.partner.length})`;
   document.getElementById('outreach-todo-title').textContent = `Not yet contacted (${buckets.todo.length})`;
-  document.getElementById('outreach-waiting-title').textContent = `Waiting - contacted, not due yet (${buckets.waiting.length})`;
+  document.getElementById('outreach-waiting-title').textContent = `To follow up (${buckets.waiting.length})`;
   document.getElementById('outreach-closed-title').textContent = `Closed (${buckets.closed.length})`;
 
   document.getElementById('outreach-due-tbody').innerHTML = buckets.due.length
@@ -1961,6 +1995,16 @@ function renderOutreach() {
 function showMoreOutreachTodo() {
   _outreachTodoLimit += 30;
   renderOutreach();
+}
+
+// All buckets load and render together (see renderOutreach) regardless of
+// which one is showing - this only toggles visibility, so switching
+// sub-tabs never re-fetches anything.
+function switchOutreachSubtab(name, btn) {
+  document.querySelectorAll('.outreach-subtab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.outreach-subpanel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('outreach-sub-' + name).classList.add('active');
 }
 
 // Deliberately no signature baked in here. Gmail's compose URL only
