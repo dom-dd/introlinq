@@ -450,7 +450,7 @@ export default async function handler(req, res) {
       } else if (action === 'set_next_followup') {
         await sql`UPDATE candidate_publishers SET next_followup_at = ${value || null} WHERE id = ${id}`;
       } else if (action === 'set_status') {
-        const allowed = ['discovered', 'emailed', 'followed_up_1', 'followed_up_2', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
+        const allowed = ['discovered', 'emailed', 'followed_up_1', 'followed_up_2', 'important', 'contact_later', 'partner', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
         if (!allowed.includes(value)) return res.status(400).json({ error: 'invalid status' });
         // A resolved outcome means no further action is expected - clearing
         // next_followup_at drops the row out of the "due" section instead of

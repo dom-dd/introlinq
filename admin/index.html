@@ -466,6 +466,66 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 
       <div class="section" style="margin-bottom:1.5rem">
         <div class="section-header">
+          <div class="section-title" id="outreach-later-title">To contact later</div>
+        </div>
+        <div class="section-body" style="overflow-x:auto">
+          <table style="min-width:1000px">
+            <thead><tr>
+              <th style="width:220px">Blog</th>
+              <th style="width:180px">Contact</th>
+              <th style="width:110px">Status</th>
+              <th style="width:130px">Next follow-up</th>
+              <th style="width:190px">Action</th>
+              <th style="width:150px">Emails</th>
+              <th>Notes</th>
+            </tr></thead>
+            <tbody id="outreach-later-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section" style="margin-bottom:1.5rem">
+        <div class="section-header">
+          <div class="section-title" id="outreach-important-title">Important</div>
+        </div>
+        <div class="section-body" style="overflow-x:auto">
+          <table style="min-width:1000px">
+            <thead><tr>
+              <th style="width:220px">Blog</th>
+              <th style="width:180px">Contact</th>
+              <th style="width:110px">Status</th>
+              <th style="width:130px">Next follow-up</th>
+              <th style="width:190px">Action</th>
+              <th style="width:150px">Emails</th>
+              <th>Notes</th>
+            </tr></thead>
+            <tbody id="outreach-important-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section" style="margin-bottom:1.5rem">
+        <div class="section-header">
+          <div class="section-title" id="outreach-partner-title">Potential partners</div>
+        </div>
+        <div class="section-body" style="overflow-x:auto">
+          <table style="min-width:1000px">
+            <thead><tr>
+              <th style="width:220px">Blog</th>
+              <th style="width:180px">Contact</th>
+              <th style="width:110px">Status</th>
+              <th style="width:130px">Next follow-up</th>
+              <th style="width:190px">Action</th>
+              <th style="width:150px">Emails</th>
+              <th>Notes</th>
+            </tr></thead>
+            <tbody id="outreach-partner-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section" style="margin-bottom:1.5rem">
+        <div class="section-header">
           <div class="section-title" id="outreach-todo-title">Not yet contacted</div>
         </div>
         <div class="section-body" style="overflow-x:auto">
@@ -1802,6 +1862,9 @@ const OUTREACH_STATUS_LABELS = {
   emailed: 'Emailed',
   followed_up_1: 'Follow-up 1 sent',
   followed_up_2: 'Follow-up 2 sent',
+  important: 'Important',
+  contact_later: 'Contact later',
+  partner: 'Potential partner',
   replied_interested: 'Interested',
   replied_not_interested: 'Not interested (replied)',
   signed_up: 'Signed up',
@@ -1812,6 +1875,9 @@ const OUTREACH_STATUS_COLORS = {
   emailed: '#4f6ef7',
   followed_up_1: '#4f6ef7',
   followed_up_2: '#4f6ef7',
+  important: '#e6a820',
+  contact_later: '#4f6ef7',
+  partner: '#8b5cf6',
   replied_interested: 'var(--sage)',
   signed_up: 'var(--sage)',
   replied_not_interested: 'var(--red, #dc2626)',
@@ -1826,21 +1892,32 @@ async function loadOutreach() {
 }
 
 // Single classification pass so "due" (has a follow-up date that's arrived)
-// always wins over "not yet contacted" or "waiting" - a row only ever
-// belongs to exactly one section at a time.
+// always wins over everything else, including important/contact_later - a
+// row only ever belongs to exactly one section at a time. That means a
+// contact_later lead with a date automatically graduates into "due" the
+// moment that date arrives, with no separate handling needed here; while
+// its date is still in the future (or unset), it rests in "later" instead
+// of getting lumped into the generic "waiting on a reply" bucket, which
+// means something different (already emailed, no reply yet).
 function outreachBucket(c, today) {
   if (OUTREACH_RESOLVED.includes(c.status)) return 'closed';
   if (c.next_followup_at && c.next_followup_at.slice(0, 10) <= today) return 'due';
+  if (c.status === 'important') return 'important';
+  if (c.status === 'contact_later') return 'later';
+  if (c.status === 'partner') return 'partner';
   if (c.status === 'discovered') return 'todo';
   return 'waiting';
 }
 
 function renderOutreach() {
   const today = new Date().toISOString().slice(0, 10);
-  const buckets = { due: [], todo: [], waiting: [], closed: [] };
+  const buckets = { due: [], later: [], important: [], partner: [], todo: [], waiting: [], closed: [] };
   for (const c of _outreach) buckets[outreachBucket(c, today)].push(c);
 
   buckets.due.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
+  buckets.later.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
+  buckets.important.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.partner.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   // priority_score is unpopulated until the (separate, manual) classify
   // step runs - falls back to newest-discovered-first so the list is still
   // usably ordered in the meantime, and starts respecting real scores the
@@ -1850,12 +1927,24 @@ function renderOutreach() {
   buckets.closed.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   document.getElementById('outreach-due-title').textContent = `Due for follow-up (${buckets.due.length})`;
+  document.getElementById('outreach-later-title').textContent = `To contact later (${buckets.later.length})`;
+  document.getElementById('outreach-important-title').textContent = `Important (${buckets.important.length})`;
+  document.getElementById('outreach-partner-title').textContent = `Potential partners (${buckets.partner.length})`;
   document.getElementById('outreach-todo-title').textContent = `Not yet contacted (${buckets.todo.length})`;
   document.getElementById('outreach-waiting-title').textContent = `Waiting - contacted, not due yet (${buckets.waiting.length})`;
   document.getElementById('outreach-closed-title').textContent = `Closed (${buckets.closed.length})`;
 
   document.getElementById('outreach-due-tbody').innerHTML = buckets.due.length
     ? buckets.due.map(outreachRow).join('') : '<tr><td colspan="7" class="empty">Nothing due right now.</td></tr>';
+
+  document.getElementById('outreach-later-tbody').innerHTML = buckets.later.length
+    ? buckets.later.map(outreachRow).join('') : '<tr><td colspan="7" class="empty">Nothing parked for later.</td></tr>';
+
+  document.getElementById('outreach-important-tbody').innerHTML = buckets.important.length
+    ? buckets.important.map(outreachRow).join('') : '<tr><td colspan="7" class="empty">Nothing flagged as important.</td></tr>';
+
+  document.getElementById('outreach-partner-tbody').innerHTML = buckets.partner.length
+    ? buckets.partner.map(outreachRow).join('') : '<tr><td colspan="7" class="empty">No potential partners flagged yet.</td></tr>';
 
   const todoShown = buckets.todo.slice(0, _outreachTodoLimit);
   document.getElementById('outreach-todo-tbody').innerHTML = todoShown.length
