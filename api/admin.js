@@ -430,6 +430,35 @@ export default async function handler(req, res) {
       clicked_at TIMESTAMPTZ DEFAULT NOW()
     )`.catch(() => {});
 
+    const ALLOWED_STATUSES = ['discovered', 'emailed', 'followed_up_1', 'followed_up_2', 'important', 'contact_later', 'partner', 'openintro_partner', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
+
+    // Manually-added leads (the "Create a lead" button) - bypasses the
+    // SerpAPI discovery pipeline entirely, for a company Dom already knows
+    // about. discovery_source distinguishes these from the normal
+    // 'serpapi' default so it's visible in the data which leads came from
+    // where.
+    if (req.method === 'POST') {
+      const { domain, company_name, contact_name, contact_email, status, next_followup_at, outreach_notes } = req.body || {};
+      const cleanDomain = (domain || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+      if (!cleanDomain) return res.status(400).json({ error: 'Domain is required' });
+
+      const initialStatus = ALLOWED_STATUSES.includes(status) ? status : 'discovered';
+
+      try {
+        const [row] = await sql`
+          INSERT INTO candidate_publishers (domain, homepage_url, company_name, contact_name, contact_email, status, next_followup_at, outreach_notes, discovery_source)
+          VALUES (${cleanDomain}, ${'https://' + cleanDomain}, ${company_name || null}, ${contact_name || null}, ${contact_email || null}, ${initialStatus}, ${next_followup_at || null}, ${outreach_notes || null}, 'manual')
+          RETURNING id
+        `;
+        return res.status(201).json({ ok: true, id: row.id });
+      } catch (err) {
+        if (String(err.message || '').includes('duplicate key')) {
+          return res.status(409).json({ error: 'A lead with this domain already exists' });
+        }
+        throw err;
+      }
+    }
+
     if (req.method === 'PATCH') {
       const { id, action, value } = req.body || {};
       if (!id || !action) return res.status(400).json({ error: 'id and action required' });
@@ -450,8 +479,7 @@ export default async function handler(req, res) {
       } else if (action === 'set_next_followup') {
         await sql`UPDATE candidate_publishers SET next_followup_at = ${value || null} WHERE id = ${id}`;
       } else if (action === 'set_status') {
-        const allowed = ['discovered', 'emailed', 'followed_up_1', 'followed_up_2', 'important', 'contact_later', 'partner', 'openintro_partner', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
-        if (!allowed.includes(value)) return res.status(400).json({ error: 'invalid status' });
+        if (!ALLOWED_STATUSES.includes(value)) return res.status(400).json({ error: 'invalid status' });
         // A resolved outcome means no further action is expected - clearing
         // next_followup_at drops the row out of the "due" section instead of
         // it going stale and looking overdue. not_a_fit is a screening

@@ -73,7 +73,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 /* Outreach sub-tabs - same look as the main tab bar, but scoped to its own
    classes (not .tab-btn/.tab-panel) so switching the main tabs doesn't also
    reset which outreach sub-view was showing. */
-.outreach-subtab-bar{display:flex;gap:0;flex-wrap:wrap;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
+.outreach-subtab-bar{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
 .outreach-subtab{padding:0.625rem 1rem;font-size:0.8125rem;font-weight:500;color:var(--ink-muted);border:none;background:none;cursor:pointer;font-family:'Inter',sans-serif;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;white-space:nowrap}
 .outreach-subtab:hover{color:var(--ink)}
 .outreach-subtab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
@@ -455,14 +455,17 @@ tr:hover td{background:rgba(0,0,0,0.01)}
     <!-- Outreach tab -->
     <div class="tab-panel" id="tab-outreach">
       <div class="outreach-subtab-bar">
-        <button class="outreach-subtab active" onclick="switchOutreachSubtab('due',this)">Due for follow-up</button>
-        <button class="outreach-subtab" onclick="switchOutreachSubtab('waiting',this)">To follow up</button>
-        <button class="outreach-subtab" onclick="switchOutreachSubtab('later',this)">To contact later</button>
-        <button class="outreach-subtab" onclick="switchOutreachSubtab('important',this)">Important</button>
-        <button class="outreach-subtab" onclick="switchOutreachSubtab('partner',this)">Potential partners</button>
-        <button class="outreach-subtab" onclick="switchOutreachSubtab('todo',this)">Not yet contacted</button>
-        <button class="outreach-subtab" onclick="switchOutreachSubtab('closed',this)">Closed</button>
-        <button class="outreach-subtab" onclick="switchOutreachSubtab('openintro',this)">Potential OpenIntro partner</button>
+        <div style="display:flex;flex-wrap:wrap">
+          <button class="outreach-subtab active" data-name="due" onclick="switchOutreachSubtab('due',this)">Due for follow-up</button>
+          <button class="outreach-subtab" data-name="waiting" onclick="switchOutreachSubtab('waiting',this)">To follow up</button>
+          <button class="outreach-subtab" data-name="later" onclick="switchOutreachSubtab('later',this)">To contact later</button>
+          <button class="outreach-subtab" data-name="important" onclick="switchOutreachSubtab('important',this)">Important</button>
+          <button class="outreach-subtab" data-name="partner" onclick="switchOutreachSubtab('partner',this)">Potential partners</button>
+          <button class="outreach-subtab" data-name="todo" onclick="switchOutreachSubtab('todo',this)">Not yet contacted</button>
+          <button class="outreach-subtab" data-name="closed" onclick="switchOutreachSubtab('closed',this)">Closed</button>
+          <button class="outreach-subtab" data-name="openintro" onclick="switchOutreachSubtab('openintro',this)">Potential OpenIntro partner</button>
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin:0.4rem 0" onclick="openCreateLeadModal()">+ Create a lead</button>
       </div>
 
       <div class="outreach-subpanel active" id="outreach-sub-due">
@@ -641,6 +644,55 @@ tr:hover td{background:rgba(0,0,0,0.01)}
               <tbody id="outreach-openintro-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
             </table>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create a lead modal -->
+    <div class="modal-overlay" id="create-lead-modal" onclick="if(event.target===this)closeCreateLeadModal()">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cl-title">
+        <div class="modal-head">
+          <div class="modal-title" id="cl-title">Create a lead</div>
+          <button class="modal-close" onclick="closeCreateLeadModal()" aria-label="Close">✕</button>
+        </div>
+        <div style="overflow-y:auto">
+          <div class="form-group" style="margin-bottom:0.875rem">
+            <label class="form-label">Domain *</label>
+            <input class="form-input" id="cl-domain" placeholder="example.com">
+          </div>
+          <div class="form-group" style="margin-bottom:0.875rem">
+            <label class="form-label">Company name</label>
+            <input class="form-input" id="cl-company">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Contact name</label>
+              <input class="form-input" id="cl-contact-name">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Contact email</label>
+              <input class="form-input" id="cl-contact-email" type="email">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Status</label>
+              <select class="form-input" id="cl-status"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Next follow-up (optional)</label>
+              <input class="form-input" id="cl-followup" type="date">
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0.875rem">
+            <label class="form-label">Notes</label>
+            <input class="form-input" id="cl-notes">
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="submitCreateLead()">Create lead</button>
+            <button class="btn btn-ghost" onclick="closeCreateLeadModal()">Cancel</button>
+          </div>
+          <div id="cl-error" style="font-size:0.8125rem;color:var(--red, #dc2626);margin-top:0.75rem;display:none"></div>
         </div>
       </div>
     </div>
@@ -2036,6 +2088,74 @@ function switchOutreachSubtab(name, btn) {
   document.querySelectorAll('.outreach-subpanel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('outreach-sub-' + name).classList.add('active');
+}
+
+function openCreateLeadModal() {
+  document.getElementById('cl-domain').value = '';
+  document.getElementById('cl-company').value = '';
+  document.getElementById('cl-contact-name').value = '';
+  document.getElementById('cl-contact-email').value = '';
+  document.getElementById('cl-followup').value = '';
+  document.getElementById('cl-notes').value = '';
+  document.getElementById('cl-error').style.display = 'none';
+
+  const statusSelect = document.getElementById('cl-status');
+  statusSelect.innerHTML = Object.entries(OUTREACH_STATUS_LABELS)
+    .map(([v, label]) => `<option value="${v}" ${v === 'discovered' ? 'selected' : ''}>${esc(label)}</option>`).join('');
+
+  document.getElementById('create-lead-modal').classList.add('open');
+  document.getElementById('cl-domain').focus();
+}
+
+function closeCreateLeadModal() {
+  document.getElementById('create-lead-modal').classList.remove('open');
+}
+
+async function submitCreateLead() {
+  const domain = document.getElementById('cl-domain').value.trim();
+  const errorEl = document.getElementById('cl-error');
+  errorEl.style.display = 'none';
+  if (!domain) {
+    errorEl.textContent = 'Domain is required.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const status = document.getElementById('cl-status').value;
+  const next_followup_at = document.getElementById('cl-followup').value || null;
+  const body = {
+    domain,
+    company_name: document.getElementById('cl-company').value.trim() || null,
+    contact_name: document.getElementById('cl-contact-name').value.trim() || null,
+    contact_email: document.getElementById('cl-contact-email').value.trim() || null,
+    status,
+    next_followup_at,
+    outreach_notes: document.getElementById('cl-notes').value.trim() || null,
+  };
+
+  const res = await fetch('/api/admin?resource=outreach', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    errorEl.textContent = data.error || 'Something went wrong - please try again.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  closeCreateLeadModal();
+  await loadOutreach();
+
+  // Jump straight to whichever sub-tab the new lead actually landed in, so
+  // it's immediately visible rather than possibly sitting off-screen in a
+  // section you're not currently looking at.
+  const today = new Date().toISOString().slice(0, 10);
+  const bucket = outreachBucket({ status, next_followup_at }, today);
+  const btn = document.querySelector(`.outreach-subtab[data-name="${bucket}"]`);
+  if (btn) switchOutreachSubtab(bucket, btn);
 }
 
 // Deliberately no signature baked in here. Gmail's compose URL only
