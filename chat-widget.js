@@ -198,6 +198,17 @@
     thread.scrollTop = thread.scrollHeight;
   }
 
+  // A conversation ID saved in localStorage can go stale (deleted server-side,
+  // or from a previous test) - without this, poll/message would just fail
+  // silently forever with no way for the visitor to recover. Reset back to
+  // the gate instead, keeping any remembered name/email.
+  function resetConversation() {
+    stopPolling();
+    state = { name: state.name, email: state.email };
+    saveState();
+    if (!panel.hidden) renderGate();
+  }
+
   function onThreadSubmit(e) {
     e.preventDefault();
     var form = e.target;
@@ -211,8 +222,10 @@
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ conversationId: state.conversationId, visitorToken: state.visitorToken, message: text }),
-    }).then(function () { fetchMessages(); })
-      .finally(function () { btn.disabled = false; });
+    }).then(function (r) {
+      if (r.status === 404) { resetConversation(); return; }
+      fetchMessages();
+    }).finally(function () { btn.disabled = false; });
   }
 
   function fetchMessages() {
@@ -220,8 +233,11 @@
     var qs = 'action=poll&conversationId=' + encodeURIComponent(state.conversationId)
       + '&visitorToken=' + encodeURIComponent(state.visitorToken)
       + (state.since ? '&since=' + encodeURIComponent(state.since) : '');
-    fetch('/api/chat?' + qs).then(function (r) { return r.json(); }).then(function (data) {
-      if (!data.messages) return;
+    fetch('/api/chat?' + qs).then(function (r) {
+      if (r.status === 404) { resetConversation(); return null; }
+      return r.json();
+    }).then(function (data) {
+      if (!data || !data.messages) return;
       data.messages.forEach(function (m) {
         if (renderedIds[m.id]) return;
         renderedIds[m.id] = true;
