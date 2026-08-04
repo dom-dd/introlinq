@@ -430,7 +430,7 @@ export default async function handler(req, res) {
       clicked_at TIMESTAMPTZ DEFAULT NOW()
     )`.catch(() => {});
 
-    const ALLOWED_STATUSES = ['discovered', 'emailed', 'followed_up_1', 'followed_up_2', 'important', 'contact_later', 'partner', 'openintro_partner', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
+    const ALLOWED_STATUSES = ['discovered', 'emailed', 'followed_up_1', 'followed_up_2', 'important', 'contact_later', 'partner', 'openintro_partner', 'products_partner', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
 
     // Manually-added leads (the "Create a lead" button) - bypasses the
     // SerpAPI discovery pipeline entirely, for a company Dom already knows
