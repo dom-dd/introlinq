@@ -1,5 +1,5 @@
 ﻿import { neon } from '@neondatabase/serverless';
-import { getClientIp, isBurstTraffic, isSitewideBurst, isKnownCrawlerIp, ensureBotColumns, isAllowlistedCrawler } from './_botDetect.js';
+import { getClientIp, isBurstTraffic, isSitewideBurst, isKnownCrawlerIp, isBotHit, ensureBotColumns, isAllowlistedCrawler } from './_botDetect.js';
 
 // match_cache is global per page now, not per reader country - country
 // fragmentation (every new country paying for its own fresh scan) turned
@@ -359,7 +359,7 @@ function widgetLiveEmail(firstName) {
 // single fire-and-forget INSERT. markPublisherActivity/Slack stay
 // fire-and-forget - only the row this feature's correctness depends on
 // needs to reliably land.
-async function logCachedImpression(sql, { publisher, page_url, page_title, matches, readerCountry, ip }) {
+async function logCachedImpression(sql, { publisher, page_url, page_title, matches, readerCountry, ip, req }) {
   const phrases = matches.map(m => m.phrase);
   const expertNames = matches.map(m => m.expert?.name).filter(Boolean);
   const expertBookingUrls = matches.map(m => m.expert?.booking_url || null);
@@ -368,15 +368,13 @@ async function logCachedImpression(sql, { publisher, page_url, page_title, match
     matchLogsBotColumnsReady = true;
   }
   // Same full bot-detection stack as dashboard.js's click/hover/seen/carousel
-  // handlers (isKnownCrawlerIp + isSitewideBurst, not just isBurstTraffic) -
-  // this was the one place still missing them, which meant a crawler
-  // spreading across many different pages once each (Meta's exact pattern
-  // on tchelete - see isKnownCrawlerIp's own comment) sailed through
-  // untagged into match_logs, inflating Page visits/Expert shown for the
-  // publishers it hit hardest even after click_logs was fixed.
-  const isBot = isKnownCrawlerIp(ip)
-    || (await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url }))
-    || (await isSitewideBurst(sql, 'match_logs', { ip, publisher }));
+  // handlers (isKnownCrawlerIp + isAllowlistedCrawler + isSitewideBurst, not
+  // just isBurstTraffic) - this was the one place still missing them, which
+  // meant a crawler spreading across many different pages once each (Meta's
+  // exact pattern on tchelete - see isKnownCrawlerIp's own comment) sailed
+  // through untagged into match_logs, inflating Page visits/Expert shown for
+  // the publishers it hit hardest even after click_logs was fixed.
+  const isBot = await isBotHit(req, sql, 'match_logs', { ip, publisher, page_url });
   await sql`INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, country_code, cost_usd, ip, is_bot)
     VALUES (${publisher || null}, '[cached]', ${phrases}, ${expertNames}, ${expertBookingUrls}, ${matches.length}, ${page_url}, ${readerCountry || null}, 0, ${ip || null}, ${isBot})
   `.catch(() => {});
@@ -392,7 +390,7 @@ async function logCachedImpression(sql, { publisher, page_url, page_title, match
 // and returns true on success; returns false (sending nothing) when the
 // cache row turned out to be unusable, so the caller falls through to a
 // real scan rather than serving a false empty result.
-async function tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig, stale }) {
+async function tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig, stale, req }) {
   const referencedExperts = await loadExpertsByIds(sql, collectReferencedIds(cached.result.matches));
   if (!referencedExperts) return false;
   const hydrated = hydrateMatches(cached.result.matches, referencedExperts, enabledPartners);
@@ -402,7 +400,7 @@ async function tryServeFromCache(res, sql, { cached, enabledPartners, publisher,
   // always logs - no per-piece dedup guard needed anymore. Awaited so the log
   // write reliably lands - see the comment on logCachedImpression for why
   // that matters more than it used to.
-  await logCachedImpression(sql, { publisher, page_url, page_title, matches: hydrated, readerCountry, ip });
+  await logCachedImpression(sql, { publisher, page_url, page_title, matches: hydrated, readerCountry, ip, req });
   res.status(200).json({ matches: hydrated, config: pubConfig, cached: true, ...(stale ? { stale: true } : {}) });
   return true;
 }
@@ -858,9 +856,7 @@ async function handleReport(req, res) {
       await ensureBotColumns(sql, 'match_logs');
       matchLogsBotColumnsReady = true;
     }
-    const isBot = isKnownCrawlerIp(ip)
-      || (await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url }))
-      || (await isSitewideBurst(sql, 'match_logs', { ip, publisher }));
+    const isBot = await isBotHit(req, sql, 'match_logs', { ip, publisher, page_url });
 
     await sql`
       INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, country_code, cost_usd, ip, is_bot)
@@ -1050,7 +1046,7 @@ export default async function handler(req, res) {
       // "zero experts") or the cached answer no longer has any surviving
       // experts - fall through to the fresh-scan path below rather than
       // serving a false empty result.
-      if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig })) return;
+      if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig, req })) return;
     }
 
     // A cached answer exists but looks stale (hash drifted) AND this exact
@@ -1068,7 +1064,7 @@ export default async function handler(req, res) {
     if (cached && contentChanged && !isAllowlistedCrawler(req)) {
       const isBot = isKnownCrawlerIp(ip) || (await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url }));
       if (isBot) {
-        if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig, stale: true })) return;
+        if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig, stale: true, req })) return;
       }
     }
 
@@ -1373,9 +1369,7 @@ Return only valid JSON, no other text:
       // tryServeFromCache path, same as always. Slack still gets the same
       // "a scan just happened" visibility it always has, gated by the same
       // bot check as every other fresh-scan notification.
-      const isBot = isKnownCrawlerIp(ip)
-        || (await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url }))
-        || (await isSitewideBurst(sql, 'match_logs', { ip, publisher }));
+      const isBot = await isBotHit(req, sql, 'match_logs', { ip, publisher, page_url });
       if (!isBot) {
         await postSlackNotification(sql, { publisher, page_url, page_title, matchCount: enriched.length, readerCountry, cached: false, costUsd });
       }

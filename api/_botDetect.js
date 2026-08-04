@@ -127,6 +127,23 @@ export async function isSitewideBurst(sql, table, { ip, publisher }) {
   return (rows[0]?.n || 0) >= SITEWIDE_THRESHOLD;
 }
 
+// Single source of truth for "should this row count as a bot" - combines
+// every signal (known-crawler IP range, known-crawler User-Agent, same-page
+// burst, sitewide burst) so a signal added to one call site is never
+// accidentally missing from another. isAllowlistedCrawler was previously
+// wired only into the stale-cache-serve decision in match.js, never into
+// any is_bot tagging - which meant Googlebot/Bingbot/GPTBot/etc traffic
+// (identifiable by User-Agent even when its IP range isn't hardcoded, e.g.
+// Googlebot's 66.249.64.0/19) sailed through untagged into match_logs,
+// inflating Page visits for every publisher it crawled. A crawler is never
+// a genuine reader regardless of whether its purpose is "good" (indexing)
+// or "bad" (scraping), so all get the same is_bot=true treatment here.
+export async function isBotHit(req, sql, table, { ip, publisher, page_url }) {
+  if (isKnownCrawlerIp(ip) || isAllowlistedCrawler(req)) return true;
+  if (await isBurstTraffic(sql, table, { ip, publisher, page_url })) return true;
+  return isSitewideBurst(sql, table, { ip, publisher });
+}
+
 export async function ensureBotColumns(sql, table) {
   const urlColumn = TABLE_URL_COLUMNS[table];
   if (!urlColumn) throw new Error('ensureBotColumns: invalid table ' + table);
