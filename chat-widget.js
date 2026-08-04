@@ -112,16 +112,20 @@
   setInterval(refreshOnlineStatus, 60000);
 
   // ---- gate (pre-chat form) ----
+  function escapeAttr(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
   function renderGate() {
     body.innerHTML = ''
       + '<form class="il-chat-gate" id="il-chat-gate-form">'
       + (isPublisher ? '' : ''
-          + '<input name="name" placeholder="Full name" required>'
-          + '<input name="email" type="email" placeholder="Email address" required>')
+          + '<input name="name" placeholder="Full name" value="' + escapeAttr(state.name) + '" required>'
+          + '<input name="email" type="email" placeholder="Email address" value="' + escapeAttr(state.email) + '" required>')
       + '<textarea name="message" placeholder="Ask me anything..." required></textarea>'
       + '<p class="il-chat-error" id="il-chat-gate-error" hidden></p>'
       + '<button type="submit">Send</button>'
-      + '<p class="il-chat-hint">Typical reply time is 5–10 minutes during working hours (9am–10pm UK). Feel free to close this window — we’ll email your answer to you.</p>'
+      + '<p class="il-chat-hint">Our team is online and will reply as soon as possible — this chat is answered by a real person, not AI. Feel free to close this window any time — we’ll email your answer to you.</p>'
       + '</form>';
     document.getElementById('il-chat-gate-form').addEventListener('submit', onGateSubmit);
   }
@@ -152,7 +156,7 @@
           btn.disabled = false;
           return;
         }
-        state = { conversationId: res.data.conversationId, visitorToken: res.data.visitorToken, since: null };
+        state = { conversationId: res.data.conversationId, visitorToken: res.data.visitorToken, since: null, name: res.data.name, email: res.data.email };
         saveState();
         try { localStorage.setItem(GREETED_KEY, '1'); } catch (err) {}
         renderThread();
