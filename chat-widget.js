@@ -39,6 +39,7 @@
     + '.il-chat-greeting{position:absolute;bottom:68px;right:0;width:240px;background:#fff;border-radius:14px;box-shadow:0 12px 32px rgba(26,26,46,0.18);padding:14px 34px 14px 16px;font-size:0.8125rem;color:#1a1a2e;line-height:1.5;cursor:pointer}'
     + '.il-chat-greeting-close{position:absolute;top:8px;right:8px;width:20px;height:20px;border:none;background:none;color:#8888a8;font-size:0.875rem;cursor:pointer;line-height:1}'
     + '.il-chat-panel{position:absolute;bottom:68px;right:0;width:340px;max-width:92vw;height:min(520px,75vh);background:#fff;border-radius:16px;box-shadow:0 16px 48px rgba(26,26,46,0.22);display:flex;flex-direction:column;overflow:hidden}'
+    + '#il-chat-panel[hidden]{display:none}'
     + '.il-chat-header{background:#1a1a2e;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}'
     + '.il-chat-header-left{display:flex;align-items:center;gap:10px}'
     + '.il-chat-avatar{position:relative;width:34px;height:34px;border-radius:50%;background:#e6a820;color:#1a1a2e;font-weight:700;font-size:0.75rem;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif}'
