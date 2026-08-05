@@ -381,7 +381,11 @@
       '.il2-opt-name{font-weight:600!important;font-size:12px!important;color:#1a1a2e!important;line-height:1.25!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}' +
       '.il2-opt-role{font-size:9.5px!important;color:#8888a8!important;line-height:1.3!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}' +
       '.il2-opt-pills{display:flex!important;flex-wrap:wrap;gap:4px;margin-top:5px}' +
-      '.il2-opt-pill{display:inline-block!important;background:' + hexToRgba(accent, 0.12) + '!important;color:' + accent + '!important;font-size:9.5px!important;font-weight:700!important;padding:2px 7px!important;border-radius:100px!important;white-space:nowrap;line-height:1.5!important}' +
+      // Sage green, not the publisher's accent colour (usually gold/yellow)
+      // - a fact chip reads as a neutral badge, not a call-to-action, and
+      // matches the same sage tone the main site already uses for other
+      // quick-fact badges (e.g. expert card pricing tags).
+      '.il2-opt-pill{display:inline-block!important;background:#edf5f0!important;color:#3d7a5f!important;font-size:9.5px!important;font-weight:700!important;padding:2px 7px!important;border-radius:100px!important;white-space:nowrap;line-height:1.5!important}' +
       '.il2-opt-book{flex-shrink:0!important;display:block!important;background:none!important;border:1.5px solid ' + accent + '!important;color:' + accent + '!important;text-align:center;padding:4px 10px!important;border-radius:100px!important;font-size:10.5px!important;font-weight:700!important;text-decoration:none!important;white-space:nowrap}' +
       // Discoverability nudge (see maybeShowDiscoveryCue) - a
       // white "phantom hand" tap on desktop, a soft pulse on the highlight
@@ -453,7 +457,9 @@
         '</div>' +
         '<a id="il2-cta" href="#" target="_blank" rel="noopener" style="display:block!important;background:' + accent + '!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:' + (isSmall ? '7' : '9') + 'px;border-radius:100px;font-size:13px!important;font-weight:700!important;text-decoration:none!important"></a>' +
       '</div>' +
-      '<div id="il2-list"></div>';
+      '<div id="il2-list"></div>' +
+      '<a id="il2-viewall" href="https://www.introlinq.com/demo/introlinq-experts.html" target="_blank" rel="noopener" style="display:block!important;text-align:center;padding:7px!important;margin-top:4px;border-radius:100px;font-size:11.5px!important;font-weight:600!important;color:#8888a8!important;text-decoration:none!important;border:1.5px dashed #e4e4ee!important">View all experts →</a>' +
+      '<div id="il-pv" style="font-size:8.5px!important;color:#8888a8!important;text-align:center;margin-top:8px;letter-spacing:.02em"></div>';
     document.body.appendChild(p);
     p.addEventListener('mouseenter', function () { clearTimeout(hideTimer); });
     p.addEventListener('mouseleave', function () {
@@ -951,6 +957,31 @@
       list.innerHTML = options.length
         ? (match.hook ? '<div class="il2-list-label">Real people you could talk to</div>' : '') + options.map(function (opt) { return buildOptionRow(opt, match); }).join('')
         : '';
+    }
+
+    // Partnership attribution footer - same as widget.js/2/3's version,
+    // keyed off the primary (first) option since they're usually all from
+    // the same partner network anyway.
+    var e = options[0] && options[0].expert;
+    var pv = document.getElementById('il-pv');
+    if (pv && e) {
+      var providerName = e.provider_name || (e.provider_slug || 'openintro');
+      var providerLogoUrl = e.provider_logo_url || null;
+      var providerUrl = e.provider_website_url || '#';
+      var prov = { name: providerName, url: providerUrl, logo: providerLogoUrl };
+      var ilLogo = '<img src="https://www.introlinq.com/favicon.svg" alt="IntroLinq" style="width:11px!important;height:11px!important;border-radius:2px;vertical-align:middle;margin-right:3px;flex-shrink:0">';
+      var s = 'font-size:8.5px!important;color:#8888a8!important;font-family:Inter,system-ui,sans-serif;text-decoration:none;display:flex!important;align-items:center;gap:2px;min-width:0;overflow:hidden;white-space:nowrap;flex-shrink:1';
+      pv.style.cssText = 'display:flex!important;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:8px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(26,26,46,0.07)';
+      var partnerLink;
+      if (e.is_demo_provider && prov.logo) {
+        partnerLink = '<a href="' + prov.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with <img src="' + prov.logo + '" alt="' + prov.name + '" style="height:14px!important;width:auto;max-width:70px;object-fit:contain;margin-left:4px;vertical-align:middle;flex-shrink:0"></a>';
+      } else {
+        var providerLogoHtml = prov.logo
+          ? '<img src="' + prov.logo + '" alt="' + prov.name + '" style="width:13px!important;height:13px!important;object-fit:contain;border-radius:2px;vertical-align:middle;margin-right:3px;flex-shrink:0">'
+          : '';
+        partnerLink = '<a href="' + prov.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with ' + providerLogoHtml + prov.name + '</a>';
+      }
+      pv.innerHTML = partnerLink + '<a href="https://www.introlinq.com" target="_blank" rel="noopener" style="' + s + '">' + ilLogo + 'IntroLinq</a>';
     }
   }
 
