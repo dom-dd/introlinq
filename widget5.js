@@ -321,7 +321,10 @@
   function injectStyles(cfg) {
     var color = cfg.color || '#e6a820';
     var accent = cfg.accent || color;
-    var w = { small: 240, medium: 300, large: 360 }[cfg.size] || 300;
+    // Wider than widget.js's original sizes (240/300/360) - three stacked
+    // name+credential+role rows need more breathing room than one profile
+    // did, especially once credentials render as wrapping pills below.
+    var w = { small: 280, medium: 340, large: 400 }[cfg.size] || 340;
     var existing = document.getElementById('il-styles');
     if (existing) existing.remove();
     var s = document.createElement('style');
@@ -362,19 +365,23 @@
       'box-sizing:border-box;line-height:normal;text-align:left}' +
       '#il-pop.il-on{opacity:1;transform:translateY(0);pointer-events:all}' +
       '#il-pop *{box-sizing:border-box}' +
-      // Compact per-expert row below the hook/CTA - photo, name/role, and
-      // its own Book link, backing up the headline with real named proof.
+      // Compact per-expert block below the hook/CTA - photo+name+Book on
+      // one row, role below, then punchy credential PILLS on their own row.
+      // Pills instead of a single truncated line: a full clause like "4
+      // exits - $1B+ in transactions processed" doesn't fit in a row shared
+      // with a photo and button (was getting cut off with ellipsis) - short
+      // 2-4 word chips wrap naturally instead, and read as scannable stats
+      // rather than a sentence you have to parse.
       '.il2-list-label{font-size:9.5px!important;font-weight:700!important;color:#8888a8!important;text-transform:uppercase!important;letter-spacing:.04em!important;margin-bottom:6px}' +
-      '.il2-opt{display:flex!important;align-items:center;gap:10px;padding:7px 0}' +
+      '.il2-opt{display:flex!important;align-items:flex-start;gap:10px;padding:8px 0}' +
       '.il2-opt+.il2-opt{border-top:1px solid rgba(26,26,46,0.08)}' +
-      '.il2-opt-photo{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;max-width:38px!important;max-height:38px!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;flex-shrink:0!important;display:block!important}' +
+      '.il2-opt-photo{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;max-width:38px!important;max-height:38px!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;flex-shrink:0!important;display:block!important;margin-top:1px}' +
       '.il2-opt-info{flex:1;min-width:0}' +
-      '.il2-opt-name{font-weight:600!important;font-size:12px!important;color:#1a1a2e!important;line-height:1.25!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-      // The punchy stat line ("4 exits - $1B+ in transactions") - bold and
-      // in the accent colour so it visually pops as the headline fact about
-      // this person, distinct from the muted role/company line below it.
-      '.il2-opt-credential{font-size:10.5px!important;font-weight:700!important;color:' + accent + '!important;line-height:1.3!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}' +
+      '.il2-opt-top{display:flex!important;align-items:center;justify-content:space-between;gap:8px}' +
+      '.il2-opt-name{font-weight:600!important;font-size:12px!important;color:#1a1a2e!important;line-height:1.25!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}' +
       '.il2-opt-role{font-size:9.5px!important;color:#8888a8!important;line-height:1.3!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}' +
+      '.il2-opt-pills{display:flex!important;flex-wrap:wrap;gap:4px;margin-top:5px}' +
+      '.il2-opt-pill{display:inline-block!important;background:' + hexToRgba(accent, 0.12) + '!important;color:' + accent + '!important;font-size:9.5px!important;font-weight:700!important;padding:2px 7px!important;border-radius:100px!important;white-space:nowrap;line-height:1.5!important}' +
       '.il2-opt-book{flex-shrink:0!important;display:block!important;background:none!important;border:1.5px solid ' + accent + '!important;color:' + accent + '!important;text-align:center;padding:4px 10px!important;border-radius:100px!important;font-size:10.5px!important;font-weight:700!important;text-decoration:none!important;white-space:nowrap}' +
       // Discoverability nudge (see maybeShowDiscoveryCue) - a
       // white "phantom hand" tap on desktop, a soft pulse on the highlight
@@ -903,14 +910,23 @@
         + '&source=' + encodeURIComponent(getTrafficSource())
         + '&title=' + encodeURIComponent(document.title.slice(0, 150));
     }
+    // opt.credentials is an array of short punchy facts ("4 exits", "$1B+
+    // processed") - each becomes its own pill so it wraps naturally instead
+    // of getting cut off with an ellipsis the way one long clause did.
+    var pills = Array.isArray(opt.credentials) ? opt.credentials.filter(Boolean) : [];
+    var pillsHtml = pills.length
+      ? '<div class="il2-opt-pills">' + pills.map(function (c) { return '<span class="il2-opt-pill">' + String(c).replace(/</g,'&lt;') + '</span>'; }).join('') + '</div>'
+      : '';
     return '<div class="il2-opt">' +
         '<img class="il2-opt-photo" src="' + (e.photo_url || fallback) + '" onerror="this.onerror=null;this.src=\'' + fallback + '\'" alt="">' +
         '<div class="il2-opt-info">' +
-          '<div class="il2-opt-name">' + (e.name || '').replace(/</g,'&lt;') + '</div>' +
-          (opt.credential ? '<div class="il2-opt-credential">' + opt.credential.replace(/</g,'&lt;') + '</div>' : '') +
+          '<div class="il2-opt-top">' +
+            '<div class="il2-opt-name">' + (e.name || '').replace(/</g,'&lt;') + '</div>' +
+            (href !== '#' ? '<a class="il2-opt-book" href="' + href + '" target="_blank" rel="noopener">Book →</a>' : '') +
+          '</div>' +
           (role ? '<div class="il2-opt-role">' + role.replace(/</g,'&lt;') + '</div>' : '') +
+          pillsHtml +
         '</div>' +
-        (href !== '#' ? '<a class="il2-opt-book" href="' + href + '" target="_blank" rel="noopener">Book →</a>' : '') +
       '</div>';
   }
 
@@ -941,7 +957,7 @@
   function positionPopup(popup, span, cfg) {
     var rect = span.getBoundingClientRect();
     var isMobile = window.innerWidth < 520;
-    var W = isMobile ? Math.min(280, window.innerWidth - 24) : ({ small: 240, medium: 300, large: 360 }[cfg.size] || 300);
+    var W = isMobile ? Math.min(320, window.innerWidth - 24) : ({ small: 280, medium: 340, large: 400 }[cfg.size] || 340);
     popup.style.width = W + 'px';
     // Use actual rendered height (forces layout) so we know exactly how tall it is
     var H = popup.offsetHeight || (isMobile ? 360 : (cfg.size === 'small' ? 150 : cfg.size === 'large' ? 260 : 220));
