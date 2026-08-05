@@ -55,10 +55,10 @@
     '#il-board *{box-sizing:border-box}',
     '.ilb-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;margin-bottom:1.25rem}',
     '.ilb-title-block{display:flex;flex-direction:column;gap:0.2rem}',
-    '.ilb-title{font-size:1.125rem;font-weight:700;color:#1a1a2e}',
-    '.ilb-powered{font-size:0.68rem;color:#bbb}',
-    '.ilb-powered a{color:#bbb;text-decoration:none}',
-    '.ilb-powered a:hover{color:#888}',
+    '.ilb-title{font-size:1.125rem;font-weight:700;color:var(--ilb-text-color,#1a1a2e)}',
+    '.ilb-powered{font-size:0.68rem;color:var(--ilb-text-color,#1a1a2e);opacity:0.55}',
+    '.ilb-powered a{color:inherit;text-decoration:none}',
+    '.ilb-powered a:hover{text-decoration:underline}',
     '.ilb-expand{display:block;width:100%;margin-top:0.875rem;padding:0.6rem 1rem;border:1.5px dashed #e4e4ee;border-radius:10px;background:none;font-size:0.8125rem;color:#8888a8;cursor:pointer;font-family:inherit;text-align:center;transition:all .15s}',
     '.ilb-expand:hover{border-color:var(--ilb-color);color:var(--ilb-color)}',
     '.ilb-search{flex:1;min-width:180px;max-width:320px;position:relative}',
@@ -103,6 +103,7 @@
 
     container.style.setProperty('--ilb-color', _color);
     container.style.setProperty('--ilb-color-contrast', _contrast);
+    container.style.setProperty('--ilb-text-color', data.config.text_color || '#1a1a2e');
 
     var html = '<div class="ilb-header">'
       + '<div class="ilb-title-block">'

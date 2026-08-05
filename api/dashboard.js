@@ -445,8 +445,9 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-    const { match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, enabled_partners, payment_email, active, carousel_title, name, contact_first_name, contact_last_name, domain } = req.body;
+    const { match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, enabled_partners, payment_email, active, carousel_title, board_text_color, name, contact_first_name, contact_last_name, domain } = req.body;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS carousel_title TEXT`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS board_text_color TEXT`.catch(() => {});
     // 'fill' = tinted background + solid underline (original/default). 'underline'
     // = dotted underline only, no background wash - purely a rendering choice
     // read fresh by the widget on every request, same as widget_color/widget_size,
@@ -469,12 +470,13 @@ export default async function handler(req, res) {
         payment_email = COALESCE(${payment_email ?? null}, payment_email),
         active = COALESCE(${active ?? null}, active),
         carousel_title = COALESCE(${carousel_title ?? null}, carousel_title),
+        board_text_color = COALESCE(${board_text_color ?? null}, board_text_color),
         name = COALESCE(${name?.trim() || null}, name),
         contact_first_name = COALESCE(${contact_first_name?.trim() || null}, contact_first_name),
         contact_last_name = COALESCE(${contact_last_name?.trim() || null}, contact_last_name),
         domain = COALESCE(${domain?.trim() || null}, domain)
       WHERE slug = ${pub} AND active = true
-      RETURNING match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, enabled_partners, payment_email, active, carousel_title, name, contact_first_name, contact_last_name, domain
+      RETURNING match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, enabled_partners, payment_email, active, carousel_title, board_text_color, name, contact_first_name, contact_last_name, domain
     `;
     // Clear match cache if matching settings changed so new settings take effect immediately.
     // highlight_style is deliberately excluded - it's a pure rendering choice
@@ -503,6 +505,7 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS revenue_share DECIMAL DEFAULT 0.70`;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS payment_email TEXT`;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS carousel_title TEXT`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS board_text_color TEXT`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS highlight_style TEXT DEFAULT 'fill'`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS discovery_cue_enabled BOOLEAN DEFAULT true`.catch(() => {});
     // Ensure providers have a name column
@@ -528,7 +531,7 @@ export default async function handler(req, res) {
              COALESCE(discovery_cue_enabled, true) AS discovery_cue_enabled,
              COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners,
              COALESCE(revenue_share, 0.70) AS revenue_share,
-             payment_email, carousel_title, first_widget_fire_at, last_widget_fire_at,
+             payment_email, carousel_title, board_text_color, first_widget_fire_at, last_widget_fire_at,
              email, contact_first_name, contact_last_name,
              (password_hash IS NOT NULL) AS has_password
       FROM publishers WHERE slug = ${pub} AND active = true LIMIT 1
