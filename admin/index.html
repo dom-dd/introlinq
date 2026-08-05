@@ -457,6 +457,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
       <div class="outreach-subtab-bar">
         <div style="display:flex;flex-wrap:wrap">
           <button class="outreach-subtab active" data-name="due" onclick="switchOutreachSubtab('due',this)">Due for follow-up</button>
+          <button class="outreach-subtab" data-name="confirmedfit" onclick="switchOutreachSubtab('confirmedfit',this)">Blog &amp; Publishers</button>
           <button class="outreach-subtab" data-name="waiting" onclick="switchOutreachSubtab('waiting',this)">To follow up</button>
           <button class="outreach-subtab" data-name="later" onclick="switchOutreachSubtab('later',this)">To contact later</button>
           <button class="outreach-subtab" data-name="important" onclick="switchOutreachSubtab('important',this)">Important</button>
@@ -486,6 +487,28 @@ tr:hover td{background:rgba(0,0,0,0.01)}
                 <th>Notes</th>
               </tr></thead>
               <tbody id="outreach-due-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-confirmedfit">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-confirmedfit-title">Blog &amp; Publishers</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:110px">Status</th>
+                <th style="width:130px">Next follow-up</th>
+                <th style="width:190px">Action</th>
+                <th style="width:150px">Emails</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-confirmedfit-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -1999,6 +2022,7 @@ const OUTREACH_STATUS_LABELS = {
   partner: 'Potential partner',
   openintro_partner: 'Potential OpenIntro partner',
   products_partner: 'Potential products partner',
+  confirmed_fit: 'Blog & Publishers',
   replied_interested: 'Interested',
   replied_not_interested: 'Not interested (replied)',
   signed_up: 'Signed up',
@@ -2014,6 +2038,7 @@ const OUTREACH_STATUS_COLORS = {
   partner: '#8b5cf6',
   openintro_partner: '#0d9488',
   products_partner: '#db2777',
+  confirmed_fit: '#16a34a',
   replied_interested: 'var(--sage)',
   signed_up: 'var(--sage)',
   replied_not_interested: 'var(--red, #dc2626)',
@@ -2043,13 +2068,14 @@ function outreachBucket(c, today) {
   if (c.status === 'partner') return 'partner';
   if (c.status === 'openintro_partner') return 'openintro';
   if (c.status === 'products_partner') return 'products';
+  if (c.status === 'confirmed_fit') return 'confirmedfit';
   if (c.status === 'discovered') return 'todo';
   return 'waiting';
 }
 
 function renderOutreach() {
   const today = new Date().toISOString().slice(0, 10);
-  const buckets = { due: [], later: [], important: [], partner: [], openintro: [], products: [], todo: [], waiting: [], closed: [] };
+  const buckets = { due: [], later: [], important: [], partner: [], openintro: [], products: [], confirmedfit: [], todo: [], waiting: [], closed: [] };
   for (const c of _outreach) buckets[outreachBucket(c, today)].push(c);
 
   buckets.due.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
@@ -2058,6 +2084,7 @@ function renderOutreach() {
   buckets.partner.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.openintro.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.products.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.confirmedfit.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   // priority_score is unpopulated until the (separate, manual) classify
   // step runs - falls back to newest-discovered-first so the list is still
   // usably ordered in the meantime, and starts respecting real scores the
@@ -2072,6 +2099,7 @@ function renderOutreach() {
   document.getElementById('outreach-partner-title').textContent = `Potential partners (${buckets.partner.length})`;
   document.getElementById('outreach-openintro-title').textContent = `Potential OpenIntro partner (${buckets.openintro.length})`;
   document.getElementById('outreach-products-title').textContent = `Potential products partner (${buckets.products.length})`;
+  document.getElementById('outreach-confirmedfit-title').textContent = `Blog & Publishers (${buckets.confirmedfit.length})`;
   document.getElementById('outreach-todo-title').textContent = `Not yet contacted (${buckets.todo.length})`;
   document.getElementById('outreach-waiting-title').textContent = `To follow up (${buckets.waiting.length})`;
   document.getElementById('outreach-closed-title').textContent = `Closed (${buckets.closed.length})`;
@@ -2093,6 +2121,9 @@ function renderOutreach() {
 
   document.getElementById('outreach-products-tbody').innerHTML = buckets.products.length
     ? buckets.products.map(outreachRow).join('') : '<tr><td colspan="7" class="empty">No potential products partners flagged yet.</td></tr>';
+
+  document.getElementById('outreach-confirmedfit-tbody').innerHTML = buckets.confirmedfit.length
+    ? buckets.confirmedfit.map(outreachRow).join('') : '<tr><td colspan="7" class="empty">Nothing confirmed as a strong fit yet.</td></tr>';
 
   const todoShown = buckets.todo.slice(0, _outreachTodoLimit);
   document.getElementById('outreach-todo-tbody').innerHTML = todoShown.length
@@ -2232,7 +2263,10 @@ const OUTREACH_EMAIL_TITLES = { intro: 'Intro email', followup1: 'First follow-u
 // is in the sequence - null once follow-up 2 is sent (or the candidate is
 // resolved), since there's nothing left to send.
 function outreachNextStage(c) {
-  if (c.status === 'discovered') return 'intro';
+  // confirmed_fit is a curation flag on top of the normal pipeline, not a
+  // separate kind of outreach (unlike important/partner/etc.) - it uses the
+  // same intro/follow-up sequence as any other not-yet-contacted lead.
+  if (c.status === 'discovered' || c.status === 'confirmed_fit') return 'intro';
   if (c.status === 'emailed') return 'followup1';
   if (c.status === 'followed_up_1') return 'followup2';
   return null;
@@ -2261,7 +2295,7 @@ function openOutreachEmailInGmail(id, stage) {
 }
 
 function outreachActionButton(c) {
-  if (c.status === 'discovered') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_email_sent')">Mark email sent</button>`;
+  if (c.status === 'discovered' || c.status === 'confirmed_fit') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_email_sent')">Mark email sent</button>`;
   if (c.status === 'emailed') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_followup_1')">Mark follow-up 1 sent</button>`;
   if (c.status === 'followed_up_1') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_followup_2')">Mark follow-up 2 sent</button>`;
   return '';
@@ -2300,12 +2334,15 @@ function prettifyDomain(domain) {
 
 function outreachRow(c) {
   const title = c.title ? esc(c.title.slice(0, 60)) : '';
+  const categoryBadge = c.category
+    ? `<span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:100px;background:var(--sage-light,#edf5f0);color:var(--sage,#3d7a5f);font-size:0.65rem;font-weight:600;vertical-align:middle">${esc(c.category)}</span>`
+    : '';
   const statusOptions = Object.entries(OUTREACH_STATUS_LABELS)
     .map(([v, label]) => `<option value="${v}" ${c.status === v ? 'selected' : ''}>${esc(label)}</option>`).join('');
   return `
     <tr>
       <td>
-        <a href="${esc(c.homepage_url)}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:600;font-size:0.8125rem;text-decoration:none">${esc(c.domain)}</a>${outreachClickIcon(c)}
+        <a href="${esc(c.homepage_url)}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:600;font-size:0.8125rem;text-decoration:none">${esc(c.domain)}</a>${outreachClickIcon(c)}${categoryBadge}
         ${title ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px">${title}</div>` : ''}
         <input type="text" value="${esc(c.company_name || prettifyDomain(c.domain))}" placeholder="Company name (used in emails)" onblur="outreachSaveCompanyName(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE};margin-top:4px">
       </td>

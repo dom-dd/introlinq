@@ -1,5 +1,6 @@
-// Business publisher discovery: generates search queries, runs them through
-// SerpAPI, dedupes discovered domains, and stores them in Postgres.
+// Blog/publisher discovery across every category (see lib/categories.js),
+// not just business: generates search queries, runs them through SerpAPI,
+// dedupes discovered domains, and stores them in Postgres.
 //
 // Usage:
 //   node discovery/discover.js --target 500
@@ -11,7 +12,7 @@
 
 import { sql, ensureSchema } from './lib/db.js';
 import { serpSearch, extractCandidates } from './lib/serpapi.js';
-import { generateQueries } from './lib/queries.js';
+import { generateQueriesByCategory } from './lib/queries.js';
 
 function parseArgs(argv) {
   const args = { target: 500 };
@@ -26,7 +27,10 @@ function sleep(ms) {
 }
 
 async function seedQueryPool() {
-  const queries = generateQueries();
+  // Round-robin across categories (not just interleaved guest-post/direct-blog
+  // within Business) so even a small --target run samples breadth - see
+  // lib/queries.js's generateQueriesByCategory.
+  const queries = generateQueriesByCategory();
   let inserted = 0;
   for (const query of queries) {
     const result = await sql`

@@ -419,6 +419,7 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_name TEXT`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_email TEXT`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS company_name TEXT`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS category TEXT`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMPTZ`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS followup_1_sent_at TIMESTAMPTZ`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS followup_2_sent_at TIMESTAMPTZ`.catch(() => {});
@@ -430,7 +431,7 @@ export default async function handler(req, res) {
       clicked_at TIMESTAMPTZ DEFAULT NOW()
     )`.catch(() => {});
 
-    const ALLOWED_STATUSES = ['discovered', 'emailed', 'followed_up_1', 'followed_up_2', 'important', 'contact_later', 'partner', 'openintro_partner', 'products_partner', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
+    const ALLOWED_STATUSES = ['discovered', 'emailed', 'followed_up_1', 'followed_up_2', 'important', 'contact_later', 'partner', 'openintro_partner', 'products_partner', 'confirmed_fit', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
 
     // Manually-added leads (the "Create a lead" button) - bypasses the
     // SerpAPI discovery pipeline entirely, for a company Dom already knows
@@ -510,7 +511,7 @@ export default async function handler(req, res) {
     // every other cp.* column is functionally dependent on it (Postgres
     // allows selecting them un-aggregated under that rule).
     const rows = await sql`
-      SELECT cp.id, cp.domain, cp.homepage_url, cp.title, cp.status, cp.priority_score, cp.contact_name, cp.contact_email, cp.company_name,
+      SELECT cp.id, cp.domain, cp.homepage_url, cp.title, cp.status, cp.priority_score, cp.contact_name, cp.contact_email, cp.company_name, cp.category,
              cp.email_sent_at, cp.followup_1_sent_at, cp.followup_2_sent_at, cp.next_followup_at, cp.outreach_notes, cp.created_at,
              COALESCE(json_agg(oc.clicked_at ORDER BY oc.clicked_at) FILTER (WHERE oc.clicked_at IS NOT NULL), '[]') AS click_times
       FROM candidate_publishers cp

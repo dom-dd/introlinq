@@ -36,6 +36,7 @@ function sleep(ms) {
 export async function ensureColumns() {
   await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_first_name TEXT`;
   await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_last_name TEXT`;
+  await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_name TEXT`;
   await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_email TEXT`;
   await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_title TEXT`;
   await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_status TEXT`;
@@ -100,6 +101,11 @@ export async function enrichPendingPublishers({ limit = 20, dryRun = false } = {
         lastName = null;
       }
 
+      // contact_name is the separate field the outreach admin tab actually
+      // displays/uses (see admin/index.html) - contact_first_name/
+      // contact_last_name alone previously went unread there.
+      const contactName = firstName ? (lastName ? `${firstName} ${lastName}` : firstName) : null;
+
       if (isRealEmail(email)) {
         found++;
         console.log(`[${row.domain}] ${firstName} ${lastName} <${email}>`);
@@ -107,6 +113,7 @@ export async function enrichPendingPublishers({ limit = 20, dryRun = false } = {
           UPDATE candidate_publishers
           SET contact_first_name = ${firstName},
               contact_last_name = ${lastName},
+              contact_name = ${contactName},
               contact_email = ${email},
               contact_title = ${title},
               contact_status = 'found'
@@ -119,6 +126,7 @@ export async function enrichPendingPublishers({ limit = 20, dryRun = false } = {
           UPDATE candidate_publishers
           SET contact_first_name = ${firstName},
               contact_last_name = ${lastName},
+              contact_name = ${contactName},
               contact_title = ${title},
               contact_status = 'no_email'
           WHERE id = ${row.id}
