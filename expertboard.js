@@ -118,6 +118,15 @@
     html += '<div class="ilb-grid" id="ilb-grid"></div>';
     html += '<button class="ilb-expand" id="ilb-expand-btn" style="display:none"></button>';
 
+    // Pre-fills the search box from ?q= on the host page's own URL - lets a
+    // link into this page (e.g. widget2.js's generic-hook popup) land the
+    // reader already filtered to the relevant topic instead of the full
+    // unfiltered roster. Real URL search params, not a widget-specific
+    // param name, since this page's own URL is what carries it (unlike
+    // data-* attributes, which come from the <script> tag).
+    var qParam = (new URLSearchParams(window.location.search).get('q') || '').trim();
+    if (qParam) _searchTerm = qParam.toLowerCase();
+
     _visibleCount = PAGE_SIZE;
     container.innerHTML = html;
     renderGrid();
@@ -132,6 +141,7 @@
 
     var searchInput = document.getElementById('ilb-search-input');
     if (searchInput) {
+      if (qParam) searchInput.value = qParam;
       searchInput.addEventListener('input', function() {
         _searchTerm = this.value.toLowerCase().trim();
         _visibleCount = PAGE_SIZE;
