@@ -1,20 +1,20 @@
 ﻿(function () {
   'use strict';
 
-  // EXPERIMENTAL FORK of widget.js - "Widget 2" in the A/B comparison on
-  // /demo/introlinq. Shows 2-3 alternate experts to pick from (instead of
-  // committing to one) in the hover popup - full profile per option (photo,
-  // name, role), each with its own direct Book link. Own guard flag/
-  // script-selector so this can run alongside the other widget variants
-  // without colliding - see widget.js's own comment on why the guard
-  // exists at all. Only ever loaded manually for this comparison, never
-  // part of the normal install flow.
+  // EXPERIMENTAL FORK of widget.js - "Widget 4" in the A/B comparison on
+  // /demo/introlinq. Hybrid: a punchy outcome-focused hook + primary CTA up
+  // top (the low-commitment browse path), plus 2-3 real named experts
+  // listed directly below as concrete proof, each with their own direct
+  // Book link. Own guard flag/script-selector so this can run alongside
+  // the other widget variants without colliding - see widget.js's own
+  // comment on why the guard exists at all. Only ever loaded manually for
+  // this comparison, never part of the normal install flow.
   var API = 'https://www.introlinq.com/api/match';
-  var script = document.currentScript || document.querySelector('script[src*="widget2.js"]');
+  var script = document.currentScript || document.querySelector('script[src*="widget4.js"]');
   var PUB = (script && (script.getAttribute('data-publisher') || script.getAttribute('data-site'))) || window.IL_PUBLISHER_ID || null;
   if (!PUB) return;
-  if (window.__ilWidget2Init) return;
-  window.__ilWidget2Init = true;
+  if (window.__ilWidget4Init) return;
+  window.__ilWidget4Init = true;
 
   // {name} is filled in per-match in fillPopup (the expert's first name) -
   // these are templates, not final labels. "Speak with" reads as a lower-
@@ -124,7 +124,6 @@
       return;
     }
 
-    var seenExpertIds = {};
     var sharedCfg = null;
     var sharedPopup = null;
     var usedRanges = [];
@@ -142,16 +141,14 @@
         injectStyles(sharedCfg);
         sharedPopup = createPopup(sharedCfg);
       }
+      // No per-phrase dedup here - unlike widget.js's single-expert dedup
+      // (never show the same person twice), a hook is a topic, not an
+      // identity, so the same 2-3 names can legitimately back up more than
+      // one phrase without it reading as repetitive.
       var shown = [];
       data.matches.forEach(function (m) {
-        // Dedup key is the PRIMARY option's id - the server already dedupes
-        // experts across phrases on one page (see hydrateMatchesMulti), so
-        // this is a defensive backstop, not the main line of defense.
-        var primary = m.options && m.options[0] && m.options[0].expert;
-        var id = primary && primary.id;
-        if (!id || seenExpertIds[id]) return;
+        if (!m.hook && !(m.options && m.options.length)) return;
         if (highlightOnePhrase(el, m, sharedPopup, sharedCfg, usedRanges)) {
-          seenExpertIds[id] = true;
           shown.push(m);
         }
       });
@@ -364,15 +361,16 @@
       'box-sizing:border-box;line-height:normal;text-align:left}' +
       '#il-pop.il-on{opacity:1;transform:translateY(0);pointer-events:all}' +
       '#il-pop *{box-sizing:border-box}' +
-      // Compact per-expert row inside the multi-option popup - photo, name/
-      // role, and its own Book link, stacked instead of one full profile.
+      // Compact per-expert row below the hook/CTA - photo, name/role, and
+      // its own Book link, backing up the headline with real named proof.
+      '.il2-list-label{font-size:9.5px!important;font-weight:700!important;color:#8888a8!important;text-transform:uppercase!important;letter-spacing:.04em!important;margin-bottom:6px}' +
       '.il2-opt{display:flex!important;align-items:center;gap:10px;padding:7px 0}' +
       '.il2-opt+.il2-opt{border-top:1px solid rgba(26,26,46,0.08)}' +
-      '.il2-opt-photo{width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;max-width:34px!important;max-height:34px!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;flex-shrink:0!important;display:block!important}' +
+      '.il2-opt-photo{width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;max-width:32px!important;max-height:32px!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;flex-shrink:0!important;display:block!important}' +
       '.il2-opt-info{flex:1;min-width:0}' +
-      '.il2-opt-name{font-weight:600!important;font-size:12.5px!important;color:#1a1a2e!important;line-height:1.25!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-      '.il2-opt-role{font-size:10.5px!important;color:#8888a8!important;line-height:1.3!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}' +
-      '.il2-opt-book{flex-shrink:0!important;display:block!important;background:' + accent + '!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:5px 11px!important;border-radius:100px!important;font-size:11px!important;font-weight:700!important;text-decoration:none!important;white-space:nowrap}' +
+      '.il2-opt-name{font-weight:600!important;font-size:12px!important;color:#1a1a2e!important;line-height:1.25!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      '.il2-opt-role{font-size:10px!important;color:#8888a8!important;line-height:1.3!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}' +
+      '.il2-opt-book{flex-shrink:0!important;display:block!important;background:none!important;border:1.5px solid ' + accent + '!important;color:' + accent + '!important;text-align:center;padding:4px 10px!important;border-radius:100px!important;font-size:10.5px!important;font-weight:700!important;text-decoration:none!important;white-space:nowrap}' +
       // Discoverability nudge (see maybeShowDiscoveryCue) - a
       // white "phantom hand" tap on desktop, a soft pulse on the highlight
       // itself on touch. pointer-events:none on #il-cue is load-bearing:
@@ -426,18 +424,24 @@
     // that one specifically. !important on an inline style beats essentially
     // any host stylesheet rule that isn't itself an equally-specific inline
     // !important, which no publisher's page has a reason to write.
-    // Multi-option layout: a small header instead of one big profile, then
-    // a dynamic list of compact expert rows (filled in fillPopup) so the
-    // reader is picking from a short list rather than evaluating one named
-    // stranger. il-cl (close, touch only) sits in the header row now instead
-    // of alongside a single photo/name.
+    // Hybrid layout: a punchy outcome headline + primary CTA up top (same
+    // as the pure-hook version), PLUS a short list of real named experts
+    // below it (from the multi-option version) - the headline sells the
+    // outcome, the names back it up with concrete proof this isn't vague
+    // marketing copy. Each name row has its own direct "Book" link;
+    // the top CTA is the lower-commitment "just let me browse" path.
+    // Both blocks are independently optional (fillPopup hides whichever
+    // has no data) so this still degrades gracefully to either pure
+    // earlier variant.
     p.innerHTML =
-      '<div style="display:flex!important;align-items:center;justify-content:space-between;margin-bottom:' + (isSmall ? '6' : '8') + 'px">' +
-        '<div style="font-size:10.5px!important;font-weight:700!important;color:#8888a8!important;text-transform:uppercase!important;letter-spacing:.04em!important">A few experts who could help</div>' +
-        '<button id="il-cl" style="display:none;flex-shrink:0;background:none!important;border:none!important;cursor:pointer;color:#8888a8!important;font-size:18px!important;line-height:1!important;padding:0 0 0 8px" aria-label="Close">&times;</button>' +
+      '<div id="il2-hookwrap" style="margin-bottom:' + (isSmall ? '10' : '14') + 'px">' +
+        '<div style="display:flex!important;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">' +
+          '<div id="il2-hook" style="font-size:' + (isLarge ? '15px' : '14px') + '!important;font-weight:700!important;color:#1a1a2e!important;line-height:1.4!important"></div>' +
+          '<button id="il-cl" style="display:none;flex-shrink:0;background:none!important;border:none!important;cursor:pointer;color:#8888a8!important;font-size:18px!important;line-height:1!important;padding:0 0 0 4px" aria-label="Close">&times;</button>' +
+        '</div>' +
+        '<a id="il2-cta" href="#" target="_blank" rel="noopener" style="display:block!important;background:' + accent + '!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:' + (isSmall ? '7' : '9') + 'px;border-radius:100px;font-size:13px!important;font-weight:700!important;text-decoration:none!important"></a>' +
       '</div>' +
-      '<div id="il2-list"></div>' +
-      '<div id="il-pv" style="font-size:8.5px!important;color:#8888a8!important;text-align:center;margin-top:8px;letter-spacing:.02em"></div>';
+      '<div id="il2-list"></div>';
     document.body.appendChild(p);
     p.addEventListener('mouseenter', function () { clearTimeout(hideTimer); });
     p.addEventListener('mouseleave', function () {
@@ -633,12 +637,13 @@
   // (booked): tells a discoverability problem (nobody ever hovers) apart
   // from a relevance/commitment-bar problem (readers hover and see the
   // expert card, but don't click through).
+  // Tracked against the primary (first) option when one exists - keeps
+  // seen_logs/hover_logs schema-compatible with widget.js. Falls back to
+  // null/null if a match has a hook but no options at all, same as any
+  // other row would with nothing to attribute.
   function trackHover(hoverTracked, m) {
     if (hoverTracked.done) return;
     hoverTracked.done = true;
-    // Tracked against the primary option only - seen_logs/hover_logs stay
-    // single-expert-per-row, same schema as widget.js, regardless of how
-    // many options the popup actually shows.
     var e = m.options && m.options[0] && m.options[0].expert;
     fetch('https://www.introlinq.com/api/dashboard?pub=' + encodeURIComponent(PUB) + '&action=hover', {
       method: 'POST',
@@ -730,11 +735,11 @@
         sp.addEventListener('mouseleave', function () {
           if (!popup.classList.contains('il-pinned')) scheduleHide(popup);
         });
-        // Unlike widget.js, a click here does NOT auto-commit to a booking
-        // link - there's no single unambiguous "the" expert to send them to
-        // anymore, only options to pick from. Just keeps the card open/
-        // re-filled, same as mouseenter; the reader picks a specific option's
-        // own "Book" link inside the popup when ready.
+        // No auto-navigate-on-click here, unlike the pure-hook version this
+        // replaced - there are multiple possible destinations again (the
+        // top CTA, or any one of up to 3 individual Book links), so a click
+        // just keeps the card open/re-filled, same as mouseenter. The
+        // reader picks whichever specific link they actually want.
         sp.addEventListener('click', function (ev) {
           ev.stopPropagation();
           stopDiscoveryCue();
@@ -866,17 +871,15 @@
     return spans.length > 0;
   }
 
-  // Builds one compact expert row's markup - photo, name+flag, role, and its
-  // own Book link with the same tracking params fillPopup always sent, just
-  // per-option instead of once. No preload-swap for photos here (unlike
-  // widget.js's single-profile version) - onerror fallback is simpler and
-  // fine for up to 3 small thumbnails.
+  // Builds one compact expert row's markup - photo, name, role, and its own
+  // direct Book link (the real https://.../api/dashboard?action=out
+  // tracked redirect, same params widget.js always sent). No preload-swap
+  // for photos here - onerror fallback is simpler and fine for up to 3
+  // small thumbnails.
   function buildOptionRow(opt, match) {
     var e = opt.expert;
     if (!e) return '';
-    var fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=68&name=' + encodeURIComponent(e.name);
-    var iso = countryToISO(e.location_country);
-    var flagHtml = iso ? '<img src="https://hatscripts.github.io/circle-flags/flags/' + iso.toLowerCase() + '.svg" alt="" style="width:13px!important;height:13px!important;min-width:13px!important;vertical-align:middle!important;flex-shrink:0!important;border-radius:50%!important;display:inline-block!important;margin-left:4px">' : '';
+    var fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=64&name=' + encodeURIComponent(e.name);
     var showCompany = !e.is_demo_provider;
     var role = [e.position, showCompany ? e.company : null].filter(Boolean).join(' · ');
     var url = e.booking_url || '#';
@@ -898,42 +901,34 @@
     return '<div class="il2-opt">' +
         '<img class="il2-opt-photo" src="' + (e.photo_url || fallback) + '" onerror="this.onerror=null;this.src=\'' + fallback + '\'" alt="">' +
         '<div class="il2-opt-info">' +
-          '<div class="il2-opt-name">' + (e.name || '').replace(/</g,'&lt;') + flagHtml + '</div>' +
+          '<div class="il2-opt-name">' + (e.name || '').replace(/</g,'&lt;') + '</div>' +
           (role ? '<div class="il2-opt-role">' + role.replace(/</g,'&lt;') + '</div>' : '') +
         '</div>' +
         (href !== '#' ? '<a class="il2-opt-book" href="' + href + '" target="_blank" rel="noopener">Book →</a>' : '') +
       '</div>';
   }
 
+  // match here is { phrase, hook, cta, query, options } - hook/cta/query
+  // drive the top headline+button (hidden if hook is absent), options
+  // drives the name-row list below it (hidden if empty) - independently
+  // optional so this degrades gracefully either direction.
   function fillPopup(popup, match, cfg) {
-    var options = match.options || [];
-    if (!options.length) return;
-    var list = document.getElementById('il2-list');
-    if (list) list.innerHTML = options.map(function (opt) { return buildOptionRow(opt, match); }).join('');
+    var hookWrap = document.getElementById('il2-hookwrap');
+    if (hookWrap) hookWrap.style.display = match.hook ? 'block' : 'none';
+    var hookEl = document.getElementById('il2-hook');
+    if (hookEl) hookEl.textContent = match.hook || '';
+    var cta = document.getElementById('il2-cta');
+    if (cta) {
+      cta.textContent = match.cta || 'Explore experts →';
+      cta.href = 'https://www.introlinq.com/demo/introlinq-experts.html?q=' + encodeURIComponent(match.query || '');
+    }
 
-    // Provider footer keyed off the PRIMARY option - options are usually all
-    // from the same partner network anyway, and this is just attribution
-    // branding, not something that needs to vary per row.
-    var e = options[0] && options[0].expert;
-    var pv = document.getElementById('il-pv');
-    if (pv && e) {
-      var providerName = e.provider_name || (e.provider_slug || 'openintro');
-      var providerLogoUrl = e.provider_logo_url || null;
-      var providerUrl = e.provider_website_url || '#';
-      var prov = { name: providerName, url: providerUrl, logo: providerLogoUrl };
-      var ilLogo = '<img src="https://www.introlinq.com/favicon.svg" alt="IntroLinq" style="width:11px!important;height:11px!important;border-radius:2px;vertical-align:middle;margin-right:3px;flex-shrink:0">';
-      var s = 'font-size:8.5px!important;color:#8888a8!important;font-family:Inter,system-ui,sans-serif;text-decoration:none;display:flex!important;align-items:center;gap:2px;min-width:0;overflow:hidden;white-space:nowrap;flex-shrink:1';
-      pv.style.cssText = 'display:flex!important;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:8px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(26,26,46,0.07)';
-      var partnerLink;
-      if (e.is_demo_provider && prov.logo) {
-        partnerLink = '<a href="' + prov.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with <img src="' + prov.logo + '" alt="' + prov.name + '" style="height:14px!important;width:auto;max-width:70px;object-fit:contain;margin-left:4px;vertical-align:middle;flex-shrink:0"></a>';
-      } else {
-        var providerLogoHtml = prov.logo
-          ? '<img src="' + prov.logo + '" alt="' + prov.name + '" style="width:13px!important;height:13px!important;object-fit:contain;border-radius:2px;vertical-align:middle;margin-right:3px;flex-shrink:0">'
-          : '';
-        partnerLink = '<a href="' + prov.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with ' + providerLogoHtml + prov.name + '</a>';
-      }
-      pv.innerHTML = partnerLink + '<a href="https://www.introlinq.com" target="_blank" rel="noopener" style="' + s + '">' + ilLogo + 'IntroLinq</a>';
+    var options = match.options || [];
+    var list = document.getElementById('il2-list');
+    if (list) {
+      list.innerHTML = options.length
+        ? (match.hook ? '<div class="il2-list-label">Real people you could talk to</div>' : '') + options.map(function (opt) { return buildOptionRow(opt, match); }).join('')
+        : '';
     }
   }
 
