@@ -188,6 +188,78 @@ function hydrateMatches(cachedMatches, experts, enabledPartners) {
   return out;
 }
 
+// widget2.js experiment only (see handleMultiVariant) - keeps up to 3
+// candidates per phrase instead of randomly committing to one, so the
+// reader gets a short pick-one list rather than a single named suggestion.
+// Deliberately a separate function rather than a `multi` flag threaded
+// through hydrateMatches above: that function is on the hot path for every
+// real publisher's widget, and forking its behaviour on a flag risked a
+// subtle bug reaching production traffic for a feature that's currently
+// only ever exercised on one demo page.
+function hydrateMatchesMulti(cachedMatches, experts, enabledPartners, maxPerPhrase = 3) {
+  const byId = new Map(experts.map(e => [e.id, e]));
+  const seen = new Set();
+  const out = [];
+  for (const m of cachedMatches || []) {
+    const primaryId = m.expert_id ?? m.expert?.id;
+    if (primaryId == null) continue;
+    const candidates = [
+      { expert_id: primaryId, reason: m.reason, credential: m.credential },
+      ...(Array.isArray(m.alts) ? m.alts : [])
+    ].filter(c => {
+      if (c.expert_id == null || seen.has(c.expert_id)) return false;
+      const expert = byId.get(c.expert_id);
+      if (!expert) return false;
+      return enabledPartners
+        ? enabledPartners.includes(expert.provider_slug || 'openintro')
+        : !expert.is_demo_provider;
+    });
+    if (candidates.length === 0) continue;
+    const picked = candidates.slice(0, maxPerPhrase);
+    picked.forEach(c => seen.add(c.expert_id));
+    const options = picked.map(c => {
+      const opt = { reason: c.reason, expert: byId.get(c.expert_id) };
+      if (typeof c.credential === 'string' && c.credential.trim()) opt.credential = c.credential;
+      return opt;
+    });
+    out.push({ phrase: m.phrase, options });
+  }
+  return out;
+}
+
+// widget2.js experiment only - a self-contained cache-read-only path,
+// deliberately NOT folded into the main handler's tryServeFromCache/
+// fresh-scan flow below. Only ever reached when a request explicitly opts
+// in (see handler's `variant === 'multi'` check), so it can't affect any
+// real publisher's widget.js traffic. Never triggers a fresh AI scan -
+// meant for already-cached demo pages, not general use.
+async function handleMultiVariant(sql, { publisher, page_url, page_title, readerCountry, ip, req, pubConfig, enabledPartners }) {
+  const [cachedRows] = await Promise.all([
+    page_url
+      ? sql`SELECT result, has_match FROM match_cache
+          WHERE page_url = ${page_url} AND publisher = ${publisher || ''} AND country_code = ${GLOBAL_CACHE_COUNTRY}
+            AND has_match = true
+          ORDER BY cached_at DESC LIMIT 1`.catch(() => [null])
+      : Promise.resolve([null]),
+  ]);
+  const cached = cachedRows[0];
+  if (!cached) return { matches: [], config: pubConfig };
+
+  const referencedExperts = await loadExpertsByIds(sql, collectReferencedIds(cached.result.matches));
+  if (!referencedExperts) return { matches: [], config: pubConfig };
+
+  const hydrated = hydrateMatchesMulti(cached.result.matches, referencedExperts, enabledPartners);
+  if (hydrated.length === 0) return { matches: [], config: pubConfig };
+
+  // Flattened single-expert view (first option per phrase) purely so the
+  // existing impression logger/stats stay schema-compatible - doesn't
+  // affect what's actually rendered to the reader.
+  const flatForLogging = hydrated.map(h => ({ phrase: h.phrase, expert: h.options[0]?.expert }));
+  await logCachedImpression(sql, { publisher, page_url, page_title, matches: flatForLogging, readerCountry, ip, req });
+
+  return { matches: hydrated, config: pubConfig, cached: true, multi: true };
+}
+
 // Claude Haiku 4.5 pricing ($/token, from Anthropic's published rates) - only
 // used to print a rough per-scan cost estimate in Slack, not for billing.
 // cacheWrite is 2.00e-6 (not the 5-min TTL's 1.25e-6) since the static block
@@ -1033,6 +1105,15 @@ export default async function handler(req, res) {
       sensitivityInstruction = sensitivityMap[pub.match_sensitivity] ?? sensitivityMap.balanced;
       pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium', highlightStyle: pub.highlight_style || 'fill', discoveryCue: pub.discovery_cue_enabled !== false };
       enabledPartners = pub.enabled_partners || ['openintro'];
+    }
+
+    // widget2.js experiment - explicit opt-in only, so this can never affect
+    // a real publisher's widget.js traffic. Cache-read-only (see
+    // handleMultiVariant's own comment) and returns here, before any of the
+    // normal single-expert cache-serve/fresh-scan flow below runs.
+    if (req.body.variant === 'multi') {
+      const result = await handleMultiVariant(sql, { publisher, page_url, page_title, readerCountry, ip, req, pubConfig, enabledPartners });
+      return res.status(200).json(result);
     }
 
     const cached = cachedRows[0];
