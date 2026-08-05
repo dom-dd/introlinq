@@ -79,6 +79,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .outreach-subtab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
 .outreach-subpanel{display:none}
 .outreach-subpanel.active{display:block}
+.outreach-subtab-divider{width:1px;align-self:stretch;background:var(--border);margin:0.5rem 0.25rem;flex-shrink:0}
 
 /* Log result filter pills */
 .log-filter-bar{display:flex;gap:0.5rem;margin-bottom:1rem}
@@ -452,14 +453,19 @@ tr:hover td{background:rgba(0,0,0,0.01)}
     <div class="tab-panel" id="tab-outreach">
       <div class="outreach-subtab-bar">
         <button class="outreach-subtab active" data-name="due" onclick="switchOutreachSubtab('due',this)">Due</button>
+        <span class="outreach-subtab-divider"></span>
         <button class="outreach-subtab" data-name="confirmedfit" onclick="switchOutreachSubtab('confirmedfit',this)">Blogs</button>
         <button class="outreach-subtab" data-name="todo" onclick="switchOutreachSubtab('todo',this)">Not contacted</button>
         <button class="outreach-subtab" data-name="waiting" onclick="switchOutreachSubtab('waiting',this)">Follow ups</button>
+        <span class="outreach-subtab-divider"></span>
         <button class="outreach-subtab" data-name="important" onclick="switchOutreachSubtab('important',this)">VIP</button>
         <button class="outreach-subtab" data-name="later" onclick="switchOutreachSubtab('later',this)">Contact later</button>
+        <button class="outreach-subtab" data-name="substack" onclick="switchOutreachSubtab('substack',this)">Substack blogs</button>
+        <span class="outreach-subtab-divider"></span>
         <button class="outreach-subtab" data-name="partner" onclick="switchOutreachSubtab('partner',this)">Partners</button>
         <button class="outreach-subtab" data-name="products" onclick="switchOutreachSubtab('products',this)">Products partners</button>
         <button class="outreach-subtab" data-name="openintro" onclick="switchOutreachSubtab('openintro',this)">OpenIntro partners</button>
+        <span class="outreach-subtab-divider"></span>
         <button class="outreach-subtab" data-name="closed" onclick="switchOutreachSubtab('closed',this)">Not a fit</button>
         <button class="btn btn-primary btn-sm" style="flex-shrink:0;margin:0.4rem 0 0.4rem auto;padding-left:0.75rem;padding-right:0.75rem" onclick="openCreateLeadModal()">+ Create a lead</button>
       </div>
@@ -578,6 +584,26 @@ tr:hover td{background:rgba(0,0,0,0.01)}
             </table>
           </div>
           <div class="empty" id="outreach-important-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-substack">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-substack-title">Substack blogs</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:600px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-substack-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-substack-empty">Loading...</div>
         </div>
       </div>
 
@@ -2034,6 +2060,7 @@ const OUTREACH_STATUS_LABELS = {
   followed_up_2: 'Follow-up 2 sent',
   important: 'VIP',
   contact_later: 'Contact later',
+  substack: 'Substack blog',
   partner: 'Partner',
   openintro_partner: 'OpenIntro partner',
   products_partner: 'Products partner',
@@ -2050,6 +2077,7 @@ const OUTREACH_STATUS_COLORS = {
   followed_up_2: '#4f6ef7',
   important: '#e6a820',
   contact_later: '#4f6ef7',
+  substack: '#f97316',
   partner: '#8b5cf6',
   openintro_partner: '#0d9488',
   products_partner: '#db2777',
@@ -2088,6 +2116,7 @@ function outreachBucket(c, today) {
   if (c.next_followup_at && c.next_followup_at.slice(0, 10) <= today) return 'due';
   if (c.status === 'important') return 'important';
   if (c.status === 'contact_later') return 'later';
+  if (c.status === 'substack') return 'substack';
   if (c.status === 'partner') return 'partner';
   if (c.status === 'openintro_partner') return 'openintro';
   if (c.status === 'products_partner') return 'products';
@@ -2118,13 +2147,14 @@ function renderOutreachSection(name, titleText, items, emptyMessage, rowMode) {
 
 function renderOutreach() {
   const today = new Date().toISOString().slice(0, 10);
-  const buckets = { due: [], later: [], important: [], partner: [], openintro: [], products: [], confirmedfit: [], todo: [], waiting: [], closed: [] };
+  const buckets = { due: [], later: [], important: [], substack: [], partner: [], openintro: [], products: [], confirmedfit: [], todo: [], waiting: [], closed: [] };
   const visible = _outreachCategoryFilter ? _outreach.filter((c) => c.category === _outreachCategoryFilter) : _outreach;
   for (const c of visible) buckets[outreachBucket(c, today)].push(c);
 
   buckets.due.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
   buckets.later.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
   buckets.important.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.substack.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.partner.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.openintro.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.products.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -2148,6 +2178,7 @@ function renderOutreach() {
   renderOutreachSection('waiting', 'To follow up', buckets.waiting, 'No one waiting on a reply.', 'full');
   renderOutreachSection('later', 'Contact later', buckets.later, 'Nothing parked for later.', 'later');
   renderOutreachSection('important', 'VIP', buckets.important, 'Nothing flagged as VIP.', 'simple');
+  renderOutreachSection('substack', 'Substack blogs', buckets.substack, 'No Substack blogs flagged yet.', 'simple');
   renderOutreachSection('partner', 'Partners', buckets.partner, 'No potential partners flagged yet.', 'simple');
   renderOutreachSection('products', 'Products partners', buckets.products, 'No potential products partners flagged yet.', 'simple');
   renderOutreachSection('openintro', 'OpenIntro partners', buckets.openintro, 'No potential OpenIntro partners flagged yet.', 'simple');
