@@ -2,6 +2,7 @@
 import { createMagicToken } from './auth.js';
 import { DECK_HTML_B64 } from './_deckContent.js';
 import { ensureBotColumns } from './_botDetect.js';
+import { CATEGORIES } from './suggest-expert.js';
 
 let adminBotColumnsReady = false;
 
@@ -498,6 +499,9 @@ export default async function handler(req, res) {
         await sql`UPDATE candidate_publishers SET contact_name = ${contact_name || null}, contact_email = ${contact_email || null} WHERE id = ${id}`;
       } else if (action === 'set_company_name') {
         await sql`UPDATE candidate_publishers SET company_name = ${value || null} WHERE id = ${id}`;
+      } else if (action === 'set_category') {
+        if (value && !CATEGORIES.includes(value)) return res.status(400).json({ error: 'invalid category' });
+        await sql`UPDATE candidate_publishers SET category = ${value || null} WHERE id = ${id}`;
       } else if (action === 'set_notes') {
         await sql`UPDATE candidate_publishers SET outreach_notes = ${value || null} WHERE id = ${id}`;
       } else {

@@ -14,8 +14,9 @@ const OPENINTRO_SUGGEST_API = 'https://open-intro.com/api/introlinq/suggest-expe
 const RATE_LIMIT_MAX = 5;
 
 // Must match the <select> options in dashboard/index.html exactly - kept
-// here too since a direct API call bypasses the dropdown entirely.
-const CATEGORIES = [
+// here too since a direct API call bypasses the dropdown entirely. Exported
+// since admin.js's outreach category field reuses the same taxonomy.
+export const CATEGORIES = [
   'Business & Entrepreneurship', 'Marketing & Sales', 'Finance & Investing',
   'Technology & Product', 'Legal', 'Health & Medicine', 'Fitness & Wellness',
   'Music', 'Art & Design', 'Media & Entertainment', 'Education & Coaching',

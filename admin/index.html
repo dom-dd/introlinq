@@ -73,8 +73,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 /* Outreach sub-tabs - same look as the main tab bar, but scoped to its own
    classes (not .tab-btn/.tab-panel) so switching the main tabs doesn't also
    reset which outreach sub-view was showing. */
-.outreach-subtab-bar{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
-.outreach-subtab{padding:0.625rem 1rem;font-size:0.8125rem;font-weight:500;color:var(--ink-muted);border:none;background:none;cursor:pointer;font-family:'Inter',sans-serif;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;white-space:nowrap}
+.outreach-subtab-bar{display:flex;align-items:center;flex-wrap:nowrap;gap:0.125rem;overflow-x:auto;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
+.outreach-subtab{flex-shrink:0;padding:0.625rem 0.6rem;font-size:0.75rem;font-weight:500;color:var(--ink-muted);border:none;background:none;cursor:pointer;font-family:'Inter',sans-serif;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;white-space:nowrap}
 .outreach-subtab:hover{color:var(--ink)}
 .outreach-subtab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
 .outreach-subpanel{display:none}
@@ -455,19 +455,24 @@ tr:hover td{background:rgba(0,0,0,0.01)}
     <!-- Outreach tab -->
     <div class="tab-panel" id="tab-outreach">
       <div class="outreach-subtab-bar">
-        <div style="display:flex;flex-wrap:wrap">
-          <button class="outreach-subtab active" data-name="due" onclick="switchOutreachSubtab('due',this)">Due for follow-up</button>
-          <button class="outreach-subtab" data-name="confirmedfit" onclick="switchOutreachSubtab('confirmedfit',this)">Blog &amp; Publishers</button>
-          <button class="outreach-subtab" data-name="waiting" onclick="switchOutreachSubtab('waiting',this)">To follow up</button>
-          <button class="outreach-subtab" data-name="later" onclick="switchOutreachSubtab('later',this)">To contact later</button>
-          <button class="outreach-subtab" data-name="important" onclick="switchOutreachSubtab('important',this)">Important</button>
-          <button class="outreach-subtab" data-name="partner" onclick="switchOutreachSubtab('partner',this)">Potential partners</button>
-          <button class="outreach-subtab" data-name="todo" onclick="switchOutreachSubtab('todo',this)">Not yet contacted</button>
-          <button class="outreach-subtab" data-name="closed" onclick="switchOutreachSubtab('closed',this)">Closed</button>
-          <button class="outreach-subtab" data-name="openintro" onclick="switchOutreachSubtab('openintro',this)">Potential OpenIntro partner</button>
-          <button class="outreach-subtab" data-name="products" onclick="switchOutreachSubtab('products',this)">Potential products partner</button>
-        </div>
-        <button class="btn btn-primary btn-sm" style="margin:0.4rem 0" onclick="openCreateLeadModal()">+ Create a lead</button>
+        <button class="outreach-subtab active" data-name="due" onclick="switchOutreachSubtab('due',this)">Due</button>
+        <button class="outreach-subtab" data-name="confirmedfit" onclick="switchOutreachSubtab('confirmedfit',this)">Blogs</button>
+        <button class="outreach-subtab" data-name="todo" onclick="switchOutreachSubtab('todo',this)">Not contacted</button>
+        <button class="outreach-subtab" data-name="waiting" onclick="switchOutreachSubtab('waiting',this)">Follow ups</button>
+        <button class="outreach-subtab" data-name="important" onclick="switchOutreachSubtab('important',this)">VIP</button>
+        <button class="outreach-subtab" data-name="later" onclick="switchOutreachSubtab('later',this)">Contact later</button>
+        <button class="outreach-subtab" data-name="partner" onclick="switchOutreachSubtab('partner',this)">Partners</button>
+        <button class="outreach-subtab" data-name="products" onclick="switchOutreachSubtab('products',this)">Products partners</button>
+        <button class="outreach-subtab" data-name="openintro" onclick="switchOutreachSubtab('openintro',this)">OpenIntro partners</button>
+        <button class="outreach-subtab" data-name="closed" onclick="switchOutreachSubtab('closed',this)">Not a fit</button>
+        <button class="btn btn-primary btn-sm" style="flex-shrink:0;margin:0.4rem 0 0.4rem auto;padding-left:0.75rem;padding-right:0.75rem" onclick="openCreateLeadModal()">+ Create a lead</button>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:0.5rem;margin:0.75rem 0 1rem">
+        <label class="form-label" style="margin:0">Filter by category</label>
+        <select id="outreach-category-filter" class="form-input" style="width:auto;padding:0.35rem 0.6rem;font-size:0.8125rem" onchange="_outreachCategoryFilter=this.value;renderOutreach()">
+          <option value="">All categories</option>
+        </select>
       </div>
 
       <div class="outreach-subpanel active" id="outreach-sub-due">
@@ -2012,6 +2017,16 @@ let _outreach = [];
 let _outreachTodoLimit = 30;
 
 const OUTREACH_INPUT_STYLE = 'width:100%;box-sizing:border-box;padding:0.3rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:Inter,sans-serif;color:var(--ink)';
+// Same taxonomy as api/suggest-expert.js's CATEGORIES (server-side) - kept
+// as its own copy here since this is plain client-side JS, can't import
+// from a server file.
+const OUTREACH_CATEGORIES = [
+  'Business & Entrepreneurship', 'Marketing & Sales', 'Finance & Investing',
+  'Technology & Product', 'Legal', 'Health & Medicine', 'Fitness & Wellness',
+  'Music', 'Art & Design', 'Media & Entertainment', 'Education & Coaching',
+  'Real Estate', 'Other',
+];
+let _outreachCategoryFilter = '';
 const OUTREACH_STATUS_LABELS = {
   discovered: 'Not contacted',
   emailed: 'Emailed',
@@ -2046,7 +2061,15 @@ const OUTREACH_STATUS_COLORS = {
 };
 const OUTREACH_RESOLVED = ['replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
 
+function populateOutreachCategoryFilter() {
+  const el = document.getElementById('outreach-category-filter');
+  if (!el || el.dataset.populated) return;
+  el.dataset.populated = '1';
+  el.insertAdjacentHTML('beforeend', OUTREACH_CATEGORIES.map((cat) => `<option value="${esc(cat)}">${esc(cat)}</option>`).join(''));
+}
+
 async function loadOutreach() {
+  populateOutreachCategoryFilter();
   const res = await fetch('/api/admin?resource=outreach', { headers: { 'x-requested-with': 'xmlhttprequest' } });
   _outreach = await res.json();
   renderOutreach();
@@ -2076,7 +2099,8 @@ function outreachBucket(c, today) {
 function renderOutreach() {
   const today = new Date().toISOString().slice(0, 10);
   const buckets = { due: [], later: [], important: [], partner: [], openintro: [], products: [], confirmedfit: [], todo: [], waiting: [], closed: [] };
-  for (const c of _outreach) buckets[outreachBucket(c, today)].push(c);
+  const visible = _outreachCategoryFilter ? _outreach.filter((c) => c.category === _outreachCategoryFilter) : _outreach;
+  for (const c of visible) buckets[outreachBucket(c, today)].push(c);
 
   buckets.due.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
   buckets.later.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
@@ -2334,15 +2358,16 @@ function prettifyDomain(domain) {
 
 function outreachRow(c) {
   const title = c.title ? esc(c.title.slice(0, 60)) : '';
-  const categoryBadge = c.category
-    ? `<span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:100px;background:var(--sage-light,#edf5f0);color:var(--sage,#3d7a5f);font-size:0.65rem;font-weight:600;vertical-align:middle">${esc(c.category)}</span>`
-    : '';
+  const categorySelect = `<select onchange="outreachSaveCategory(${c.id}, this.value)" style="display:inline-block;width:auto;max-width:160px;margin-left:6px;padding:1px 4px;border-radius:100px;border:1px solid var(--border);background:${c.category ? 'var(--sage-light,#edf5f0)' : 'var(--cream,#faf8f4)'};color:${c.category ? 'var(--sage,#3d7a5f)' : 'var(--ink-muted)'};font-size:0.65rem;font-weight:600;vertical-align:middle;cursor:pointer">
+    <option value="">No category</option>
+    ${OUTREACH_CATEGORIES.map((cat) => `<option value="${esc(cat)}" ${c.category === cat ? 'selected' : ''}>${esc(cat)}</option>`).join('')}
+  </select>`;
   const statusOptions = Object.entries(OUTREACH_STATUS_LABELS)
     .map(([v, label]) => `<option value="${v}" ${c.status === v ? 'selected' : ''}>${esc(label)}</option>`).join('');
   return `
     <tr>
       <td>
-        <a href="${esc(c.homepage_url)}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:600;font-size:0.8125rem;text-decoration:none">${esc(c.domain)}</a>${outreachClickIcon(c)}${categoryBadge}
+        <a href="${esc(c.homepage_url)}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:600;font-size:0.8125rem;text-decoration:none">${esc(c.domain)}</a>${outreachClickIcon(c)}${categorySelect}
         ${title ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px">${title}</div>` : ''}
         <input type="text" value="${esc(c.company_name || prettifyDomain(c.domain))}" placeholder="Company name (used in emails)" onblur="outreachSaveCompanyName(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE};margin-top:4px">
       </td>
@@ -2403,6 +2428,13 @@ async function outreachSaveCompanyName(id, value) {
   await outreachPatch({ id, action: 'set_company_name', value });
   const c = _outreach.find(x => x.id === id);
   if (c) c.company_name = value;
+}
+
+async function outreachSaveCategory(id, value) {
+  await outreachPatch({ id, action: 'set_category', value });
+  const c = _outreach.find(x => x.id === id);
+  if (c) c.category = value || null;
+  renderOutreach();
 }
 
 async function outreachSaveNotes(id, value) {
