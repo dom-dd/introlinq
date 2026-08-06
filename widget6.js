@@ -122,6 +122,22 @@
 
     if (!el || text.length < 150) return;
 
+    // WIDGET 6 ONLY. A category/tag/author archive page can still clear
+    // the 150-char bar above - findArticle()'s selectors include broad
+    // fallbacks like a bare 'main', and even a real <article> match can
+    // just be a listing whose several post-preview excerpts happen to add
+    // up to enough text (confirmed on littlegreenagency.co.uk's
+    // /category/our-work: a portfolio archive, not an article, that
+    // scanned and cached as a real no-match). That's tolerable for a real
+    // MATCH - it only ever shows if the AI found something genuinely
+    // relevant to a specific sentence - but the no-match fallback fires on
+    // any no-match result regardless of what kind of page it came from, so
+    // without this check it would end up on menus, homepages, login
+    // pages, anywhere with enough combined text. Bail out entirely here -
+    // no scan, no highlight, no fallback - rather than only hiding the
+    // fallback after paying for the scan.
+    if (!isLikelyArticlePage()) return;
+
     _lang = detectLanguage(text);
     BOOK_LABEL = _bookLabels[_lang] || 'Speak with {name} →';
 
@@ -253,6 +269,30 @@
         });
     }
     postScan();
+  }
+
+  // WIDGET 6 ONLY - see the call site in tryRun for why. The URL pattern
+  // check runs unconditionally and can veto on its own - confirmed on
+  // littlegreenagency.co.uk that its theme stamps og:type="article" on
+  // BOTH a real post and its /category/ archive pages alike, so og:type
+  // can't be trusted as a positive signal by itself; a listing/utility URL
+  // always says no regardless of what og:type claims. When og:type IS
+  // present and says something other than "article" (e.g. "website"),
+  // that's a second, independent negative signal - catches pages like a
+  // homepage that don't match any URL pattern here. Only falls back to
+  // requiring a real <article> element (not findArticle()'s broader
+  // fallbacks like a bare 'main') when there's no og:type at all to go on.
+  function isLikelyArticlePage() {
+    var path = window.location.pathname.toLowerCase();
+    if (path === '' || path === '/') return false;
+    if (/\/(category|categories|tag|tags|author|page\/\d+|search|login|signin|sign-in|signup|sign-up|register|cart|checkout|account|wp-admin)(\/|$)/.test(path)) return false;
+
+    var ogType = document.querySelector('meta[property="og:type"]');
+    if (ogType) {
+      var content = (ogType.getAttribute('content') || '').toLowerCase();
+      if (content) return content === 'article';
+    }
+    return !!document.querySelector('article');
   }
 
   function findArticle() {
