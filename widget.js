@@ -17,6 +17,7 @@
   // handing off means this copy of widget.js does nothing else at all.
   var EXPERIMENTAL_WIDGETS = {
     'little-green-agency': 'widget5.js',
+    'openintro': 'widget5.js',
   };
   if (EXPERIMENTAL_WIDGETS[PUB]) {
     var handoff = document.createElement('script');
