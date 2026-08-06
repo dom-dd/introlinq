@@ -735,19 +735,17 @@
         sp.addEventListener('mouseleave', function () {
           if (!popup.classList.contains('il-pinned')) scheduleHide(popup);
         });
-        // No auto-navigate-on-click here, unlike the pure-hook version this
-        // replaced - there are multiple possible destinations again (the
-        // top CTA, or any one of up to 3 individual Book links), so a click
-        // just keeps the card open/re-filled, same as mouseenter. The
-        // reader picks whichever specific link they actually want.
-        sp.addEventListener('click', function (ev) {
-          ev.stopPropagation();
+        // Same "hover already showed it, a click commits" pattern as
+        // widget.js - commits to the top CTA link specifically (the
+        // low-commitment "browse" path this variant leads with), not one
+        // of the named options, since there's no single obvious person to
+        // pick between.
+        sp.addEventListener('click', function () {
           stopDiscoveryCue();
           trackHover(hoverTracked, m);
-          clearTimeout(hideTimer);
           fillPopup(popup, m, cfg);
-          positionPopup(popup, anchor, cfg);
-          popup.classList.add('il-on');
+          var cta = document.getElementById('il2-cta');
+          if (cta && cta.getAttribute('href') !== '#') cta.click();
         });
       });
     }

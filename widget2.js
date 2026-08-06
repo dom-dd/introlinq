@@ -730,18 +730,17 @@
         sp.addEventListener('mouseleave', function () {
           if (!popup.classList.contains('il-pinned')) scheduleHide(popup);
         });
-        // Unlike widget.js, a click here does NOT auto-commit to a booking
-        // link - there's no single unambiguous "the" expert to send them to
-        // anymore, only options to pick from. Just keeps the card open/
-        // re-filled, same as mouseenter; the reader picks a specific option's
-        // own "Book" link inside the popup when ready.
-        sp.addEventListener('click', function (ev) {
-          ev.stopPropagation();
+        // Same "hover already showed it, a click commits" pattern as
+        // widget.js - with several options there's no single obvious
+        // destination, so a click here commits to the PRIMARY (first-
+        // listed, i.e. the AI's top pick) option's own Book link rather
+        // than picking arbitrarily between equally-ranked alternates.
+        sp.addEventListener('click', function () {
           stopDiscoveryCue();
           trackHover(hoverTracked, m);
-          clearTimeout(hideTimer);
           fillPopup(popup, m, cfg);
-          positionPopup(popup, anchor, cfg);
+          var bk = document.querySelector('#il2-list .il2-opt-book');
+          if (bk && bk.getAttribute('href') !== '#') bk.click();
           popup.classList.add('il-on');
         });
       });
