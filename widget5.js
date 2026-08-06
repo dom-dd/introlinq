@@ -383,7 +383,7 @@
       // buildOptionRow), not nested next to the name - that way it's
       // centered by .il2-opt's own align-items:center same as the photo,
       // instead of pinned to the top of the block next to the name line.
-      '.il2-opt-name{font-weight:600!important;font-size:12px!important;color:#1a1a2e!important;line-height:1.2!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}' +
+      '.il2-opt-name{display:block!important;font-weight:600!important;font-size:12px!important;color:#1a1a2e!important;line-height:1.2!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;text-decoration:none!important}' +
       '.il2-opt-role{font-size:11px!important;font-weight:500!important;color:#4a4a6a!important;line-height:1.25!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0}' +
       // Same dark ink as the name, bold, rather than a saturated accent
       // colour (yellow read as a warning, green wasn't liked either) -
@@ -928,10 +928,22 @@
     var factsHtml = facts.length
       ? '<div class="il2-opt-facts">' + facts.map(function (c) { return String(c).replace(/</g,'&lt;'); }).join(' | ') + '</div>'
       : '';
+    // Photo and name are clickable too now, not just the Meet button -
+    // same tracked href, bigger click target. Falls back to plain
+    // (non-linked) markup when there's no real booking_url, same
+    // condition the Meet button itself already uses.
+    var photoImg = '<img class="il2-opt-photo" src="' + (e.photo_url || fallback) + '" onerror="this.onerror=null;this.src=\'' + fallback + '\'" alt="">';
+    var nameEsc = (e.name || '').replace(/</g,'&lt;');
+    var photoHtml = href !== '#'
+      ? '<a href="' + href + '" target="_blank" rel="noopener" style="display:block!important;flex-shrink:0">' + photoImg + '</a>'
+      : photoImg;
+    var nameHtml = href !== '#'
+      ? '<a class="il2-opt-name" href="' + href + '" target="_blank" rel="noopener">' + nameEsc + '</a>'
+      : '<div class="il2-opt-name">' + nameEsc + '</div>';
     return '<div class="il2-opt">' +
-        '<img class="il2-opt-photo" src="' + (e.photo_url || fallback) + '" onerror="this.onerror=null;this.src=\'' + fallback + '\'" alt="">' +
+        photoHtml +
         '<div class="il2-opt-info">' +
-          '<div class="il2-opt-name">' + (e.name || '').replace(/</g,'&lt;') + '</div>' +
+          nameHtml +
           (role ? '<div class="il2-opt-role">' + role.replace(/</g,'&lt;') + '</div>' : '') +
           factsHtml +
         '</div>' +
