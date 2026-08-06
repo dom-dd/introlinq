@@ -153,6 +153,15 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .live-banner.stale{background:#fff7ed;border-color:rgba(217,119,6,0.35)}
 .live-banner.stale .live-banner-dot{background:#d97706;box-shadow:0 0 0 3px rgba(217,119,6,0.15)}
 .live-banner.stale .live-banner-text strong{color:#b45309}
+/* On-demand live check - runs on every dashboard load, not just the passive
+   last_widget_fire_at timestamp above, which can look fine for days after a
+   real removal since it only updates from actual reader traffic. */
+.live-banner.checking{background:#f4f4f8;border-color:rgba(26,26,46,0.15)}
+.live-banner.checking .live-banner-dot{background:transparent;box-shadow:none;width:11px;height:11px;border:2px solid rgba(26,26,46,0.2);border-top-color:var(--ink-muted, #6b6b80);animation:live-banner-spin .7s linear infinite}
+.live-banner.not-found{background:#fef2f2;border-color:rgba(220,38,38,0.35)}
+.live-banner.not-found .live-banner-dot{background:var(--red, #dc2626);box-shadow:0 0 0 3px rgba(220,38,38,0.15)}
+.live-banner.not-found .live-banner-text strong{color:var(--red, #dc2626)}
+@keyframes live-banner-spin{to{transform:rotate(360deg)}}
 
 /* ── Widget settings ── */
 .settings-cols{display:flex;gap:2rem;padding:1.5rem}
@@ -1207,6 +1216,14 @@ async function loadDashboard() {
     }
     banner.title = `Last confirmed working: ${fullDate}`;
     banner.style.display = 'flex';
+
+    // On-demand live check - the passive text above is set instantly from
+    // last_widget_fire_at, but that can look fine for days after a real
+    // removal since it only updates from actual reader traffic. Fires on
+    // every dashboard load, shows a spinner while it runs, then overwrites
+    // the banner with what's actually true right now. Doesn't block or
+    // delay anything else on the page - fire and forget.
+    checkWidgetLive(d.publisher.slug, lastFire);
   }
 
   // Widget tab
@@ -2014,6 +2031,49 @@ function relativeTime(d) {
   const days = Math.floor(hours / 24);
   if (days < 30) return `${days}d ago`;
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// Fetches the publisher's own site right now and checks whether the widget
+// script is actually still there - see api/dashboard.js's check_live
+// handler. Swaps the banner to a spinner immediately, then to whatever's
+// actually true once the check resolves. lastFire (the passive timestamp
+// already on screen) is kept as a fallback message for the 'unknown'/
+// 'unreachable' outcomes, so a network hiccup on OUR end never reads as
+// "your widget was removed."
+async function checkWidgetLive(pubSlug, lastFire) {
+  const banner = document.getElementById('live-banner');
+  const textEl = document.getElementById('live-banner-text');
+  if (!banner || !textEl) return;
+
+  const previousClass = banner.className;
+  const previousHtml = textEl.innerHTML;
+  banner.className = 'live-banner checking';
+  banner.style.display = 'flex';
+  textEl.innerHTML = 'Checking widget status…';
+
+  let data;
+  try {
+    const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(pubSlug) + '&action=check_live', { credentials: 'include' });
+    data = res.ok ? await res.json() : null;
+  } catch {
+    data = null;
+  }
+
+  if (data && data.status === 'live') {
+    banner.className = 'live-banner';
+    textEl.innerHTML = `<strong>Your widget is live</strong> - verified on your site just now.`;
+    banner.title = 'Checked ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  } else if (data && data.status === 'not_found') {
+    banner.className = 'live-banner not-found';
+    textEl.innerHTML = `<strong>Widget not found on your site</strong> - it may have been removed.`;
+    banner.title = 'Checked just now - the script wasn\'t found on the homepage (this check can miss a Tag Manager install that loads after page load).';
+  } else {
+    // Couldn't verify either way (site unreachable, no domain on file, or
+    // our own request failed) - fall back to the passive last-fire message
+    // rather than leaving the spinner up or implying something's wrong.
+    banner.className = previousClass;
+    textEl.innerHTML = previousHtml;
+  }
 }
 
 // ── Pages modal ──────────────────────────────────────────────────────────────

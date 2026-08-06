@@ -501,6 +501,52 @@ export default async function handler(req, res) {
     return res.status(200).json(updated);
   }
 
+  // On-demand live check - fired by the dashboard on every load, not just
+  // relied on via the passive last_widget_fire_at timestamp (which only
+  // updates from real reader traffic, so a removed-but-not-yet-quiet-long-
+  // enough widget can sit showing "last checked 2d ago" as if nothing's
+  // wrong). Fetches the publisher's own homepage and looks for either
+  // supported install method directly, same check a human would do by
+  // viewing source. Still won't catch a GTM install whose container is
+  // only injected client-side after page load (nothing to find in the raw
+  // HTML a plain fetch sees then) - a known gap, not a promise this covers
+  // every possible setup, but it's the fast/cheap check, not a full
+  // browser render.
+  if (req.method === 'GET' && action === 'check_live') {
+    const [pubRow] = await sql`SELECT slug, domain FROM publishers WHERE slug = ${pub} AND active = true LIMIT 1`;
+    if (!pubRow) return res.status(200).json({ status: 'unknown' });
+    if (!pubRow.domain) return res.status(200).json({ status: 'unknown', reason: 'no_domain' });
+
+    const target = /^https?:\/\//i.test(pubRow.domain) ? pubRow.domain : 'https://' + pubRow.domain;
+    let html;
+    try {
+      const fetchRes = await fetch(target, {
+        signal: AbortSignal.timeout(15000),
+        headers: { 'User-Agent': 'IntroLinq-WidgetCheck/1.0 (+https://www.introlinq.com)' },
+      });
+      if (!fetchRes.ok) return res.status(200).json({ status: 'unreachable', httpStatus: fetchRes.status });
+      html = await fetchRes.text();
+    } catch {
+      return res.status(200).json({ status: 'unreachable' });
+    }
+
+    // Two supported install methods (see the Widget tab's embed snippets):
+    // a direct <script src=".../widget.js" data-publisher="slug"> tag, or a
+    // GTM/custom setup that sets window.IL_PUBLISHER_ID = 'slug' in an
+    // inline script instead. Checks full <script>...</script> blocks (open
+    // tag AND body) so the inline-variable form is caught too, not just tag
+    // attributes.
+    const escapedSlug = pubRow.slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const slugAttrPattern = new RegExp('data-publisher=["\']' + escapedSlug + '["\']', 'i');
+    const slugVarPattern = new RegExp('IL_PUBLISHER_ID\\s*=\\s*["\']' + escapedSlug + '["\']', 'i');
+    const scriptBlocks = html.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) || [];
+    const found = scriptBlocks.some(block =>
+      (/introlinq\.com/i.test(block) && slugAttrPattern.test(block)) || slugVarPattern.test(block)
+    );
+
+    return res.status(200).json({ status: found ? 'live' : 'not_found', checkedAt: new Date().toISOString() });
+  }
+
   if (req.method === 'GET') {
     // Expert list for a specific provider
     if (provider) {
