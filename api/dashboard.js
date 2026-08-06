@@ -531,8 +531,24 @@ export default async function handler(req, res) {
     const candidates = [...recentPages.map(r => r.page_url), homepage].filter(Boolean);
     if (!candidates.length) return res.status(200).json({ status: 'unknown', reason: 'no_domain' });
 
+    // Deliberately NOT parsing <script> tag boundaries - confirmed on
+    // open-intro.com (a Next.js site) that next/script serializes the
+    // embed as JSON inside a React hydration payload
+    // (\"src\":\"...widget.js\",\"data-publisher\":\"openintro\"), which
+    // never appears as a literal <script src=...> tag in the raw HTML at
+    // all. Three supported shapes, matched as plain substrings anywhere in
+    // the document instead: an HTML attribute (data-publisher="slug"), the
+    // same thing JSON-escaped (\"data-publisher\":\"slug\"), or the
+    // GTM/custom IL_PUBLISHER_ID variable form. A real introlinq.com
+    // widget script reference has to be present somewhere too, so an
+    // unrelated page that merely mentions "data-publisher" some other way
+    // can't false-positive.
     const escapedSlug = pubRow.slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const slugAttrPattern = new RegExp('data-publisher=["\']' + escapedSlug + '["\']', 'i');
+    const slugPattern = new RegExp(
+      'data-publisher\\s*=\\s*["\']' + escapedSlug + '["\']' +
+      '|\\\\?["\']data-publisher\\\\?["\']\\s*:\\s*\\\\?["\']' + escapedSlug + '\\\\?["\']',
+      'i'
+    );
     const slugVarPattern = new RegExp('IL_PUBLISHER_ID\\s*=\\s*["\']' + escapedSlug + '["\']', 'i');
 
     let lastFailure = null;
@@ -550,16 +566,8 @@ export default async function handler(req, res) {
         continue;
       }
 
-      // Two supported install methods (see the Widget tab's embed snippets):
-      // a direct <script src=".../widget.js" data-publisher="slug"> tag, or
-      // a GTM/custom setup that sets window.IL_PUBLISHER_ID = 'slug' in an
-      // inline script instead. Checks full <script>...</script> blocks
-      // (open tag AND body) so the inline-variable form is caught too, not
-      // just tag attributes.
-      const scriptBlocks = html.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) || [];
-      const found = scriptBlocks.some(block =>
-        (/introlinq\.com/i.test(block) && slugAttrPattern.test(block)) || slugVarPattern.test(block)
-      );
+      const found = (/introlinq\.com\/(widget\d*|carousel|expertboard)\.js/i.test(html) && slugPattern.test(html))
+        || slugVarPattern.test(html);
       // A page that loaded fine either way tells us something real - live
       // or genuinely not found - so it's the answer either way, no need to
       // try further candidates.
