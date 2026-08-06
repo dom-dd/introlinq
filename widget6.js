@@ -466,7 +466,9 @@
   // there's no specific expert this page's content ever pointed to.
   function showNoMatchFallback(articleEl, cfg) {
     if (document.getElementById('il6-fallback')) return;
-    var boardUrl = 'https://www.introlinq.com/experts.html?pub=' + encodeURIComponent(PUB);
+    // Clean path, not experts.html - Vercel 308-redirects the .html
+    // version to this anyway, so linking here directly skips that hop.
+    var boardUrl = 'https://www.introlinq.com/experts?pub=' + encodeURIComponent(PUB);
     var href = 'https://www.introlinq.com/api/dashboard?action=out'
       + '&pub=' + encodeURIComponent(PUB)
       + '&expert_url=' + encodeURIComponent(boardUrl)
