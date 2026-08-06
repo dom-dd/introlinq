@@ -375,11 +375,14 @@
       // read as clearly separate, and the label itself is a proper
       // sub-heading now (dark, bigger) instead of a tiny muted caption.
       '.il2-list-label{font-size:11.5px!important;font-weight:700!important;color:#1a1a2e!important;letter-spacing:.02em!important;padding-top:12px;margin-top:2px;border-top:1px solid rgba(26,26,46,0.1);margin-bottom:8px}' +
-      '.il2-opt{display:flex!important;align-items:center;gap:10px;padding:8px 0}' +
-      '.il2-opt+.il2-opt{border-top:1px solid rgba(26,26,46,0.08)}' +
+      '.il2-opt{display:flex!important;align-items:center;gap:10px;padding:9px 0}' +
+      '.il2-opt+.il2-opt{border-top:1px solid rgba(26,26,46,0.14)}' +
       '.il2-opt-photo{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;max-width:38px!important;max-height:38px!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;flex-shrink:0!important;display:block!important}' +
       '.il2-opt-info{flex:1;min-width:0}' +
-      '.il2-opt-top{display:flex!important;align-items:center;justify-content:space-between;gap:8px}' +
+      // il2-opt-book is a direct sibling of the photo/info column now (see
+      // buildOptionRow), not nested next to the name - that way it's
+      // centered by .il2-opt's own align-items:center same as the photo,
+      // instead of pinned to the top of the block next to the name line.
       '.il2-opt-name{font-weight:600!important;font-size:12px!important;color:#1a1a2e!important;line-height:1.2!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}' +
       '.il2-opt-role{font-size:11px!important;font-weight:500!important;color:#4a4a6a!important;line-height:1.25!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0}' +
       // Same dark ink as the name, bold, rather than a saturated accent
@@ -928,13 +931,11 @@
     return '<div class="il2-opt">' +
         '<img class="il2-opt-photo" src="' + (e.photo_url || fallback) + '" onerror="this.onerror=null;this.src=\'' + fallback + '\'" alt="">' +
         '<div class="il2-opt-info">' +
-          '<div class="il2-opt-top">' +
-            '<div class="il2-opt-name">' + (e.name || '').replace(/</g,'&lt;') + '</div>' +
-            (href !== '#' ? '<a class="il2-opt-book" href="' + href + '" target="_blank" rel="noopener">Meet →</a>' : '') +
-          '</div>' +
+          '<div class="il2-opt-name">' + (e.name || '').replace(/</g,'&lt;') + '</div>' +
           (role ? '<div class="il2-opt-role">' + role.replace(/</g,'&lt;') + '</div>' : '') +
           factsHtml +
         '</div>' +
+        (href !== '#' ? '<a class="il2-opt-book" href="' + href + '" target="_blank" rel="noopener">Meet →</a>' : '') +
       '</div>';
   }
 
