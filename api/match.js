@@ -199,6 +199,17 @@ function hydrateMatches(cachedMatches, experts, enabledPartners) {
 // the expert's own topics[] wins, so more specific asks are listed ahead
 // of broader ones.
 const TOPIC_HOOKS = [
+  // Not real expert topic tags (no expert is tagged "SEO" - checked the
+  // real taxonomy, it doesn't exist) - these only ever match via the
+  // reason/phrase text search above, never the topics[] fallback. Added
+  // after littlegreenagency.co.uk (an SEO/marketing agency) surfaced a
+  // "Speaking in public soon?" hook on a Search-Console/local-SEO article,
+  // because neither the reason nor phrase mentioned any topic already in
+  // this list, so it fell through to the matched expert's own broad tags.
+  { topic: 'SEO', hook: 'Need help with SEO? Talk to someone who has grown organic traffic before.', cta: 'Get SEO advice →' },
+  { topic: 'Search Console', hook: 'Making sense of Search Console data? Talk to someone who reads this for a living.', cta: 'Get SEO advice →' },
+  { topic: 'Google Ads', hook: 'Running Google Ads? Talk to someone who has managed real ad spend.', cta: 'Get ads advice →' },
+  { topic: 'Analytics', hook: 'Untangling your analytics setup? Talk to someone who has done this before.', cta: 'Get analytics advice →' },
   { topic: 'Fundraising', hook: 'Raising funds? We have a list of active investors to speak to.', cta: 'Get funding now →' },
   { topic: 'Startup Funding', hook: 'Raising funds? We have a list of active investors to speak to.', cta: 'Get funding now →' },
   { topic: 'VC (Venture Capital)', hook: 'Raising funds? We have a list of active investors to speak to.', cta: 'Get funding now →' },
@@ -226,10 +237,28 @@ const TOPIC_HOOKS = [
 ];
 const FALLBACK_HOOK = { hook: 'Need advice on this? Talk to someone who has been there before.', cta: 'Talk to an expert →' };
 
-function deriveHook(expert) {
-  if (!expert || !Array.isArray(expert.topics)) return { ...FALLBACK_HOOK, query: 'expert advice' };
+// Searches the REASON text first (why this expert was matched to THIS
+// specific phrase - "Dan has trained 10,000+ people on AI... he can
+// clarify what GA4 means for your marketing decisions"), not just the
+// expert's own static topics[] list. An expert with many broad tags (e.g.
+// someone who also does public speaking, on top of their actual marketing
+// expertise) would otherwise get whichever tag happens to rank first in
+// TOPIC_HOOKS regardless of what this specific match is actually about -
+// confirmed live on littlegreenagency.co.uk, where a GA4-tracking match
+// surfaced "Speaking in public soon?" purely because the matched expert's
+// profile also listed Public Speaking, which outranked Marketing in the
+// list even though the actual match reason was about GA4/marketing, not
+// public speaking at all. Falls back to the expert's topics[] only if the
+// reason/phrase text itself doesn't mention a known keyword.
+function deriveHook(expert, reasonText, phraseText) {
+  const haystack = ((reasonText || '') + ' ' + (phraseText || '')).toLowerCase();
   for (const entry of TOPIC_HOOKS) {
-    if (expert.topics.includes(entry.topic)) return { ...entry, query: entry.topic.toLowerCase() };
+    if (haystack.includes(entry.topic.toLowerCase())) return { ...entry, query: entry.topic.toLowerCase() };
+  }
+  if (expert && Array.isArray(expert.topics)) {
+    for (const entry of TOPIC_HOOKS) {
+      if (expert.topics.includes(entry.topic)) return { ...entry, query: entry.topic.toLowerCase() };
+    }
   }
   return { ...FALLBACK_HOOK, query: 'expert advice' };
 }
@@ -269,7 +298,7 @@ function hydrateMatchesMulti(cachedMatches, experts, enabledPartners, maxPerPhra
       return opt;
     });
     const primaryExpert = byId.get(picked[0].expert_id);
-    const { hook, cta, query } = deriveHook(primaryExpert);
+    const { hook, cta, query } = deriveHook(primaryExpert, picked[0].reason, m.phrase);
     out.push({ phrase: m.phrase, options, hook, cta, query: query || '' });
   }
   return out;
