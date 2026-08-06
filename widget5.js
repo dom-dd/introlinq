@@ -418,6 +418,12 @@
       // guarantees the starting state is committed first.
       '#il-cue.il-cue-play{animation:il-cue-in 1.1s ease forwards,il-cue-tap .8s ease 1.1s,il-cue-out 1s ease 2.4s forwards!important}' +
       '#il-cue img{width:100%!important;height:100%!important;display:block!important}' +
+      // Face variant (cfg.discoveryCueStyle === 'face', see showFaceCue) -
+      // circular photo with a white ring instead of the drop-shadowed
+      // cursor artwork; same #il-cue base rules and il-cue-play animation
+      // otherwise apply unchanged.
+      '#il-cue.il-cue-face{width:34px!important;height:34px!important;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3))!important}' +
+      '#il-cue.il-cue-face img{border-radius:50%!important;object-fit:cover!important;border:2px solid #fff!important;background:#edf5f0!important}' +
       '@keyframes il-pulse-glow{0%,100%{box-shadow:0 0 0 0 ' + hexToRgba(color, 0) + '}50%{box-shadow:0 0 0 6px ' + hexToRgba(color, 0.35) + '}}' +
       '.il-hl.il-cue-pulse{animation:il-pulse-glow 1s ease-in-out 2!important}';
     document.head.appendChild(s);
@@ -573,7 +579,7 @@
   // of playing once and disappearing forever. Under evaluation on
   // /demo/introlinq; not a final decision on the real UX.
   var CUE_REPEAT_MS = 14000;
-  function maybeShowDiscoveryCue(anchor, cfg) {
+  function maybeShowDiscoveryCue(anchor, cfg, match) {
     // Publisher-controlled - see the "Discovery animation" toggle on the
     // dashboard's Appearance & behaviour tab. Defaults to enabled (only
     // an explicit false, never a missing/undefined field, turns it off)
@@ -581,11 +587,21 @@
     // unless they deliberately opt out.
     if (cfg && cfg.discoveryCue === false) return;
     if (typeof IntersectionObserver !== 'function') return;
+    // discoveryCueStyle is a separate lever from discoveryCue itself - not
+    // yet wired into the dashboard (still testing on /demo/introlinq), so
+    // it's config-only for now: 'face' shows the actual matched expert's
+    // photo instead of the generic hand cursor, same animation/timing
+    // otherwise. Only takes effect if a real photo exists for this match -
+    // falls back to the hand rather than showing a blank/fallback avatar
+    // in a transient nudge animation.
+    var facePhoto = cfg && cfg.discoveryCueStyle === 'face' && match && match.options && match.options[0] && match.options[0].expert && match.options[0].expert.photo_url;
     var play = function () {
       if (cueLearned) return;
       if ('ontouchstart' in window) {
         anchor.classList.add('il-cue-pulse');
         setTimeout(function () { anchor.classList.remove('il-cue-pulse'); }, 2200);
+      } else if (facePhoto) {
+        showFaceCue(anchor, facePhoto);
       } else {
         showPhantomHand(anchor);
       }
@@ -640,6 +656,32 @@
     void cue.offsetWidth; // force layout so the pre-animation state above is committed before il-cue-play starts the animation clock
     cue.classList.add('il-cue-play');
     setTimeout(function () { img.src = 'https://www.introlinq.com/cue-icons/cursor-click.png'; }, 1100);
+    setTimeout(function () { cue.remove(); }, 3450);
+  }
+
+  // Alternate discovery-cue skin (cfg.discoveryCueStyle === 'face') - same
+  // positioning, timing, and fade-in/tap/fade-out animation as
+  // showPhantomHand, just the matched expert's actual circular photo
+  // instead of the generic hand-cursor artwork, so the nudge doubles as a
+  // preview of who you'd actually be talking to. No click-icon swap at
+  // 1100ms here - there's no equivalent second state for a photo, so it
+  // just holds through the tap-bounce.
+  function showFaceCue(anchor, photoUrl) {
+    var rect = anchor.getBoundingClientRect();
+    var scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+    var scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    var cue = document.createElement('div');
+    cue.id = 'il-cue';
+    cue.className = 'il-cue-face';
+    cue.style.left = (rect.left + rect.width / 2 + scrollX) + 'px';
+    cue.style.top = (rect.top + rect.height / 2 + scrollY) + 'px';
+    var img = document.createElement('img');
+    img.src = photoUrl;
+    img.alt = '';
+    cue.appendChild(img);
+    document.body.appendChild(cue);
+    void cue.offsetWidth;
+    cue.classList.add('il-cue-play');
     setTimeout(function () { cue.remove(); }, 3450);
   }
 
@@ -885,7 +927,7 @@
     // see attachGroupEvents for why.
     if (spans.length) {
       attachGroupEvents(spans, match, popup, cfg);
-      maybeShowDiscoveryCue(spans[0], cfg);
+      maybeShowDiscoveryCue(spans[0], cfg, match);
       maybeTrackSeen(spans[0], match);
     }
     return spans.length > 0;
