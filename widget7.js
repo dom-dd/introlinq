@@ -462,19 +462,24 @@
   // installed elsewhere on the same page. Its own "powered by IntroLinq"
   // attribution and click tracking are already built in - nothing extra
   // needed here.
+  //
+  // carousel.js does NOT support a data-container attribute (unlike
+  // expertboard.js) - it always creates its own container and inserts it
+  // right after its own <script> tag (script.parentNode.insertBefore(...,
+  // script.nextSibling)). The fix is to put the <script> tag itself INSIDE
+  // the wrapper, not appended to document.body - the first version of this
+  // did the latter, which meant carousel.js's real container landed at the
+  // very end of <body> (past the footer) instead of inside the article,
+  // and looked like nothing had rendered at all.
   function showNoMatchFallback(articleEl, cfg) {
     if (document.getElementById('il7-fallback')) return;
     var wrap = document.createElement('div');
     wrap.id = 'il7-fallback';
-    var target = document.createElement('div');
-    target.id = 'il7-fallback-carousel';
-    wrap.appendChild(target);
     articleEl.appendChild(wrap);
     var cs = document.createElement('script');
     cs.src = 'https://www.introlinq.com/carousel.js';
     cs.setAttribute('data-publisher', PUB);
-    cs.setAttribute('data-container', 'il7-fallback-carousel');
-    document.body.appendChild(cs);
+    wrap.appendChild(cs);
   }
 
   function createPopup(cfg) {
