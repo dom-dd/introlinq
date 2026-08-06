@@ -5,14 +5,15 @@
   // in the A/B comparison on /demo/introlinq. Identical to Widget 5 in
   // every way EXCEPT one addition: when a page genuinely has no match at
   // all (data.matches.length === 0 - roughly 81% of scanned pages today),
-  // instead of doing nothing, appends a block at the end of the article
-  // with a fixed generic hook (there's no matched phrase to derive a
-  // topic-specific one from) plus 3 randomly-picked experts, rendered the
-  // same way as Widget 5's own name rows (photo, name, role, Meet button).
-  // Deliberately NOT a carousel or anything louder than Widget 5's own
-  // popup styling - same visual language readers already see on a match,
-  // just always-visible instead of hover-triggered, so it doesn't read as
-  // an ad bolted onto someone else's page. Every real match still renders
+  // instead of doing nothing, appends a small line at the end of the
+  // article - a fixed generic hook (there's no matched phrase to derive a
+  // topic-specific one from) plus a CTA pill, no bigger a footprint than
+  // plain text. Hovering (tapping on touch) that line reveals 3 randomly-
+  // picked experts underneath it, rendered the same way as Widget 5's own
+  // name rows (photo, name, role, Meet button) - nothing shown until a
+  // reader actually engages, same contract as a real match's hover popup,
+  // deliberately NOT a permanent directory box on ~81% of a publisher's
+  // pages they never explicitly agreed to. Every real match still renders
   // exactly like Widget 5 - this only fires on the "currently shows
   // nothing" case. Deliberately forked from widget5.js rather than
   // widget.js so the diff between the two stays small and this can be
@@ -449,15 +450,24 @@
       '.il-hl.il-cue-pulse{animation:il-pulse-glow 1s ease-in-out 2!important}' +
       // NO-MATCH FALLBACK (Widget 6 only - see this file's header comment
       // for what would need to move if this gets folded into Widget 5).
-      // Same visual language as the matched-page popup (bold headline +
-      // solid pill CTA, then a list label + .il2-opt rows - those classes
-      // are reused as-is below, unscoped, so they apply here too) rather
-      // than inventing a second style - this shows on ~81% of pages
-      // (whatever has no real content match), so it should look like the
-      // same product, not a louder ad bolted onto someone else's page.
+      // Only #il6-hookwrap (headline + CTA pill) is visible by default -
+      // deliberately as small a footprint as a plain text line, since this
+      // shows on ~81% of pages (whatever has no real content match) without
+      // a publisher ever having agreed to a permanent directory box on most
+      // of their articles. #il6-reveal (the recommend-sentence + 3 named
+      // people) only opens on hover/tap of that line - see
+      // attachRevealHandlers - same "nothing extra until a reader actually
+      // engages" contract as a real match's hover popup, just anchored
+      // inline under the line instead of floating.
       '#il6-fallback{margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid rgba(26,26,46,0.1);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}' +
+      '#il6-hookwrap{cursor:pointer}' +
       '#il6-hook{font-size:15px!important;font-weight:700!important;color:#1a1a2e!important;line-height:1.4!important;margin-bottom:10px}' +
       '#il6-cta{display:inline-block!important;background:' + accent + '!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:9px 18px!important;border-radius:100px!important;font-size:13px!important;font-weight:700!important;text-decoration:none!important}' +
+      // max-height (not height:auto) is what makes this transitionable at
+      // all - the cap just needs to comfortably clear 3 rows + label +
+      // footer, not match them exactly.
+      '#il6-reveal{opacity:0;max-height:0;overflow:hidden;transition:opacity .2s ease,max-height .3s ease}' +
+      '#il6-reveal.il6-open{opacity:1;max-height:640px}' +
       '#il6-list-label{font-size:11.5px!important;font-weight:700!important;color:#1a1a2e!important;letter-spacing:.02em!important;padding-top:14px;margin-top:14px;border-top:1px solid rgba(26,26,46,0.1);margin-bottom:8px}' +
       '#il6-pv{font-size:8.5px!important;color:#8888a8!important;font-family:Inter,system-ui,sans-serif;display:flex!important;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(26,26,46,0.07)}';
     document.head.appendChild(s);
@@ -469,13 +479,17 @@
   // hover-popup mechanic at all, and there's no per-phrase reason to derive
   // a topic-specific hook from (see deriveHook in api/match.js), so the
   // headline is a single fixed line rather than an AI/keyword-derived one.
-  // Below it: up to 3 randomly-picked experts (see pickRandomExperts in
-  // api/match.js), rendered with the exact same buildOptionRow markup as a
-  // real match's name list - same photo/name/role/Meet-button treatment,
-  // just always-visible instead of hover-triggered. Nothing renders at all
-  // if the server couldn't supply any random experts (e.g. this publisher
-  // has zero eligible experts) - a header with no names under it would look
-  // broken, not restrained.
+  // Only #il6-hookwrap (that headline + CTA) renders visibly by default -
+  // deliberately no bigger a footprint than a plain text line, since this
+  // shows on ~81% of pages without a publisher ever agreeing to a
+  // permanent directory box on most of their articles. The 3 randomly-
+  // picked experts (see pickRandomExperts in api/match.js) live in
+  // #il6-reveal, hidden until a reader hovers/taps the line - see
+  // attachRevealHandlers - same "nothing shown until a reader engages"
+  // contract as a real match's hover popup. Nothing renders at all if the
+  // server couldn't supply any random experts (e.g. this publisher has
+  // zero eligible experts) - a line that reveals nothing on hover isn't
+  // restrained, it's broken.
   function showNoMatchFallback(articleEl, cfg, randomExperts) {
     if (document.getElementById('il6-fallback')) return;
     var options = (randomExperts || []).filter(function (o) { return o && o.expert; }).slice(0, 3);
@@ -507,14 +521,20 @@
     var div = document.createElement('div');
     div.id = 'il6-fallback';
     div.innerHTML =
-      '<div id="il6-hook">Need expert advice on business, growth, or funding?</div>' +
-      '<a id="il6-cta" href="' + ctaHref + '" target="_blank" rel="noopener">We work with people who’ve done it →</a>' +
-      '<div id="il6-list-label">' + listLabel + '</div>' +
-      '<div id="il6-list">' + rowsHtml + '</div>';
+      '<div id="il6-hookwrap">' +
+        '<div id="il6-hook">Need expert advice on business, growth, or funding?</div>' +
+        '<a id="il6-cta" href="' + ctaHref + '" target="_blank" rel="noopener">We work with people who’ve done it →</a>' +
+      '</div>' +
+      '<div id="il6-reveal">' +
+        '<div id="il6-list-label">' + listLabel + '</div>' +
+        '<div id="il6-list">' + rowsHtml + '</div>' +
+      '</div>';
     articleEl.appendChild(div);
 
     // Partnership attribution footer, keyed off the first random expert -
     // same treatment as fillPopup's own #il-pv footer for a real match.
+    // Lives inside #il6-reveal too - it's about the specific 3 people, same
+    // as how the real hover popup only ever shows this alongside a match.
     var e = options[0].expert;
     var providerName = e.provider_name || (e.provider_slug || 'openintro');
     var providerLogoUrl = e.provider_logo_url || null;
@@ -533,7 +553,38 @@
     var pv = document.createElement('div');
     pv.id = 'il6-pv';
     pv.innerHTML = partnerLink + '<a href="https://www.introlinq.com" target="_blank" rel="noopener" style="' + s + '">Powered by' + ilLogo + 'IntroLinq</a>';
-    div.appendChild(pv);
+    document.getElementById('il6-reveal').appendChild(pv);
+
+    attachRevealHandlers(document.getElementById('il6-hookwrap'), document.getElementById('il6-reveal'));
+  }
+
+  // Desktop: hover the headline/CTA line to open #il6-reveal, same
+  // short-delay-before-close pattern as the real hover popup (scheduleHide/
+  // hideTimer below) so moving the mouse from the line down into the
+  // revealed rows doesn't flicker shut - a local timer, not that shared
+  // one, since this isn't the same element and the two shouldn't interact.
+  // Touch has no hover at all, so tapping the plain headline text (not the
+  // CTA link itself, which should keep navigating normally on tap like any
+  // other link) toggles the reveal instead - mirrors the rest of this
+  // file's 'ontouchstart' in window branches used for the real popup.
+  function attachRevealHandlers(hookwrap, reveal) {
+    if ('ontouchstart' in window) {
+      var hookEl = document.getElementById('il6-hook');
+      if (hookEl) {
+        hookEl.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          reveal.classList.toggle('il6-open');
+        });
+      }
+      return;
+    }
+    var timer = null;
+    function open() { clearTimeout(timer); reveal.classList.add('il6-open'); }
+    function close() { timer = setTimeout(function () { reveal.classList.remove('il6-open'); }, 150); }
+    hookwrap.addEventListener('mouseenter', open);
+    hookwrap.addEventListener('mouseleave', close);
+    reveal.addEventListener('mouseenter', function () { clearTimeout(timer); });
+    reveal.addEventListener('mouseleave', close);
   }
 
   function createPopup(cfg) {
