@@ -855,9 +855,25 @@
   function fillPopup(popup, match, cfg) {
     var hookEl = document.getElementById('il2-hook');
     if (hookEl) hookEl.textContent = match.hook || '';
+    // Routed through the same tracked redirect every booking link uses
+    // (not a bare link to OpenIntro) so the ref/aid/click_id attribution
+    // params get attached - without them a booking made via this path
+    // would never get credited back to IntroLinq. /discover/ai takes
+    // match.query directly as a natural-language search, not a tag - no
+    // separate vocabulary to keep in sync with OpenIntro's own tags.
     var cta = document.getElementById('il2-cta');
     if (cta) {
-      cta.href = 'https://www.introlinq.com/demo/introlinq-experts.html?q=' + encodeURIComponent(match.query || '');
+      var discoverUrl = 'https://open-intro.com/discover/ai?q=' + encodeURIComponent(match.query || '');
+      cta.href = 'https://www.introlinq.com/api/dashboard?action=out'
+        + '&pub=' + encodeURIComponent(PUB)
+        + '&expert_url=' + encodeURIComponent(discoverUrl)
+        + '&article=' + encodeURIComponent(window.location.href.slice(0, 300))
+        + '&phrase=' + encodeURIComponent(match.phrase || '')
+        + '&lang=' + encodeURIComponent(navigator.language || '')
+        + '&tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || '')
+        + '&device=' + (window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop')
+        + '&source=' + encodeURIComponent(getTrafficSource())
+        + '&title=' + encodeURIComponent(document.title.slice(0, 150));
     }
   }
 

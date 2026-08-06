@@ -958,10 +958,29 @@
     if (hookWrap) hookWrap.style.display = match.hook ? 'block' : 'none';
     var hookEl = document.getElementById('il2-hook');
     if (hookEl) hookEl.textContent = match.hook || '';
+    // Routed through the same tracked redirect every booking link uses
+    // (not a bare link to OpenIntro) so the ref/aid/click_id attribution
+    // params get attached - without them a booking made via this path
+    // would never get credited back to IntroLinq. /discover/ai takes the
+    // CTA's own wording directly as its query (natural language, not a
+    // tag - no separate vocabulary to keep in sync with OpenIntro's own
+    // tags) and returned curated matches immediately when checked, with
+    // "why" reasoning per expert.
     var cta = document.getElementById('il2-cta');
     if (cta) {
-      cta.textContent = match.cta || 'Explore experts →';
-      cta.href = 'https://www.introlinq.com/demo/introlinq-experts.html?q=' + encodeURIComponent(match.query || '');
+      var ctaLabel = match.cta || 'Explore experts →';
+      cta.textContent = ctaLabel;
+      var discoverUrl = 'https://open-intro.com/discover/ai?q=' + encodeURIComponent(ctaLabel.replace(/→/g, '').trim());
+      cta.href = 'https://www.introlinq.com/api/dashboard?action=out'
+        + '&pub=' + encodeURIComponent(PUB)
+        + '&expert_url=' + encodeURIComponent(discoverUrl)
+        + '&article=' + encodeURIComponent(window.location.href.slice(0, 300))
+        + '&phrase=' + encodeURIComponent(match.phrase || '')
+        + '&lang=' + encodeURIComponent(navigator.language || '')
+        + '&tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || '')
+        + '&device=' + (window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop')
+        + '&source=' + encodeURIComponent(getTrafficSource())
+        + '&title=' + encodeURIComponent(document.title.slice(0, 150));
     }
 
     var options = match.options || [];
