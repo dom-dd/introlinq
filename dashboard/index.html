@@ -259,8 +259,9 @@ tr:last-child td{border-bottom:none}
 }
 
 /* ── Misc ── */
-.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--ink);color:var(--white);padding:0.75rem 1.25rem;border-radius:100px;font-size:0.875rem;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;z-index:9999}
+.toast{position:fixed;bottom:1.75rem;right:5.5rem;background:var(--ink);color:var(--white);padding:0.75rem 1.25rem;border-radius:100px;font-size:0.875rem;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;z-index:9999}
 .toast.show{opacity:1;transform:translateY(0)}
+@media(max-width:420px){.toast{right:4.75rem}}
 #not-found{display:none;align-items:center;justify-content:center;min-height:80vh;text-align:center}
 #not-found h2{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--ink);margin-bottom:0.5rem}
 #not-found p{font-size:0.9rem;color:var(--ink-muted)}
@@ -633,6 +634,14 @@ tr:last-child td{border-bottom:none}
                 <div class="setting-desc">A brief hand-cursor nudge shown to readers so they notice a highlight can be hovered</div>
                 <label class="toggle" style="margin-top:0.125rem" title="Discovery animation">
                   <input type="checkbox" id="discovery-cue-toggle" checked onchange="toggleDiscoveryCue(this.checked)">
+                  <div class="toggle-track"></div>
+                </label>
+              </div>
+              <div class="setting-block">
+                <div class="setting-title">Suggestions on non-matching pages</div>
+                <div class="setting-desc">On pages with no relevant expert, show a small line readers can hover to see a few suggested experts anyway. Off by default - turn on only if you're comfortable with it appearing on pages without a direct match.</div>
+                <label class="toggle" style="margin-top:0.125rem" title="Suggestions on non-matching pages">
+                  <input type="checkbox" id="no-match-fallback-toggle" onchange="toggleNoMatchFallback(this.checked)">
                   <div class="toggle-track"></div>
                 </label>
               </div>
@@ -1230,6 +1239,7 @@ async function loadDashboard() {
   settings.highlight = p.highlight_style || 'fill';
   renderSettings();
   document.getElementById('discovery-cue-toggle').checked = p.discovery_cue_enabled !== false;
+  document.getElementById('no-match-fallback-toggle').checked = p.no_match_fallback_enabled === true;
   document.getElementById('carousel-title-input').value = p.carousel_title || '';
 
   if (d.partners && d.partners.length) {
@@ -1433,6 +1443,10 @@ async function saveSetting(field, value, activeEl) {
 
 function toggleDiscoveryCue(enabled) {
   saveSetting('discovery_cue_enabled', enabled);
+}
+
+function toggleNoMatchFallback(enabled) {
+  saveSetting('no_match_fallback_enabled', enabled);
 }
 
 async function saveCarouselTitle() {

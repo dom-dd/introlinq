@@ -19,6 +19,7 @@ let cacheTableReady = false;
 let publisherActivityColumnsReady = false;
 let discoveryCueColumnReady = false;
 let scanCapColumnReady = false;
+let noMatchFallbackColumnReady = false;
 let aiCallLogTableReady = false;
 let expertsCache = null;
 let expertsCacheTime = 0;
@@ -340,7 +341,7 @@ function pickRandomExperts(experts, enabledPartners, n = 3) {
 // in (see handler's `variant === 'multi'` check), so it can't affect any
 // real publisher's widget.js traffic. Never triggers a fresh AI scan -
 // meant for already-cached demo pages, not general use.
-async function handleMultiVariant(sql, { publisher, page_url, page_title, readerCountry, ip, req, pubConfig, enabledPartners }) {
+async function handleMultiVariant(sql, { publisher, page_url, page_title, readerCountry, ip, req, pubConfig, enabledPartners, noMatchFallbackEnabled }) {
   // Same WHERE clause as the single-match path's own cache lookup
   // (mirrors tryServeFromCache's caller) - now also looks up CONFIRMED
   // negative entries, not just positive ones. Widget6.js's no-match
@@ -363,11 +364,16 @@ async function handleMultiVariant(sql, { publisher, page_url, page_title, reader
   // A confirmed negative entry - cached: true but matches: [] tells the
   // widget "this was genuinely scanned, there's really nothing here" as
   // opposed to "still pending." randomExperts backs widget6.js's no-match
-  // fallback block (see pickRandomExperts) - best-effort, so a roster fetch
-  // failure just means the fallback has nobody to show, not a hard error.
+  // fallback block (see pickRandomExperts) - only fetched when the
+  // publisher has explicitly opted into it (no_match_fallback_enabled on
+  // their dashboard); omitted entirely otherwise, which is what makes
+  // widget6.js render nothing extra for a publisher who hasn't turned it
+  // on - best-effort even when enabled, so a roster fetch failure just
+  // means the fallback has nobody to show, not a hard error.
   if (!cached.has_match) {
-    const roster = await loadExperts(sql);
-    const randomExperts = roster ? pickRandomExperts(roster, enabledPartners) : [];
+    const randomExperts = noMatchFallbackEnabled
+      ? await loadExperts(sql).then(roster => roster ? pickRandomExperts(roster, enabledPartners) : [])
+      : [];
     return { matches: [], config: pubConfig, cached: true, noMatch: true, randomExperts };
   }
 
@@ -376,8 +382,9 @@ async function handleMultiVariant(sql, { publisher, page_url, page_title, reader
 
   const hydrated = hydrateMatchesMulti(cached.result.matches, referencedExperts, enabledPartners);
   if (hydrated.length === 0) {
-    const roster = await loadExperts(sql);
-    const randomExperts = roster ? pickRandomExperts(roster, enabledPartners) : [];
+    const randomExperts = noMatchFallbackEnabled
+      ? await loadExperts(sql).then(roster => roster ? pickRandomExperts(roster, enabledPartners) : [])
+      : [];
     return { matches: [], config: pubConfig, cached: true, noMatch: true, randomExperts };
   }
 
@@ -1192,9 +1199,16 @@ export default async function handler(req, res) {
       await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS scan_cap_override BOOLEAN NOT NULL DEFAULT false`.catch(() => {});
       scanCapColumnReady = true;
     }
+    // Default false, unlike discovery_cue_enabled's default true - this is
+    // an opt-IN, not an opt-out: a publisher agreed to a hover widget on
+    // matched phrases, not a line that shows up on every page without one.
+    if (!noMatchFallbackColumnReady) {
+      await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS no_match_fallback_enabled BOOLEAN NOT NULL DEFAULT false`.catch(() => {});
+      noMatchFallbackColumnReady = true;
+    }
     const [pubRows, cachedRows] = await Promise.all([
       publisher
-        ? sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, scan_cap_override, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null])
+        ? sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, scan_cap_override, no_match_fallback_enabled, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null])
         : Promise.resolve([null]),
       page_url
         ? sql`
@@ -1223,6 +1237,7 @@ export default async function handler(req, res) {
     let sensitivityInstruction = 'Match on broader topic overlap. If the expert\'s field is relevant to the section, include them. Prefer more matches over fewer.';
     let pubConfig = { color: '#e6a820', accent: '#e6a820', size: 'medium', highlightStyle: 'fill', discoveryCue: true };
     let enabledPartners = null; // null = homepage demo
+    let noMatchFallbackEnabled = false;
 
     if (pub) {
       const powerMap = { light: 2, moderate: 4, heavy: 10, unlimited: 15 };
@@ -1235,6 +1250,7 @@ export default async function handler(req, res) {
       sensitivityInstruction = sensitivityMap[pub.match_sensitivity] ?? sensitivityMap.balanced;
       pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium', highlightStyle: pub.highlight_style || 'fill', discoveryCue: pub.discovery_cue_enabled !== false };
       enabledPartners = pub.enabled_partners || ['openintro'];
+      noMatchFallbackEnabled = pub.no_match_fallback_enabled === true;
     }
 
     // widget2.js experiment - explicit opt-in only, so this can never affect
@@ -1242,7 +1258,7 @@ export default async function handler(req, res) {
     // handleMultiVariant's own comment) and returns here, before any of the
     // normal single-expert cache-serve/fresh-scan flow below runs.
     if (req.body.variant === 'multi') {
-      const result = await handleMultiVariant(sql, { publisher, page_url, page_title, readerCountry, ip, req, pubConfig, enabledPartners });
+      const result = await handleMultiVariant(sql, { publisher, page_url, page_title, readerCountry, ip, req, pubConfig, enabledPartners, noMatchFallbackEnabled });
       return res.status(200).json(result);
     }
 
