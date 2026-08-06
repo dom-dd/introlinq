@@ -365,27 +365,24 @@
       'box-sizing:border-box;line-height:normal;text-align:left}' +
       '#il-pop.il-on{opacity:1;transform:translateY(0);pointer-events:all}' +
       '#il-pop *{box-sizing:border-box}' +
-      // Compact per-expert block below the hook/CTA - photo+name+Book on
-      // one row, role below, then punchy credential PILLS on their own row.
-      // Pills instead of a single truncated line: a full clause like "4
-      // exits - $1B+ in transactions processed" doesn't fit in a row shared
-      // with a photo and button (was getting cut off with ellipsis) - short
-      // 2-4 word chips wrap naturally instead, and read as scannable stats
-      // rather than a sentence you have to parse.
+      // Compact per-expert block below the hook/CTA - photo+name+Meet on
+      // one row, role right underneath (tight - reads as one unit with the
+      // name), then punchy credential facts on their own line, joined with
+      // " | " instead of separate pill chips - reads as one quick scannable
+      // line instead of a row of badges.
       '.il2-list-label{font-size:9.5px!important;font-weight:700!important;color:#8888a8!important;text-transform:uppercase!important;letter-spacing:.04em!important;margin-bottom:6px}' +
       '.il2-opt{display:flex!important;align-items:flex-start;gap:10px;padding:8px 0}' +
       '.il2-opt+.il2-opt{border-top:1px solid rgba(26,26,46,0.08)}' +
       '.il2-opt-photo{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;max-width:38px!important;max-height:38px!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;flex-shrink:0!important;display:block!important;margin-top:1px}' +
       '.il2-opt-info{flex:1;min-width:0}' +
       '.il2-opt-top{display:flex!important;align-items:center;justify-content:space-between;gap:8px}' +
-      '.il2-opt-name{font-weight:600!important;font-size:12px!important;color:#1a1a2e!important;line-height:1.25!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}' +
-      '.il2-opt-role{font-size:9.5px!important;color:#8888a8!important;line-height:1.3!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}' +
-      '.il2-opt-pills{display:flex!important;flex-wrap:wrap;gap:4px;margin-top:5px}' +
+      '.il2-opt-name{font-weight:600!important;font-size:12px!important;color:#1a1a2e!important;line-height:1.2!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}' +
+      '.il2-opt-role{font-size:11px!important;font-weight:500!important;color:#4a4a6a!important;line-height:1.25!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0}' +
       // Sage green, not the publisher's accent colour (usually gold/yellow)
       // - a fact chip reads as a neutral badge, not a call-to-action, and
       // matches the same sage tone the main site already uses for other
       // quick-fact badges (e.g. expert card pricing tags).
-      '.il2-opt-pill{display:inline-block!important;background:#edf5f0!important;color:#3d7a5f!important;font-size:9.5px!important;font-weight:700!important;padding:2px 7px!important;border-radius:100px!important;white-space:nowrap;line-height:1.5!important}' +
+      '.il2-opt-facts{font-size:10.5px!important;font-weight:700!important;color:#3d7a5f!important;line-height:1.4!important;margin-top:3px}' +
       '.il2-opt-book{flex-shrink:0!important;display:block!important;background:none!important;border:1.5px solid ' + accent + '!important;color:' + accent + '!important;text-align:center;padding:4px 10px!important;border-radius:100px!important;font-size:10.5px!important;font-weight:700!important;text-decoration:none!important;white-space:nowrap}' +
       // Discoverability nudge (see maybeShowDiscoveryCue) - a
       // white "phantom hand" tap on desktop, a soft pulse on the highlight
@@ -458,7 +455,6 @@
         '<a id="il2-cta" href="#" target="_blank" rel="noopener" style="display:block!important;background:' + accent + '!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:' + (isSmall ? '7' : '9') + 'px;border-radius:100px;font-size:13px!important;font-weight:700!important;text-decoration:none!important"></a>' +
       '</div>' +
       '<div id="il2-list"></div>' +
-      '<a id="il2-viewall" href="https://www.introlinq.com/demo/introlinq-experts.html" target="_blank" rel="noopener" style="display:block!important;text-align:center;padding:7px!important;margin-top:4px;border-radius:100px;font-size:11.5px!important;font-weight:600!important;color:#8888a8!important;text-decoration:none!important;border:1.5px dashed #e4e4ee!important">View all experts →</a>' +
       '<div id="il-pv" style="font-size:8.5px!important;color:#8888a8!important;text-align:center;margin-top:8px;letter-spacing:.02em"></div>';
     document.body.appendChild(p);
     p.addEventListener('mouseenter', function () { clearTimeout(hideTimer); });
@@ -917,21 +913,22 @@
         + '&title=' + encodeURIComponent(document.title.slice(0, 150));
     }
     // opt.credentials is an array of short punchy facts ("4 exits", "$1B+
-    // processed") - each becomes its own pill so it wraps naturally instead
-    // of getting cut off with an ellipsis the way one long clause did.
-    var pills = Array.isArray(opt.credentials) ? opt.credentials.filter(Boolean) : [];
-    var pillsHtml = pills.length
-      ? '<div class="il2-opt-pills">' + pills.map(function (c) { return '<span class="il2-opt-pill">' + String(c).replace(/</g,'&lt;') + '</span>'; }).join('') + '</div>'
+    // processed") - joined into one line with " | " instead of separate
+    // pill chips, so it reads as one quick scannable line rather than a
+    // row of badges.
+    var facts = Array.isArray(opt.credentials) ? opt.credentials.filter(Boolean) : [];
+    var factsHtml = facts.length
+      ? '<div class="il2-opt-facts">' + facts.map(function (c) { return String(c).replace(/</g,'&lt;'); }).join(' | ') + '</div>'
       : '';
     return '<div class="il2-opt">' +
         '<img class="il2-opt-photo" src="' + (e.photo_url || fallback) + '" onerror="this.onerror=null;this.src=\'' + fallback + '\'" alt="">' +
         '<div class="il2-opt-info">' +
           '<div class="il2-opt-top">' +
             '<div class="il2-opt-name">' + (e.name || '').replace(/</g,'&lt;') + '</div>' +
-            (href !== '#' ? '<a class="il2-opt-book" href="' + href + '" target="_blank" rel="noopener">Book →</a>' : '') +
+            (href !== '#' ? '<a class="il2-opt-book" href="' + href + '" target="_blank" rel="noopener">Meet →</a>' : '') +
           '</div>' +
           (role ? '<div class="il2-opt-role">' + role.replace(/</g,'&lt;') + '</div>' : '') +
-          pillsHtml +
+          factsHtml +
         '</div>' +
       '</div>';
   }
@@ -955,7 +952,7 @@
     var list = document.getElementById('il2-list');
     if (list) {
       list.innerHTML = options.length
-        ? (match.hook ? '<div class="il2-list-label">Real people you could talk to</div>' : '') + options.map(function (opt) { return buildOptionRow(opt, match); }).join('')
+        ? (match.hook ? '<div class="il2-list-label">' + (cfg.company_name || 'We').replace(/</g,'&lt;') + ' recommend' + (cfg.company_name ? 's' : '') + ' talking to</div>' : '') + options.map(function (opt) { return buildOptionRow(opt, match); }).join('')
         : '';
     }
 
@@ -969,19 +966,19 @@
       var providerLogoUrl = e.provider_logo_url || null;
       var providerUrl = e.provider_website_url || '#';
       var prov = { name: providerName, url: providerUrl, logo: providerLogoUrl };
-      var ilLogo = '<img src="https://www.introlinq.com/favicon.svg" alt="IntroLinq" style="width:11px!important;height:11px!important;border-radius:2px;vertical-align:middle;margin-right:3px;flex-shrink:0">';
+      var ilLogo = '<img src="https://www.introlinq.com/favicon.svg" alt="IntroLinq" style="width:11px!important;height:11px!important;border-radius:2px;vertical-align:middle;margin-left:4px;margin-right:3px;flex-shrink:0">';
       var s = 'font-size:8.5px!important;color:#8888a8!important;font-family:Inter,system-ui,sans-serif;text-decoration:none;display:flex!important;align-items:center;gap:2px;min-width:0;overflow:hidden;white-space:nowrap;flex-shrink:1';
       pv.style.cssText = 'display:flex!important;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:8px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(26,26,46,0.07)';
       var partnerLink;
       if (e.is_demo_provider && prov.logo) {
-        partnerLink = '<a href="' + prov.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with <img src="' + prov.logo + '" alt="' + prov.name + '" style="height:14px!important;width:auto;max-width:70px;object-fit:contain;margin-left:4px;vertical-align:middle;flex-shrink:0"></a>';
+        partnerLink = '<a href="' + prov.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with <img src="' + prov.logo + '" alt="' + prov.name + '" style="height:14px!important;width:auto;max-width:70px;object-fit:contain;margin-left:5px;vertical-align:middle;flex-shrink:0"></a>';
       } else {
         var providerLogoHtml = prov.logo
-          ? '<img src="' + prov.logo + '" alt="' + prov.name + '" style="width:13px!important;height:13px!important;object-fit:contain;border-radius:2px;vertical-align:middle;margin-right:3px;flex-shrink:0">'
+          ? '<img src="' + prov.logo + '" alt="' + prov.name + '" style="width:13px!important;height:13px!important;object-fit:contain;border-radius:2px;vertical-align:middle;margin-left:5px;margin-right:3px;flex-shrink:0">'
           : '';
-        partnerLink = '<a href="' + prov.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with ' + providerLogoHtml + prov.name + '</a>';
+        partnerLink = '<a href="' + prov.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with' + (providerLogoHtml || ' ') + prov.name + '</a>';
       }
-      pv.innerHTML = partnerLink + '<a href="https://www.introlinq.com" target="_blank" rel="noopener" style="' + s + '">' + ilLogo + 'IntroLinq</a>';
+      pv.innerHTML = partnerLink + '<a href="https://www.introlinq.com" target="_blank" rel="noopener" style="' + s + '">Powered by' + ilLogo + 'IntroLinq</a>';
     }
   }
 
