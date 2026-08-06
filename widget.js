@@ -16,7 +16,7 @@
   // not on the list. Checked before the double-init guard below, since
   // handing off means this copy of widget.js does nothing else at all.
   var EXPERIMENTAL_WIDGETS = {
-    'little-green-agency': 'widget5.js',
+    'little-green-agency': 'widget6.js',
     'openintro': 'widget5.js',
   };
   if (EXPERIMENTAL_WIDGETS[PUB]) {
