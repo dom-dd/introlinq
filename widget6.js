@@ -504,7 +504,15 @@
       '#il6-fallback{margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid rgba(26,26,46,0.1);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}' +
       '#il6-hookwrap{cursor:pointer}' +
       '#il6-hook{font-size:15px!important;font-weight:700!important;color:#1a1a2e!important;line-height:1.4!important;margin-bottom:10px}' +
-      '#il6-cta{display:inline-block!important;background:' + accent + '!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:9px 18px!important;border-radius:100px!important;font-size:13px!important;font-weight:700!important;text-decoration:none!important}';
+      '#il6-cta{display:inline-block!important;background:' + accent + '!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:9px 18px!important;border-radius:100px!important;font-size:13px!important;font-weight:700!important;text-decoration:none!important}' +
+      '#il6-cta-row{display:flex!important;align-items:center;gap:10px;flex-wrap:wrap}' +
+      '#il6-avatars{display:flex!important;align-items:center;flex-shrink:0}' +
+      // Overlapping circle-of-faces convention - negative margin pulls each
+      // one under the last, white ring (border + a hairline shadow so it
+      // still separates on a white page background) keeps them readable as
+      // distinct people rather than a blob.
+      '.il6-avatar{width:26px!important;height:26px!important;min-width:26px!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;border:2px solid #fff!important;box-shadow:0 0 0 1px rgba(26,26,46,0.12)!important;margin-left:-8px!important;display:block!important}' +
+      '.il6-avatar:first-child{margin-left:0!important}';
     document.head.appendChild(s);
   }
 
@@ -555,12 +563,24 @@
       + '&title=' + encodeURIComponent(document.title.slice(0, 150))
       + '&click_source=no_match_cta';
 
+    // Same 3 real people the popup shows, not a generic stock cluster -
+    // what you see next to the button is genuinely who you'd meet. Same
+    // fallback-avatar convention as buildOptionRow's photos.
+    var avatarsHtml = options.map(function (opt) {
+      var e = opt.expert;
+      var fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=64&name=' + encodeURIComponent(e.name);
+      return '<img class="il6-avatar" src="' + (e.photo_url || fallback) + '" onerror="this.onerror=null;this.src=\'' + fallback + '\'" alt="">';
+    }).join('');
+
     var div = document.createElement('div');
     div.id = 'il6-fallback';
     div.innerHTML =
       '<div id="il6-hookwrap">' +
         '<div id="il6-hook">Need expert advice on business, growth, or funding?</div>' +
-        '<a id="il6-cta" href="' + ctaHref + '" target="_blank" rel="noopener">We work with people who’ve done it →</a>' +
+        '<div id="il6-cta-row">' +
+          '<a id="il6-cta" href="' + ctaHref + '" target="_blank" rel="noopener">We work with people who’ve done it →</a>' +
+          '<div id="il6-avatars">' + avatarsHtml + '</div>' +
+        '</div>' +
       '</div>';
     articleEl.appendChild(div);
 
