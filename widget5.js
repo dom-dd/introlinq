@@ -370,20 +370,25 @@
       // name), then punchy credential facts on their own line, joined with
       // " | " instead of separate pill chips - reads as one quick scannable
       // line instead of a row of badges.
-      '.il2-list-label{font-size:9.5px!important;font-weight:700!important;color:#8888a8!important;text-transform:uppercase!important;letter-spacing:.04em!important;margin-bottom:6px}' +
-      '.il2-opt{display:flex!important;align-items:flex-start;gap:10px;padding:8px 0}' +
+      // Divider + heading between the hook/CTA block and the name list -
+      // a visible border-top (not just a margin gap) so the two sections
+      // read as clearly separate, and the label itself is a proper
+      // sub-heading now (dark, bigger) instead of a tiny muted caption.
+      '.il2-list-label{font-size:11.5px!important;font-weight:700!important;color:#1a1a2e!important;letter-spacing:.02em!important;padding-top:12px;margin-top:2px;border-top:1px solid rgba(26,26,46,0.1);margin-bottom:8px}' +
+      '.il2-opt{display:flex!important;align-items:center;gap:10px;padding:8px 0}' +
       '.il2-opt+.il2-opt{border-top:1px solid rgba(26,26,46,0.08)}' +
-      '.il2-opt-photo{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;max-width:38px!important;max-height:38px!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;flex-shrink:0!important;display:block!important;margin-top:1px}' +
+      '.il2-opt-photo{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;max-width:38px!important;max-height:38px!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;flex-shrink:0!important;display:block!important}' +
       '.il2-opt-info{flex:1;min-width:0}' +
       '.il2-opt-top{display:flex!important;align-items:center;justify-content:space-between;gap:8px}' +
       '.il2-opt-name{font-weight:600!important;font-size:12px!important;color:#1a1a2e!important;line-height:1.2!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}' +
       '.il2-opt-role{font-size:11px!important;font-weight:500!important;color:#4a4a6a!important;line-height:1.25!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0}' +
-      // Sage green, not the publisher's accent colour (usually gold/yellow)
-      // - a fact chip reads as a neutral badge, not a call-to-action, and
-      // matches the same sage tone the main site already uses for other
-      // quick-fact badges (e.g. expert card pricing tags).
-      '.il2-opt-facts{font-size:10.5px!important;font-weight:700!important;color:#3d7a5f!important;line-height:1.4!important;margin-top:3px}' +
-      '.il2-opt-book{flex-shrink:0!important;display:block!important;background:none!important;border:1.5px solid ' + accent + '!important;color:' + accent + '!important;text-align:center;padding:4px 10px!important;border-radius:100px!important;font-size:10.5px!important;font-weight:700!important;text-decoration:none!important;white-space:nowrap}' +
+      // Same dark ink as the name, bold, rather than a saturated accent
+      // colour (yellow read as a warning, green wasn't liked either) -
+      // stands out through weight/contrast instead of hue.
+      '.il2-opt-facts{font-size:10.5px!important;font-weight:700!important;color:#1a1a2e!important;line-height:1.4!important;margin-top:3px}' +
+      // Filled, not outlined, so it actually stands out next to the name
+      // instead of blending into the row.
+      '.il2-opt-book{flex-shrink:0!important;display:block!important;background:' + accent + '!important;border:none!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:5px 12px!important;border-radius:100px!important;font-size:11px!important;font-weight:700!important;text-decoration:none!important;white-space:nowrap}' +
       // Discoverability nudge (see maybeShowDiscoveryCue) - a
       // white "phantom hand" tap on desktop, a soft pulse on the highlight
       // itself on touch. pointer-events:none on #il-cue is load-bearing:
