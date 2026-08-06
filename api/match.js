@@ -322,7 +322,16 @@ function pickRandomExperts(experts, enabledPartners, n = 3) {
     const j = Math.floor(Math.random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
-  return pool.slice(0, n).map(e => ({ expert: e }));
+  // e.highlights is the expert's own curated highlight-reel bullets (set on
+  // their profile, same field an expert board/profile page would show) -
+  // there's no per-match reason to build a punchier fragment from here (no
+  // match at all is the whole premise of this fallback), so the first 2
+  // stand in for widget5's AI-derived credential facts. Real data, no AI
+  // call, no per-page cost.
+  return pool.slice(0, n).map(e => ({
+    expert: e,
+    credentials: Array.isArray(e.highlights) ? e.highlights.slice(0, 2) : []
+  }));
 }
 
 // widget2.js experiment only - a self-contained cache-read-only path,
