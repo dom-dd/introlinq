@@ -505,19 +505,28 @@ export default async function handler(req, res) {
   // relied on via the passive last_widget_fire_at timestamp (which only
   // updates from real reader traffic, so a removed-but-not-yet-quiet-long-
   // enough widget can sit showing "last checked 2d ago" as if nothing's
-  // wrong). Fetches the publisher's own homepage and looks for either
-  // supported install method directly, same check a human would do by
-  // viewing source. Still won't catch a GTM install whose container is
-  // only injected client-side after page load (nothing to find in the raw
-  // HTML a plain fetch sees then) - a known gap, not a promise this covers
-  // every possible setup, but it's the fast/cheap check, not a full
-  // browser render.
+  // wrong). Fetches a real page and looks for either supported install
+  // method directly, same check a human would do by viewing source. Still
+  // won't catch a GTM install whose container is only injected client-side
+  // after page load (nothing to find in the raw HTML a plain fetch sees
+  // then) - a known gap, not a promise this covers every possible setup,
+  // but it's the fast/cheap check, not a full browser render.
   if (req.method === 'GET' && action === 'check_live') {
     const [pubRow] = await sql`SELECT slug, domain FROM publishers WHERE slug = ${pub} AND active = true LIMIT 1`;
     if (!pubRow) return res.status(200).json({ status: 'unknown' });
-    if (!pubRow.domain) return res.status(200).json({ status: 'unknown', reason: 'no_domain' });
 
-    const target = /^https?:\/\//i.test(pubRow.domain) ? pubRow.domain : 'https://' + pubRow.domain;
+    // Most sites only embed the widget in article/post templates, not the
+    // bare homepage (which usually has no long-form content for it to
+    // scan anyway) - checking the homepage alone false-negatives on those
+    // (confirmed on littlegreenagency.co.uk: homepage has no widget, every
+    // blog post does). A page the widget has actually fired on before is
+    // the right thing to re-check, so prefer the most recent match_cache
+    // entry; only fall back to the bare domain if it's never fired at all.
+    const [recentPage] = await sql`SELECT page_url FROM match_cache WHERE publisher = ${pub} ORDER BY cached_at DESC LIMIT 1`.catch(() => [null]);
+    const target = recentPage?.page_url
+      || (pubRow.domain ? (/^https?:\/\//i.test(pubRow.domain) ? pubRow.domain : 'https://' + pubRow.domain) : null);
+    if (!target) return res.status(200).json({ status: 'unknown', reason: 'no_domain' });
+
     let html;
     try {
       const fetchRes = await fetch(target, {
