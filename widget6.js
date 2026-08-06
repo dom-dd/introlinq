@@ -155,7 +155,7 @@
         // randomExperts:[...], config:{...}}) without needing a real
         // scanned page.
         injectStyles(pre.config || {});
-        showNoMatchFallback(el, pre.config || {}, pre.randomExperts);
+        showNoMatchFallback(el, pre.config || {}, pre.randomExperts, pre.randomExpertsTotal);
       }
       return;
     }
@@ -248,7 +248,7 @@
           // all and was already returned above).
           if (data.noMatch) {
             injectStyles(data.config || {});
-            showNoMatchFallback(el, data.config || {}, data.randomExperts);
+            showNoMatchFallback(el, data.config || {}, data.randomExperts, data.randomExpertsTotal);
             return;
           }
           var shown = applyMatches(data);
@@ -507,12 +507,17 @@
       '#il6-cta{display:inline-block!important;background:' + accent + '!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:9px 18px!important;border-radius:100px!important;font-size:13px!important;font-weight:700!important;text-decoration:none!important}' +
       '#il6-cta-row{display:flex!important;align-items:center;gap:10px;flex-wrap:wrap}' +
       '#il6-avatars{display:flex!important;align-items:center;flex-shrink:0}' +
-      // Overlapping circle-of-faces convention - negative margin pulls each
-      // one under the last, white ring (border + a hairline shadow so it
-      // still separates on a white page background) keeps them readable as
-      // distinct people rather than a blob.
-      '.il6-avatar{width:26px!important;height:26px!important;min-width:26px!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;border:2px solid #fff!important;box-shadow:0 0 0 1px rgba(26,26,46,0.12)!important;margin-left:-8px!important;display:block!important}' +
-      '.il6-avatar:first-child{margin-left:0!important}';
+      // Sized to roughly match the CTA pill's own height (9px padding +
+      // 13px text ~= 33px tall) so the row reads as one aligned unit.
+      // Overlapping circle-of-faces convention - negative margin pulls
+      // each one under the last, white ring (border + a hairline shadow
+      // so it still separates on a white page background) keeps them
+      // readable as distinct people rather than a blob.
+      '.il6-avatar{width:32px!important;height:32px!important;min-width:32px!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;border:2px solid #fff!important;box-shadow:0 0 0 1px rgba(26,26,46,0.12)!important;margin-left:-10px!important;display:block!important}' +
+      '.il6-avatar:first-child{margin-left:0!important}' +
+      // "+N more" cap on the stack - dark ink fill so it reads as a
+      // distinct count rather than another (oddly blank) face.
+      '.il6-avatar-more{display:flex!important;align-items:center;justify-content:center;background:#1a1a2e!important;color:#fff!important;font-size:10px!important;font-weight:700!important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}';
     document.head.appendChild(s);
   }
 
@@ -534,10 +539,14 @@
   // couldn't supply any random experts (e.g. this publisher has zero
   // eligible experts) - a line that reveals nothing on hover isn't
   // restrained, it's broken.
-  function showNoMatchFallback(articleEl, cfg, randomExperts) {
+  function showNoMatchFallback(articleEl, cfg, randomExperts, randomExpertsTotal) {
     if (document.getElementById('il6-fallback')) return;
     var options = (randomExperts || []).filter(function (o) { return o && o.expert; }).slice(0, 3);
     if (!options.length) return;
+    // How many MORE eligible experts exist beyond the 3 shown - the badge
+    // reads "+N", not the raw total, so it should never show a 0 or
+    // negative count if the roster happens to be exactly 3 or fewer.
+    var moreCount = (typeof randomExpertsTotal === 'number' ? randomExpertsTotal : options.length) - options.length;
 
     // Sends the reader to the matched partner's own site (open-intro.com
     // today, whichever partner backs this publisher in general), not an
@@ -570,7 +579,7 @@
       var e = opt.expert;
       var fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=64&name=' + encodeURIComponent(e.name);
       return '<img class="il6-avatar" src="' + (e.photo_url || fallback) + '" onerror="this.onerror=null;this.src=\'' + fallback + '\'" alt="">';
-    }).join('');
+    }).join('') + (moreCount > 0 ? '<div class="il6-avatar il6-avatar-more">+' + moreCount + '</div>' : '');
 
     var div = document.createElement('div');
     div.id = 'il6-fallback';

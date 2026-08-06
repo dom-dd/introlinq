@@ -329,10 +329,14 @@ function pickRandomExperts(experts, enabledPartners, n = 3) {
   // match at all is the whole premise of this fallback), so the first 2
   // stand in for widget5's AI-derived credential facts. Real data, no AI
   // call, no per-page cost.
-  return pool.slice(0, n).map(e => ({
+  const picked = pool.slice(0, n).map(e => ({
     expert: e,
     credentials: Array.isArray(e.highlights) ? e.highlights.slice(0, 2) : []
   }));
+  // total is the FULL eligible pool, not just what got picked - lets
+  // widget6.js show "+N more" next to the 3 avatars it renders, so the
+  // line doesn't imply these 3 are the entire roster.
+  return { picked, total: eligible.length };
 }
 
 // widget2.js experiment only - a self-contained cache-read-only path,
@@ -357,24 +361,29 @@ async function handleMultiVariant(sql, { publisher, page_url, page_title, reader
           ORDER BY has_match DESC LIMIT 1`.catch(() => [null])
       : Promise.resolve([null]),
   ]);
+  // Only fetched when the publisher has explicitly opted into the fallback
+  // (no_match_fallback_enabled on their dashboard); {picked: [], total: 0}
+  // otherwise, which is what makes widget6.js render nothing extra for a
+  // publisher who hasn't turned it on - best-effort even when enabled, so
+  // a roster fetch failure just means the fallback has nobody to show, not
+  // a hard error.
+  async function buildRandomFallback() {
+    if (!noMatchFallbackEnabled) return { picked: [], total: 0 };
+    const roster = await loadExperts(sql);
+    return roster ? pickRandomExperts(roster, enabledPartners) : { picked: [], total: 0 };
+  }
+
   const cached = cachedRows[0];
   // No row at all = never scanned, still pending - no `cached` field, same
   // as before, so the widget knows to just wait/do nothing.
   if (!cached) return { matches: [], config: pubConfig };
   // A confirmed negative entry - cached: true but matches: [] tells the
   // widget "this was genuinely scanned, there's really nothing here" as
-  // opposed to "still pending." randomExperts backs widget6.js's no-match
-  // fallback block (see pickRandomExperts) - only fetched when the
-  // publisher has explicitly opted into it (no_match_fallback_enabled on
-  // their dashboard); omitted entirely otherwise, which is what makes
-  // widget6.js render nothing extra for a publisher who hasn't turned it
-  // on - best-effort even when enabled, so a roster fetch failure just
-  // means the fallback has nobody to show, not a hard error.
+  // opposed to "still pending." randomExperts/randomExpertsTotal back
+  // widget6.js's no-match fallback block (see pickRandomExperts).
   if (!cached.has_match) {
-    const randomExperts = noMatchFallbackEnabled
-      ? await loadExperts(sql).then(roster => roster ? pickRandomExperts(roster, enabledPartners) : [])
-      : [];
-    return { matches: [], config: pubConfig, cached: true, noMatch: true, randomExperts };
+    const { picked, total } = await buildRandomFallback();
+    return { matches: [], config: pubConfig, cached: true, noMatch: true, randomExperts: picked, randomExpertsTotal: total };
   }
 
   const referencedExperts = await loadExpertsByIds(sql, collectReferencedIds(cached.result.matches));
@@ -382,10 +391,8 @@ async function handleMultiVariant(sql, { publisher, page_url, page_title, reader
 
   const hydrated = hydrateMatchesMulti(cached.result.matches, referencedExperts, enabledPartners);
   if (hydrated.length === 0) {
-    const randomExperts = noMatchFallbackEnabled
-      ? await loadExperts(sql).then(roster => roster ? pickRandomExperts(roster, enabledPartners) : [])
-      : [];
-    return { matches: [], config: pubConfig, cached: true, noMatch: true, randomExperts };
+    const { picked, total } = await buildRandomFallback();
+    return { matches: [], config: pubConfig, cached: true, noMatch: true, randomExperts: picked, randomExpertsTotal: total };
   }
 
   // Flattened single-expert view (first option per phrase) purely so the
