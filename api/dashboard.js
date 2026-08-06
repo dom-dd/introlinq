@@ -519,41 +519,55 @@ export default async function handler(req, res) {
     // bare homepage (which usually has no long-form content for it to
     // scan anyway) - checking the homepage alone false-negatives on those
     // (confirmed on littlegreenagency.co.uk: homepage has no widget, every
-    // blog post does). A page the widget has actually fired on before is
-    // the right thing to re-check, so prefer the most recent match_cache
-    // entry; only fall back to the bare domain if it's never fired at all.
-    const [recentPage] = await sql`SELECT page_url FROM match_cache WHERE publisher = ${pub} ORDER BY cached_at DESC LIMIT 1`.catch(() => [null]);
-    const target = recentPage?.page_url
-      || (pubRow.domain ? (/^https?:\/\//i.test(pubRow.domain) ? pubRow.domain : 'https://' + pubRow.domain) : null);
-    if (!target) return res.status(200).json({ status: 'unknown', reason: 'no_domain' });
+    // blog post does). Pages the widget has actually fired on before are
+    // the right thing to re-check, so try up to 5 of the most recent
+    // match_cache entries in order - a high-churn content site (confirmed
+    // on psyll.com) can have its single most-recent page already 404/410
+    // through completely unrelated content rotation, which would otherwise
+    // read as "unreachable" and mask a real removal. Bare domain is the
+    // last resort, tried only if every recent page fails or none exist.
+    const recentPages = await sql`SELECT page_url FROM match_cache WHERE publisher = ${pub} ORDER BY cached_at DESC LIMIT 5`.catch(() => []);
+    const homepage = pubRow.domain ? (/^https?:\/\//i.test(pubRow.domain) ? pubRow.domain : 'https://' + pubRow.domain) : null;
+    const candidates = [...recentPages.map(r => r.page_url), homepage].filter(Boolean);
+    if (!candidates.length) return res.status(200).json({ status: 'unknown', reason: 'no_domain' });
 
-    let html;
-    try {
-      const fetchRes = await fetch(target, {
-        signal: AbortSignal.timeout(15000),
-        headers: { 'User-Agent': 'IntroLinq-WidgetCheck/1.0 (+https://www.introlinq.com)' },
-      });
-      if (!fetchRes.ok) return res.status(200).json({ status: 'unreachable', httpStatus: fetchRes.status });
-      html = await fetchRes.text();
-    } catch {
-      return res.status(200).json({ status: 'unreachable' });
-    }
-
-    // Two supported install methods (see the Widget tab's embed snippets):
-    // a direct <script src=".../widget.js" data-publisher="slug"> tag, or a
-    // GTM/custom setup that sets window.IL_PUBLISHER_ID = 'slug' in an
-    // inline script instead. Checks full <script>...</script> blocks (open
-    // tag AND body) so the inline-variable form is caught too, not just tag
-    // attributes.
     const escapedSlug = pubRow.slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const slugAttrPattern = new RegExp('data-publisher=["\']' + escapedSlug + '["\']', 'i');
     const slugVarPattern = new RegExp('IL_PUBLISHER_ID\\s*=\\s*["\']' + escapedSlug + '["\']', 'i');
-    const scriptBlocks = html.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) || [];
-    const found = scriptBlocks.some(block =>
-      (/introlinq\.com/i.test(block) && slugAttrPattern.test(block)) || slugVarPattern.test(block)
-    );
 
-    return res.status(200).json({ status: found ? 'live' : 'not_found', checkedAt: new Date().toISOString() });
+    let lastFailure = null;
+    for (const target of candidates) {
+      let html;
+      try {
+        const fetchRes = await fetch(target, {
+          signal: AbortSignal.timeout(15000),
+          headers: { 'User-Agent': 'IntroLinq-WidgetCheck/1.0 (+https://www.introlinq.com)' },
+        });
+        if (!fetchRes.ok) { lastFailure = { status: 'unreachable', httpStatus: fetchRes.status }; continue; }
+        html = await fetchRes.text();
+      } catch {
+        lastFailure = { status: 'unreachable' };
+        continue;
+      }
+
+      // Two supported install methods (see the Widget tab's embed snippets):
+      // a direct <script src=".../widget.js" data-publisher="slug"> tag, or
+      // a GTM/custom setup that sets window.IL_PUBLISHER_ID = 'slug' in an
+      // inline script instead. Checks full <script>...</script> blocks
+      // (open tag AND body) so the inline-variable form is caught too, not
+      // just tag attributes.
+      const scriptBlocks = html.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) || [];
+      const found = scriptBlocks.some(block =>
+        (/introlinq\.com/i.test(block) && slugAttrPattern.test(block)) || slugVarPattern.test(block)
+      );
+      // A page that loaded fine either way tells us something real - live
+      // or genuinely not found - so it's the answer either way, no need to
+      // try further candidates.
+      return res.status(200).json({ status: found ? 'live' : 'not_found', checkedAt: new Date().toISOString() });
+    }
+
+    // Every candidate page failed to load at all - genuinely can't verify.
+    return res.status(200).json(lastFailure || { status: 'unreachable' });
   }
 
   if (req.method === 'GET') {
