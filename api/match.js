@@ -311,22 +311,35 @@ function hydrateMatchesMulti(cachedMatches, experts, enabledPartners, maxPerPhra
 // real publisher's widget.js traffic. Never triggers a fresh AI scan -
 // meant for already-cached demo pages, not general use.
 async function handleMultiVariant(sql, { publisher, page_url, page_title, readerCountry, ip, req, pubConfig, enabledPartners }) {
+  // Same WHERE clause as the single-match path's own cache lookup
+  // (mirrors tryServeFromCache's caller) - now also looks up CONFIRMED
+  // negative entries, not just positive ones. Widget6.js's no-match
+  // fallback needs to tell "genuinely scanned, confirmed no expert here"
+  // apart from "never scanned yet, still pending" - both cases used to
+  // return the exact same { matches: [] } with no `cached` field at all,
+  // since this query only ever selected has_match = true rows.
   const [cachedRows] = await Promise.all([
     page_url
       ? sql`SELECT result, has_match FROM match_cache
           WHERE page_url = ${page_url} AND publisher = ${publisher || ''} AND country_code = ${GLOBAL_CACHE_COUNTRY}
-            AND has_match = true
-          ORDER BY cached_at DESC LIMIT 1`.catch(() => [null])
+            AND (has_match = true OR (has_match = false AND (confirmed = true OR cached_at > NOW() - INTERVAL '24 hours')))
+          ORDER BY has_match DESC LIMIT 1`.catch(() => [null])
       : Promise.resolve([null]),
   ]);
   const cached = cachedRows[0];
+  // No row at all = never scanned, still pending - no `cached` field, same
+  // as before, so the widget knows to just wait/do nothing.
   if (!cached) return { matches: [], config: pubConfig };
+  // A confirmed negative entry - cached: true but matches: [] tells the
+  // widget "this was genuinely scanned, there's really nothing here" as
+  // opposed to "still pending."
+  if (!cached.has_match) return { matches: [], config: pubConfig, cached: true, noMatch: true };
 
   const referencedExperts = await loadExpertsByIds(sql, collectReferencedIds(cached.result.matches));
   if (!referencedExperts) return { matches: [], config: pubConfig };
 
   const hydrated = hydrateMatchesMulti(cached.result.matches, referencedExperts, enabledPartners);
-  if (hydrated.length === 0) return { matches: [], config: pubConfig };
+  if (hydrated.length === 0) return { matches: [], config: pubConfig, cached: true, noMatch: true };
 
   // Flattened single-expert view (first option per phrase) purely so the
   // existing impression logger/stats stay schema-compatible - doesn't

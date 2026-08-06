@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="https://www.introlinq.com/favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Meet the experts | IntroLinq</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:#1a1a2e;background:#f8f8fc;line-height:1.6}
+.banner{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);color:#fff;padding:0.875rem 2rem;display:flex;align-items:center;gap:0.875rem}
+.banner-logo{height:26px}
+.banner-divider{width:1px;height:18px;background:rgba(255,255,255,0.25)}
+.banner-name{color:#fff;font-size:0.9rem;font-weight:600}
+.container{max-width:900px;margin:0 auto;padding:3rem 1.5rem 4rem}
+.intro{margin-bottom:2rem}
+.intro-eyebrow{color:#e6a820;font-weight:700;text-transform:uppercase;font-size:0.72rem;letter-spacing:0.08em;margin-bottom:0.5rem}
+.intro h1{font-size:1.6rem;font-weight:800;line-height:1.25;color:#1a1a2e}
+.board-wrap{background:#fff;border:1px solid #e4e4ee;border-radius:14px;padding:1.75rem}
+.missing{background:#fff;border:1px solid #e4e4ee;border-radius:14px;padding:3rem;text-align:center;color:#8888a8;font-size:0.9rem}
+</style>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-J1RDCPZ6SB"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-J1RDCPZ6SB');
+</script>
+</head>
+<body>
+
+<div class="banner">
+  <img src="https://www.introlinq.com/favicon.svg" class="banner-logo" alt="IntroLinq">
+  <div class="banner-divider"></div>
+  <div class="banner-name">IntroLinq</div>
+</div>
+
+<div class="container">
+  <div class="intro">
+    <div class="intro-eyebrow">Vetted experts, ready to talk</div>
+    <h1>Here's who can help.</h1>
+  </div>
+  <div class="board-wrap" id="board-wrap"></div>
+</div>
+
+<script>
+  // Generic production landing page (not under /demo/) for the widget's
+  // no-match fallback and any other "browse everyone" link - takes ?pub=
+  // dynamically instead of being hardcoded to one publisher, so any real
+  // installed publisher can link here. Built as a plain <script> tag
+  // (not inline in the HTML) specifically so a missing/invalid pub shows
+  // a clean message instead of expertboard.js silently doing nothing.
+  var pub = new URLSearchParams(location.search).get('pub');
+  var wrap = document.getElementById('board-wrap');
+  if (pub) {
+    var s = document.createElement('script');
+    s.src = 'https://www.introlinq.com/expertboard.js';
+    s.setAttribute('data-publisher', pub);
+    s.setAttribute('data-container', 'board-wrap');
+    document.body.appendChild(s);
+  } else {
+    wrap.className = 'missing';
+    wrap.textContent = 'No publisher specified.';
+  }
+</script>
+
+</body>
+</html>
