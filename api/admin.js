@@ -526,6 +526,117 @@ export default async function handler(req, res) {
     return res.status(200).json(rows);
   }
 
+  // Outreach tracking for AFFILIATE prospects - SaaS tools, retailers,
+  // expert-marketplace competitors (GrowthMentor, Intro.co, Hubble.social)
+  // IntroLinq wants to become an affiliate/referral partner OF, not
+  // recruit as a publisher. Deliberately a separate table (affiliate_leads)
+  // and resource from the publisher-recruitment `outreach` above rather
+  // than a type flag on candidate_publishers - the two pipelines mean
+  // opposite things (recruiting sites to install the widget vs. pitching
+  // companies to let IntroLinq refer traffic to them) and mixing them into
+  // one table risked exactly the status/category drift the comment on
+  // `outreach` above already called out once. Same shape and action set as
+  // `outreach` otherwise, so this reuses that exact mental model - one
+  // pipeline, all the CRUD wired identically, just a smaller/simpler
+  // status list and a category taxonomy for classifying the LEAD's own
+  // business type instead of a blog's content topic.
+  if (resource === 'affiliate_outreach') {
+    await sql`CREATE TABLE IF NOT EXISTS affiliate_leads (
+      id SERIAL PRIMARY KEY,
+      domain TEXT UNIQUE NOT NULL,
+      homepage_url TEXT,
+      company_name TEXT,
+      contact_name TEXT,
+      contact_email TEXT,
+      status TEXT NOT NULL DEFAULT 'discovered',
+      category TEXT,
+      email_sent_at TIMESTAMPTZ,
+      followup_1_sent_at TIMESTAMPTZ,
+      followup_2_sent_at TIMESTAMPTZ,
+      next_followup_at DATE,
+      notes TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`.catch(() => {});
+    await sql`CREATE TABLE IF NOT EXISTS affiliate_outreach_clicks (
+      id SERIAL PRIMARY KEY,
+      lead_id INT NOT NULL REFERENCES affiliate_leads(id),
+      clicked_at TIMESTAMPTZ DEFAULT NOW()
+    )`.catch(() => {});
+
+    const AFFILIATE_ALLOWED_STATUSES = ['discovered', 'emailed', 'followed_up_1', 'followed_up_2', 'important', 'contact_later', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
+    const AFFILIATE_CATEGORIES = ['SaaS / Software', 'Retailer / E-commerce', 'Expert Marketplace', 'Other'];
+
+    if (req.method === 'POST') {
+      const { domain, company_name, contact_name, contact_email, status, category, next_followup_at, notes } = req.body || {};
+      const cleanDomain = (domain || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+      if (!cleanDomain) return res.status(400).json({ error: 'Domain is required' });
+
+      const initialStatus = AFFILIATE_ALLOWED_STATUSES.includes(status) ? status : 'discovered';
+      const initialCategory = AFFILIATE_CATEGORIES.includes(category) ? category : null;
+
+      try {
+        const [row] = await sql`
+          INSERT INTO affiliate_leads (domain, homepage_url, company_name, contact_name, contact_email, status, category, next_followup_at, notes)
+          VALUES (${cleanDomain}, ${'https://' + cleanDomain}, ${company_name || null}, ${contact_name || null}, ${contact_email || null}, ${initialStatus}, ${initialCategory}, ${next_followup_at || null}, ${notes || null})
+          RETURNING id
+        `;
+        return res.status(201).json({ ok: true, id: row.id });
+      } catch (err) {
+        if (String(err.message || '').includes('duplicate key')) {
+          return res.status(409).json({ error: 'A lead with this domain already exists' });
+        }
+        throw err;
+      }
+    }
+
+    if (req.method === 'PATCH') {
+      const { id, action, value } = req.body || {};
+      if (!id || !action) return res.status(400).json({ error: 'id and action required' });
+
+      if (action === 'mark_email_sent') {
+        await sql`UPDATE affiliate_leads SET email_sent_at = NOW(), status = 'emailed', next_followup_at = CURRENT_DATE + 4 WHERE id = ${id}`;
+      } else if (action === 'mark_followup_1') {
+        await sql`UPDATE affiliate_leads SET followup_1_sent_at = NOW(), status = 'followed_up_1', next_followup_at = CURRENT_DATE + 5 WHERE id = ${id}`;
+      } else if (action === 'mark_followup_2') {
+        await sql`UPDATE affiliate_leads SET followup_2_sent_at = NOW(), status = 'followed_up_2', next_followup_at = NULL WHERE id = ${id}`;
+      } else if (action === 'set_next_followup') {
+        await sql`UPDATE affiliate_leads SET next_followup_at = ${value || null} WHERE id = ${id}`;
+      } else if (action === 'set_status') {
+        if (!AFFILIATE_ALLOWED_STATUSES.includes(value)) return res.status(400).json({ error: 'invalid status' });
+        const resolved = ['replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'].includes(value);
+        if (resolved) {
+          await sql`UPDATE affiliate_leads SET status = ${value}, next_followup_at = NULL WHERE id = ${id}`;
+        } else {
+          await sql`UPDATE affiliate_leads SET status = ${value} WHERE id = ${id}`;
+        }
+      } else if (action === 'set_contact') {
+        const { contact_name, contact_email } = req.body || {};
+        await sql`UPDATE affiliate_leads SET contact_name = ${contact_name || null}, contact_email = ${contact_email || null} WHERE id = ${id}`;
+      } else if (action === 'set_company_name') {
+        await sql`UPDATE affiliate_leads SET company_name = ${value || null} WHERE id = ${id}`;
+      } else if (action === 'set_category') {
+        if (value && !AFFILIATE_CATEGORIES.includes(value)) return res.status(400).json({ error: 'invalid category' });
+        await sql`UPDATE affiliate_leads SET category = ${value || null} WHERE id = ${id}`;
+      } else if (action === 'set_notes') {
+        await sql`UPDATE affiliate_leads SET notes = ${value || null} WHERE id = ${id}`;
+      } else {
+        return res.status(400).json({ error: 'unknown action' });
+      }
+      return res.status(200).json({ ok: true });
+    }
+
+    const rows = await sql`
+      SELECT al.id, al.domain, al.homepage_url, al.status, al.contact_name, al.contact_email, al.company_name, al.category,
+             al.email_sent_at, al.followup_1_sent_at, al.followup_2_sent_at, al.next_followup_at, al.notes, al.created_at,
+             COALESCE(json_agg(ac.clicked_at ORDER BY ac.clicked_at) FILTER (WHERE ac.clicked_at IS NOT NULL), '[]') AS click_times
+      FROM affiliate_leads al
+      LEFT JOIN affiliate_outreach_clicks ac ON ac.lead_id = al.id
+      GROUP BY al.id
+      ORDER BY al.created_at DESC
+    `;
+    return res.status(200).json(rows);
+  }
+
   // Publishers
   if (resource === 'publishers') {
     if (!adminBotColumnsReady) {

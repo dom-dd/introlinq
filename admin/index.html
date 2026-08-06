@@ -78,6 +78,19 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .outreach-subtab:hover{color:var(--ink)}
 .outreach-subtab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
 .outreach-subpanel{display:none}
+/* Affiliate outreach sub-tabs - identical look, but its own distinct
+   classes rather than reusing .outreach-subtab-bar/.outreach-subtab/
+   .outreach-subpanel: those are unscoped (querySelectorAll('.outreach-
+   subtab') with no container filter), so a second tab reusing the same
+   classes would have its active sub-view silently cleared every time the
+   OTHER outreach tab's sub-tabs were switched, and vice versa. */
+.ao-subtab-bar{display:flex;align-items:center;flex-wrap:nowrap;gap:0.125rem;overflow-x:auto;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
+.ao-subtab{flex-shrink:0;padding:0.625rem 0.6rem;font-size:0.75rem;font-weight:500;color:var(--ink-muted);border:none;background:none;cursor:pointer;font-family:'Inter',sans-serif;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;white-space:nowrap}
+.ao-subtab:hover{color:var(--ink)}
+.ao-subtab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
+.ao-subpanel{display:none}
+.ao-subpanel.active{display:block}
+.ao-subtab-divider{width:1px;align-self:stretch;background:var(--border);margin:0.5rem 0.25rem;flex-shrink:0}
 .outreach-subpanel.active{display:block}
 .outreach-subtab-divider{width:1px;align-self:stretch;background:var(--border);margin:0.5rem 0.25rem;flex-shrink:0}
 
@@ -187,6 +200,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
     <button class="tab-btn" onclick="switchTab('stats',this)">Stats</button>
     <button class="tab-btn" onclick="switchTab('waitlist',this)">Waitlist</button>
     <button class="tab-btn" onclick="switchTab('outreach',this)">Outreach</button>
+    <button class="tab-btn" onclick="switchTab('affiliate-outreach',this)">Affiliate outreach</button>
     <button class="tab-btn" onclick="switchTab('bookings',this)">Bookings</button>
     <button class="tab-btn" onclick="switchTab('logs',this)">Logs</button>
     <button class="tab-btn" onclick="switchTab('cache',this)">Cache</button>
@@ -764,6 +778,225 @@ tr:hover td{background:rgba(0,0,0,0.01)}
       </div>
     </div>
 
+    <!-- Affiliate outreach tab - same pipeline shape as Outreach above, but
+         for companies IntroLinq wants to become an affiliate OF (SaaS
+         tools, retailers, expert-marketplace competitors), not publishers
+         to recruit. See loadAffiliateOutreach/renderAffiliateOutreach etc. -->
+    <div class="tab-panel" id="tab-affiliate-outreach">
+      <div class="ao-subtab-bar">
+        <button class="ao-subtab active" data-name="ao-due" onclick="switchAffiliateOutreachSubtab('ao-due',this)">Due</button>
+        <span class="ao-subtab-divider"></span>
+        <button class="ao-subtab" data-name="ao-todo" onclick="switchAffiliateOutreachSubtab('ao-todo',this)">Not contacted</button>
+        <button class="ao-subtab" data-name="ao-waiting" onclick="switchAffiliateOutreachSubtab('ao-waiting',this)">Follow ups</button>
+        <span class="ao-subtab-divider"></span>
+        <button class="ao-subtab" data-name="ao-important" onclick="switchAffiliateOutreachSubtab('ao-important',this)">VIP</button>
+        <button class="ao-subtab" data-name="ao-later" onclick="switchAffiliateOutreachSubtab('ao-later',this)">Contact later</button>
+        <span class="ao-subtab-divider"></span>
+        <button class="ao-subtab" data-name="ao-signed" onclick="switchAffiliateOutreachSubtab('ao-signed',this)">Signed up</button>
+        <button class="ao-subtab" data-name="ao-closed" onclick="switchAffiliateOutreachSubtab('ao-closed',this)">Not a fit</button>
+        <button class="btn btn-primary btn-sm" style="flex-shrink:0;margin:0.4rem 0 0.4rem auto;padding-left:0.75rem;padding-right:0.75rem" onclick="openCreateAffiliateLeadModal()">+ Create a lead</button>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:0.5rem;margin:0.75rem 0 1rem">
+        <label class="form-label" style="margin:0">Filter by category</label>
+        <select id="affiliate-outreach-category-filter" class="form-input" style="width:auto;padding:0.35rem 0.6rem;font-size:0.8125rem" onchange="_affiliateOutreachCategoryFilter=this.value;renderAffiliateOutreach()">
+          <option value="">All categories</option>
+        </select>
+      </div>
+
+      <div class="ao-subpanel active" id="outreach-sub-ao-due">
+        <div class="section">
+          <div class="section-header"><div class="section-title" id="outreach-ao-due-title">Due for follow-up</div></div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th style="width:220px">Company</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th style="width:130px">Next follow-up</th>
+                <th style="width:190px">Action</th>
+                <th style="width:150px">Emails</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-ao-due-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-ao-due-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="ao-subpanel" id="outreach-sub-ao-waiting">
+        <div class="section">
+          <div class="section-header"><div class="section-title" id="outreach-ao-waiting-title">To follow up</div></div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th style="width:220px">Company</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th style="width:130px">Next follow-up</th>
+                <th style="width:190px">Action</th>
+                <th style="width:150px">Emails</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-ao-waiting-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-ao-waiting-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="ao-subpanel" id="outreach-sub-ao-later">
+        <div class="section">
+          <div class="section-header"><div class="section-title" id="outreach-ao-later-title">Contact later</div></div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:700px">
+              <thead><tr>
+                <th style="width:220px">Company</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th style="width:130px">Next follow-up</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-ao-later-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-ao-later-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="ao-subpanel" id="outreach-sub-ao-important">
+        <div class="section">
+          <div class="section-header"><div class="section-title" id="outreach-ao-important-title">VIP</div></div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:600px">
+              <thead><tr>
+                <th style="width:220px">Company</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-ao-important-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-ao-important-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="ao-subpanel" id="outreach-sub-ao-todo">
+        <div class="section">
+          <div class="section-header"><div class="section-title" id="outreach-ao-todo-title">Not yet contacted</div></div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th style="width:220px">Company</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th style="width:130px">Next follow-up</th>
+                <th style="width:190px">Action</th>
+                <th style="width:150px">Emails</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-ao-todo-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-ao-todo-empty">Loading...</div>
+          <div style="padding:0.75rem 1.25rem;border-top:1px solid var(--border)">
+            <button class="btn btn-ghost btn-sm" id="outreach-ao-todo-more" onclick="showMoreAffiliateOutreachTodo()" style="display:none">Show more</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ao-subpanel" id="outreach-sub-ao-signed">
+        <div class="section">
+          <div class="section-header"><div class="section-title" id="outreach-ao-signed-title">Signed up</div></div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:600px">
+              <thead><tr>
+                <th style="width:220px">Company</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-ao-signed-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-ao-signed-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="ao-subpanel" id="outreach-sub-ao-closed">
+        <div class="section">
+          <div class="section-header"><div class="section-title" id="outreach-ao-closed-title">Not a fit</div></div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:600px">
+              <thead><tr>
+                <th style="width:220px">Company</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-ao-closed-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-ao-closed-empty">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create an affiliate lead modal -->
+    <div class="modal-overlay" id="create-affiliate-lead-modal" onclick="if(event.target===this)closeCreateAffiliateLeadModal()">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cla-title">
+        <div class="modal-head">
+          <div class="modal-title" id="cla-title">Create an affiliate lead</div>
+          <button class="modal-close" onclick="closeCreateAffiliateLeadModal()" aria-label="Close">✕</button>
+        </div>
+        <div style="overflow-y:auto">
+          <div class="form-group" style="margin-bottom:0.875rem">
+            <label class="form-label">Domain *</label>
+            <input class="form-input" id="cla-domain" placeholder="example.com">
+          </div>
+          <div class="form-group" style="margin-bottom:0.875rem">
+            <label class="form-label">Company name</label>
+            <input class="form-input" id="cla-company">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Contact name</label>
+              <input class="form-input" id="cla-contact-name">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Contact email</label>
+              <input class="form-input" id="cla-contact-email" type="email">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Status</label>
+              <select class="form-input" id="cla-status"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select class="form-input" id="cla-category"></select>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0.875rem">
+            <label class="form-label">Next follow-up (optional)</label>
+            <input class="form-input" id="cla-followup" type="date">
+          </div>
+          <div class="form-group" style="margin-bottom:0.875rem">
+            <label class="form-label">Notes</label>
+            <input class="form-input" id="cla-notes">
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="submitCreateAffiliateLead()">Create lead</button>
+            <button class="btn btn-ghost" onclick="closeCreateAffiliateLeadModal()">Cancel</button>
+          </div>
+          <div id="cla-error" style="font-size:0.8125rem;color:var(--red, #dc2626);margin-top:0.75rem;display:none"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Bookings tab -->
     <div class="tab-panel" id="tab-bookings">
       <div class="section" style="margin-bottom:1.5rem">
@@ -1153,6 +1386,7 @@ function switchTab(name, btn) {
   if (name === 'cache') loadCache();
   if (name === 'stats') loadAnalytics();
   if (name === 'outreach' && !_outreachLoaded) { _outreachLoaded = true; loadOutreach(); }
+  if (name === 'affiliate-outreach' && !_affiliateOutreachLoaded) { _affiliateOutreachLoaded = true; loadAffiliateOutreach(); }
 }
 
 // ── Platform analytics ──────────────────────────────────────────────────
@@ -2480,6 +2714,349 @@ async function outreachSaveNotes(id, value) {
   await outreachPatch({ id, action: 'set_notes', value });
   const c = _outreach.find(x => x.id === id);
   if (c) c.outreach_notes = value;
+}
+
+// ── Affiliate outreach ───────────────────────────────────────────────────
+// Same shape/pattern as the Outreach section above, for companies IntroLinq
+// wants to become an affiliate/referral partner OF (SaaS tools, retailers,
+// expert-marketplace competitors) rather than publishers to recruit. See
+// api/admin.js's `affiliate_outreach` resource and api/ar.js for the
+// backend half.
+
+let _affiliateOutreachLoaded = false;
+let _affiliateOutreach = [];
+let _affiliateOutreachTodoLimit = 30;
+
+const AFFILIATE_OUTREACH_CATEGORIES = ['SaaS / Software', 'Retailer / E-commerce', 'Expert Marketplace', 'Other'];
+let _affiliateOutreachCategoryFilter = '';
+const AFFILIATE_OUTREACH_STATUS_LABELS = {
+  discovered: 'Not contacted',
+  emailed: 'Emailed',
+  followed_up_1: 'Follow-up 1 sent',
+  followed_up_2: 'Follow-up 2 sent',
+  important: 'VIP',
+  contact_later: 'Contact later',
+  replied_interested: 'Interested',
+  replied_not_interested: 'Not interested (replied)',
+  signed_up: 'Signed up',
+  not_a_fit: 'Not a fit',
+};
+const AFFILIATE_OUTREACH_STATUS_COLORS = {
+  discovered: 'var(--ink-muted)',
+  emailed: '#4f6ef7',
+  followed_up_1: '#4f6ef7',
+  followed_up_2: '#4f6ef7',
+  important: '#e6a820',
+  contact_later: '#4f6ef7',
+  replied_interested: 'var(--sage)',
+  signed_up: 'var(--sage)',
+  replied_not_interested: 'var(--red, #dc2626)',
+  not_a_fit: 'var(--ink-muted)',
+};
+
+function populateAffiliateOutreachCategoryFilter() {
+  const el = document.getElementById('affiliate-outreach-category-filter');
+  if (!el || el.dataset.populated) return;
+  el.dataset.populated = '1';
+  el.insertAdjacentHTML('beforeend', AFFILIATE_OUTREACH_CATEGORIES.map((cat) => `<option value="${esc(cat)}">${esc(cat)}</option>`).join(''));
+}
+
+async function loadAffiliateOutreach() {
+  populateAffiliateOutreachCategoryFilter();
+  const res = await fetch('/api/admin?resource=affiliate_outreach', { headers: { 'x-requested-with': 'xmlhttprequest' } });
+  _affiliateOutreach = await res.json();
+  renderAffiliateOutreach();
+}
+
+// signed_up gets its own bucket (unlike the publisher pipeline, which lumps
+// every resolved status into one "closed" section) - a signed affiliate
+// deal is worth seeing on its own, not mixed in with "not a fit"/"not
+// interested" outcomes.
+function affiliateOutreachBucket(c, today) {
+  if (c.status === 'signed_up') return 'ao-signed';
+  if (['replied_interested', 'replied_not_interested', 'not_a_fit'].includes(c.status)) return 'ao-closed';
+  if (c.next_followup_at && c.next_followup_at.slice(0, 10) <= today) return 'ao-due';
+  if (c.status === 'important') return 'ao-important';
+  if (c.status === 'contact_later') return 'ao-later';
+  if (c.status === 'discovered') return 'ao-todo';
+  return 'ao-waiting';
+}
+
+function renderAffiliateOutreachSection(name, titleText, items, emptyMessage, rowMode) {
+  document.getElementById(`outreach-${name}-title`).textContent = `${titleText} (${items.length})`;
+  const tbody = document.getElementById(`outreach-${name}-tbody`);
+  const emptyEl = document.getElementById(`outreach-${name}-empty`);
+  if (items.length) {
+    tbody.innerHTML = items.map((c) => affiliateOutreachRow(c, rowMode)).join('');
+    emptyEl.style.display = 'none';
+  } else {
+    tbody.innerHTML = '';
+    emptyEl.textContent = emptyMessage;
+    emptyEl.style.display = 'block';
+  }
+}
+
+function renderAffiliateOutreach() {
+  const today = new Date().toISOString().slice(0, 10);
+  const buckets = { 'ao-due': [], 'ao-later': [], 'ao-important': [], 'ao-todo': [], 'ao-waiting': [], 'ao-signed': [], 'ao-closed': [] };
+  const visible = _affiliateOutreachCategoryFilter ? _affiliateOutreach.filter((c) => c.category === _affiliateOutreachCategoryFilter) : _affiliateOutreach;
+  for (const c of visible) buckets[affiliateOutreachBucket(c, today)].push(c);
+
+  buckets['ao-due'].sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
+  buckets['ao-later'].sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
+  buckets['ao-important'].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets['ao-todo'].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets['ao-waiting'].sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
+  buckets['ao-signed'].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets['ao-closed'].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  renderAffiliateOutreachSection('ao-due', 'Due for follow-up', buckets['ao-due'], 'Nothing due right now.', 'full');
+  renderAffiliateOutreachSection('ao-waiting', 'To follow up', buckets['ao-waiting'], 'No one waiting on a reply.', 'full');
+  renderAffiliateOutreachSection('ao-later', 'Contact later', buckets['ao-later'], 'Nothing parked for later.', 'later');
+  renderAffiliateOutreachSection('ao-important', 'VIP', buckets['ao-important'], 'Nothing flagged as VIP.', 'simple');
+  renderAffiliateOutreachSection('ao-signed', 'Signed up', buckets['ao-signed'], 'No signed affiliate deals yet.', 'simple');
+  renderAffiliateOutreachSection('ao-closed', 'Not a fit', buckets['ao-closed'], 'Nothing here yet.', 'simple');
+
+  const todoShown = buckets['ao-todo'].slice(0, _affiliateOutreachTodoLimit);
+  renderAffiliateOutreachSection('ao-todo', 'Not yet contacted', todoShown, 'Nothing left to contact.', 'full');
+  document.getElementById('outreach-ao-todo-title').textContent = `Not yet contacted (${buckets['ao-todo'].length})`;
+  document.getElementById('outreach-ao-todo-more').style.display = buckets['ao-todo'].length > _affiliateOutreachTodoLimit ? 'inline-block' : 'none';
+}
+
+function showMoreAffiliateOutreachTodo() {
+  _affiliateOutreachTodoLimit += 30;
+  renderAffiliateOutreach();
+}
+
+function switchAffiliateOutreachSubtab(name, btn) {
+  document.querySelectorAll('.ao-subtab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.ao-subpanel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('outreach-sub-' + name).classList.add('active');
+}
+
+function openCreateAffiliateLeadModal() {
+  document.getElementById('cla-domain').value = '';
+  document.getElementById('cla-company').value = '';
+  document.getElementById('cla-contact-name').value = '';
+  document.getElementById('cla-contact-email').value = '';
+  document.getElementById('cla-followup').value = '';
+  document.getElementById('cla-notes').value = '';
+  document.getElementById('cla-error').style.display = 'none';
+
+  const statusSelect = document.getElementById('cla-status');
+  statusSelect.innerHTML = Object.entries(AFFILIATE_OUTREACH_STATUS_LABELS)
+    .map(([v, label]) => `<option value="${v}" ${v === 'discovered' ? 'selected' : ''}>${esc(label)}</option>`).join('');
+
+  const categorySelect = document.getElementById('cla-category');
+  categorySelect.innerHTML = '<option value="">No category</option>' +
+    AFFILIATE_OUTREACH_CATEGORIES.map((cat) => `<option value="${esc(cat)}">${esc(cat)}</option>`).join('');
+
+  document.getElementById('create-affiliate-lead-modal').classList.add('open');
+  document.getElementById('cla-domain').focus();
+}
+
+function closeCreateAffiliateLeadModal() {
+  document.getElementById('create-affiliate-lead-modal').classList.remove('open');
+}
+
+async function submitCreateAffiliateLead() {
+  const domain = document.getElementById('cla-domain').value.trim();
+  const errorEl = document.getElementById('cla-error');
+  errorEl.style.display = 'none';
+  if (!domain) {
+    errorEl.textContent = 'Domain is required.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const status = document.getElementById('cla-status').value;
+  const next_followup_at = document.getElementById('cla-followup').value || null;
+  const body = {
+    domain,
+    company_name: document.getElementById('cla-company').value.trim() || null,
+    contact_name: document.getElementById('cla-contact-name').value.trim() || null,
+    contact_email: document.getElementById('cla-contact-email').value.trim() || null,
+    status,
+    category: document.getElementById('cla-category').value || null,
+    next_followup_at,
+    notes: document.getElementById('cla-notes').value.trim() || null,
+  };
+
+  const res = await fetch('/api/admin?resource=affiliate_outreach', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    errorEl.textContent = data.error || 'Something went wrong - please try again.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  closeCreateAffiliateLeadModal();
+  await loadAffiliateOutreach();
+
+  const today = new Date().toISOString().slice(0, 10);
+  const bucket = affiliateOutreachBucket({ status, next_followup_at }, today);
+  const btn = document.querySelector(`#tab-affiliate-outreach .outreach-subtab[data-name="${bucket}"]`);
+  if (btn) switchAffiliateOutreachSubtab(bucket, btn);
+}
+
+// Pitches IntroLinq AS the affiliate (refer readers to this company),
+// opposite direction from outreachEmailTemplates above (which recruits a
+// publisher to install the widget). trackedLink routes through /api/ar
+// (not /api/r) so clicks land in affiliate_outreach_clicks, kept separate
+// from the publisher pipeline's click data.
+function affiliateOutreachEmailTemplates(c) {
+  const firstName = (c.contact_name || '').trim().split(' ')[0] || 'there';
+  const company = (c.company_name || '').trim() || prettifyDomain(c.domain);
+  const trackedLink = `https://www.introlinq.com/api/ar?id=${c.id}`;
+  return {
+    intro: {
+      subject: `Affiliate partnership - IntroLinq x ${company}`,
+      body: `Hi ${firstName},\n\nI'm Dom, founder of IntroLinq. We run an AI widget on business and startup blogs that reads the article a reader is on and surfaces the most relevant next step - today that's mostly matching readers with vetted experts to book a call with, and we're expanding into relevant products and tools too.\n\nI'd love for ${company} to be one of the places we send readers to. If you already have an affiliate or referral program, I'm happy to just sign up for it directly - point me to it and I'll get set up today. If not, I'd welcome a quick chat about a simple tracked-referral arrangement.\n\nHere's the platform: https://www.introlinq.com/\n${trackedLink}\n\nLet me know if this is worth exploring - happy to answer questions or jump on a call.\n\nBest,\nDom`,
+    },
+    followup1: {
+      subject: `Re: Affiliate partnership - IntroLinq x ${company}`,
+      body: `Hi ${firstName},\n\nJust wanted to bump this in case it got buried - I reached out about IntroLinq referring readers to ${company} through a tracked affiliate/referral link, from business and startup blogs already writing about exactly this kind of thing.\n\nNo pressure if it's not a fit right now - just didn't want it to slip through the cracks. Happy to answer any questions.\n\nBest,\nDom`,
+    },
+    followup2: {
+      subject: `Re: Affiliate partnership - IntroLinq x ${company}`,
+      body: `Hi ${firstName},\n\nLast note from me on this one - I don't want to keep cluttering your inbox.\n\nIf a tracked referral partnership with IntroLinq is ever worth exploring, the door's always open. Either way, wishing you all the best with ${company}.\n\nBest,\nDom`,
+    },
+  };
+}
+
+const AFFILIATE_OUTREACH_EMAIL_TITLES = { intro: 'Intro email', followup1: 'First follow-up', followup2: 'Second follow-up' };
+
+function affiliateOutreachNextStage(c) {
+  if (c.status === 'discovered') return 'intro';
+  if (c.status === 'emailed') return 'followup1';
+  if (c.status === 'followed_up_1') return 'followup2';
+  return null;
+}
+
+function affiliateOutreachEmailButton(c) {
+  const stage = affiliateOutreachNextStage(c);
+  if (!stage) return '';
+  return `<button class="btn btn-ghost btn-sm" onclick="openAffiliateOutreachEmailInGmail(${c.id},'${stage}')">${AFFILIATE_OUTREACH_EMAIL_TITLES[stage]}</button>`;
+}
+
+function openAffiliateOutreachEmailInGmail(id, stage) {
+  const c = _affiliateOutreach.find(x => x.id === id);
+  if (!c) return;
+  const tpl = affiliateOutreachEmailTemplates(c)[stage];
+  const params = new URLSearchParams({ view: 'cm', fs: '1', su: tpl.subject, body: tpl.body });
+  if (c.contact_email) params.set('to', c.contact_email);
+  else toast('No email saved for this contact - opening blank, add the address in Gmail');
+  window.open(`https://mail.google.com/mail/?${params.toString()}`, '_blank');
+}
+
+function affiliateOutreachActionButton(c) {
+  if (c.status === 'discovered') return `<button class="btn btn-primary btn-sm" onclick="affiliateOutreachMark(${c.id},'mark_email_sent')">Mark email sent</button>`;
+  if (c.status === 'emailed') return `<button class="btn btn-primary btn-sm" onclick="affiliateOutreachMark(${c.id},'mark_followup_1')">Mark follow-up 1 sent</button>`;
+  if (c.status === 'followed_up_1') return `<button class="btn btn-primary btn-sm" onclick="affiliateOutreachMark(${c.id},'mark_followup_2')">Mark follow-up 2 sent</button>`;
+  return '';
+}
+
+function affiliateOutreachClickIcon(c) {
+  const times = c.click_times || [];
+  const clicked = times.length > 0;
+  const color = clicked ? '#3d7a5f' : '#c4c4d4';
+  const title = clicked
+    ? `Clicked ${times.length} time${times.length === 1 ? '' : 's'}:\n` + times.map(t => new Date(t).toLocaleString('en-GB')).join('\n')
+    : 'Link not clicked yet';
+  return `<span title="${esc(title)}" style="display:inline-block;vertical-align:middle;margin-left:5px">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+  </span>`;
+}
+
+function affiliateOutreachRow(c, mode) {
+  const categorySelect = `<select onchange="affiliateOutreachSaveCategory(${c.id}, this.value)" style="display:inline-block;width:auto;max-width:160px;margin-left:6px;padding:1px 4px;border-radius:100px;border:1px solid var(--border);background:${c.category ? 'var(--sage-light,#edf5f0)' : 'var(--cream,#faf8f4)'};color:${c.category ? 'var(--sage,#3d7a5f)' : 'var(--ink-muted)'};font-size:0.65rem;font-weight:600;vertical-align:middle;cursor:pointer">
+    <option value="">No category</option>
+    ${AFFILIATE_OUTREACH_CATEGORIES.map((cat) => `<option value="${esc(cat)}" ${c.category === cat ? 'selected' : ''}>${esc(cat)}</option>`).join('')}
+  </select>`;
+  const statusOptions = Object.entries(AFFILIATE_OUTREACH_STATUS_LABELS)
+    .map(([v, label]) => `<option value="${v}" ${c.status === v ? 'selected' : ''}>${esc(label)}</option>`).join('');
+
+  const followupCell = mode === 'full' || mode === 'later'
+    ? `<td><input type="date" value="${c.next_followup_at ? c.next_followup_at.slice(0, 10) : ''}" onchange="affiliateOutreachSetFollowup(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE}"></td>`
+    : '';
+  const actionEmailCells = mode === 'full'
+    ? `<td>${affiliateOutreachActionButton(c)}</td><td>${affiliateOutreachEmailButton(c)}</td>`
+    : '';
+
+  return `
+    <tr>
+      <td>
+        <a href="${esc(c.homepage_url)}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:600;font-size:0.8125rem;text-decoration:none">${esc(c.domain)}</a>${affiliateOutreachClickIcon(c)}${categorySelect}
+        <input type="text" value="${esc(c.company_name || prettifyDomain(c.domain))}" placeholder="Company name (used in emails)" onblur="affiliateOutreachSaveCompanyName(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE};margin-top:4px">
+      </td>
+      <td>
+        <input type="text" value="${esc(c.contact_name || '')}" placeholder="Name" onblur="affiliateOutreachSaveContact(${c.id}, this.value, null)" style="${OUTREACH_INPUT_STYLE};margin-bottom:3px">
+        <input type="email" value="${esc(c.contact_email || '')}" placeholder="Email" onblur="affiliateOutreachSaveContact(${c.id}, null, this.value)" style="${OUTREACH_INPUT_STYLE}">
+      </td>
+      <td>
+        <select onchange="affiliateOutreachSetStatus(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE};color:${AFFILIATE_OUTREACH_STATUS_COLORS[c.status] || 'var(--ink)'};font-weight:600">${statusOptions}</select>
+      </td>
+      ${followupCell}
+      ${actionEmailCells}
+      <td><input type="text" value="${esc(c.notes || '')}" placeholder="Notes" onblur="affiliateOutreachSaveNotes(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE};width:100%"></td>
+    </tr>
+  `;
+}
+
+async function affiliateOutreachPatch(body) {
+  await fetch('/api/admin?resource=affiliate_outreach', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify(body),
+  });
+}
+
+async function affiliateOutreachMark(id, action) {
+  await affiliateOutreachPatch({ id, action });
+  await loadAffiliateOutreach();
+}
+
+async function affiliateOutreachSetStatus(id, value) {
+  await affiliateOutreachPatch({ id, action: 'set_status', value });
+  await loadAffiliateOutreach();
+}
+
+async function affiliateOutreachSetFollowup(id, value) {
+  await affiliateOutreachPatch({ id, action: 'set_next_followup', value });
+  await loadAffiliateOutreach();
+}
+
+async function affiliateOutreachSaveContact(id, name, email) {
+  const c = _affiliateOutreach.find(x => x.id === id);
+  const contact_name = name !== null ? name : (c?.contact_name || '');
+  const contact_email = email !== null ? email : (c?.contact_email || '');
+  await affiliateOutreachPatch({ id, action: 'set_contact', contact_name, contact_email });
+  if (c) { c.contact_name = contact_name; c.contact_email = contact_email; }
+}
+
+async function affiliateOutreachSaveCompanyName(id, value) {
+  await affiliateOutreachPatch({ id, action: 'set_company_name', value });
+  const c = _affiliateOutreach.find(x => x.id === id);
+  if (c) c.company_name = value;
+}
+
+async function affiliateOutreachSaveCategory(id, value) {
+  await affiliateOutreachPatch({ id, action: 'set_category', value });
+  const c = _affiliateOutreach.find(x => x.id === id);
+  if (c) c.category = value || null;
+  renderAffiliateOutreach();
+}
+
+async function affiliateOutreachSaveNotes(id, value) {
+  await affiliateOutreachPatch({ id, action: 'set_notes', value });
+  const c = _affiliateOutreach.find(x => x.id === id);
+  if (c) c.notes = value;
 }
 
 let _allBookings = [];
