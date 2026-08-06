@@ -915,30 +915,8 @@
     if (hookWrap) hookWrap.style.display = match.hook ? 'block' : 'none';
     var hookEl = document.getElementById('il2-hook');
     if (hookEl) hookEl.textContent = match.hook || '';
-    // Routed through the same tracked redirect every booking link uses
-    // (not a bare link to OpenIntro) so the ref/aid/click_id attribution
-    // params get attached - without them a booking made via this path
-    // would never get credited back to IntroLinq. /discover/ai takes the
-    // CTA's own wording directly as its query (natural language, not a
-    // tag - no separate vocabulary to keep in sync with OpenIntro's own
-    // tags) and returned curated matches immediately when checked, with
-    // "why" reasoning per expert.
     var cta = document.getElementById('il2-cta');
-    if (cta) {
-      var ctaLabel = match.cta || 'Explore experts →';
-      cta.textContent = ctaLabel;
-      var discoverUrl = 'https://open-intro.com/discover/ai?q=' + encodeURIComponent(ctaLabel.replace(/→/g, '').trim());
-      cta.href = 'https://www.introlinq.com/api/dashboard?action=out'
-        + '&pub=' + encodeURIComponent(PUB)
-        + '&expert_url=' + encodeURIComponent(discoverUrl)
-        + '&article=' + encodeURIComponent(window.location.href.slice(0, 300))
-        + '&phrase=' + encodeURIComponent(match.phrase || '')
-        + '&lang=' + encodeURIComponent(navigator.language || '')
-        + '&tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || '')
-        + '&device=' + (window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop')
-        + '&source=' + encodeURIComponent(getTrafficSource())
-        + '&title=' + encodeURIComponent(document.title.slice(0, 150));
-    }
+    if (cta) cta.textContent = match.cta || 'Explore experts →';
 
     var options = match.options || [];
     var list = document.getElementById('il2-list');
@@ -946,6 +924,15 @@
       list.innerHTML = options.length
         ? (match.hook ? '<div class="il2-list-label">Real people you could talk to</div>' : '') + options.map(function (opt) { return buildOptionRow(opt, match); }).join('')
         : '';
+    }
+    // CTA goes straight to the PRIMARY (first-listed) named expert's own
+    // tracked booking link - not OpenIntro's AI search (/discover/ai),
+    // which is real but too slow in practice for a launch-day link.
+    // Reuses the href the first option row just rendered rather than
+    // recomputing the same tracked-URL construction a second time.
+    if (cta) {
+      var firstBook = list && list.querySelector('.il2-opt-book');
+      cta.href = firstBook ? firstBook.getAttribute('href') : '#';
     }
   }
 
