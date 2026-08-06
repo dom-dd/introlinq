@@ -188,6 +188,52 @@ function hydrateMatches(cachedMatches, experts, enabledPartners) {
   return out;
 }
 
+// Small, curated topic -> hook/cta template lookup for widget4/5's
+// generic-hook header, matched against the PRIMARY expert's own topics[]
+// at SERVE time - no AI call, so it works instantly on every already-
+// cached page without a rescan. Built from the real distribution of
+// topics across active experts (Strategy/Founder/CEO/B2B are the most
+// common but too generic to build a specific ask around, so deliberately
+// excluded here in favour of more actionable topics further down the
+// frequency list). Order matters - checked top to bottom, first match on
+// the expert's own topics[] wins, so more specific asks are listed ahead
+// of broader ones.
+const TOPIC_HOOKS = [
+  { topic: 'Fundraising', hook: 'Raising funds? We have a list of active investors to speak to.', cta: 'Get funding now →' },
+  { topic: 'Startup Funding', hook: 'Raising funds? We have a list of active investors to speak to.', cta: 'Get funding now →' },
+  { topic: 'VC (Venture Capital)', hook: 'Raising funds? We have a list of active investors to speak to.', cta: 'Get funding now →' },
+  { topic: 'Angel Investor', hook: 'Raising funds? We have a list of active investors to speak to.', cta: 'Get funding now →' },
+  { topic: 'Seed', hook: 'Raising a seed round? Talk to investors who fund exactly this stage.', cta: 'Get funding now →' },
+  { topic: 'Pre-Seed', hook: 'Raising pre-seed? Talk to investors who fund exactly this stage.', cta: 'Get funding now →' },
+  { topic: 'Investment Preparation', hook: 'Getting ready to raise? Talk to someone who knows what investors look for.', cta: 'Get investor-ready →' },
+  { topic: 'Exits', hook: 'Thinking about an exit? Talk to founders who have actually been through one.', cta: 'Get exit advice →' },
+  { topic: 'Storytelling', hook: 'Need to sharpen your pitch? Talk to someone who tells stories for a living.', cta: 'Sharpen my pitch →' },
+  { topic: 'Public Speaking', hook: 'Speaking in public soon? Get advice from someone who does it professionally.', cta: 'Improve my speaking →' },
+  { topic: 'Marketing', hook: 'Need to grow your audience? Talk to a marketing expert who has done it before.', cta: 'Get marketing advice →' },
+  { topic: 'Growth', hook: 'Stuck on growth? Talk to someone who has scaled a company before.', cta: 'Get growth advice →' },
+  { topic: 'Go-To-Market', hook: 'Planning a launch? Get your go-to-market strategy right the first time.', cta: 'Nail my launch →' },
+  { topic: 'Branding', hook: 'Building your brand? Talk to someone who has built one that worked.', cta: 'Get branding advice →' },
+  { topic: 'Leadership', hook: 'First time leading a team? Get matched with leaders who have been there.', cta: 'Get leadership advice →' },
+  { topic: 'Career Coaching', hook: 'At a career crossroads? Talk to someone who coaches people through exactly this.', cta: 'Get career advice →' },
+  { topic: 'Personal Development', hook: 'Looking to grow, not just professionally? Talk to someone who coaches this.', cta: 'Get personal advice →' },
+  { topic: 'SaaS', hook: 'Building a SaaS product? Talk to founders who have built and scaled one.', cta: 'Get SaaS advice →' },
+  { topic: 'Product', hook: 'Building your product? Talk to someone who has shipped one that worked.', cta: 'Get product advice →' },
+  { topic: 'E-commerce', hook: 'Running an e-commerce business? Talk to someone who has scaled one.', cta: 'Get e-commerce advice →' },
+  { topic: 'Artificial Intelligence', hook: 'Building with AI? Talk to someone working on this right now.', cta: 'Get AI advice →' },
+  { topic: 'Social Impact', hook: 'Building something with real impact? Talk to founders doing the same.', cta: 'Get impact advice →' },
+  { topic: 'Sustainability', hook: 'Working on sustainability? Talk to someone who has built in this space.', cta: 'Get sustainability advice →' },
+  { topic: 'Operations', hook: 'Operations getting complicated? Talk to someone who has scaled a team before.', cta: 'Get operations advice →' },
+];
+const FALLBACK_HOOK = { hook: 'Need advice on this? Talk to someone who has been there before.', cta: 'Talk to an expert →' };
+
+function deriveHook(expert) {
+  if (!expert || !Array.isArray(expert.topics)) return { ...FALLBACK_HOOK, query: 'expert advice' };
+  for (const entry of TOPIC_HOOKS) {
+    if (expert.topics.includes(entry.topic)) return { ...entry, query: entry.topic.toLowerCase() };
+  }
+  return { ...FALLBACK_HOOK, query: 'expert advice' };
+}
+
 // widget2.js experiment only (see handleMultiVariant) - keeps up to 3
 // candidates per phrase instead of randomly committing to one, so the
 // reader gets a short pick-one list rather than a single named suggestion.
@@ -222,7 +268,9 @@ function hydrateMatchesMulti(cachedMatches, experts, enabledPartners, maxPerPhra
       if (typeof c.credential === 'string' && c.credential.trim()) opt.credential = c.credential;
       return opt;
     });
-    out.push({ phrase: m.phrase, options });
+    const primaryExpert = byId.get(picked[0].expert_id);
+    const { hook, cta, query } = deriveHook(primaryExpert);
+    out.push({ phrase: m.phrase, options, hook, cta, query: query || '' });
   }
   return out;
 }

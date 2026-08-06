@@ -1,45 +1,19 @@
 ﻿(function () {
   'use strict';
 
+  // Standalone reference copy of production widget.js - "Widget 1" in the
+  // A/B comparison on /demo/introlinq. This is the original single-expert-
+  // per-phrase experience, kept as its own file (same as widgets 2-5) so
+  // all 5 variants exist side by side and any one of them can be swapped
+  // in for a publisher without touching the others. Own guard flag/
+  // script-selector so it can run alongside the other widget variants
+  // without colliding.
   var API = 'https://www.introlinq.com/api/match';
-  var script = document.currentScript || document.querySelector('script[src*="widget.js"]');
+  var script = document.currentScript || document.querySelector('script[src*="widget1.js"]');
   var PUB = (script && (script.getAttribute('data-publisher') || script.getAttribute('data-site'))) || window.IL_PUBLISHER_ID || null;
   if (!PUB) return;
-
-  // Experimental widget hand-off - lets a specific publisher run a
-  // different widget variant (see /demo/introlinq for what widgets 2-5
-  // look like and why) without touching anything on their own site: their
-  // installed <script src="widget.js" data-publisher="..."> tag never
-  // changes, this just redirects to the alternate file for publishers on
-  // the list below. Empty/removed = zero effect on everyone else, since
-  // the rest of this file runs completely unchanged for every publisher
-  // not on the list. Checked before the double-init guard below, since
-  // handing off means this copy of widget.js does nothing else at all.
-  var EXPERIMENTAL_WIDGETS = {
-    'little-green-agency': 'widget5.js',
-  };
-  if (EXPERIMENTAL_WIDGETS[PUB]) {
-    var handoff = document.createElement('script');
-    handoff.src = 'https://www.introlinq.com/' + EXPERIMENTAL_WIDGETS[PUB];
-    handoff.setAttribute('data-publisher', PUB);
-    if (script && script.parentNode) {
-      script.parentNode.insertBefore(handoff, script.nextSibling);
-    } else {
-      document.head.appendChild(handoff);
-    }
-    return;
-  }
-
-  // Guards against the widget tag being pasted twice on the same page (e.g. the
-  // dashboard's GTM install snippet added alongside the direct <script data-publisher>
-  // one, both left in place). Each copy is a fully separate IIFE with its own private
-  // state, so without this a second copy would run its own createPopup(), which removes
-  // the FIRST copy's #il-pop and replaces it - any highlight already wired to that
-  // removed popup then does nothing on hover, while the popup itself still renders fine
-  // for whichever copy runs last. window-level (not closure-local) so it's shared
-  // across every separate script execution, not just repeated calls within one.
-  if (window.__ilWidgetInit) return;
-  window.__ilWidgetInit = true;
+  if (window.__ilWidget1Init) return;
+  window.__ilWidget1Init = true;
 
   // {name} is filled in per-match in fillPopup (the expert's first name) -
   // these are templates, not final labels. "Speak with" reads as a lower-
