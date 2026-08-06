@@ -304,6 +304,27 @@ function hydrateMatchesMulti(cachedMatches, experts, enabledPartners, maxPerPhra
   return out;
 }
 
+// widget6.js's no-match fallback: since there's no matched phrase to hang a
+// recommendation off of, it shows a plain random sample instead - same
+// eligibility rule as hydrateMatches/hydrateMatchesMulti (enabled partner,
+// not a demo-only provider), just without any expert already being
+// "referenced" by a match. Pulls from the module-cached full roster
+// (loadExperts) rather than a fresh query, since this only runs for the
+// widget2-7 demo variant path and the roster is already cached for the
+// fresh-scan path anyway. Fisher-Yates shuffle, not ORDER BY RANDOM() in
+// SQL, so this costs nothing extra when the roster's already in memory.
+function pickRandomExperts(experts, enabledPartners, n = 3) {
+  const eligible = experts.filter(e => enabledPartners
+    ? enabledPartners.includes(e.provider_slug || 'openintro')
+    : !e.is_demo_provider);
+  const pool = eligible.slice();
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, n).map(e => ({ expert: e }));
+}
+
 // widget2.js experiment only - a self-contained cache-read-only path,
 // deliberately NOT folded into the main handler's tryServeFromCache/
 // fresh-scan flow below. Only ever reached when a request explicitly opts
@@ -332,14 +353,24 @@ async function handleMultiVariant(sql, { publisher, page_url, page_title, reader
   if (!cached) return { matches: [], config: pubConfig };
   // A confirmed negative entry - cached: true but matches: [] tells the
   // widget "this was genuinely scanned, there's really nothing here" as
-  // opposed to "still pending."
-  if (!cached.has_match) return { matches: [], config: pubConfig, cached: true, noMatch: true };
+  // opposed to "still pending." randomExperts backs widget6.js's no-match
+  // fallback block (see pickRandomExperts) - best-effort, so a roster fetch
+  // failure just means the fallback has nobody to show, not a hard error.
+  if (!cached.has_match) {
+    const roster = await loadExperts(sql);
+    const randomExperts = roster ? pickRandomExperts(roster, enabledPartners) : [];
+    return { matches: [], config: pubConfig, cached: true, noMatch: true, randomExperts };
+  }
 
   const referencedExperts = await loadExpertsByIds(sql, collectReferencedIds(cached.result.matches));
   if (!referencedExperts) return { matches: [], config: pubConfig };
 
   const hydrated = hydrateMatchesMulti(cached.result.matches, referencedExperts, enabledPartners);
-  if (hydrated.length === 0) return { matches: [], config: pubConfig, cached: true, noMatch: true };
+  if (hydrated.length === 0) {
+    const roster = await loadExperts(sql);
+    const randomExperts = roster ? pickRandomExperts(roster, enabledPartners) : [];
+    return { matches: [], config: pubConfig, cached: true, noMatch: true, randomExperts };
+  }
 
   // Flattened single-expert view (first option per phrase) purely so the
   // existing impression logger/stats stay schema-compatible - doesn't

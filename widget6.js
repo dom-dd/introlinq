@@ -5,8 +5,14 @@
   // in the A/B comparison on /demo/introlinq. Identical to Widget 5 in
   // every way EXCEPT one addition: when a page genuinely has no match at
   // all (data.matches.length === 0 - roughly 81% of scanned pages today),
-  // instead of doing nothing, appends one quiet line at the end of the
-  // article pointing to the expert board. Every real match still renders
+  // instead of doing nothing, appends a block at the end of the article
+  // with a fixed generic hook (there's no matched phrase to derive a
+  // topic-specific one from) plus 3 randomly-picked experts, rendered the
+  // same way as Widget 5's own name rows (photo, name, role, Meet button).
+  // Deliberately NOT a carousel or anything louder than Widget 5's own
+  // popup styling - same visual language readers already see on a match,
+  // just always-visible instead of hover-triggered, so it doesn't read as
+  // an ad bolted onto someone else's page. Every real match still renders
   // exactly like Widget 5 - this only fires on the "currently shows
   // nothing" case. Deliberately forked from widget5.js rather than
   // widget.js so the diff between the two stays small and this can be
@@ -128,9 +134,10 @@
       } else if (pre.noMatch) {
         // Demo/testing path only - simulates a confirmed no-match page
         // (set window.IL_PRELOADED_MATCHES = {matches:[], noMatch:true,
-        // config:{...}}) without needing a real scanned page.
+        // randomExperts:[...], config:{...}}) without needing a real
+        // scanned page.
         injectStyles(pre.config || {});
-        showNoMatchFallback(el, pre.config || {});
+        showNoMatchFallback(el, pre.config || {}, pre.randomExperts);
       }
       return;
     }
@@ -223,7 +230,7 @@
           // all and was already returned above).
           if (data.noMatch) {
             injectStyles(data.config || {});
-            showNoMatchFallback(el, data.config || {});
+            showNoMatchFallback(el, data.config || {}, data.randomExperts);
             return;
           }
           var shown = applyMatches(data);
@@ -442,34 +449,45 @@
       '.il-hl.il-cue-pulse{animation:il-pulse-glow 1s ease-in-out 2!important}' +
       // NO-MATCH FALLBACK (Widget 6 only - see this file's header comment
       // for what would need to move if this gets folded into Widget 5).
-      // Deliberately quiet: a thin top border and small muted text, styled
-      // to read as a low-key sign-off rather than a banner competing for
-      // attention - this shows on ~81% of pages (whatever has no real
-      // content match), including plenty with nothing to do with business
-      // advice, so restraint here matters more than on the matched-page
-      // popup.
+      // Same visual language as the matched-page popup (bold headline +
+      // solid pill CTA, then a list label + .il2-opt rows - those classes
+      // are reused as-is below, unscoped, so they apply here too) rather
+      // than inventing a second style - this shows on ~81% of pages
+      // (whatever has no real content match), so it should look like the
+      // same product, not a louder ad bolted onto someone else's page.
       '#il6-fallback{margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid rgba(26,26,46,0.1);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}' +
-      '#il6-fallback-text{font-size:13px;color:#8888a8;line-height:1.5}' +
-      '#il6-fallback-link{color:' + accent + ';font-weight:600;text-decoration:none;white-space:nowrap}' +
-      '#il6-fallback-link:hover{text-decoration:underline}';
+      '#il6-hook{font-size:15px!important;font-weight:700!important;color:#1a1a2e!important;line-height:1.4!important;margin-bottom:10px}' +
+      '#il6-cta{display:inline-block!important;background:' + accent + '!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:9px 18px!important;border-radius:100px!important;font-size:13px!important;font-weight:700!important;text-decoration:none!important}' +
+      '#il6-list-label{font-size:11.5px!important;font-weight:700!important;color:#1a1a2e!important;letter-spacing:.02em!important;padding-top:14px;margin-top:14px;border-top:1px solid rgba(26,26,46,0.1);margin-bottom:8px}' +
+      '#il6-pv{font-size:8.5px!important;color:#8888a8!important;font-family:Inter,system-ui,sans-serif;display:flex!important;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(26,26,46,0.07)}';
     document.head.appendChild(s);
   }
 
   // NO-MATCH FALLBACK (Widget 6 only). Appended once per page, at the end
   // of the article - there's no matched phrase to hang this off of, so
   // unlike everything else in this file it can't use the inline-highlight/
-  // hover-popup mechanic at all. One quiet line + one link, tracked
-  // through the same /api/dashboard?action=out redirect every other link
-  // in this file uses (click_source='no_match_fallback' so it's countable
-  // separately from real matches), pointing at the generic publisher-
-  // parameterised board landing page rather than a specific expert, since
-  // there's no specific expert this page's content ever pointed to.
-  function showNoMatchFallback(articleEl, cfg) {
+  // hover-popup mechanic at all, and there's no per-phrase reason to derive
+  // a topic-specific hook from (see deriveHook in api/match.js), so the
+  // headline is a single fixed line rather than an AI/keyword-derived one.
+  // Below it: up to 3 randomly-picked experts (see pickRandomExperts in
+  // api/match.js), rendered with the exact same buildOptionRow markup as a
+  // real match's name list - same photo/name/role/Meet-button treatment,
+  // just always-visible instead of hover-triggered. Nothing renders at all
+  // if the server couldn't supply any random experts (e.g. this publisher
+  // has zero eligible experts) - a header with no names under it would look
+  // broken, not restrained.
+  function showNoMatchFallback(articleEl, cfg, randomExperts) {
     if (document.getElementById('il6-fallback')) return;
+    var options = (randomExperts || []).filter(function (o) { return o && o.expert; }).slice(0, 3);
+    if (!options.length) return;
+
     // Clean path, not experts.html - Vercel 308-redirects the .html
     // version to this anyway, so linking here directly skips that hop.
+    // click_source='no_match_cta' keeps this countable separately from
+    // both a real match's 'cta' and this same block's own 'no_match_person'
+    // rows below.
     var boardUrl = 'https://www.introlinq.com/experts?pub=' + encodeURIComponent(PUB);
-    var href = 'https://www.introlinq.com/api/dashboard?action=out'
+    var ctaHref = 'https://www.introlinq.com/api/dashboard?action=out'
       + '&pub=' + encodeURIComponent(PUB)
       + '&expert_url=' + encodeURIComponent(boardUrl)
       + '&article=' + encodeURIComponent(window.location.href.slice(0, 300))
@@ -478,12 +496,44 @@
       + '&device=' + (window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop')
       + '&source=' + encodeURIComponent(getTrafficSource())
       + '&title=' + encodeURIComponent(document.title.slice(0, 150))
-      + '&click_source=no_match_fallback';
+      + '&click_source=no_match_cta';
+
+    // No real phrase to attribute these rows to - an empty phrase is fine,
+    // buildTrackedBookingUrl only uses it for the &phrase= tracking param.
+    var fakeMatch = { phrase: '' };
+    var rowsHtml = options.map(function (opt) { return buildOptionRow(opt, fakeMatch, 'no_match_person'); }).join('');
+    var listLabel = (cfg.company_name || 'We').replace(/</g, '&lt;') + ' recommend' + (cfg.company_name ? 's' : '') + ' talking to:';
+
     var div = document.createElement('div');
     div.id = 'il6-fallback';
-    div.innerHTML = '<span id="il6-fallback-text">Need expert advice on business, growth, or funding? </span>'
-      + '<a id="il6-fallback-link" href="' + href + '" target="_blank" rel="noopener">We work with people who’ve done it →</a>';
+    div.innerHTML =
+      '<div id="il6-hook">Need expert advice on business, growth, or funding?</div>' +
+      '<a id="il6-cta" href="' + ctaHref + '" target="_blank" rel="noopener">We work with people who’ve done it →</a>' +
+      '<div id="il6-list-label">' + listLabel + '</div>' +
+      '<div id="il6-list">' + rowsHtml + '</div>';
     articleEl.appendChild(div);
+
+    // Partnership attribution footer, keyed off the first random expert -
+    // same treatment as fillPopup's own #il-pv footer for a real match.
+    var e = options[0].expert;
+    var providerName = e.provider_name || (e.provider_slug || 'openintro');
+    var providerLogoUrl = e.provider_logo_url || null;
+    var providerUrl = e.provider_website_url || '#';
+    var ilLogo = '<img src="https://www.introlinq.com/favicon.svg" alt="IntroLinq" style="width:11px!important;height:11px!important;border-radius:2px;vertical-align:middle;margin-left:4px;margin-right:3px;flex-shrink:0">';
+    var s = 'font-size:8.5px!important;color:#8888a8!important;font-family:Inter,system-ui,sans-serif;text-decoration:none;display:flex!important;align-items:center;gap:2px;min-width:0;overflow:hidden;white-space:nowrap;flex-shrink:1';
+    var partnerLink;
+    if (e.is_demo_provider && providerLogoUrl) {
+      partnerLink = '<a href="' + providerUrl + '" target="_blank" rel="noopener" style="' + s + '">In partnership with <img src="' + providerLogoUrl + '" alt="' + providerName + '" style="height:14px!important;width:auto;max-width:70px;object-fit:contain;margin-left:5px;vertical-align:middle;flex-shrink:0"></a>';
+    } else {
+      var providerLogoHtml = providerLogoUrl
+        ? '<img src="' + providerLogoUrl + '" alt="' + providerName + '" style="width:13px!important;height:13px!important;object-fit:contain;border-radius:2px;vertical-align:middle;margin-left:5px;margin-right:3px;flex-shrink:0">'
+        : '';
+      partnerLink = '<a href="' + providerUrl + '" target="_blank" rel="noopener" style="' + s + '">In partnership with' + (providerLogoHtml || ' ') + providerName + '</a>';
+    }
+    var pv = document.createElement('div');
+    pv.id = 'il6-pv';
+    pv.innerHTML = partnerLink + '<a href="https://www.introlinq.com" target="_blank" rel="noopener" style="' + s + '">Powered by' + ilLogo + 'IntroLinq</a>';
+    div.appendChild(pv);
   }
 
   function createPopup(cfg) {
@@ -982,13 +1032,13 @@
       + '&click_source=' + encodeURIComponent(clickSource);
   }
 
-  function buildOptionRow(opt, match) {
+  function buildOptionRow(opt, match, clickSource) {
     var e = opt.expert;
     if (!e) return '';
     var fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=64&name=' + encodeURIComponent(e.name);
     var showCompany = !e.is_demo_provider;
     var role = [e.position, showCompany ? e.company : null].filter(Boolean).join(' · ');
-    var href = buildTrackedBookingUrl(e, match, 'person');
+    var href = buildTrackedBookingUrl(e, match, clickSource || 'person');
     // opt.credentials is an array of short punchy facts ("4 exits", "$1B+
     // processed") - joined into one line with " | " instead of separate
     // pill chips, so it reads as one quick scannable line rather than a
