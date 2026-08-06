@@ -896,28 +896,36 @@
   // tracked redirect, same params widget.js always sent). No preload-swap
   // for photos here - onerror fallback is simpler and fine for up to 3
   // small thumbnails.
+  // clickSource distinguishes the top CTA button from a specific named
+  // expert's own Meet/name/photo link in click_logs - for the PRIMARY
+  // option those two currently lead to the exact same expert, so without
+  // this they'd be indistinguishable even though they're different UI
+  // elements the reader chose between.
+  function buildTrackedBookingUrl(e, match, clickSource) {
+    var url = e.booking_url || '#';
+    if (url === '#') return '#';
+    return 'https://www.introlinq.com/api/dashboard?action=out'
+      + '&pub=' + encodeURIComponent(PUB)
+      + '&expert_id=' + encodeURIComponent(e.id || '')
+      + '&expert_name=' + encodeURIComponent(e.name || '')
+      + '&expert_url=' + encodeURIComponent(url)
+      + '&article=' + encodeURIComponent(window.location.href.slice(0, 300))
+      + '&phrase=' + encodeURIComponent(match.phrase || '')
+      + '&lang=' + encodeURIComponent(navigator.language || '')
+      + '&tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || '')
+      + '&device=' + (window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop')
+      + '&source=' + encodeURIComponent(getTrafficSource())
+      + '&title=' + encodeURIComponent(document.title.slice(0, 150))
+      + '&click_source=' + encodeURIComponent(clickSource);
+  }
+
   function buildOptionRow(opt, match) {
     var e = opt.expert;
     if (!e) return '';
     var fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=64&name=' + encodeURIComponent(e.name);
     var showCompany = !e.is_demo_provider;
     var role = [e.position, showCompany ? e.company : null].filter(Boolean).join(' · ');
-    var url = e.booking_url || '#';
-    var href = '#';
-    if (url !== '#') {
-      href = 'https://www.introlinq.com/api/dashboard?action=out'
-        + '&pub=' + encodeURIComponent(PUB)
-        + '&expert_id=' + encodeURIComponent(e.id || '')
-        + '&expert_name=' + encodeURIComponent(e.name || '')
-        + '&expert_url=' + encodeURIComponent(url)
-        + '&article=' + encodeURIComponent(window.location.href.slice(0, 300))
-        + '&phrase=' + encodeURIComponent(match.phrase || '')
-        + '&lang=' + encodeURIComponent(navigator.language || '')
-        + '&tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || '')
-        + '&device=' + (window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop')
-        + '&source=' + encodeURIComponent(getTrafficSource())
-        + '&title=' + encodeURIComponent(document.title.slice(0, 150));
-    }
+    var href = buildTrackedBookingUrl(e, match, 'person');
     // opt.credentials is an array of short punchy facts ("4 exits", "$1B+
     // processed") - joined into one line with " | " instead of separate
     // pill chips, so it reads as one quick scannable line rather than a
@@ -968,20 +976,17 @@
         ? (match.hook ? '<div class="il2-list-label">' + (cfg.company_name || 'We').replace(/</g,'&lt;') + ' recommend' + (cfg.company_name ? 's' : '') + ' talking to</div>' : '') + options.map(function (opt) { return buildOptionRow(opt, match); }).join('')
         : '';
     }
-    // CTA goes straight to the PRIMARY (first-listed) named expert's own
-    // tracked booking link - not OpenIntro's AI search (/discover/ai),
-    // which is real but too slow in practice for a launch-day link.
-    // Reuses the href the first option row just rendered rather than
-    // recomputing the same tracked-URL construction a second time.
-    if (cta) {
-      var firstBook = list && list.querySelector('.il2-opt-book');
-      cta.href = firstBook ? firstBook.getAttribute('href') : '#';
-    }
-
     // Partnership attribution footer - same as widget.js/2/3's version,
     // keyed off the primary (first) option since they're usually all from
     // the same partner network anyway.
     var e = options[0] && options[0].expert;
+    // CTA goes straight to the PRIMARY (first-listed) named expert's own
+    // tracked booking link - not OpenIntro's AI search (/discover/ai),
+    // which is real but too slow in practice for a launch-day link.
+    // click_source='cta' (vs 'person' on the name-row links) is what
+    // makes this distinguishable in click_logs even though it's the same
+    // destination as that expert's own Meet link.
+    if (cta) cta.href = e ? buildTrackedBookingUrl(e, match, 'cta') : '#';
     var pv = document.getElementById('il-pv');
     if (pv && e) {
       var providerName = e.provider_name || (e.provider_slug || 'openintro');

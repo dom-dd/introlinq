@@ -166,7 +166,7 @@ export default async function handler(req, res) {
 
   // Public redirect - routes Book button through IntroLinq before sending to partner
   if (req.method === 'GET' && action === 'out') {
-    const { expert_id, expert_name, expert_url, article, phrase, lang, tz, device, source, title } = req.query;
+    const { expert_id, expert_name, expert_url, article, phrase, lang, tz, device, source, title, click_source } = req.query;
     if (!expert_url) return res.status(400).json({ error: 'Missing expert_url' });
 
     const click_id = crypto.randomUUID();
@@ -184,6 +184,13 @@ export default async function handler(req, res) {
       sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS device TEXT`.catch(() => {}),
       sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS traffic_source TEXT`.catch(() => {}),
       sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS article_title TEXT`.catch(() => {}),
+      // Which UI element the reader actually clicked - only meaningful for
+      // the widget4/5-style layout, where a "cta" (top button) click and a
+      // "person" (a specific named expert's own Meet/name/photo link) click
+      // can lead to the exact same destination URL for the primary option,
+      // making them otherwise indistinguishable in this table. Null for
+      // every other widget/link type, which only ever has one click style.
+      sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS click_source TEXT`.catch(() => {}),
     ]);
     if (!clickBotColumnsReady) {
       await ensureBotColumns(sql, 'click_logs');
@@ -226,9 +233,9 @@ export default async function handler(req, res) {
       : Promise.resolve();
 
     await Promise.all([
-      sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, article_title, phrase, lang, timezone, device, traffic_source, ip, is_bot)
+      sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, article_title, phrase, lang, timezone, device, traffic_source, ip, is_bot, click_source)
         VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${click_id}, ${article || null},
-                ${title || null}, ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null}, ${ip || null}, ${isBot})
+                ${title || null}, ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null}, ${ip || null}, ${isBot}, ${click_source || null})
       `.catch(() => {}),
       slackPromise,
     ]);
