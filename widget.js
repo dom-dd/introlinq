@@ -510,21 +510,25 @@
     // host page's own stylesheet declares for span/text elements at that
     // point in the article, on some publisher pages but not others depending
     // on their CSS's specificity and cascade order.
-    // line-height:1 on every variant - .il-hl is an inline span with no
-    // line-height of its own, so it inherited the HOST article's paragraph
-    // line-height (often 1.6-1.8 for readable body text). border-bottom on
-    // an inline element sits at the bottom of its line box, which that
-    // inherited line-height stretches well below the actual text - the
-    // underline read as floating far beneath the words instead of hugging
-    // them. Pinning it to 1 collapses the box back to the text's own
-    // natural height, same fix on every publisher's page regardless of
-    // their own line-height.
+    // 'underline'/'underline-solid' use real text-decoration, not
+    // border-bottom - border-bottom draws at the bottom edge of the inline
+    // box, which font line-box metrics push well below the actual glyph
+    // descenders no matter the line-height (tried pinning line-height:1
+    // first; still sat too low - the gap is baked into the font's own
+    // metrics, not the surrounding paragraph). text-decoration is a native
+    // underline - the same mechanism a plain hyperlink uses - so it hugs
+    // the text properly by default; text-underline-offset nudges it a
+    // couple px for breathing room without floating away from the words.
+    // 'fill' keeps border-bottom on purpose: it's the bottom edge of a
+    // tinted highlighter-block look, not meant to hug text tightly the way
+    // a plain underline should, and line-height:1 keeps that block snug to
+    // its own line rather than the host paragraph's taller one.
     var hlCss = cfg.highlightStyle === 'underline'
-      ? '.il-hl{border-bottom:2px dotted ' + color + '!important;cursor:pointer!important;padding:0 1px!important;background:none!important;line-height:1!important;transition:border-bottom-style .15s}' +
-        '.il-hl:hover{border-bottom-style:solid!important}'
+      ? '.il-hl{text-decoration-line:underline!important;text-decoration-style:dotted!important;text-decoration-color:' + color + '!important;text-decoration-thickness:2px!important;text-underline-offset:2px!important;cursor:pointer!important;padding:0 1px!important;background:none!important}' +
+        '.il-hl:hover{text-decoration-style:solid!important}'
       : cfg.highlightStyle === 'underline-solid'
-      ? '.il-hl{border-bottom:2px solid ' + color + '!important;cursor:pointer!important;padding:0 1px!important;background:none!important;line-height:1!important;transition:border-bottom-width .15s}' +
-        '.il-hl:hover{border-bottom-width:3px!important}'
+      ? '.il-hl{text-decoration-line:underline!important;text-decoration-style:solid!important;text-decoration-color:' + color + '!important;text-decoration-thickness:2px!important;text-underline-offset:2px!important;cursor:pointer!important;padding:0 1px!important;background:none!important}' +
+        '.il-hl:hover{text-decoration-thickness:3px!important}'
       : '.il-hl{background:' + hexToRgba(color, 0.15) + '!important;border-bottom:2px solid ' + color + '!important;cursor:pointer!important;border-radius:2px!important;padding:0 2px!important;line-height:1!important;transition:background .15s}' +
         '.il-hl:hover{background:' + hexToRgba(color, 0.3) + '!important}';
     s.textContent =
