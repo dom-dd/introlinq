@@ -606,13 +606,19 @@
       // ever pushes the article's own content around, and the 3 named
       // people only exist for a reader who actually engages, same as a
       // real match's hover popup.
-      // Both the hook text and the divider line above it render directly in
-      // the article's own background (unlike the popup, which always sits
-      // on its own white card) - a fixed dark colour goes unreadable on a
-      // dark-themed site (confirmed on justcharmaine.co.uk: "dark grey on
-      // black"). cfg.noMatchTextColor lets a publisher override it from
-      // the dashboard; null keeps this same #1a1a2e default.
-      '#il6-fallback{margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid ' + hexToRgba(noMatchTextColor, 0.15) + ';font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}' +
+      // The hook text renders directly in the article's own background
+      // (unlike the popup, which always sits on its own white card) - a
+      // fixed dark colour goes unreadable on a dark-themed site (confirmed
+      // on justcharmaine.co.uk: "dark grey on black"). cfg.noMatchTextColor
+      // lets a publisher override it from the dashboard; null keeps this
+      // same #1a1a2e default. No border-top divider (dropped - looked like
+      // a stray leftover line once cfg.noMatchAnchorSelector could place
+      // this ahead of other content, like justcharmaine's Previous/Next
+      // nav, rather than always at the true end of the article). margin-
+      // bottom matters for the same reason: this used to only ever sit as
+      // the LAST thing in its container, so nothing after it to crowd -
+      // an anchor override can now put real content right after it.
+      '#il6-fallback{margin-top:1.75rem;margin-bottom:1.75rem;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}' +
       '#il6-hookwrap{cursor:pointer}' +
       '#il6-hook{font-size:15px!important;font-weight:700!important;color:' + noMatchTextColor + '!important;line-height:1.4!important;margin-bottom:10px}' +
       '#il6-cta{display:inline-block!important;background:' + accent + '!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:9px 18px!important;border-radius:100px!important;font-size:13px!important;font-weight:700!important;text-decoration:none!important}' +
