@@ -1036,6 +1036,19 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, deleted: result.length });
   }
 
+  // Bulk-enable the no-match fallback (widget6's "Suggestions on non-matching
+  // pages") for every active publisher at once - the dashboard only exposes
+  // this per-publisher, behind that publisher's own session login, which
+  // isn't practical to click through one at a time for a comparison rollout.
+  // No cache invalidation needed: same as highlight_style/discovery_cue,
+  // this is a pure rendering choice read fresh per request (see
+  // buildRandomFallback in match.js), never baked into a cached match.
+  if (resource === 'enable-no-match-fallback-all' && req.method === 'POST') {
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS no_match_fallback_enabled BOOLEAN NOT NULL DEFAULT false`.catch(() => {});
+    const result = await sql`UPDATE publishers SET no_match_fallback_enabled = true WHERE active = true RETURNING slug`.catch(() => []);
+    return res.status(200).json({ ok: true, updated: result.map(r => r.slug) });
+  }
+
   // List cached pages (page + country -> stored match result), newest first
   if (resource === 'cache' && req.method === 'GET') {
     const entries = await sql`

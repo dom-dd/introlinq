@@ -1342,6 +1342,15 @@ tr:hover td{background:rgba(0,0,0,0.01)}
           <span class="sync-info" id="nomatch-status">Clears the homepage demo cache only. Previously-unmatched demo pages will be re-scanned on the next visit.</span>
         </div>
       </div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">No-match fallback</div>
+        </div>
+        <div class="sync-row">
+          <button class="btn btn-ghost" onclick="enableNoMatchFallbackAll()">Enable for all publishers</button>
+          <span class="sync-info" id="no-match-fallback-all-status">Turns on "Suggestions on non-matching pages" for every active publisher at once - the dashboard toggle is per-publisher behind their own login, impractical to click through individually.</span>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -3213,6 +3222,22 @@ async function clearNoMatchCache() {
   const data = await res.json();
   if (data.ok) {
     status.textContent = `Done - ${data.deleted} no-match cache entries cleared.`;
+  } else {
+    status.textContent = 'Failed: ' + (data.error || 'unknown error');
+  }
+}
+
+async function enableNoMatchFallbackAll() {
+  if (!confirm('Enable "Suggestions on non-matching pages" for every active publisher? This flips their dashboard toggle on directly - no cache is touched, it just changes what future no-match page views show.')) return;
+  const status = document.getElementById('no-match-fallback-all-status');
+  status.textContent = 'Updating...';
+  const res = await fetch('/api/admin?resource=enable-no-match-fallback-all', {
+    method: 'POST',
+    headers: { 'x-requested-with': 'xmlhttprequest' }
+  });
+  const data = await res.json();
+  if (data.ok) {
+    status.textContent = `Done - enabled for ${data.updated.length} publisher${data.updated.length !== 1 ? 's' : ''}: ${data.updated.join(', ')}.`;
   } else {
     status.textContent = 'Failed: ' + (data.error || 'unknown error');
   }
