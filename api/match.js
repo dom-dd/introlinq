@@ -136,7 +136,12 @@ function slimMatches(matches) {
       const expertId = m.expert_id ?? m.expert?.id;
       if (!m.phrase || expertId == null) return null;
       const out = { phrase: m.phrase, reason: m.reason || '', expert_id: expertId };
-      if (typeof m.credential === 'string' && m.credential.trim()) out.credential = m.credential;
+      // credentials (array, current punchy-facts field) and credential
+      // (string, legacy rows scanned before this existed) are passed
+      // through as-is - hydrateMatchesMulti/widget.js prefer credentials,
+      // fall back to credential, then to reason for the oldest rows.
+      if (Array.isArray(m.credentials) && m.credentials.length > 0) out.credentials = m.credentials;
+      else if (typeof m.credential === 'string' && m.credential.trim()) out.credential = m.credential;
       // AI-derived, in the article's own language (see the HOOK & CTA prompt
       // rule) - absent on cache rows scanned before this existed, which
       // hydrateMatchesMulti covers with the old deriveHook keyword lookup.
@@ -147,7 +152,8 @@ function slimMatches(matches) {
         .slice(0, 2)
         .map(a => {
           const altOut = { expert_id: a.expert_id, reason: a.reason };
-          if (typeof a.credential === 'string' && a.credential.trim()) altOut.credential = a.credential;
+          if (Array.isArray(a.credentials) && a.credentials.length > 0) altOut.credentials = a.credentials;
+          else if (typeof a.credential === 'string' && a.credential.trim()) altOut.credential = a.credential;
           return altOut;
         });
       if (alts.length > 0) out.alts = alts;
@@ -261,7 +267,7 @@ function hydrateMatchesMulti(cachedMatches, experts, enabledPartners, maxPerPhra
     const primaryId = m.expert_id ?? m.expert?.id;
     if (primaryId == null) continue;
     const candidates = [
-      { expert_id: primaryId, reason: m.reason, credential: m.credential },
+      { expert_id: primaryId, reason: m.reason, credential: m.credential, credentials: m.credentials },
       ...(Array.isArray(m.alts) ? m.alts : [])
     ].filter(c => {
       if (c.expert_id == null || seen.has(c.expert_id)) return false;
@@ -276,7 +282,8 @@ function hydrateMatchesMulti(cachedMatches, experts, enabledPartners, maxPerPhra
     picked.forEach(c => seen.add(c.expert_id));
     const options = picked.map(c => {
       const opt = { reason: c.reason, expert: byId.get(c.expert_id) };
-      if (typeof c.credential === 'string' && c.credential.trim()) opt.credential = c.credential;
+      if (Array.isArray(c.credentials) && c.credentials.length > 0) opt.credentials = c.credentials;
+      else if (typeof c.credential === 'string' && c.credential.trim()) opt.credential = c.credential;
       return opt;
     });
     // AI-derived hook/cta (see slimMatches) if this row was scanned after
@@ -1489,18 +1496,19 @@ ${expertsList}`;
       // would just be arbitrary noise, not a real signal about the audience.
       const titleLine = page_title ? `Article title: ${String(page_title).slice(0, 150)}\n\n` : '';
 
-      // The card shows the expert's credential one-liner above the reason. For
-      // non-English articles it would appear in English next to a translated
-      // reason, so the model translates it per match; English articles skip
-      // this entirely and the widget falls back to the stored bio (no extra
-      // output tokens for the common case).
-      const wantsCredential = articleLangCode !== 'en';
-      const credentialInstruction = wantsCredential
-        ? `\nFor each match, also include a "credential" field: the expert's one-line track record (the first sentence of their About) faithfully translated into ${articleLangName}. Keep all numbers, currency amounts, and company names exactly as they are. Translate only - no embellishment, no additions.\n`
-        : '';
-      const credentialSchema = wantsCredential
-        ? `,"credential":"the expert's one-line track record translated into ${articleLangName}"`
-        : '';
+      // The card shows a punchy facts line under the expert's name/role -
+      // 2-3 short fragments drawn from their own real profile (Highlights/
+      // About/Services, already in expertsList above), not a full sentence.
+      // "reason" is kept purely internal now (hook derivation fallback,
+      // fixReasonName's name safety-check) - see buildOptionRow in
+      // widget.js, which prefers "credentials" for display and only falls
+      // back to "reason" for cache rows scanned before this field existed.
+      // Requested for every article language now, not just non-English -
+      // this used to be a translated-only affordance for a single
+      // "credential" string; generalized so English articles get the same
+      // punchy-facts treatment instead of a full sentence.
+      const credentialInstruction = `\nFor each match, also include a "credentials" array: 2 or 3 short, punchy facts about the matched expert (5-9 words each, resume-headline style, no full sentences) - drawn ONLY from their own Highlights/About/Services listed above, never invented. Example: ["15 years in fintech", "Scaled 3 companies to exit"]. ${articleLangCode === 'en' ? 'Write them in English.' : `Translate them into ${articleLangName} - keep numbers, currency amounts, and company names exactly as they are.`}\n`;
+      const credentialSchema = `,"credentials":["short fact 1","short fact 2"]`;
 
       const dynamicPrompt = `IMPORTANT: ${languageInstruction}
 ${credentialInstruction}
@@ -1597,8 +1605,12 @@ Return only valid JSON, no other text:
           // credentialInstruction). Flows through cache so serve-time
           // hydration can show it; the widget falls back to the stored
           // English bio when absent (English articles, old cache entries).
-          if (typeof m.credential === 'string' && m.credential.trim()) {
-            out.credential = stripEmDash(m.credential.trim()).slice(0, 220);
+          if (Array.isArray(m.credentials)) {
+            const creds = m.credentials
+              .filter(c => typeof c === 'string' && c.trim())
+              .map(c => stripEmDash(c.trim()).slice(0, 60))
+              .slice(0, 3);
+            if (creds.length > 0) out.credentials = creds;
           }
           // AI-derived hook/cta (see the HOOK & CTA prompt rule) - grounded in
           // THIS match and in the article's own language, unlike the old
@@ -1623,8 +1635,12 @@ Return only valid JSON, no other text:
             .slice(0, 2)
             .map(a => {
               const altOut = { expert_id: a.expert_id, reason: stripEmDash(fixReasonName(a.reason, expertMap[a.expert_id], experts)) };
-              if (typeof a.credential === 'string' && a.credential.trim()) {
-                altOut.credential = stripEmDash(a.credential.trim()).slice(0, 220);
+              if (Array.isArray(a.credentials)) {
+                const creds = a.credentials
+                  .filter(c => typeof c === 'string' && c.trim())
+                  .map(c => stripEmDash(c.trim()).slice(0, 60))
+                  .slice(0, 3);
+                if (creds.length > 0) altOut.credentials = creds;
               }
               return altOut;
             });

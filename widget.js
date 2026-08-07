@@ -1416,21 +1416,21 @@
     var showCompany = !e.is_demo_provider;
     var role = [e.position, showCompany ? e.company : null].filter(Boolean).join(' · ');
     var href = buildTrackedBookingUrl(e, match, clickSource || 'person');
-    // opt.reason is the AI's actual per-match "why this expert, for this
-    // specific phrase" sentence (see the HOOK & CTA / main prompt rules in
-    // api/match.js) - always present for a real match, in the reader's own
-    // language, and the whole reason this option exists at all. Preferred
-    // over opt.credentials (a short punchy-facts array like "4 exits" |
-    // "$1B+ processed") or opt.credential (a singular translated bio
-    // one-liner) - those only ever come from the no-match fallback's
-    // random picks (pickRandomExperts, api/match.js) or the hand-authored
-    // demo page, neither of which has a "reason" (there's no real match to
-    // explain), so this order covers both without ever showing nothing.
+    // opt.credentials is a short punchy-facts array (e.g. "4 exits" | "$1B+
+    // processed") - real facts drawn from the expert's own profile, whether
+    // this is the no-match fallback's random pick (pickRandomExperts, using
+    // their curated highlights - api/match.js), the hand-authored demo
+    // page, or a real AI match (see the "credentials" prompt rule in
+    // api/match.js). opt.credential is the same idea as a single string,
+    // from older non-English-only cache rows. opt.reason - the AI's full
+    // "why this expert, for this specific phrase" sentence - is now only a
+    // fallback, for real-match cache rows scanned before "credentials"
+    // existed, so nothing ever shows blank.
     var facts = Array.isArray(opt.credentials) ? opt.credentials.filter(Boolean) : (opt.credential ? [opt.credential] : []);
-    var factsHtml = typeof opt.reason === 'string' && opt.reason.trim()
-      ? '<div class="il2-opt-facts il2-opt-facts-reason">' + opt.reason.trim().replace(/</g,'&lt;') + '</div>'
-      : (facts.length
-        ? '<div class="il2-opt-facts">' + facts.map(function (c) { return String(c).replace(/</g,'&lt;'); }).join(' | ') + '</div>'
+    var factsHtml = facts.length
+      ? '<div class="il2-opt-facts">' + facts.map(function (c) { return String(c).replace(/</g,'&lt;'); }).join(' | ') + '</div>'
+      : (typeof opt.reason === 'string' && opt.reason.trim()
+        ? '<div class="il2-opt-facts il2-opt-facts-reason">' + opt.reason.trim().replace(/</g,'&lt;') + '</div>'
         : '');
     // Photo and name are clickable too now, not just the Meet button -
     // same tracked href, bigger click target. Falls back to plain
