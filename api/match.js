@@ -190,6 +190,14 @@ function slimMatches(matches) {
 // frequency list). Order matters - checked top to bottom, first match on
 // the expert's own topics[] wins, so more specific asks are listed ahead
 // of broader ones.
+// hook_fr/cta_fr: hand-translated (not AI-batch-translated like
+// highlights_fr - this is a small, fixed, curated list, worth doing by hand
+// for tone/quality) French equivalents, selected by deriveHook when the
+// cached row's langCode is 'fr'. Added after a live screenshot showed an
+// English hook+CTA button on a French planet-fintech page - the topic
+// keyword itself is deliberately left English-only (matched against the
+// expert's own topics[] taxonomy, which isn't localized), only the
+// display text needed a translation.
 const TOPIC_HOOKS = [
   // Not real expert topic tags (no expert is tagged "SEO" - checked the
   // real taxonomy, it doesn't exist) - these only ever match via the
@@ -198,36 +206,36 @@ const TOPIC_HOOKS = [
   // "Speaking in public soon?" hook on a Search-Console/local-SEO article,
   // because neither the reason nor phrase mentioned any topic already in
   // this list, so it fell through to the matched expert's own broad tags.
-  { topic: 'SEO', hook: 'Need help with SEO? Talk to someone who has grown organic traffic before.', cta: 'Get SEO advice →' },
-  { topic: 'Search Console', hook: 'Making sense of Search Console data? Talk to someone who reads this for a living.', cta: 'Get SEO advice →' },
-  { topic: 'Google Ads', hook: 'Running Google Ads? Talk to someone who has managed real ad spend.', cta: 'Get ads advice →' },
-  { topic: 'Analytics', hook: 'Untangling your analytics setup? Talk to someone who has done this before.', cta: 'Get analytics advice →' },
-  { topic: 'Fundraising', hook: 'Raising funds? We have a list of active investors to speak to.', cta: 'Get funding now →' },
-  { topic: 'Startup Funding', hook: 'Raising funds? We have a list of active investors to speak to.', cta: 'Get funding now →' },
-  { topic: 'VC (Venture Capital)', hook: 'Raising funds? We have a list of active investors to speak to.', cta: 'Get funding now →' },
-  { topic: 'Angel Investor', hook: 'Raising funds? We have a list of active investors to speak to.', cta: 'Get funding now →' },
-  { topic: 'Seed', hook: 'Raising a seed round? Talk to investors who fund exactly this stage.', cta: 'Get funding now →' },
-  { topic: 'Pre-Seed', hook: 'Raising pre-seed? Talk to investors who fund exactly this stage.', cta: 'Get funding now →' },
-  { topic: 'Investment Preparation', hook: 'Getting ready to raise? Talk to someone who knows what investors look for.', cta: 'Get investor-ready →' },
-  { topic: 'Exits', hook: 'Thinking about an exit? Talk to founders who have actually been through one.', cta: 'Get exit advice →' },
-  { topic: 'Storytelling', hook: 'Need to sharpen your pitch? Talk to someone who tells stories for a living.', cta: 'Sharpen my pitch →' },
-  { topic: 'Public Speaking', hook: 'Speaking in public soon? Get advice from someone who does it professionally.', cta: 'Improve my speaking →' },
-  { topic: 'Marketing', hook: 'Need to grow your audience? Talk to a marketing expert who has done it before.', cta: 'Get marketing advice →' },
-  { topic: 'Growth', hook: 'Stuck on growth? Talk to someone who has scaled a company before.', cta: 'Get growth advice →' },
-  { topic: 'Go-To-Market', hook: 'Planning a launch? Get your go-to-market strategy right the first time.', cta: 'Nail my launch →' },
-  { topic: 'Branding', hook: 'Building your brand? Talk to someone who has built one that worked.', cta: 'Get branding advice →' },
-  { topic: 'Leadership', hook: 'First time leading a team? Get matched with leaders who have been there.', cta: 'Get leadership advice →' },
-  { topic: 'Career Coaching', hook: 'At a career crossroads? Talk to someone who coaches people through exactly this.', cta: 'Get career advice →' },
-  { topic: 'Personal Development', hook: 'Looking to grow, not just professionally? Talk to someone who coaches this.', cta: 'Get personal advice →' },
-  { topic: 'SaaS', hook: 'Building a SaaS product? Talk to founders who have built and scaled one.', cta: 'Get SaaS advice →' },
-  { topic: 'Product', hook: 'Building your product? Talk to someone who has shipped one that worked.', cta: 'Get product advice →' },
-  { topic: 'E-commerce', hook: 'Running an e-commerce business? Talk to someone who has scaled one.', cta: 'Get e-commerce advice →' },
-  { topic: 'Artificial Intelligence', hook: 'Building with AI? Talk to someone working on this right now.', cta: 'Get AI advice →' },
-  { topic: 'Social Impact', hook: 'Building something with real impact? Talk to founders doing the same.', cta: 'Get impact advice →' },
-  { topic: 'Sustainability', hook: 'Working on sustainability? Talk to someone who has built in this space.', cta: 'Get sustainability advice →' },
-  { topic: 'Operations', hook: 'Operations getting complicated? Talk to someone who has scaled a team before.', cta: 'Get operations advice →' },
+  { topic: 'SEO', hook: 'Need help with SEO? Talk to someone who has grown organic traffic before.', cta: 'Get SEO advice →', hook_fr: 'Besoin d\'aide en SEO ? Parlez à quelqu\'un qui a fait croître un trafic organique.', cta_fr: 'Obtenir des conseils SEO →' },
+  { topic: 'Search Console', hook: 'Making sense of Search Console data? Talk to someone who reads this for a living.', cta: 'Get SEO advice →', hook_fr: 'Vous essayez de comprendre vos données Search Console ? Parlez à quelqu\'un dont c\'est le métier.', cta_fr: 'Obtenir des conseils SEO →' },
+  { topic: 'Google Ads', hook: 'Running Google Ads? Talk to someone who has managed real ad spend.', cta: 'Get ads advice →', hook_fr: 'Vous gérez des campagnes Google Ads ? Parlez à quelqu\'un qui a géré un vrai budget publicitaire.', cta_fr: 'Obtenir des conseils pub →' },
+  { topic: 'Analytics', hook: 'Untangling your analytics setup? Talk to someone who has done this before.', cta: 'Get analytics advice →', hook_fr: 'Vous démêlez votre configuration analytics ? Parlez à quelqu\'un qui l\'a déjà fait.', cta_fr: 'Obtenir des conseils analytics →' },
+  { topic: 'Fundraising', hook: 'Raising funds? We have a list of active investors to speak to.', cta: 'Get funding now →', hook_fr: 'Vous levez des fonds ? Nous avons une liste d\'investisseurs actifs à qui parler.', cta_fr: 'Trouver un financement →' },
+  { topic: 'Startup Funding', hook: 'Raising funds? We have a list of active investors to speak to.', cta: 'Get funding now →', hook_fr: 'Vous levez des fonds ? Nous avons une liste d\'investisseurs actifs à qui parler.', cta_fr: 'Trouver un financement →' },
+  { topic: 'VC (Venture Capital)', hook: 'Raising funds? We have a list of active investors to speak to.', cta: 'Get funding now →', hook_fr: 'Vous levez des fonds ? Nous avons une liste d\'investisseurs actifs à qui parler.', cta_fr: 'Trouver un financement →' },
+  { topic: 'Angel Investor', hook: 'Raising funds? We have a list of active investors to speak to.', cta: 'Get funding now →', hook_fr: 'Vous levez des fonds ? Nous avons une liste d\'investisseurs actifs à qui parler.', cta_fr: 'Trouver un financement →' },
+  { topic: 'Seed', hook: 'Raising a seed round? Talk to investors who fund exactly this stage.', cta: 'Get funding now →', hook_fr: 'Vous levez une seed round ? Parlez à des investisseurs qui financent exactement ce stade.', cta_fr: 'Trouver un financement →' },
+  { topic: 'Pre-Seed', hook: 'Raising pre-seed? Talk to investors who fund exactly this stage.', cta: 'Get funding now →', hook_fr: 'Vous levez en pre-seed ? Parlez à des investisseurs qui financent exactement ce stade.', cta_fr: 'Trouver un financement →' },
+  { topic: 'Investment Preparation', hook: 'Getting ready to raise? Talk to someone who knows what investors look for.', cta: 'Get investor-ready →', hook_fr: 'Vous vous préparez à lever des fonds ? Parlez à quelqu\'un qui sait ce que cherchent les investisseurs.', cta_fr: 'Devenir investment-ready →' },
+  { topic: 'Exits', hook: 'Thinking about an exit? Talk to founders who have actually been through one.', cta: 'Get exit advice →', hook_fr: 'Vous pensez à une sortie ? Parlez à des fondateurs qui en ont vécu une.', cta_fr: 'Obtenir des conseils sur la sortie →' },
+  { topic: 'Storytelling', hook: 'Need to sharpen your pitch? Talk to someone who tells stories for a living.', cta: 'Sharpen my pitch →', hook_fr: 'Besoin d\'affiner votre pitch ? Parlez à quelqu\'un qui raconte des histoires pour vivre.', cta_fr: 'Affiner mon pitch →' },
+  { topic: 'Public Speaking', hook: 'Speaking in public soon? Get advice from someone who does it professionally.', cta: 'Improve my speaking →', hook_fr: 'Vous parlez en public prochainement ? Recevez des conseils de quelqu\'un qui le fait professionnellement.', cta_fr: 'Améliorer ma prise de parole →' },
+  { topic: 'Marketing', hook: 'Need to grow your audience? Talk to a marketing expert who has done it before.', cta: 'Get marketing advice →', hook_fr: 'Besoin de développer votre audience ? Parlez à un expert marketing qui l\'a déjà fait.', cta_fr: 'Obtenir des conseils marketing →' },
+  { topic: 'Growth', hook: 'Stuck on growth? Talk to someone who has scaled a company before.', cta: 'Get growth advice →', hook_fr: 'Bloqué sur la croissance ? Parlez à quelqu\'un qui a fait grandir une entreprise.', cta_fr: 'Obtenir des conseils de croissance →' },
+  { topic: 'Go-To-Market', hook: 'Planning a launch? Get your go-to-market strategy right the first time.', cta: 'Nail my launch →', hook_fr: 'Vous préparez un lancement ? Réussissez votre stratégie de mise sur le marché dès le départ.', cta_fr: 'Réussir mon lancement →' },
+  { topic: 'Branding', hook: 'Building your brand? Talk to someone who has built one that worked.', cta: 'Get branding advice →', hook_fr: 'Vous construisez votre marque ? Parlez à quelqu\'un qui en a construit une qui a fonctionné.', cta_fr: 'Obtenir des conseils de marque →' },
+  { topic: 'Leadership', hook: 'First time leading a team? Get matched with leaders who have been there.', cta: 'Get leadership advice →', hook_fr: 'Première fois à la tête d\'une équipe ? Soyez mis en relation avec des leaders qui sont passés par là.', cta_fr: 'Obtenir des conseils de leadership →' },
+  { topic: 'Career Coaching', hook: 'At a career crossroads? Talk to someone who coaches people through exactly this.', cta: 'Get career advice →', hook_fr: 'À un tournant de votre carrière ? Parlez à quelqu\'un qui accompagne exactement cette situation.', cta_fr: 'Obtenir des conseils de carrière →' },
+  { topic: 'Personal Development', hook: 'Looking to grow, not just professionally? Talk to someone who coaches this.', cta: 'Get personal advice →', hook_fr: 'Vous cherchez à progresser, pas seulement professionnellement ? Parlez à quelqu\'un qui accompagne cela.', cta_fr: 'Obtenir des conseils personnels →' },
+  { topic: 'SaaS', hook: 'Building a SaaS product? Talk to founders who have built and scaled one.', cta: 'Get SaaS advice →', hook_fr: 'Vous construisez un produit SaaS ? Parlez à des fondateurs qui en ont construit et fait grandir un.', cta_fr: 'Obtenir des conseils SaaS →' },
+  { topic: 'Product', hook: 'Building your product? Talk to someone who has shipped one that worked.', cta: 'Get product advice →', hook_fr: 'Vous construisez votre produit ? Parlez à quelqu\'un qui en a lancé un qui a fonctionné.', cta_fr: 'Obtenir des conseils produit →' },
+  { topic: 'E-commerce', hook: 'Running an e-commerce business? Talk to someone who has scaled one.', cta: 'Get e-commerce advice →', hook_fr: 'Vous gérez une activité e-commerce ? Parlez à quelqu\'un qui en a fait grandir une.', cta_fr: 'Obtenir des conseils e-commerce →' },
+  { topic: 'Artificial Intelligence', hook: 'Building with AI? Talk to someone working on this right now.', cta: 'Get AI advice →', hook_fr: 'Vous construisez avec l\'IA ? Parlez à quelqu\'un qui travaille dessus en ce moment.', cta_fr: 'Obtenir des conseils IA →' },
+  { topic: 'Social Impact', hook: 'Building something with real impact? Talk to founders doing the same.', cta: 'Get impact advice →', hook_fr: 'Vous construisez quelque chose à impact réel ? Parlez à des fondateurs qui font pareil.', cta_fr: 'Obtenir des conseils sur l\'impact →' },
+  { topic: 'Sustainability', hook: 'Working on sustainability? Talk to someone who has built in this space.', cta: 'Get sustainability advice →', hook_fr: 'Vous travaillez sur la durabilité ? Parlez à quelqu\'un qui a construit dans ce domaine.', cta_fr: 'Obtenir des conseils durabilité →' },
+  { topic: 'Operations', hook: 'Operations getting complicated? Talk to someone who has scaled a team before.', cta: 'Get operations advice →', hook_fr: 'Vos opérations se complexifient ? Parlez à quelqu\'un qui a fait grandir une équipe.', cta_fr: 'Obtenir des conseils opérations →' },
 ];
-const FALLBACK_HOOK = { hook: 'Need advice on this? Talk to someone who has been there before.', cta: 'Talk to an expert →' };
+const FALLBACK_HOOK = { hook: 'Need advice on this? Talk to someone who has been there before.', cta: 'Talk to an expert →', hook_fr: 'Besoin de conseils sur ce sujet ? Parlez à quelqu\'un qui est déjà passé par là.', cta_fr: 'Parler à un expert →' };
 
 // LEGACY FALLBACK ONLY - hydrateMatchesMulti now prefers the AI-derived
 // hook/cta stored on the cache row itself (see the HOOK & CTA prompt rule
@@ -248,18 +256,27 @@ const FALLBACK_HOOK = { hook: 'Need advice on this? Talk to someone who has been
 // public speaking at all. Falls back to the expert's topics[] only if the
 // reason/phrase text itself doesn't mention a known keyword - and even the
 // REASON-text search only ever worked for English articles anyway (see
-// languageInstruction), since TOPIC_HOOKS' keywords are English-only.
-function deriveHook(expert, reasonText, phraseText) {
+// languageInstruction), since TOPIC_HOOKS' keywords are English-only - the
+// MATCHING is still English-only (the reason text stored on old cache rows
+// is in the article's own language, so this rarely hits for non-English
+// pages, falling through to the topics[] match below instead, which isn't
+// language-dependent), but the returned hook/cta TEXT is now localized via
+// langCode (the cached row's detected article language) so it's never
+// wrong-language even when the keyword match itself only succeeds through
+// topics[].
+function deriveHook(expert, reasonText, phraseText, langCode) {
+  const useFr = langCode === 'fr';
+  const localize = (entry) => useFr ? { hook: entry.hook_fr, cta: entry.cta_fr } : { hook: entry.hook, cta: entry.cta };
   const haystack = ((reasonText || '') + ' ' + (phraseText || '')).toLowerCase();
   for (const entry of TOPIC_HOOKS) {
-    if (haystack.includes(entry.topic.toLowerCase())) return { ...entry, query: entry.topic.toLowerCase() };
+    if (haystack.includes(entry.topic.toLowerCase())) return { ...localize(entry), query: entry.topic.toLowerCase() };
   }
   if (expert && Array.isArray(expert.topics)) {
     for (const entry of TOPIC_HOOKS) {
-      if (expert.topics.includes(entry.topic)) return { ...entry, query: entry.topic.toLowerCase() };
+      if (expert.topics.includes(entry.topic)) return { ...localize(entry), query: entry.topic.toLowerCase() };
     }
   }
-  return { ...FALLBACK_HOOK, query: 'expert advice' };
+  return { ...localize(FALLBACK_HOOK), query: 'expert advice' };
 }
 
 // The hot path for every real publisher's widget (via tryServeFromCache)
@@ -267,7 +284,7 @@ function deriveHook(expert, reasonText, phraseText) {
 // candidates per phrase instead of randomly committing to one, so the
 // reader gets a hook + a short named-options list instead of a single
 // suggestion.
-function hydrateMatchesMulti(cachedMatches, experts, enabledPartners, maxPerPhrase = 3) {
+function hydrateMatchesMulti(cachedMatches, experts, enabledPartners, maxPerPhrase = 3, langCode) {
   const byId = new Map(experts.map(e => [e.id, e]));
   const seen = new Set();
   const out = [];
@@ -296,14 +313,17 @@ function hydrateMatchesMulti(cachedMatches, experts, enabledPartners, maxPerPhra
     });
     // AI-derived hook/cta (see slimMatches) if this row was scanned after
     // that existed - grounded in the actual match, in the article's own
-    // language. Falls back to the old English-only topic-keyword lookup
-    // only for cache rows scanned before hook/cta were added; those
-    // self-heal to the AI-derived version on their next natural rescan.
+    // language. Falls back to the topic-keyword lookup only for cache rows
+    // scanned before hook/cta were added; those self-heal to the AI-derived
+    // version on their next natural rescan. langCode (the cached row's
+    // detected article language - see tryServeFromCache) picks the French
+    // TOPIC_HOOKS text when available, same idea as the highlights_fr swap
+    // above - real translated copy, not English leaking onto a French page.
     const primaryExpert = byId.get(picked[0].expert_id);
     const hasAiHook = typeof m.hook === 'string' && m.hook.trim() && typeof m.cta === 'string' && m.cta.trim();
     const { hook, cta, query } = hasAiHook
       ? { hook: m.hook, cta: m.cta, query: '' }
-      : deriveHook(primaryExpert, picked[0].reason, m.phrase);
+      : deriveHook(primaryExpert, picked[0].reason, m.phrase, langCode);
     out.push({ phrase: m.phrase, options, hook, cta, query: query || '' });
   }
   return out;
@@ -634,7 +654,7 @@ async function tryServeFromCache(res, sql, { cached, enabledPartners, publisher,
   // (see slimMatches), so the hook+multi-name popup and the no-match
   // fallback below are both just a different read of data that was already
   // there, not a reason to rescan anything.
-  const hydrated = hydrateMatchesMulti(cached.result.matches, localizedExperts, enabledPartners);
+  const hydrated = hydrateMatchesMulti(cached.result.matches, localizedExperts, enabledPartners, 3, cached.lang_code);
   const emptiedPositive = cached.has_match && hydrated.length === 0;
   if (emptiedPositive) return false;
   // Flattened single-expert view (first option per phrase) purely so the
