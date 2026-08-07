@@ -510,13 +510,22 @@
     // host page's own stylesheet declares for span/text elements at that
     // point in the article, on some publisher pages but not others depending
     // on their CSS's specificity and cascade order.
+    // line-height:1 on every variant - .il-hl is an inline span with no
+    // line-height of its own, so it inherited the HOST article's paragraph
+    // line-height (often 1.6-1.8 for readable body text). border-bottom on
+    // an inline element sits at the bottom of its line box, which that
+    // inherited line-height stretches well below the actual text - the
+    // underline read as floating far beneath the words instead of hugging
+    // them. Pinning it to 1 collapses the box back to the text's own
+    // natural height, same fix on every publisher's page regardless of
+    // their own line-height.
     var hlCss = cfg.highlightStyle === 'underline'
-      ? '.il-hl{border-bottom:2px dotted ' + color + '!important;cursor:pointer!important;padding:0 1px!important;background:none!important;transition:border-bottom-style .15s}' +
+      ? '.il-hl{border-bottom:2px dotted ' + color + '!important;cursor:pointer!important;padding:0 1px!important;background:none!important;line-height:1!important;transition:border-bottom-style .15s}' +
         '.il-hl:hover{border-bottom-style:solid!important}'
       : cfg.highlightStyle === 'underline-solid'
-      ? '.il-hl{border-bottom:2px solid ' + color + '!important;cursor:pointer!important;padding:0 1px!important;background:none!important;transition:border-bottom-width .15s}' +
+      ? '.il-hl{border-bottom:2px solid ' + color + '!important;cursor:pointer!important;padding:0 1px!important;background:none!important;line-height:1!important;transition:border-bottom-width .15s}' +
         '.il-hl:hover{border-bottom-width:3px!important}'
-      : '.il-hl{background:' + hexToRgba(color, 0.15) + '!important;border-bottom:2px solid ' + color + '!important;cursor:pointer!important;border-radius:2px!important;padding:0 2px!important;transition:background .15s}' +
+      : '.il-hl{background:' + hexToRgba(color, 0.15) + '!important;border-bottom:2px solid ' + color + '!important;cursor:pointer!important;border-radius:2px!important;padding:0 2px!important;line-height:1!important;transition:background .15s}' +
         '.il-hl:hover{background:' + hexToRgba(color, 0.3) + '!important}';
     s.textContent =
       hlCss +
