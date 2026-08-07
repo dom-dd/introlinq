@@ -616,19 +616,31 @@
       '#il6-hookwrap{cursor:pointer}' +
       '#il6-hook{font-size:15px!important;font-weight:700!important;color:' + noMatchTextColor + '!important;line-height:1.4!important;margin-bottom:10px}' +
       '#il6-cta{display:inline-block!important;background:' + accent + '!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:9px 18px!important;border-radius:100px!important;font-size:13px!important;font-weight:700!important;text-decoration:none!important}' +
-      '#il6-cta-row{display:flex!important;align-items:center;gap:10px;flex-wrap:wrap}' +
-      '#il6-avatars{display:flex!important;align-items:center;flex-shrink:0}' +
+      // !important on every property here, not just display - unprotected
+      // align-items was the likely real cause of the avatars misaligning
+      // against the button on challenges.tn: every OTHER visual rule in
+      // this file learned that lesson already (see the popup's own
+      // !important comment above), this row just hadn't yet.
+      '#il6-cta-row{display:flex!important;align-items:center!important;gap:10px!important;flex-wrap:wrap!important}' +
+      '#il6-avatars{display:flex!important;align-items:center!important;flex-shrink:0!important}' +
       // Sized to roughly match the CTA pill's own height (9px padding +
       // 13px text ~= 33px tall) so the row reads as one aligned unit.
       // Overlapping circle-of-faces convention - negative margin pulls
       // each one under the last, white ring (border + a hairline shadow
       // so it still separates on a white page background) keeps them
-      // readable as distinct people rather than a blob.
-      '.il6-avatar{width:32px!important;height:32px!important;min-width:32px!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;border:2px solid #fff!important;box-shadow:0 0 0 1px rgba(26,26,46,0.12)!important;margin-left:-10px!important;display:block!important}' +
+      // readable as distinct people rather than a blob. min-height/
+      // flex-shrink alongside min-width/object-fit - confirmed on
+      // challenges.tn that a plain height:32px!important can still lose a
+      // same-specificity cascade fight against the host page's own img
+      // rules depending on stylesheet load order, and without a height
+      // FLOOR the real photos (each a different natural size/aspect ratio,
+      // unlike the uniform ui-avatars.com fallback) end up rendering at
+      // inconsistent sizes relative to each other, not just to the button.
+      '.il6-avatar{width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;max-width:32px!important;max-height:32px!important;flex-shrink:0!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;border:2px solid #fff!important;box-shadow:0 0 0 1px rgba(26,26,46,0.12)!important;margin-left:-10px!important;display:block!important}' +
       '.il6-avatar:first-child{margin-left:0!important}' +
       // "+N more" cap on the stack - dark ink fill so it reads as a
       // distinct count rather than another (oddly blank) face.
-      '.il6-avatar-more{display:flex!important;align-items:center;justify-content:center;background:#1a1a2e!important;color:#fff!important;font-size:10px!important;font-weight:700!important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}';
+      '.il6-avatar-more{display:flex!important;align-items:center!important;justify-content:center!important;background:#1a1a2e!important;color:#fff!important;font-size:10px!important;font-weight:700!important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}';
     document.head.appendChild(s);
   }
 
@@ -747,7 +759,11 @@
     var avatarsHtml = options.map(function (opt) {
       var e = opt.expert;
       var fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=64&name=' + encodeURIComponent(e.name);
-      return '<img class="il6-avatar" src="' + (e.photo_url || fallback) + '" onerror="this.onerror=null;this.src=\'' + fallback + '\'" alt="">';
+      // width/height attributes, not just the CSS above - a browser applies
+      // these as an intrinsic sizing hint before any stylesheet is even
+      // parsed, which a host page's own img rules can't out-cascade the
+      // way they can a plain CSS height declaration.
+      return '<img class="il6-avatar" width="32" height="32" src="' + (e.photo_url || fallback) + '" onerror="this.onerror=null;this.src=\'' + fallback + '\'" alt="">';
     }).join('') + (moreCount > 0 ? '<div class="il6-avatar il6-avatar-more">+' + moreCount + '</div>' : '');
 
     var div = document.createElement('div');
@@ -765,13 +781,26 @@
     // heuristic can't do any better - takes priority when it actually
     // matches something on the page; falls through to the heuristic
     // otherwise (a stale/typo'd selector shouldn't silently break the
-    // fallback entirely).
-    var overrideEl = cfg && cfg.noMatchAnchorSelector
-      ? (function () { try { return document.querySelector(cfg.noMatchAnchorSelector); } catch (e) { return null; } })()
-      : null;
-    var anchor = overrideEl || findFallbackAnchor(articleEl);
+    // fallback entirely). A leading "before:" flips it to insert right
+    // BEFORE the matched element instead of after - needed when the best
+    // available boundary is the START of the trailing content rather than
+    // the end of the real article (e.g. justcharmaine.co.uk's WordPress
+    // "Previous/Next" post-navigation block, which sits between the two
+    // and is a standard Gutenberg core block present on every one of that
+    // publisher's posts, not something specific to a single article).
+    var overrideAnchor = null, overridePosition = 'afterend';
+    if (cfg && cfg.noMatchAnchorSelector) {
+      var selector = cfg.noMatchAnchorSelector;
+      if (selector.indexOf('before:') === 0) {
+        overridePosition = 'beforebegin';
+        selector = selector.slice(7);
+      }
+      try { overrideAnchor = document.querySelector(selector); } catch (e) { overrideAnchor = null; }
+    }
+    var anchor = overrideAnchor || findFallbackAnchor(articleEl);
+    var position = overrideAnchor ? overridePosition : 'afterend';
     if (anchor) {
-      anchor.insertAdjacentElement('afterend', div);
+      anchor.insertAdjacentElement(position, div);
     } else {
       articleEl.appendChild(div);
     }
