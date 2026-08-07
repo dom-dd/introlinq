@@ -391,6 +391,22 @@
       '.gh-content',
       '.post__content',
       '.markup',
+      // tagDiv/Newspaper theme (confirmed on challenges.tn) - a very common
+      // premium WordPress news theme whose class names are all "td-"
+      // prefixed (td-post-content, not post-content), so none of the
+      // selectors above ever match and this used to fall through to the
+      // bare 'article' selector below. On this theme that <article> is the
+      // page-builder's own template wrapper for the WHOLE page (ads,
+      // related-post grids, sponsored content, comments - not just the
+      // post body), which matters for more than just container size: a
+      // "related articles"/"sponsored content" block rotating inside it
+      // changes the extracted text - and therefore the content hash - on
+      // every load even when the actual post never changed, which is
+      // exactly the kind of hash instability that forced repeated paid
+      // rescans before (see the challenges-tn comment on the scan-cap
+      // check in api/match.js). td-post-content is the theme's own tight
+      // single-post wrapper, checked before the generic fallbacks below.
+      '.td-post-content',
       'article',
       'main'
     ];
@@ -624,6 +640,27 @@
   // couldn't supply any random experts (e.g. this publisher has zero
   // eligible experts) - a line that reveals nothing on hover isn't
   // restrained, it's broken.
+  // On most CMS templates, findArticle()'s container IS roughly the
+  // readable body, so appending to its end lands right after the last
+  // paragraph. Not guaranteed though - some themes (confirmed on
+  // challenges.tn's tagDiv/Newspaper theme) wrap the ENTIRE page-builder
+  // template in a single <article>, containing ads, related-post grids and
+  // sponsored content alongside the real text, not just the article body.
+  // A real highlighted match never has this problem (it's anchored to the
+  // matched phrase's own DOM position), but the no-match fallback has no
+  // phrase to anchor to - appending to the container's true end there can
+  // land it far past the actual article, right before the footer. Anchoring
+  // to the last real text node instead (same collectTextNodes filter real
+  // matches already rely on) keeps it visually right after the last
+  // paragraph regardless of how broad the container turns out to be.
+  function findFallbackAnchor(articleEl) {
+    var nodes = collectTextNodes(articleEl);
+    if (!nodes.length) return null;
+    var el = nodes[nodes.length - 1].parentElement;
+    while (el && el.parentElement !== articleEl) el = el.parentElement;
+    return (el && el.parentElement === articleEl) ? el : null;
+  }
+
   function showNoMatchFallback(articleEl, cfg, randomExperts, randomExpertsTotal) {
     if (document.getElementById('il6-fallback')) return;
     var options = (randomExperts || []).filter(function (o) { return o && o.expert; }).slice(0, 3);
@@ -676,7 +713,12 @@
           '<div id="il6-avatars">' + avatarsHtml + '</div>' +
         '</div>' +
       '</div>';
-    articleEl.appendChild(div);
+    var anchor = findFallbackAnchor(articleEl);
+    if (anchor) {
+      anchor.insertAdjacentElement('afterend', div);
+    } else {
+      articleEl.appendChild(div);
+    }
 
     // No hook/cta on this match object - only options - so fillPopup hides
     // its own headline+CTA block (would otherwise just duplicate the
