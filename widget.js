@@ -18,6 +18,7 @@
   var EXPERIMENTAL_WIDGETS = {
     'little-green-agency': 'widget6.js',
     'openintro': 'widget5.js',
+    'justcharmaine': 'widget6.js',
   };
   if (EXPERIMENTAL_WIDGETS[PUB]) {
     var handoff = document.createElement('script');
@@ -348,10 +349,12 @@
     var s = document.createElement('style');
     s.id = 'il-styles';
     // 'underline': dotted underline only, no background wash - reads as an
-    // editorial annotation rather than a highlighter mark. 'fill' (default)
-    // is the original tinted-background + solid-underline treatment. Purely
-    // a per-publisher A/B lever - set from the dashboard, no other behaviour
-    // differs between the two.
+    // editorial annotation rather than a highlighter mark. 'underline-solid':
+    // same, but a solid line instead of dotted - a firmer editorial cue
+    // without the tinted background. 'fill' (default) is the original
+    // tinted-background + solid-underline treatment. Purely a per-publisher
+    // A/B lever - set from the dashboard, no other behaviour differs
+    // between the three.
     // !important throughout: unlike the popup (appended to body, outside the
     // article), these spans are inserted directly into the article's own DOM
     // - a low-specificity class selector like .il-hl loses to whatever the
@@ -361,6 +364,9 @@
     var hlCss = cfg.highlightStyle === 'underline'
       ? '.il-hl{border-bottom:2px dotted ' + color + '!important;cursor:pointer!important;padding:0 1px!important;background:none!important;transition:border-bottom-style .15s}' +
         '.il-hl:hover{border-bottom-style:solid!important}'
+      : cfg.highlightStyle === 'underline-solid'
+      ? '.il-hl{border-bottom:2px solid ' + color + '!important;cursor:pointer!important;padding:0 1px!important;background:none!important;transition:border-bottom-width .15s}' +
+        '.il-hl:hover{border-bottom-width:3px!important}'
       : '.il-hl{background:' + hexToRgba(color, 0.15) + '!important;border-bottom:2px solid ' + color + '!important;cursor:pointer!important;border-radius:2px!important;padding:0 2px!important;transition:background .15s}' +
         '.il-hl:hover{background:' + hexToRgba(color, 0.3) + '!important}';
     s.textContent =
