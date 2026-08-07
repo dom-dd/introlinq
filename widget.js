@@ -651,7 +651,15 @@
       // versa) even though both compute the same 32px width/height -
       // pinning it explicitly on both guarantees an identical box model
       // regardless of what the host page does.
-      '.il6-avatar{box-sizing:border-box!important;width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;max-width:32px!important;max-height:32px!important;flex-shrink:0!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;border:1.5px solid #fff!important;box-shadow:0 0 0 1px rgba(26,26,46,0.12)!important;margin-left:-10px!important;display:block!important}' +
+      // margin-top/bottom pinned to 0, not just margin-left for the overlap
+      // - confirmed live on challenges.tn that the "+87" badge (a <div>)
+      // rendered level while the 3 photos (<img> tags) sharing this exact
+      // same class didn't. A theme's own img-specific vertical margin
+      // reset (common - WordPress themes routinely add spacing around
+      // images) would explain precisely that split: it can only ever hit
+      // the <img> elements, never the "+87" <div>, regardless of anything
+      // else the two share.
+      '.il6-avatar{box-sizing:border-box!important;width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;max-width:32px!important;max-height:32px!important;flex-shrink:0!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;border:1.5px solid #fff!important;box-shadow:0 0 0 1px rgba(26,26,46,0.12)!important;margin:0 0 0 -10px!important;display:block!important;vertical-align:middle!important}' +
       '.il6-avatar:first-child{margin-left:0!important}' +
       // "+N more" cap on the stack - dark ink fill so it reads as a
       // distinct count rather than another (oddly blank) face.
@@ -788,7 +796,7 @@
       // the same origin no matter how specific, so this is the actual
       // bulletproof fix; the class stays too for the properties that
       // don't need to survive that fight (border, shadow, background).
-      return '<img class="il6-avatar" width="32" height="32" style="box-sizing:border-box!important;width:32px!important;height:32px!important;max-width:32px!important;max-height:32px!important" src="' + (e.photo_url || fallback) + '" onerror="this.onerror=null;this.src=\'' + fallback + '\'" alt="">';
+      return '<img class="il6-avatar" width="32" height="32" style="box-sizing:border-box!important;width:32px!important;height:32px!important;max-width:32px!important;max-height:32px!important;margin-top:0!important;margin-bottom:0!important;vertical-align:middle!important" src="' + (e.photo_url || fallback) + '" onerror="this.onerror=null;this.src=\'' + fallback + '\'" alt="">';
     }).join('') + (moreCount > 0 ? '<div class="il6-avatar il6-avatar-more">+' + moreCount + '</div>' : '');
 
     var div = document.createElement('div');
