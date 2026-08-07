@@ -677,9 +677,24 @@
   // length (>=60 chars) over whatever the literal last text node happens
   // to be - skips past short label/list fragments a wider net would catch.
   function findFallbackAnchor(articleEl) {
+    // Tried scoring headings by word count to detect an author-bio/
+    // signature block ("Charmaine S." vs. a real section heading like "1.
+    // Freelance Writing for Beginners") - dropped it after checking against
+    // justcharmaine.co.uk's actual heading list: a SECOND promotional block
+    // (a newsletter/lead-magnet CTA) sits even after the comments section,
+    // with a genuinely long heading of its own ("Get instant access to the
+    // 10-step mini guide...") that breaks any backward scan before it ever
+    // reaches the bio heading. Reliable, theme-agnostic detection of every
+    // possible trailing widget isn't achievable this way - #comments/
+    // .comments-area (standard WordPress core markup) is the only boundary
+    // solid enough to trust, so exclude it AND anything that comes at or
+    // after it in document order (catches that second block too, even
+    // though it isn't literally inside the comments element).
     var comments = articleEl.querySelector('#comments, .comments-area');
     var nodes = collectTextNodes(articleEl).filter(function (n) {
-      return !(comments && comments.contains(n));
+      if (!comments) return true;
+      if (comments.contains(n)) return false;
+      return !(comments.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING);
     });
     if (!nodes.length) return null;
     var candidate = null;
