@@ -93,10 +93,18 @@ async function loadExperts(sql) {
 // still applied by hydrateMatches so both fetch paths behave identically.
 async function loadExpertsByIds(sql, ids) {
   if (!ids || ids.length === 0) return [];
+  // highlights/highlights_fr were missing here until this fix - this is the
+  // function that hydrates an already-CACHED match with live expert data
+  // (tryServeFromCache, the hot path for nearly all real traffic), so the
+  // widget's "prefer expert.highlights over AI credentials" logic was
+  // silently getting undefined on every cache-hit and falling straight
+  // through to opt.credentials/opt.reason - only a genuinely fresh scan
+  // (which builds its expert list from loadExperts, not this function)
+  // ever actually saw highlights. See widget.js/widget6.js buildOptionRow.
   return await sql`
     SELECT e.id, e.name, e.bio, e.description_long, e.photo_url, e.position, e.company,
            e.topics, e.services, e.languages, e.price_from, e.price_currency,
-           e.booking_url, e.location_country,
+           e.booking_url, e.location_country, e.highlights, e.highlights_fr,
            p.name AS provider_name, p.slug AS provider_slug, p.logo_url AS provider_logo_url, p.website_url AS provider_website_url,
            COALESCE(p.is_demo, false) AS is_demo_provider
     FROM experts e
@@ -610,12 +618,23 @@ async function logCachedImpression(sql, { publisher, page_url, page_title, match
 async function tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig, stale, req, noMatchFallbackEnabled }) {
   const referencedExperts = await loadExpertsByIds(sql, collectReferencedIds(cached.result.matches));
   if (!referencedExperts) return false;
+  // Swap each expert's `highlights` for their translated `highlights_fr`
+  // when this page was scanned/backfilled as French - keeps
+  // buildOptionRow's "prefer expert.highlights" logic in widget.js/
+  // widget6.js entirely unaware of language, since it only ever reads the
+  // one field. Real, curated, translated once per expert (not per page) -
+  // no AI call, no rescan, works on every already-cached page instantly.
+  // Falls through to the untouched English highlights (or further down to
+  // opt.credentials/opt.reason) for any expert without a highlights_fr yet.
+  const localizedExperts = cached.lang_code === 'fr'
+    ? referencedExperts.map(e => (Array.isArray(e.highlights_fr) && e.highlights_fr.length > 0) ? { ...e, highlights: e.highlights_fr } : e)
+    : referencedExperts;
   // hydrateMatchesMulti, not the old single-expert hydrateMatches - every
   // cache row already stores each phrase's primary + up to 2 alt candidates
   // (see slimMatches), so the hook+multi-name popup and the no-match
   // fallback below are both just a different read of data that was already
   // there, not a reason to rescan anything.
-  const hydrated = hydrateMatchesMulti(cached.result.matches, referencedExperts, enabledPartners);
+  const hydrated = hydrateMatchesMulti(cached.result.matches, localizedExperts, enabledPartners);
   const emptiedPositive = cached.has_match && hydrated.length === 0;
   if (emptiedPositive) return false;
   // Flattened single-expert view (first option per phrase) purely so the
@@ -890,7 +909,7 @@ async function postSlackNotification(sql, { publisher, page_url, page_title, mat
 // compute) must never blank out a hash a PREVIOUS write already established
 // - that would silently disable the content-drift check for this row
 // forever, with nothing to ever re-enable it.
-async function upsertCacheResult(sql, { pageUrl, countryCode, publisher, matches, contentHash }) {
+async function upsertCacheResult(sql, { pageUrl, countryCode, publisher, matches, contentHash, langCode }) {
   const slim = slimMatches(matches);
   const hasMatch = matches.length > 0;
   // A positive result whose entries couldn't be slimmed (no expert ids -
@@ -898,13 +917,19 @@ async function upsertCacheResult(sql, { pageUrl, countryCode, publisher, matches
   // every read and trigger a re-scan loop, and stored as a negative it would
   // be a false "no experts fit this page" verdict. Skip the write entirely.
   if (hasMatch && slim.length === 0) return;
+  // lang_code is per-write-path optional (only the full AI scan below
+  // detects it - client-reported/merge writes don't pass one) - COALESCE
+  // below so one of those other paths updating this row later never blanks
+  // out a value the scan already established, same reasoning as
+  // content_hash above.
   await sql`
-    INSERT INTO match_cache (page_url, country_code, publisher, result, has_match, confirmed, content_hash)
-    VALUES (${pageUrl}, ${countryCode}, ${publisher || ''}, ${JSON.stringify({ matches: slim })}, ${hasMatch}, ${hasMatch}, ${contentHash || null})
+    INSERT INTO match_cache (page_url, country_code, publisher, result, has_match, confirmed, content_hash, lang_code)
+    VALUES (${pageUrl}, ${countryCode}, ${publisher || ''}, ${JSON.stringify({ matches: slim })}, ${hasMatch}, ${hasMatch}, ${contentHash || null}, ${langCode || null})
     ON CONFLICT (page_url, country_code, publisher) DO UPDATE SET
       result = EXCLUDED.result,
       has_match = EXCLUDED.has_match,
       content_hash = COALESCE(EXCLUDED.content_hash, match_cache.content_hash),
+      lang_code = COALESCE(EXCLUDED.lang_code, match_cache.lang_code),
       confirmed = CASE
         WHEN EXCLUDED.has_match = true THEN true
         WHEN match_cache.has_match = false AND match_cache.confirmed = true THEN true
@@ -995,6 +1020,13 @@ async function ensureCacheTable(sql) {
   // mismatch is treated as a cache miss and rescanned. NULL (old rows, old
   // widget copies that don't send a hash) means "no check possible" - serve.
   await sql`ALTER TABLE match_cache ADD COLUMN IF NOT EXISTS content_hash TEXT`.catch(() => {});
+  // The article's detected language at scan time (e.g. 'fr', 'en') - lets
+  // serve-time hydration pick the right translated expert.highlights_fr
+  // (see experts.highlights_fr) without needing article text or another AI
+  // call. NULL on rows scanned before this existed or from write paths that
+  // don't detect language (client-reported matches) - hydration just falls
+  // back to English highlights for those, same as before this column.
+  await sql`ALTER TABLE match_cache ADD COLUMN IF NOT EXISTS lang_code TEXT`.catch(() => {});
   await sql`ALTER TABLE match_cache DROP CONSTRAINT IF EXISTS match_cache_page_url_country_code_key`.catch(() => {});
   await sql`ALTER TABLE match_cache DROP CONSTRAINT IF EXISTS match_cache_page_url_country_code_publisher_key`.catch(() => {});
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS match_cache_unique ON match_cache(page_url, country_code, publisher)`.catch(() => {});
@@ -1256,7 +1288,7 @@ export default async function handler(req, res) {
         : Promise.resolve([null]),
       page_url
         ? sql`
-            SELECT result, has_match, content_hash FROM match_cache
+            SELECT result, has_match, content_hash, lang_code FROM match_cache
             WHERE page_url = ${page_url}
               AND publisher = ${publisher || ''}
               AND country_code = ${GLOBAL_CACHE_COUNTRY}
@@ -1652,7 +1684,7 @@ Return only valid JSON, no other text:
       // Real money Anthropic already charged for the instant this line runs -
       // logged unconditionally, independent of everything below it succeeding.
       await logAiCall(sql, { publisher, pageUrl: page_url, callType: 'background', usage: aiResult.usage, costUsd });
-      await upsertCacheResult(sql, { pageUrl: page_url, countryCode: GLOBAL_CACHE_COUNTRY, publisher, matches: enriched, contentHash });
+      await upsertCacheResult(sql, { pageUrl: page_url, countryCode: GLOBAL_CACHE_COUNTRY, publisher, matches: enriched, contentHash, langCode: articleLangCode });
 
       // No match_logs row here, deliberately: nobody actually saw this scan's
       // result - the reader who triggered it already got the empty `pending`
