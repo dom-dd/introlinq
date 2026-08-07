@@ -1416,17 +1416,23 @@
     var showCompany = !e.is_demo_provider;
     var role = [e.position, showCompany ? e.company : null].filter(Boolean).join(' · ');
     var href = buildTrackedBookingUrl(e, match, clickSource || 'person');
-    // opt.credentials is a short punchy-facts array (e.g. "4 exits" | "$1B+
-    // processed") - real facts drawn from the expert's own profile, whether
-    // this is the no-match fallback's random pick (pickRandomExperts, using
-    // their curated highlights - api/match.js), the hand-authored demo
-    // page, or a real AI match (see the "credentials" prompt rule in
-    // api/match.js). opt.credential is the same idea as a single string,
-    // from older non-English-only cache rows. opt.reason - the AI's full
-    // "why this expert, for this specific phrase" sentence - is now only a
-    // fallback, for real-match cache rows scanned before "credentials"
-    // existed, so nothing ever shows blank.
-    var facts = Array.isArray(opt.credentials) ? opt.credentials.filter(Boolean) : (opt.credential ? [opt.credential] : []);
+    // e.highlights is the expert's own curated highlight-reel bullets - set
+    // once on their profile in admin, not per-match - hydrated LIVE at serve
+    // time same as name/photo/bio, so preferring these fixes every
+    // already-cached page's facts line instantly, with no rescan and no AI
+    // cost. English-only (curated once, not translated per-article), which
+    // can read slightly out of language next to otherwise-translated
+    // hook/CTA copy on a non-English page - accepted tradeoff for the
+    // instant, free fix over a full rescan cycle. Falls through to
+    // opt.credentials (the AI's own punchy-facts array, correctly
+    // translated, but only present after a rescan - see the "credentials"
+    // prompt rule in api/match.js), then opt.credential (legacy singular,
+    // older non-English-only cache rows), then opt.reason (the AI's full
+    // "why this expert" sentence - final fallback for the oldest rows, or
+    // any expert whose highlights aren't filled in yet), so nothing ever
+    // shows blank.
+    var expertFacts = Array.isArray(e.highlights) ? e.highlights.filter(Boolean).slice(0, 2) : [];
+    var facts = expertFacts.length ? expertFacts : (Array.isArray(opt.credentials) ? opt.credentials.filter(Boolean) : (opt.credential ? [opt.credential] : []));
     var factsHtml = facts.length
       ? '<div class="il2-opt-facts">' + facts.map(function (c) { return String(c).replace(/</g,'&lt;'); }).join(' | ') + '</div>'
       : (typeof opt.reason === 'string' && opt.reason.trim()

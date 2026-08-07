@@ -1139,11 +1139,17 @@
     var showCompany = !e.is_demo_provider;
     var role = [e.position, showCompany ? e.company : null].filter(Boolean).join(' · ');
     var href = buildTrackedBookingUrl(e, match, clickSource || 'person');
-    // opt.credentials is an array of short punchy facts ("4 exits", "$1B+
-    // processed") - joined into one line with " | " instead of separate
-    // pill chips, so it reads as one quick scannable line rather than a
-    // row of badges.
-    var facts = Array.isArray(opt.credentials) ? opt.credentials.filter(Boolean) : [];
+    // e.highlights is the expert's own curated highlight-reel bullets - set
+    // once on their profile in admin, not per-match - hydrated LIVE at serve
+    // time same as name/photo/bio, so preferring these fixes every
+    // already-cached page's facts line instantly, with no rescan and no AI
+    // cost. Falls through to opt.credentials (an array of short punchy
+    // facts like "4 exits", "$1B+ processed" - only present after a
+    // rescan, see the "credentials" prompt rule in api/match.js). Joined
+    // into one line with " | " instead of separate pill chips, so it reads
+    // as one quick scannable line rather than a row of badges.
+    var expertFacts = Array.isArray(e.highlights) ? e.highlights.filter(Boolean).slice(0, 2) : [];
+    var facts = expertFacts.length ? expertFacts : (Array.isArray(opt.credentials) ? opt.credentials.filter(Boolean) : []);
     var factsHtml = facts.length
       ? '<div class="il2-opt-facts">' + facts.map(function (c) { return String(c).replace(/</g,'&lt;'); }).join(' | ') + '</div>'
       : '';
