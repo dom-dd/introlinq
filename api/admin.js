@@ -749,10 +749,14 @@ export default async function handler(req, res) {
       }
       const clean = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
       await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS enabled_partners TEXT[]`.catch(() => {});
+      await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS no_match_fallback_enabled BOOLEAN NOT NULL DEFAULT false`.catch(() => {});
       try {
+        // no_match_fallback_enabled: true - unlike the column's own DEFAULT
+        // false (existing publishers opted in one at a time), every new
+        // account starts with the no-match fallback on from day one.
         const [pub] = await sql`
-          INSERT INTO publishers (name, email, slug, domain, notes, contact_first_name, contact_last_name, revenue_share, enabled_partners, match_sensitivity)
-          VALUES (${name}, ${email}, ${clean}, ${domain || null}, ${notes || null}, ${contact_first_name || null}, ${contact_last_name || null}, ${revenue_share ?? 0.70}, ${enabled_partners || null}, ${match_sensitivity || 'balanced'})
+          INSERT INTO publishers (name, email, slug, domain, notes, contact_first_name, contact_last_name, revenue_share, enabled_partners, match_sensitivity, no_match_fallback_enabled)
+          VALUES (${name}, ${email}, ${clean}, ${domain || null}, ${notes || null}, ${contact_first_name || null}, ${contact_last_name || null}, ${revenue_share ?? 0.70}, ${enabled_partners || null}, ${match_sensitivity || 'balanced'}, true)
           RETURNING *
         `;
 

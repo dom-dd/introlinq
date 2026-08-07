@@ -152,11 +152,15 @@ export default async function handler(req, res) {
     let cleanDomain = domain.trim().replace(/\/+$/, '');
     if (!/^https?:\/\//i.test(cleanDomain)) cleanDomain = 'https://' + cleanDomain;
 
+    // no_match_fallback_enabled: true - unlike the column's own DEFAULT
+    // false (existing publishers opted in one at a time), every new
+    // account starts with the no-match fallback on from day one.
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS no_match_fallback_enabled BOOLEAN NOT NULL DEFAULT false`.catch(() => {});
     const [pub] = await sql`
-      INSERT INTO publishers (name, email, slug, domain, contact_first_name, contact_last_name, revenue_share, active)
+      INSERT INTO publishers (name, email, slug, domain, contact_first_name, contact_last_name, revenue_share, active, no_match_fallback_enabled)
       VALUES (${name.trim()}, ${normalised}, ${slug}, ${cleanDomain},
               ${contact_first_name?.trim() || null}, ${contact_last_name?.trim() || null},
-              0.50, true)
+              0.50, true, true)
       RETURNING *
     `;
 
