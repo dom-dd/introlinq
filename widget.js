@@ -642,7 +642,16 @@
       // FLOOR the real photos (each a different natural size/aspect ratio,
       // unlike the uniform ui-avatars.com fallback) end up rendering at
       // inconsistent sizes relative to each other, not just to the button.
-      '.il6-avatar{width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;max-width:32px!important;max-height:32px!important;flex-shrink:0!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;border:1.5px solid #fff!important;box-shadow:0 0 0 1px rgba(26,26,46,0.12)!important;margin-left:-10px!important;display:block!important}' +
+      // box-sizing explicit, not left to whatever the host page's own
+      // reset does - the "+87" badge (a <div>) and the 3 photos (<img>)
+      // both carry this class, but a theme that resets box-sizing
+      // differently per element type (some do this specifically for img/
+      // video for width/height-attribute compatibility) would make the
+      // border add to the img's rendered size but not the div's (or vice
+      // versa) even though both compute the same 32px width/height -
+      // pinning it explicitly on both guarantees an identical box model
+      // regardless of what the host page does.
+      '.il6-avatar{box-sizing:border-box!important;width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;max-width:32px!important;max-height:32px!important;flex-shrink:0!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;border:1.5px solid #fff!important;box-shadow:0 0 0 1px rgba(26,26,46,0.12)!important;margin-left:-10px!important;display:block!important}' +
       '.il6-avatar:first-child{margin-left:0!important}' +
       // "+N more" cap on the stack - dark ink fill so it reads as a
       // distinct count rather than another (oddly blank) face.
@@ -779,7 +788,7 @@
       // the same origin no matter how specific, so this is the actual
       // bulletproof fix; the class stays too for the properties that
       // don't need to survive that fight (border, shadow, background).
-      return '<img class="il6-avatar" width="32" height="32" style="width:32px!important;height:32px!important;max-width:32px!important;max-height:32px!important" src="' + (e.photo_url || fallback) + '" onerror="this.onerror=null;this.src=\'' + fallback + '\'" alt="">';
+      return '<img class="il6-avatar" width="32" height="32" style="box-sizing:border-box!important;width:32px!important;height:32px!important;max-width:32px!important;max-height:32px!important" src="' + (e.photo_url || fallback) + '" onerror="this.onerror=null;this.src=\'' + fallback + '\'" alt="">';
     }).join('') + (moreCount > 0 ? '<div class="il6-avatar il6-avatar-more">+' + moreCount + '</div>' : '');
 
     var div = document.createElement('div');
