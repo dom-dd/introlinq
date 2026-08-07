@@ -76,32 +76,31 @@
     ja: '今すぐ会う →', ko: '지금 만나기 →'
   };
   // Heading above the option-row list (see fillPopup) - {company} is
-  // cfg.company_name when set, otherwise the withoutCompany variant is used
-  // instead of substituting a translated "We" into the withCompany template
-  // (subject-verb agreement for a company name vs. "we" doesn't translate
-  // as a simple word-swap in most of these languages). Kept as a short
-  // colon-terminated heading rather than a full "recommends talking to"
-  // sentence, which sidesteps a lot of fragile per-language preposition/
-  // case grammar around the name list that follows it anyway.
+  // cfg.company_name (the publisher's own name, read fresh from the
+  // publishers table - see pubConfig in api/match.js) when set, otherwise
+  // the withoutCompany variant is used instead of substituting a
+  // translated "We" into the withCompany template (subject-verb agreement
+  // for a company name vs. "we" doesn't translate as a simple word-swap in
+  // most of these languages).
   var _recommendLabels = {
-    en: { withCompany: '{company} recommends:', withoutCompany: 'We recommend:' },
-    fr: { withCompany: '{company} recommande :', withoutCompany: 'Nous recommandons :' },
-    es: { withCompany: '{company} recomienda:', withoutCompany: 'Recomendamos:' },
-    de: { withCompany: '{company} empfiehlt:', withoutCompany: 'Wir empfehlen:' },
-    it: { withCompany: '{company} consiglia:', withoutCompany: 'Consigliamo:' },
-    pt: { withCompany: '{company} recomenda:', withoutCompany: 'Recomendamos:' },
-    nl: { withCompany: '{company} beveelt aan:', withoutCompany: 'Wij bevelen aan:' },
-    pl: { withCompany: '{company} poleca:', withoutCompany: 'Polecamy:' },
-    sv: { withCompany: '{company} rekommenderar:', withoutCompany: 'Vi rekommenderar:' },
-    no: { withCompany: '{company} anbefaler:', withoutCompany: 'Vi anbefaler:' },
-    da: { withCompany: '{company} anbefaler:', withoutCompany: 'Vi anbefaler:' },
-    fi: { withCompany: '{company} suosittelee:', withoutCompany: 'Suosittelemme:' },
-    ro: { withCompany: '{company} recomandă:', withoutCompany: 'Recomandăm:' },
-    tr: { withCompany: '{company} önerir:', withoutCompany: 'Öneririz:' },
-    ar: { withCompany: '{company} يوصي:', withoutCompany: 'نوصي:' },
-    zh: { withCompany: '{company} 推荐：', withoutCompany: '我们推荐：' },
-    ja: { withCompany: '{company}のおすすめ：', withoutCompany: 'おすすめ：' },
-    ko: { withCompany: '{company} 추천:', withoutCompany: '추천:' }
+    en: { withCompany: '{company} recommends talking to:', withoutCompany: 'We recommend talking to:' },
+    fr: { withCompany: '{company} recommande de parler à :', withoutCompany: 'Nous recommandons de parler à :' },
+    es: { withCompany: '{company} recomienda hablar con:', withoutCompany: 'Recomendamos hablar con:' },
+    de: { withCompany: '{company} empfiehlt ein Gespräch mit:', withoutCompany: 'Wir empfehlen ein Gespräch mit:' },
+    it: { withCompany: '{company} consiglia di parlare con:', withoutCompany: 'Consigliamo di parlare con:' },
+    pt: { withCompany: '{company} recomenda falar com:', withoutCompany: 'Recomendamos falar com:' },
+    nl: { withCompany: '{company} raadt aan te praten met:', withoutCompany: 'Wij raden aan te praten met:' },
+    pl: { withCompany: '{company} poleca rozmowę z:', withoutCompany: 'Polecamy rozmowę z:' },
+    sv: { withCompany: '{company} rekommenderar att prata med:', withoutCompany: 'Vi rekommenderar att prata med:' },
+    no: { withCompany: '{company} anbefaler å snakke med:', withoutCompany: 'Vi anbefaler å snakke med:' },
+    da: { withCompany: '{company} anbefaler at tale med:', withoutCompany: 'Vi anbefaler at tale med:' },
+    fi: { withCompany: '{company} suosittelee keskustelua:', withoutCompany: 'Suosittelemme keskustelua:' },
+    ro: { withCompany: '{company} recomandă să vorbiți cu:', withoutCompany: 'Vă recomandăm să vorbiți cu:' },
+    tr: { withCompany: '{company} şu kişilerle görüşmenizi önerir:', withoutCompany: 'Şu kişilerle görüşmenizi öneririz:' },
+    ar: { withCompany: '{company} يوصي بالتحدث مع:', withoutCompany: 'نوصي بالتحدث مع:' },
+    zh: { withCompany: '{company} 推荐与以下专家交流：', withoutCompany: '我们推荐与以下专家交流：' },
+    ja: { withCompany: '{company}がおすすめする相談相手：', withoutCompany: 'おすすめの相談相手：' },
+    ko: { withCompany: '{company}이 추천하는 상담 대상:', withoutCompany: '추천 상담 대상:' }
   };
   // NO-MATCH FALLBACK's fixed hook+CTA (see showNoMatchFallback) - unlike a
   // real match's hook/cta, there's no AI call backing this (by design, zero
@@ -549,6 +548,11 @@
       // read as clearly separate, and the label itself is a proper
       // sub-heading now (dark, bigger) instead of a tiny muted caption.
       '.il2-list-label{font-size:11.5px!important;font-weight:700!important;color:#1a1a2e!important;letter-spacing:.02em!important;padding-top:12px;margin-top:2px;border-top:1px solid rgba(26,26,46,0.1);margin-bottom:8px}' +
+      // .il2-list-label-top: no hook block above it to separate from (the
+      // no-match fallback's popup has options but no hook - see
+      // attachFallbackTrigger) - the border-top otherwise renders as a
+      // stray line at the very top of the card with nothing above it.
+      '.il2-list-label.il2-list-label-top{padding-top:0!important;margin-top:0!important;border-top:none!important}' +
       '.il2-opt{display:flex!important;align-items:center;gap:10px;padding:9px 0}' +
       '.il2-opt+.il2-opt{border-top:1px solid rgba(26,26,46,0.14)}' +
       '.il2-opt-photo{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;max-width:38px!important;max-height:38px!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;flex-shrink:0!important;display:block!important}' +
@@ -1461,8 +1465,9 @@
       var listLabel = cfg.company_name
         ? RECOMMEND_LABEL.withCompany.replace('{company}', String(cfg.company_name).replace(/</g,'&lt;'))
         : RECOMMEND_LABEL.withoutCompany;
+      var labelClass = 'il2-list-label' + (match.hook ? '' : ' il2-list-label-top');
       list.innerHTML = options.length
-        ? '<div class="il2-list-label">' + listLabel + '</div>' + options.map(function (opt) { return buildOptionRow(opt, match, personClickSource); }).join('')
+        ? '<div class="' + labelClass + '">' + listLabel + '</div>' + options.map(function (opt) { return buildOptionRow(opt, match, personClickSource); }).join('')
         : '';
     }
     // Partnership attribution footer - same as widget.js/2/3's version,
