@@ -484,11 +484,17 @@ tr:hover td{background:rgba(0,0,0,0.01)}
         <button class="btn btn-primary btn-sm" style="flex-shrink:0;margin:0.4rem 0 0.4rem auto;padding-left:0.75rem;padding-right:0.75rem" onclick="openCreateLeadModal()">+ Create a lead</button>
       </div>
 
-      <div style="display:flex;align-items:center;gap:0.5rem;margin:0.75rem 0 1rem">
+      <div style="display:flex;align-items:center;gap:0.5rem;margin:0.75rem 0 1rem;flex-wrap:wrap">
         <label class="form-label" style="margin:0">Filter by category</label>
         <select id="outreach-category-filter" class="form-input" style="width:auto;padding:0.35rem 0.6rem;font-size:0.8125rem" onchange="_outreachCategoryFilter=this.value;renderOutreach()">
           <option value="">All categories</option>
         </select>
+        <!-- Searches across EVERY lead regardless of bucket/status, not just
+             the currently-open subtab - finding a lead by domain or company
+             name shouldn't require knowing which bucket it's sitting in
+             first. Typing switches to a dedicated results subpanel;
+             clearing the box returns to the Due tab (see outreachSearch). -->
+        <input type="text" id="outreach-search-input" class="form-input" placeholder="Search by website or company name..." style="width:280px;padding:0.35rem 0.6rem;font-size:0.8125rem;margin-left:0.5rem" oninput="outreachSearch(this.value)">
       </div>
 
       <div class="outreach-subpanel active" id="outreach-sub-due">
@@ -724,6 +730,33 @@ tr:hover td{background:rgba(0,0,0,0.01)}
             </table>
           </div>
           <div class="empty" id="outreach-products-empty">Loading...</div>
+        </div>
+      </div>
+
+      <!-- No subtab button - only ever activated by outreachSearch, not by
+           switchOutreachSubtab's normal click handling. 'full' columns
+           since a match can come from any bucket, including ones (Due,
+           Follow ups) that actually use Next follow-up/Action/Emails. -->
+      <div class="outreach-subpanel" id="outreach-sub-search">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-search-title">Search results</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th style="width:130px">Next follow-up</th>
+                <th style="width:190px">Action</th>
+                <th style="width:150px">Emails</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-search-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-search-empty">Loading...</div>
         </div>
       </div>
 
@@ -2310,6 +2343,10 @@ const OUTREACH_CATEGORIES = [
   'Real Estate', 'Other',
 ];
 let _outreachCategoryFilter = '';
+// Set by outreachSearch (domain/company_name substring match across every
+// lead, ignoring both the category filter and the current bucket) - see
+// renderOutreach's search block and the #outreach-sub-search panel.
+let _outreachSearchQuery = '';
 const OUTREACH_STATUS_LABELS = {
   discovered: 'Not contacted',
   emailed: 'Emailed',
@@ -2445,6 +2482,17 @@ function renderOutreach() {
   renderOutreachSection('todo', 'Not yet contacted', todoShown, 'Nothing left to contact.', 'full');
   document.getElementById('outreach-todo-title').textContent = `Not yet contacted (${buckets.todo.length})`;
   document.getElementById('outreach-todo-more').style.display = buckets.todo.length > _outreachTodoLimit ? 'inline-block' : 'none';
+
+  // Searches the FULL unfiltered dataset (every status/bucket, ignoring
+  // _outreachCategoryFilter too) - the whole point is finding a lead
+  // without already knowing which bucket or category it's sitting in.
+  if (_outreachSearchQuery) {
+    const q = _outreachSearchQuery.toLowerCase();
+    const matches = _outreach
+      .filter((c) => (c.domain || '').toLowerCase().includes(q) || (c.company_name || '').toLowerCase().includes(q))
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    renderOutreachSection('search', 'Search results', matches, 'No leads match that search.', 'full');
+  }
 }
 
 function showMoreOutreachTodo() {
@@ -2456,10 +2504,34 @@ function showMoreOutreachTodo() {
 // which one is showing - this only toggles visibility, so switching
 // sub-tabs never re-fetches anything.
 function switchOutreachSubtab(name, btn) {
+  // Clicking a real bucket tab exits search mode - leaving stale search
+  // text in the box while looking at a normal bucket would be confusing,
+  // and the box would otherwise keep filtering nothing (no subtab click
+  // re-triggers outreachSearch).
+  if (_outreachSearchQuery) {
+    _outreachSearchQuery = '';
+    const input = document.getElementById('outreach-search-input');
+    if (input) input.value = '';
+  }
   document.querySelectorAll('.outreach-subtab').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.outreach-subpanel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('outreach-sub-' + name).classList.add('active');
+}
+
+// #outreach-sub-search has no subtab button of its own (see the HTML) -
+// typing activates it directly; clearing the box falls back to Due, same
+// as the tab's default state on page load.
+function outreachSearch(query) {
+  _outreachSearchQuery = query.trim();
+  renderOutreach();
+  if (_outreachSearchQuery) {
+    document.querySelectorAll('.outreach-subtab').forEach((b) => b.classList.remove('active'));
+    document.querySelectorAll('.outreach-subpanel').forEach((p) => p.classList.remove('active'));
+    document.getElementById('outreach-sub-search').classList.add('active');
+  } else {
+    switchOutreachSubtab('due', document.querySelector('.outreach-subtab[data-name="due"]'));
+  }
 }
 
 function openCreateLeadModal() {
