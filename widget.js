@@ -1,25 +1,40 @@
 ﻿(function () {
   'use strict';
 
+  // Production widget - hook + multi-name popup (formerly the widget5.js
+  // fork) with a no-match fallback (formerly widget6.js): when a page
+  // genuinely has no match at all, appends a small line at the end of the
+  // article - a fixed generic hook (there's no matched phrase to derive a
+  // topic-specific one from) plus a CTA pill, no bigger a footprint than
+  // plain text. Hovering it (tapping on touch) opens the exact same
+  // floating popup a real match uses, showing 3 randomly-picked experts -
+  // same infrastructure, same stats, same hover-then-click rules as a real
+  // match, nothing shown until a reader actually engages, and nothing ever
+  // pushes the article's own content around. Only appears when a publisher
+  // has opted in via no_match_fallback_enabled (server-side gate - see
+  // buildRandomFallback in api/match.js, called from tryServeFromCache) -
+  // off leaves a no-match page showing nothing, same as before this was
+  // folded in. Both pieces were proven out on live traffic
+  // (little-green-agency, openintro) as separate experimental files before
+  // being merged into this one - search this file for "NO-MATCH FALLBACK"
+  // to find every piece that came from widget6.js specifically.
   var API = 'https://www.introlinq.com/api/match';
   var script = document.currentScript || document.querySelector('script[src*="widget.js"]');
   var PUB = (script && (script.getAttribute('data-publisher') || script.getAttribute('data-site'))) || window.IL_PUBLISHER_ID || null;
   if (!PUB) return;
 
   // Experimental widget hand-off - lets a specific publisher run a
-  // different widget variant (see /demo/introlinq for what widgets 2-5
-  // look like and why) without touching anything on their own site: their
-  // installed <script src="widget.js" data-publisher="..."> tag never
-  // changes, this just redirects to the alternate file for publishers on
-  // the list below. Empty/removed = zero effect on everyone else, since
-  // the rest of this file runs completely unchanged for every publisher
-  // not on the list. Checked before the double-init guard below, since
-  // handing off means this copy of widget.js does nothing else at all.
-  var EXPERIMENTAL_WIDGETS = {
-    'little-green-agency': 'widget6.js',
-    'openintro': 'widget5.js',
-    'justcharmaine': 'widget6.js',
-  };
+  // different widget file entirely without touching anything on their own
+  // site: their installed <script src="widget.js" data-publisher="..."> tag
+  // never changes, this just redirects to the alternate file for publishers
+  // on the list below. Empty/removed = zero effect on everyone else, since
+  // the rest of this file runs completely unchanged for every publisher not
+  // on the list. Checked before the double-init guard below, since handing
+  // off means this copy of widget.js does nothing else at all. Currently
+  // empty - widget5.js/widget6.js's features both now live here directly;
+  // kept in place (see widget1.js, archived unused) as the mechanism for
+  // the next experimental variant, not because anything needs it today.
+  var EXPERIMENTAL_WIDGETS = {};
   if (EXPERIMENTAL_WIDGETS[PUB]) {
     var handoff = document.createElement('script');
     handoff.src = 'https://www.introlinq.com/' + EXPERIMENTAL_WIDGETS[PUB];
@@ -147,11 +162,17 @@
         injectStyles(pcfg);
         var ppopup = createPopup(pcfg);
         highlightMatches(el, pre.matches, ppopup, pcfg, []);
+      } else if (pre.noMatch) {
+        // Demo/testing path only - simulates a confirmed no-match page
+        // (set window.IL_PRELOADED_MATCHES = {matches:[], noMatch:true,
+        // randomExperts:[...], config:{...}}) without needing a real
+        // scanned page.
+        injectStyles(pre.config || {});
+        showNoMatchFallback(el, pre.config || {}, pre.randomExperts, pre.randomExpertsTotal);
       }
       return;
     }
 
-    var seenExpertIds = {};
     var sharedCfg = null;
     var sharedPopup = null;
     var usedRanges = [];
@@ -169,12 +190,14 @@
         injectStyles(sharedCfg);
         sharedPopup = createPopup(sharedCfg);
       }
+      // No per-phrase dedup here - unlike widget.js's single-expert dedup
+      // (never show the same person twice), a hook is a topic, not an
+      // identity, so the same 2-3 names can legitimately back up more than
+      // one phrase without it reading as repetitive.
       var shown = [];
       data.matches.forEach(function (m) {
-        var id = m.expert && m.expert.id;
-        if (!id || seenExpertIds[id]) return;
+        if (!m.hook && !(m.options && m.options.length)) return;
         if (highlightOnePhrase(el, m, sharedPopup, sharedCfg, usedRanges)) {
-          seenExpertIds[id] = true;
           shown.push(m);
         }
       });
@@ -231,6 +254,25 @@
           // pending its background scan, or both attempts failed outright -
           // there's nothing further to do; no polling, no follow-up request.
           if (!data || !data.cached) return;
+          // NO-MATCH FALLBACK: the page was genuinely scanned and confirmed
+          // to have nothing relevant - the server sets noMatch:true
+          // specifically for this case (see tryServeFromCache in
+          // api/match.js), distinct from "not scanned yet" (which has no
+          // `cached` field at all and was already returned above).
+          // isLikelyArticlePage() gates the fallback line specifically, not
+          // the scan itself above - a category/tag/author archive page can
+          // still clear the 150-char bar and get scanned/matched normally
+          // (a real MATCH only ever shows if the AI found something
+          // genuinely relevant), but the fallback's generic "talk to an
+          // expert" line has no business appearing on a listing, homepage,
+          // or login page just because that page also came back no-match.
+          if (data.noMatch) {
+            if (isLikelyArticlePage()) {
+              injectStyles(data.config || {});
+              showNoMatchFallback(el, data.config || {}, data.randomExperts, data.randomExpertsTotal);
+            }
+            return;
+          }
           var shown = applyMatches(data);
           // The server said this page has experts, but none of their phrases
           // could be found in the live DOM - the exact wording drifted since
@@ -249,6 +291,31 @@
         });
     }
     postScan();
+  }
+
+  // Gates the no-match fallback line only (see the call site in postScan's
+  // response handler) - never the scan/highlight flow itself. The URL pattern
+  // check runs unconditionally and can veto on its own - confirmed on
+  // littlegreenagency.co.uk that its theme stamps og:type="article" on
+  // BOTH a real post and its /category/ archive pages alike, so og:type
+  // can't be trusted as a positive signal by itself; a listing/utility URL
+  // always says no regardless of what og:type claims. When og:type IS
+  // present and says something other than "article" (e.g. "website"),
+  // that's a second, independent negative signal - catches pages like a
+  // homepage that don't match any URL pattern here. Only falls back to
+  // requiring a real <article> element (not findArticle()'s broader
+  // fallbacks like a bare 'main') when there's no og:type at all to go on.
+  function isLikelyArticlePage() {
+    var path = window.location.pathname.toLowerCase();
+    if (path === '' || path === '/') return false;
+    if (/\/(category|categories|tag|tags|author|page\/\d+|search|login|signin|sign-in|signup|sign-up|register|cart|checkout|account|wp-admin)(\/|$)/.test(path)) return false;
+
+    var ogType = document.querySelector('meta[property="og:type"]');
+    if (ogType) {
+      var content = (ogType.getAttribute('content') || '').toLowerCase();
+      if (content) return content === 'article';
+    }
+    return !!document.querySelector('article');
   }
 
   function findArticle() {
@@ -334,16 +401,22 @@
 
   function preloadPhotos(matches) {
     matches.forEach(function (m) {
-      if (m.expert && m.expert.photo_url) {
-        var img = new Image();
-        img.src = m.expert.photo_url;
-      }
+      (m.options || []).forEach(function (opt) {
+        if (opt.expert && opt.expert.photo_url) {
+          var img = new Image();
+          img.src = opt.expert.photo_url;
+        }
+      });
     });
   }
 
   function injectStyles(cfg) {
     var color = cfg.color || '#e6a820';
-    var w = { small: 240, medium: 300, large: 360 }[cfg.size] || 300;
+    var accent = cfg.accent || color;
+    // Wider than widget.js's original sizes (240/300/360) - three stacked
+    // name+credential+role rows need more breathing room than one profile
+    // did, especially once credentials render as wrapping pills below.
+    var w = { small: 280, medium: 340, large: 400 }[cfg.size] || 340;
     var existing = document.getElementById('il-styles');
     if (existing) existing.remove();
     var s = document.createElement('style');
@@ -389,6 +462,33 @@
       'box-sizing:border-box;line-height:normal;text-align:left}' +
       '#il-pop.il-on{opacity:1;transform:translateY(0);pointer-events:all}' +
       '#il-pop *{box-sizing:border-box}' +
+      // Compact per-expert block below the hook/CTA - photo+name+Meet on
+      // one row, role right underneath (tight - reads as one unit with the
+      // name), then punchy credential facts on their own line, joined with
+      // " | " instead of separate pill chips - reads as one quick scannable
+      // line instead of a row of badges.
+      // Divider + heading between the hook/CTA block and the name list -
+      // a visible border-top (not just a margin gap) so the two sections
+      // read as clearly separate, and the label itself is a proper
+      // sub-heading now (dark, bigger) instead of a tiny muted caption.
+      '.il2-list-label{font-size:11.5px!important;font-weight:700!important;color:#1a1a2e!important;letter-spacing:.02em!important;padding-top:12px;margin-top:2px;border-top:1px solid rgba(26,26,46,0.1);margin-bottom:8px}' +
+      '.il2-opt{display:flex!important;align-items:center;gap:10px;padding:9px 0}' +
+      '.il2-opt+.il2-opt{border-top:1px solid rgba(26,26,46,0.14)}' +
+      '.il2-opt-photo{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;max-width:38px!important;max-height:38px!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;flex-shrink:0!important;display:block!important}' +
+      '.il2-opt-info{flex:1;min-width:0}' +
+      // il2-opt-book is a direct sibling of the photo/info column now (see
+      // buildOptionRow), not nested next to the name - that way it's
+      // centered by .il2-opt's own align-items:center same as the photo,
+      // instead of pinned to the top of the block next to the name line.
+      '.il2-opt-name{display:block!important;font-weight:600!important;font-size:12px!important;color:#1a1a2e!important;line-height:1.2!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;text-decoration:none!important}' +
+      '.il2-opt-role{font-size:11px!important;font-weight:500!important;color:#4a4a6a!important;line-height:1.25!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0}' +
+      // Same dark ink as the name, bold, rather than a saturated accent
+      // colour (yellow read as a warning, green wasn't liked either) -
+      // stands out through weight/contrast instead of hue.
+      '.il2-opt-facts{font-size:10.5px!important;font-weight:700!important;color:#1a1a2e!important;line-height:1.4!important;margin-top:3px}' +
+      // Filled, not outlined, so it actually stands out next to the name
+      // instead of blending into the row.
+      '.il2-opt-book{flex-shrink:0!important;display:block!important;background:' + accent + '!important;border:none!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:5px 12px!important;border-radius:100px!important;font-size:11px!important;font-weight:700!important;text-decoration:none!important;white-space:nowrap}' +
       // Discoverability nudge (see maybeShowDiscoveryCue) - a
       // white "phantom hand" tap on desktop, a soft pulse on the highlight
       // itself on touch. pointer-events:none on #il-cue is load-bearing:
@@ -416,8 +516,152 @@
       '#il-cue.il-cue-play{animation:il-cue-in 1.1s ease forwards,il-cue-tap .8s ease 1.1s,il-cue-out 1s ease 2.4s forwards!important}' +
       '#il-cue img{width:100%!important;height:100%!important;display:block!important}' +
       '@keyframes il-pulse-glow{0%,100%{box-shadow:0 0 0 0 ' + hexToRgba(color, 0) + '}50%{box-shadow:0 0 0 6px ' + hexToRgba(color, 0.35) + '}}' +
-      '.il-hl.il-cue-pulse{animation:il-pulse-glow 1s ease-in-out 2!important}';
+      '.il-hl.il-cue-pulse{animation:il-pulse-glow 1s ease-in-out 2!important}' +
+      // NO-MATCH FALLBACK (formerly widget6.js - see this file's header
+      // comment). #il6-hookwrap (headline + CTA pill) is the only thing on
+      // the page -
+      // deliberately as small a footprint as a plain text line, since this
+      // shows on ~81% of pages (whatever has no real content match) without
+      // a publisher ever having agreed to a permanent directory box on most
+      // of their articles. Hovering/tapping it opens the exact same
+      // floating #il-pop popup a real match uses (see
+      // attachFallbackTrigger) - not a custom inline reveal - so nothing
+      // ever pushes the article's own content around, and the 3 named
+      // people only exist for a reader who actually engages, same as a
+      // real match's hover popup.
+      '#il6-fallback{margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid rgba(26,26,46,0.1);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}' +
+      '#il6-hookwrap{cursor:pointer}' +
+      '#il6-hook{font-size:15px!important;font-weight:700!important;color:#1a1a2e!important;line-height:1.4!important;margin-bottom:10px}' +
+      '#il6-cta{display:inline-block!important;background:' + accent + '!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:9px 18px!important;border-radius:100px!important;font-size:13px!important;font-weight:700!important;text-decoration:none!important}' +
+      '#il6-cta-row{display:flex!important;align-items:center;gap:10px;flex-wrap:wrap}' +
+      '#il6-avatars{display:flex!important;align-items:center;flex-shrink:0}' +
+      // Sized to roughly match the CTA pill's own height (9px padding +
+      // 13px text ~= 33px tall) so the row reads as one aligned unit.
+      // Overlapping circle-of-faces convention - negative margin pulls
+      // each one under the last, white ring (border + a hairline shadow
+      // so it still separates on a white page background) keeps them
+      // readable as distinct people rather than a blob.
+      '.il6-avatar{width:32px!important;height:32px!important;min-width:32px!important;border-radius:50%!important;object-fit:cover!important;background:#edf5f0!important;border:2px solid #fff!important;box-shadow:0 0 0 1px rgba(26,26,46,0.12)!important;margin-left:-10px!important;display:block!important}' +
+      '.il6-avatar:first-child{margin-left:0!important}' +
+      // "+N more" cap on the stack - dark ink fill so it reads as a
+      // distinct count rather than another (oddly blank) face.
+      '.il6-avatar-more{display:flex!important;align-items:center;justify-content:center;background:#1a1a2e!important;color:#fff!important;font-size:10px!important;font-weight:700!important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}';
     document.head.appendChild(s);
+  }
+
+  // NO-MATCH FALLBACK (formerly widget6.js). Appended once per page, at the end
+  // of the article - there's no matched phrase to hang this off of, so
+  // unlike everything else in this file it can't use the inline-highlight
+  // mechanic, and there's no per-phrase reason to derive a topic-specific
+  // hook from (see deriveHook in api/match.js), so the headline is a single
+  // fixed line rather than an AI/keyword-derived one. Only #il6-hookwrap
+  // (that headline + CTA) ever renders on the page - no bigger a footprint
+  // than a plain text line, since this shows on ~81% of pages without a
+  // publisher ever agreeing to a permanent directory box on most of their
+  // articles. Hovering/tapping it opens the SAME #il-pop popup (createPopup/
+  // fillPopup/positionPopup) a real match uses - not a custom reveal - so
+  // this rides the exact infrastructure, stats, and hover-then-click
+  // conventions Widget 5 already has, and the 3 randomly-picked experts
+  // (see pickRandomExperts in api/match.js) float over the page instead of
+  // pushing article content down. Nothing renders at all if the server
+  // couldn't supply any random experts (e.g. this publisher has zero
+  // eligible experts) - a line that reveals nothing on hover isn't
+  // restrained, it's broken.
+  function showNoMatchFallback(articleEl, cfg, randomExperts, randomExpertsTotal) {
+    if (document.getElementById('il6-fallback')) return;
+    var options = (randomExperts || []).filter(function (o) { return o && o.expert; }).slice(0, 3);
+    if (!options.length) return;
+    // How many MORE eligible experts exist beyond the 3 shown - the badge
+    // reads "+N", not the raw total, so it should never show a 0 or
+    // negative count if the roster happens to be exactly 3 or fewer.
+    var moreCount = (typeof randomExpertsTotal === 'number' ? randomExpertsTotal : options.length) - options.length;
+
+    // Sends the reader to the matched partner's own site (open-intro.com
+    // today, whichever partner backs this publisher in general), not an
+    // IntroLinq page, through the same tracked redirect every booking link
+    // in this file uses - the partner needs to actually be landed on for
+    // ITS OWN attribution cookie to get set (see the OpenIntro webhook
+    // integration), so a booking made later - even one that never touches
+    // an IntroLinq link again - still credits back to us. Falls back to
+    // IntroLinq's own board page only if a partner site URL is somehow
+    // missing. click_source='no_match_cta' keeps this countable separately
+    // from both a real match's 'cta' and this same block's own
+    // 'no_match_person' rows inside the popup.
+    var boardUrl = 'https://www.introlinq.com/experts?pub=' + encodeURIComponent(PUB);
+    var providerUrl = options[0].expert.provider_website_url || boardUrl;
+    var ctaHref = 'https://www.introlinq.com/api/dashboard?action=out'
+      + '&pub=' + encodeURIComponent(PUB)
+      + '&expert_url=' + encodeURIComponent(providerUrl)
+      + '&article=' + encodeURIComponent(window.location.href.slice(0, 300))
+      + '&lang=' + encodeURIComponent(navigator.language || '')
+      + '&tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || '')
+      + '&device=' + (window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop')
+      + '&source=' + encodeURIComponent(getTrafficSource())
+      + '&title=' + encodeURIComponent(document.title.slice(0, 150))
+      + '&click_source=no_match_cta';
+
+    // Same 3 real people the popup shows, not a generic stock cluster -
+    // what you see next to the button is genuinely who you'd meet. Same
+    // fallback-avatar convention as buildOptionRow's photos.
+    var avatarsHtml = options.map(function (opt) {
+      var e = opt.expert;
+      var fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=64&name=' + encodeURIComponent(e.name);
+      return '<img class="il6-avatar" src="' + (e.photo_url || fallback) + '" onerror="this.onerror=null;this.src=\'' + fallback + '\'" alt="">';
+    }).join('') + (moreCount > 0 ? '<div class="il6-avatar il6-avatar-more">+' + moreCount + '</div>' : '');
+
+    var div = document.createElement('div');
+    div.id = 'il6-fallback';
+    div.innerHTML =
+      '<div id="il6-hookwrap">' +
+        '<div id="il6-hook">Need expert advice on business, growth, or funding?</div>' +
+        '<div id="il6-cta-row">' +
+          '<a id="il6-cta" href="' + ctaHref + '" target="_blank" rel="noopener">We work with people who’ve done it →</a>' +
+          '<div id="il6-avatars">' + avatarsHtml + '</div>' +
+        '</div>' +
+      '</div>';
+    articleEl.appendChild(div);
+
+    // No hook/cta on this match object - only options - so fillPopup hides
+    // its own headline+CTA block (would otherwise just duplicate the
+    // always-visible line above) and renders just the list-label + rows +
+    // partnership footer. No real phrase to attribute these rows to either;
+    // an empty string is fine, buildTrackedBookingUrl only uses it for the
+    // &phrase= tracking param.
+    var popup = createPopup(cfg);
+    var fakeMatch = { phrase: '', options: options };
+    attachFallbackTrigger(document.getElementById('il6-hookwrap'), fakeMatch, popup, cfg);
+  }
+
+  // Same hover-then-click pattern as a highlighted phrase's popup
+  // (attachGroupEvents) - reuses that popup's own shared hideTimer/
+  // scheduleHide and its own mouseenter/mouseleave (set up in createPopup)
+  // for moving from the line into the popup without it flickering shut.
+  // Touch has no hover, so tapping the plain headline text opens the popup
+  // instead (matches this file's other 'ontouchstart' in window branches);
+  // the CTA is a real link and is deliberately excluded so it keeps
+  // navigating normally on tap like any other link, rather than being
+  // hijacked into a reveal step.
+  function attachFallbackTrigger(anchor, match, popup, cfg) {
+    if ('ontouchstart' in window) {
+      anchor.addEventListener('click', function (ev) {
+        if (ev.target.closest && ev.target.closest('#il6-cta')) return;
+        ev.stopPropagation();
+        fillPopup(popup, match, cfg, 'no_match_person');
+        positionPopup(popup, anchor, cfg);
+        popup.classList.add('il-on');
+        closeOnScroll(popup);
+      });
+      return;
+    }
+    anchor.addEventListener('mouseenter', function () {
+      clearTimeout(hideTimer);
+      fillPopup(popup, match, cfg, 'no_match_person');
+      positionPopup(popup, anchor, cfg);
+      popup.classList.add('il-on');
+    });
+    anchor.addEventListener('mouseleave', function () {
+      if (!popup.classList.contains('il-pinned')) scheduleHide(popup);
+    });
   }
 
   function createPopup(cfg) {
@@ -442,22 +686,25 @@
     // that one specifically. !important on an inline style beats essentially
     // any host stylesheet rule that isn't itself an equally-specific inline
     // !important, which no publisher's page has a reason to write.
+    // Hybrid layout: a punchy outcome headline + primary CTA up top (same
+    // as the pure-hook version), PLUS a short list of real named experts
+    // below it (from the multi-option version) - the headline sells the
+    // outcome, the names back it up with concrete proof this isn't vague
+    // marketing copy. Each name row has its own direct "Book" link;
+    // the top CTA is the lower-commitment "just let me browse" path.
+    // Both blocks are independently optional (fillPopup hides whichever
+    // has no data) so this still degrades gracefully to either pure
+    // earlier variant.
     p.innerHTML =
-      '<div style="display:flex!important;gap:12px;align-items:center;margin-bottom:' + (isSmall ? '8' : '10') + 'px">' +
-        '<img id="il-ph" style="width:' + photoSize + 'px!important;height:' + photoSize + 'px!important;min-width:' + photoSize + 'px!important;min-height:' + photoSize + 'px!important;max-width:' + photoSize + 'px!important;max-height:' + photoSize + 'px!important;border-radius:50%!important;object-fit:cover!important;flex-shrink:0!important;background:#edf5f0!important;display:block!important" src="" alt="">' +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="display:flex!important;align-items:center;gap:6px">' +
-            '<div id="il-nm" style="font-weight:600!important;font-size:' + nameSize + '!important;color:#1a1a2e!important;line-height:1.25!important"></div>' +
-            '<span id="il-fl" style="font-size:13px!important;line-height:1!important;flex-shrink:0"></span>' +
-          '</div>' +
-          '<div id="il-rl" style="font-size:11.5px!important;color:#4a4a6a!important;margin-top:2px;line-height:1.3!important"></div>' +
+      '<div id="il2-hookwrap" style="margin-bottom:' + (isSmall ? '10' : '14') + 'px">' +
+        '<div style="display:flex!important;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">' +
+          '<div id="il2-hook" style="font-size:' + (isLarge ? '15px' : '14px') + '!important;font-weight:700!important;color:#1a1a2e!important;line-height:1.4!important"></div>' +
+          '<button id="il-cl" style="display:none;flex-shrink:0;background:none!important;border:none!important;cursor:pointer;color:#8888a8!important;font-size:18px!important;line-height:1!important;padding:0 0 0 4px" aria-label="Close">&times;</button>' +
         '</div>' +
-        '<button id="il-cl" style="display:none;flex-shrink:0;background:none!important;border:none!important;cursor:pointer;color:#8888a8!important;font-size:18px!important;line-height:1!important;padding:0 0 0 4px;align-self:flex-start" aria-label="Close">&times;</button>' +
+        '<a id="il2-cta" href="#" target="_blank" rel="noopener" style="display:block!important;background:' + accent + '!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:' + (isSmall ? '7' : '9') + 'px;border-radius:100px;font-size:13px!important;font-weight:700!important;text-decoration:none!important"></a>' +
       '</div>' +
-      (isSmall ? '' : '<div id="il-bio" style="display:none;font-size:' + (isLarge ? '12px' : '11.5px') + '!important;color:#1a1a2e!important;font-weight:500!important;line-height:1.45!important;margin-bottom:8px"></div>') +
-      (isSmall ? '' : '<div id="il-rs" style="font-size:' + (isLarge ? '13px' : '12.5px') + '!important;color:#4a4a6a!important;line-height:1.6!important;margin-bottom:12px;font-style:italic!important;border-left:2px solid ' + hexToRgba(accent, 0.3) + ';padding-left:10px"></div>') +
-      '<a id="il-bk" href="#" target="_blank" rel="noopener" style="display:block!important;background:' + accent + '!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:' + (isSmall ? '7' : '9') + 'px;border-radius:100px;font-size:13px!important;font-weight:700!important;text-decoration:none!important">' + BOOK_LABEL + '</a>' +
-      '<div id="il-pv" style="font-size:8.5px!important;color:#8888a8!important;text-align:center;margin-top:6px;letter-spacing:.02em"></div>';
+      '<div id="il2-list"></div>' +
+      '<div id="il-pv" style="font-size:8.5px!important;color:#8888a8!important;text-align:center;margin-top:8px;letter-spacing:.02em"></div>';
     document.body.appendChild(p);
     p.addEventListener('mouseenter', function () { clearTimeout(hideTimer); });
     p.addEventListener('mouseleave', function () {
@@ -653,10 +900,14 @@
   // (booked): tells a discoverability problem (nobody ever hovers) apart
   // from a relevance/commitment-bar problem (readers hover and see the
   // expert card, but don't click through).
+  // Tracked against the primary (first) option when one exists - keeps
+  // seen_logs/hover_logs schema-compatible with widget.js. Falls back to
+  // null/null if a match has a hook but no options at all, same as any
+  // other row would with nothing to attribute.
   function trackHover(hoverTracked, m) {
     if (hoverTracked.done) return;
     hoverTracked.done = true;
-    var e = m.expert;
+    var e = m.options && m.options[0] && m.options[0].expert;
     fetch('https://www.introlinq.com/api/dashboard?pub=' + encodeURIComponent(PUB) + '&action=hover', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -671,7 +922,7 @@
   }
 
   function trackSeen(m) {
-    var e = m.expert;
+    var e = m.options && m.options[0] && m.options[0].expert;
     fetch('https://www.introlinq.com/api/dashboard?pub=' + encodeURIComponent(PUB) + '&action=seen', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -747,20 +998,17 @@
         sp.addEventListener('mouseleave', function () {
           if (!popup.classList.contains('il-pinned')) scheduleHide(popup);
         });
-        // Hover already reveals the card on desktop, so a click here is the
-        // reader having already seen who the expert is and deciding to go -
-        // it commits straight to the booking link (fillPopup first as a
-        // defensive no-op in case a click somehow fires before mouseenter
-        // ever did) rather than re-showing the same card they just saw.
-        // Not applied on touch/keyboard below - neither gets a hover
-        // preview first, so opening the card is the only context those
-        // readers get before deciding.
+        // Same "hover already showed it, a click commits" pattern as
+        // widget.js - commits to the top CTA link specifically (the
+        // low-commitment "browse" path this variant leads with), not one
+        // of the named options, since there's no single obvious person to
+        // pick between.
         sp.addEventListener('click', function () {
           stopDiscoveryCue();
           trackHover(hoverTracked, m);
           fillPopup(popup, m, cfg);
-          var bk = document.getElementById('il-bk');
-          if (bk && bk.getAttribute('href') !== '#') bk.click();
+          var cta = document.getElementById('il2-cta');
+          if (cta && cta.getAttribute('href') !== '#') cta.click();
         });
       });
     }
@@ -884,104 +1132,133 @@
     return spans.length > 0;
   }
 
-  function fillPopup(popup, match, cfg) {
-    var e = match.expert;
-    if (!e) return;
-    var img = document.getElementById('il-ph');
-    var fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=88&name=' + encodeURIComponent(e.name);
-    img.src = fallback;
-    if (e.photo_url) {
-      var pre = new Image();
-      pre.onload = function () { img.src = e.photo_url; };
-      pre.src = e.photo_url;
-    }
-    document.getElementById('il-nm').textContent = e.name;
-    var fl = document.getElementById('il-fl');
-    if (fl) {
-      var iso = countryToISO(e.location_country);
-      fl.innerHTML = iso ? '<img src="https://hatscripts.github.io/circle-flags/flags/' + iso.toLowerCase() + '.svg" alt="" style="width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;max-width:18px!important;max-height:18px!important;vertical-align:middle!important;flex-shrink:0!important;border-radius:50%!important;display:inline-block!important">' : '';
-    }
-    var rl = document.getElementById('il-rl');
-    var showCompany = !e.is_demo_provider;
-    rl.innerHTML = [e.position ? '<span>' + e.position.replace(/</g,'&lt;') + '</span>' : '', showCompany && e.company ? '<span style="color:#8888a8">' + e.company.replace(/</g,'&lt;') + '</span>' : ''].filter(Boolean).join('<br>');
-    // Credential line: the expert's curated one-line track record ("Raised
-    // £200m", "3 exits", "2200 employees") - the strongest trust signal we
-    // have, previously never shown anywhere on the card. For non-English
-    // articles the server sends a translated version (match.credential) so
-    // this line matches the reason's language; the stored bio (English) is
-    // the fallback. Long-form text gets clipped at a word boundary.
-    var bo = document.getElementById('il-bio');
-    if (bo) {
-      var bioText = (match.credential || e.bio || '').replace(/\s+/g, ' ').trim();
-      if (bioText.length > 160) {
-        var cut = bioText.slice(0, 160);
-        var sp = cut.lastIndexOf(' ');
-        bioText = (sp > 0 ? cut.slice(0, sp) : cut) + '…';
-      }
-      if (bioText) { bo.textContent = bioText; bo.style.display = 'block'; }
-      else bo.style.display = 'none';
-    }
-    var rs = document.getElementById('il-rs');
-    if (rs) rs.textContent = match.reason;
-    var bk = document.getElementById('il-bk');
-    // BOOK_LABEL is a template ("Speak with {name} →") - resolved per-match
-    // here rather than baked in at popup creation, since the popup DOM is a
-    // singleton reused across every expert on the page (see fillPopup's
-    // other fields above, same pattern).
-    var firstName = (e.name || '').split(' ')[0] || e.name;
-    bk.textContent = BOOK_LABEL.replace('{name}', firstName);
+  // Builds one compact expert row's markup - photo, name, role, and its own
+  // direct Book link (the real https://.../api/dashboard?action=out
+  // tracked redirect, same params widget.js always sent). No preload-swap
+  // for photos here - onerror fallback is simpler and fine for up to 3
+  // small thumbnails.
+  // clickSource distinguishes the top CTA button from a specific named
+  // expert's own Meet/name/photo link in click_logs - for the PRIMARY
+  // option those two currently lead to the exact same expert, so without
+  // this they'd be indistinguishable even though they're different UI
+  // elements the reader chose between.
+  function buildTrackedBookingUrl(e, match, clickSource) {
     var url = e.booking_url || '#';
-    if (url !== '#') {
-      bk.href = 'https://www.introlinq.com/api/dashboard?action=out'
-        + '&pub=' + encodeURIComponent(PUB)
-        + '&expert_id=' + encodeURIComponent(e.id || '')
-        + '&expert_name=' + encodeURIComponent(e.name || '')
-        + '&expert_url=' + encodeURIComponent(url)
-        + '&article=' + encodeURIComponent(window.location.href.slice(0, 300))
-        + '&phrase=' + encodeURIComponent(match.phrase || '')
-        + '&lang=' + encodeURIComponent(navigator.language || '')
-        + '&tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || '')
-        + '&device=' + (window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop')
-        + '&source=' + encodeURIComponent(getTrafficSource())
-        + '&title=' + encodeURIComponent(document.title.slice(0, 150));
-    } else {
-      bk.href = '#';
-    }
+    if (url === '#') return '#';
+    return 'https://www.introlinq.com/api/dashboard?action=out'
+      + '&pub=' + encodeURIComponent(PUB)
+      + '&expert_id=' + encodeURIComponent(e.id || '')
+      + '&expert_name=' + encodeURIComponent(e.name || '')
+      + '&expert_url=' + encodeURIComponent(url)
+      + '&article=' + encodeURIComponent(window.location.href.slice(0, 300))
+      + '&phrase=' + encodeURIComponent(match.phrase || '')
+      + '&lang=' + encodeURIComponent(navigator.language || '')
+      + '&tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || '')
+      + '&device=' + (window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop')
+      + '&source=' + encodeURIComponent(getTrafficSource())
+      + '&title=' + encodeURIComponent(document.title.slice(0, 150))
+      + '&click_source=' + encodeURIComponent(clickSource);
+  }
 
+  function buildOptionRow(opt, match, clickSource) {
+    var e = opt.expert;
+    if (!e) return '';
+    var fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=64&name=' + encodeURIComponent(e.name);
+    var showCompany = !e.is_demo_provider;
+    var role = [e.position, showCompany ? e.company : null].filter(Boolean).join(' · ');
+    var href = buildTrackedBookingUrl(e, match, clickSource || 'person');
+    // opt.credentials is an array of short punchy facts ("4 exits", "$1B+
+    // processed") - joined into one line with " | " instead of separate
+    // pill chips, so it reads as one quick scannable line rather than a
+    // row of badges.
+    var facts = Array.isArray(opt.credentials) ? opt.credentials.filter(Boolean) : [];
+    var factsHtml = facts.length
+      ? '<div class="il2-opt-facts">' + facts.map(function (c) { return String(c).replace(/</g,'&lt;'); }).join(' | ') + '</div>'
+      : '';
+    // Photo and name are clickable too now, not just the Meet button -
+    // same tracked href, bigger click target. Falls back to plain
+    // (non-linked) markup when there's no real booking_url, same
+    // condition the Meet button itself already uses.
+    var photoImg = '<img class="il2-opt-photo" src="' + (e.photo_url || fallback) + '" onerror="this.onerror=null;this.src=\'' + fallback + '\'" alt="">';
+    var nameEsc = (e.name || '').replace(/</g,'&lt;');
+    var photoHtml = href !== '#'
+      ? '<a href="' + href + '" target="_blank" rel="noopener" style="display:block!important;flex-shrink:0">' + photoImg + '</a>'
+      : photoImg;
+    var nameHtml = href !== '#'
+      ? '<a class="il2-opt-name" href="' + href + '" target="_blank" rel="noopener">' + nameEsc + '</a>'
+      : '<div class="il2-opt-name">' + nameEsc + '</div>';
+    return '<div class="il2-opt">' +
+        photoHtml +
+        '<div class="il2-opt-info">' +
+          nameHtml +
+          (role ? '<div class="il2-opt-role">' + role.replace(/</g,'&lt;') + '</div>' : '') +
+          factsHtml +
+        '</div>' +
+        (href !== '#' ? '<a class="il2-opt-book" href="' + href + '" target="_blank" rel="noopener">Meet →</a>' : '') +
+      '</div>';
+  }
+
+  // match here is { phrase, hook, cta, query, options } - hook/cta/query
+  // drive the top headline+button (hidden if hook is absent), options
+  // drives the name-row list below it (hidden if empty) - independently
+  // optional so this degrades gracefully either direction.
+  function fillPopup(popup, match, cfg, personClickSource) {
+    var hookWrap = document.getElementById('il2-hookwrap');
+    if (hookWrap) hookWrap.style.display = match.hook ? 'block' : 'none';
+    var hookEl = document.getElementById('il2-hook');
+    if (hookEl) hookEl.textContent = match.hook || '';
+    var cta = document.getElementById('il2-cta');
+    if (cta) cta.textContent = match.cta || 'Explore experts →';
+
+    var options = match.options || [];
+    var list = document.getElementById('il2-list');
+    if (list) {
+      // The label used to be gated on match.hook (every real match always
+      // has both together), but widget6's no-match fallback deliberately
+      // sends a match with options and no hook - see attachFallbackTrigger
+      // - so the label needs to stand on its own whenever there's a list
+      // to introduce, hook or no hook.
+      list.innerHTML = options.length
+        ? '<div class="il2-list-label">' + (cfg.company_name || 'We').replace(/</g,'&lt;') + ' recommend' + (cfg.company_name ? 's' : '') + ' talking to</div>' + options.map(function (opt) { return buildOptionRow(opt, match, personClickSource); }).join('')
+        : '';
+    }
+    // Partnership attribution footer - same as widget.js/2/3's version,
+    // keyed off the primary (first) option since they're usually all from
+    // the same partner network anyway.
+    var e = options[0] && options[0].expert;
+    // CTA goes straight to the PRIMARY (first-listed) named expert's own
+    // tracked booking link - not OpenIntro's AI search (/discover/ai),
+    // which is real but too slow in practice for a launch-day link.
+    // click_source='cta' (vs 'person' on the name-row links) is what
+    // makes this distinguishable in click_logs even though it's the same
+    // destination as that expert's own Meet link.
+    if (cta) cta.href = e ? buildTrackedBookingUrl(e, match, 'cta') : '#';
     var pv = document.getElementById('il-pv');
-    if (pv) {
+    if (pv && e) {
       var providerName = e.provider_name || (e.provider_slug || 'openintro');
       var providerLogoUrl = e.provider_logo_url || null;
       var providerUrl = e.provider_website_url || '#';
-      var cfg = { name: providerName, url: providerUrl, logo: providerLogoUrl };
-      var ilLogo = '<img src="https://www.introlinq.com/favicon.svg" alt="IntroLinq" style="width:11px!important;height:11px!important;border-radius:2px;vertical-align:middle;margin-right:3px;flex-shrink:0">';
-      // min-width:0 is load-bearing: flex items default to min-width:auto
-      // (their own content size), which blocks shrinking below that and
-      // pushes the item outside the card instead - min-width:0 + overflow
-      // hidden + nowrap lets these two labels actually give way to each
-      // other on a narrow popup rather than wrapping to a second line or
-      // spilling past the card's rounded corner. !important throughout for
-      // the same reason as createPopup's template - some host pages'
-      // stylesheets otherwise bleed through plain inline styles.
+      var prov = { name: providerName, url: providerUrl, logo: providerLogoUrl };
+      var ilLogo = '<img src="https://www.introlinq.com/favicon.svg" alt="IntroLinq" style="width:11px!important;height:11px!important;border-radius:2px;vertical-align:middle;margin-left:4px;margin-right:3px;flex-shrink:0">';
       var s = 'font-size:8.5px!important;color:#8888a8!important;font-family:Inter,system-ui,sans-serif;text-decoration:none;display:flex!important;align-items:center;gap:2px;min-width:0;overflow:hidden;white-space:nowrap;flex-shrink:1';
       pv.style.cssText = 'display:flex!important;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:8px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(26,26,46,0.07)';
       var partnerLink;
-      if (e.is_demo_provider && cfg.logo) {
-        partnerLink = '<a href="' + cfg.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with <img src="' + cfg.logo + '" alt="' + cfg.name + '" style="height:14px!important;width:auto;max-width:70px;object-fit:contain;margin-left:4px;vertical-align:middle;flex-shrink:0"></a>';
+      if (e.is_demo_provider && prov.logo) {
+        partnerLink = '<a href="' + prov.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with <img src="' + prov.logo + '" alt="' + prov.name + '" style="height:14px!important;width:auto;max-width:70px;object-fit:contain;margin-left:5px;vertical-align:middle;flex-shrink:0"></a>';
       } else {
-        var providerLogoHtml = cfg.logo
-          ? '<img src="' + cfg.logo + '" alt="' + cfg.name + '" style="width:13px!important;height:13px!important;object-fit:contain;border-radius:2px;vertical-align:middle;margin-right:3px;flex-shrink:0">'
+        var providerLogoHtml = prov.logo
+          ? '<img src="' + prov.logo + '" alt="' + prov.name + '" style="width:13px!important;height:13px!important;object-fit:contain;border-radius:2px;vertical-align:middle;margin-left:5px;margin-right:3px;flex-shrink:0">'
           : '';
-        partnerLink = '<a href="' + cfg.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with ' + providerLogoHtml + cfg.name + '</a>';
+        partnerLink = '<a href="' + prov.url + '" target="_blank" rel="noopener" style="' + s + '">In partnership with' + (providerLogoHtml || ' ') + prov.name + '</a>';
       }
-      pv.innerHTML = partnerLink + '<a href="https://www.introlinq.com" target="_blank" rel="noopener" style="' + s + '">' + ilLogo + 'IntroLinq</a>';
+      pv.innerHTML = partnerLink + '<a href="https://www.introlinq.com" target="_blank" rel="noopener" style="' + s + '">Powered by' + ilLogo + 'IntroLinq</a>';
     }
   }
 
   function positionPopup(popup, span, cfg) {
     var rect = span.getBoundingClientRect();
     var isMobile = window.innerWidth < 520;
-    var W = isMobile ? Math.min(280, window.innerWidth - 24) : ({ small: 240, medium: 300, large: 360 }[cfg.size] || 300);
+    var W = isMobile ? Math.min(320, window.innerWidth - 24) : ({ small: 280, medium: 340, large: 400 }[cfg.size] || 340);
     popup.style.width = W + 'px';
     // Use actual rendered height (forces layout) so we know exactly how tall it is
     var H = popup.offsetHeight || (isMobile ? 360 : (cfg.size === 'small' ? 150 : cfg.size === 'large' ? 260 : 220));

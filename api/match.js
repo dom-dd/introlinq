@@ -154,40 +154,12 @@ function slimMatches(matches) {
 // Rebuilds full matches from a cached entry using the CURRENT experts list.
 // Each entry's candidates (primary + alts) are filtered down to experts who
 // are still published AND visible to this publisher (partner enabled) AND
-// not already picked for another phrase on this page - then ONE surviving
-// candidate is chosen at random per phrase, so repeat visits rotate through
-// equally-fitting experts instead of always showing the same one. Removal
+// not already picked for another phrase on this page - then up to
+// maxPerPhrase surviving candidates are kept as that phrase's options[]
+// (see hydrateMatchesMulti below, the only hydration path left now that
+// every publisher's widget.js renders the hook+multi-name popup). Removal
 // is pure subtraction and never needs an AI call; a phrase only disappears
-// when every one of its candidates is gone. Handles legacy cache rows that
-// still contain full expert snapshots (hydrates by their id; never serves
-// the stale snapshot itself).
-function hydrateMatches(cachedMatches, experts, enabledPartners) {
-  const byId = new Map(experts.map(e => [e.id, e]));
-  const seen = new Set();
-  const out = [];
-  for (const m of cachedMatches || []) {
-    const primaryId = m.expert_id ?? m.expert?.id;
-    if (primaryId == null) continue;
-    const candidates = [
-      { expert_id: primaryId, reason: m.reason, credential: m.credential },
-      ...(Array.isArray(m.alts) ? m.alts : [])
-    ].filter(c => {
-      if (c.expert_id == null || seen.has(c.expert_id)) return false;
-      const expert = byId.get(c.expert_id);
-      if (!expert) return false; // unpublished or deactivated since the scan
-      return enabledPartners
-        ? enabledPartners.includes(expert.provider_slug || 'openintro')
-        : !expert.is_demo_provider; // null = homepage demo: hide demo-partner experts
-    });
-    if (candidates.length === 0) continue;
-    const pick = candidates[Math.floor(Math.random() * candidates.length)];
-    seen.add(pick.expert_id);
-    const hydrated = { phrase: m.phrase, reason: pick.reason, expert: byId.get(pick.expert_id) };
-    if (typeof pick.credential === 'string' && pick.credential.trim()) hydrated.credential = pick.credential;
-    out.push(hydrated);
-  }
-  return out;
-}
+// when every one of its candidates is gone.
 
 // Small, curated topic -> hook/cta template lookup for widget4/5's
 // generic-hook header, matched against the PRIMARY expert's own topics[]
@@ -264,14 +236,11 @@ function deriveHook(expert, reasonText, phraseText) {
   return { ...FALLBACK_HOOK, query: 'expert advice' };
 }
 
-// widget2.js experiment only (see handleMultiVariant) - keeps up to 3
+// The hot path for every real publisher's widget (via tryServeFromCache)
+// plus the /demo comparison page (via handleMultiVariant) - keeps up to 3
 // candidates per phrase instead of randomly committing to one, so the
-// reader gets a short pick-one list rather than a single named suggestion.
-// Deliberately a separate function rather than a `multi` flag threaded
-// through hydrateMatches above: that function is on the hot path for every
-// real publisher's widget, and forking its behaviour on a flag risked a
-// subtle bug reaching production traffic for a feature that's currently
-// only ever exercised on one demo page.
+// reader gets a hook + a short named-options list instead of a single
+// suggestion.
 function hydrateMatchesMulti(cachedMatches, experts, enabledPartners, maxPerPhrase = 3) {
   const byId = new Map(experts.map(e => [e.id, e]));
   const seen = new Set();
@@ -339,12 +308,29 @@ function pickRandomExperts(experts, enabledPartners, n = 3) {
   return { picked, total: eligible.length };
 }
 
-// widget2.js experiment only - a self-contained cache-read-only path,
-// deliberately NOT folded into the main handler's tryServeFromCache/
-// fresh-scan flow below. Only ever reached when a request explicitly opts
-// in (see handler's `variant === 'multi'` check), so it can't affect any
-// real publisher's widget.js traffic. Never triggers a fresh AI scan -
-// meant for already-cached demo pages, not general use.
+// Shared by tryServeFromCache (real publisher traffic) and handleMultiVariant
+// (the /demo comparison page) - only fetched when the publisher has
+// explicitly opted into the fallback (no_match_fallback_enabled on their
+// dashboard); {picked: [], total: 0} otherwise, which is what makes the
+// no-match line render nothing for a publisher who hasn't turned it on.
+// Best-effort even when enabled, so a roster fetch failure just means the
+// fallback has nobody to show, not a hard error. No AI call either way -
+// see pickRandomExperts.
+async function buildRandomFallback(sql, enabledPartners, noMatchFallbackEnabled) {
+  if (!noMatchFallbackEnabled) return { picked: [], total: 0 };
+  const roster = await loadExperts(sql);
+  return roster ? pickRandomExperts(roster, enabledPartners) : { picked: [], total: 0 };
+}
+
+// /demo/introlinq comparison page only - a self-contained cache-read-only
+// path, never folded into the main handler's tryServeFromCache/fresh-scan
+// flow below. Only ever reached when a request explicitly opts in (see
+// handler's `variant === 'multi'` check), so it can't affect any real
+// publisher's widget.js traffic. Never triggers a fresh AI scan - meant for
+// already-cached demo pages, not general use. Real publisher traffic gets
+// the same multi-option hydration and no-match fallback through
+// tryServeFromCache instead, which DOES support a real fresh scan on a
+// cache miss.
 async function handleMultiVariant(sql, { publisher, page_url, page_title, readerCountry, ip, req, pubConfig, enabledPartners, noMatchFallbackEnabled }) {
   // Same WHERE clause as the single-match path's own cache lookup
   // (mirrors tryServeFromCache's caller) - now also looks up CONFIRMED
@@ -361,18 +347,6 @@ async function handleMultiVariant(sql, { publisher, page_url, page_title, reader
           ORDER BY has_match DESC LIMIT 1`.catch(() => [null])
       : Promise.resolve([null]),
   ]);
-  // Only fetched when the publisher has explicitly opted into the fallback
-  // (no_match_fallback_enabled on their dashboard); {picked: [], total: 0}
-  // otherwise, which is what makes widget6.js render nothing extra for a
-  // publisher who hasn't turned it on - best-effort even when enabled, so
-  // a roster fetch failure just means the fallback has nobody to show, not
-  // a hard error.
-  async function buildRandomFallback() {
-    if (!noMatchFallbackEnabled) return { picked: [], total: 0 };
-    const roster = await loadExperts(sql);
-    return roster ? pickRandomExperts(roster, enabledPartners) : { picked: [], total: 0 };
-  }
-
   const cached = cachedRows[0];
   // No row at all = never scanned, still pending - no `cached` field, same
   // as before, so the widget knows to just wait/do nothing.
@@ -382,7 +356,7 @@ async function handleMultiVariant(sql, { publisher, page_url, page_title, reader
   // opposed to "still pending." randomExperts/randomExpertsTotal back
   // widget6.js's no-match fallback block (see pickRandomExperts).
   if (!cached.has_match) {
-    const { picked, total } = await buildRandomFallback();
+    const { picked, total } = await buildRandomFallback(sql, enabledPartners, noMatchFallbackEnabled);
     return { matches: [], config: pubConfig, cached: true, noMatch: true, randomExperts: picked, randomExpertsTotal: total };
   }
 
@@ -391,7 +365,7 @@ async function handleMultiVariant(sql, { publisher, page_url, page_title, reader
 
   const hydrated = hydrateMatchesMulti(cached.result.matches, referencedExperts, enabledPartners);
   if (hydrated.length === 0) {
-    const { picked, total } = await buildRandomFallback();
+    const { picked, total } = await buildRandomFallback(sql, enabledPartners, noMatchFallbackEnabled);
     return { matches: [], config: pubConfig, cached: true, noMatch: true, randomExperts: picked, randomExpertsTotal: total };
   }
 
@@ -606,17 +580,36 @@ async function logCachedImpression(sql, { publisher, page_url, page_title, match
 // and returns true on success; returns false (sending nothing) when the
 // cache row turned out to be unusable, so the caller falls through to a
 // real scan rather than serving a false empty result.
-async function tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig, stale, req }) {
+async function tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig, stale, req, noMatchFallbackEnabled }) {
   const referencedExperts = await loadExpertsByIds(sql, collectReferencedIds(cached.result.matches));
   if (!referencedExperts) return false;
-  const hydrated = hydrateMatches(cached.result.matches, referencedExperts, enabledPartners);
+  // hydrateMatchesMulti, not the old single-expert hydrateMatches - every
+  // cache row already stores each phrase's primary + up to 2 alt candidates
+  // (see slimMatches), so the hook+multi-name popup and the no-match
+  // fallback below are both just a different read of data that was already
+  // there, not a reason to rescan anything.
+  const hydrated = hydrateMatchesMulti(cached.result.matches, referencedExperts, enabledPartners);
   const emptiedPositive = cached.has_match && hydrated.length === 0;
   if (emptiedPositive) return false;
+  // Flattened single-expert view (first option per phrase) purely so the
+  // existing impression logger/stats stay schema-compatible - doesn't
+  // affect what's actually rendered to the reader.
+  const flatForLogging = hydrated.map(h => ({ phrase: h.phrase, expert: h.options[0]?.expert }));
   // One request per page-view now (no more quick/chunk fan-out), so this
   // always logs - no per-piece dedup guard needed anymore. Awaited so the log
   // write reliably lands - see the comment on logCachedImpression for why
   // that matters more than it used to.
-  await logCachedImpression(sql, { publisher, page_url, page_title, matches: hydrated, readerCountry, ip, req });
+  await logCachedImpression(sql, { publisher, page_url, page_title, matches: flatForLogging, readerCountry, ip, req });
+  if (!cached.has_match) {
+    // Genuinely scanned, confirmed nothing relevant here - noMatch:true
+    // tells the widget this is a real verdict, not still-pending (which has
+    // no `cached` field at all). randomExperts is a live roster pull, not
+    // cached, so it stays current as experts are added/removed without
+    // ever needing this row invalidated.
+    const { picked, total } = await buildRandomFallback(sql, enabledPartners, noMatchFallbackEnabled);
+    res.status(200).json({ matches: [], config: pubConfig, cached: true, noMatch: true, randomExperts: picked, randomExpertsTotal: total, ...(stale ? { stale: true } : {}) });
+    return true;
+  }
   res.status(200).json({ matches: hydrated, config: pubConfig, cached: true, ...(stale ? { stale: true } : {}) });
   return true;
 }
@@ -1280,7 +1273,7 @@ export default async function handler(req, res) {
       // "zero experts") or the cached answer no longer has any surviving
       // experts - fall through to the fresh-scan path below rather than
       // serving a false empty result.
-      if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig, req })) return;
+      if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig, req, noMatchFallbackEnabled })) return;
     }
 
     // A cached answer exists but looks stale (hash drifted) AND this exact
@@ -1298,7 +1291,7 @@ export default async function handler(req, res) {
     if (cached && contentChanged && !isAllowlistedCrawler(req)) {
       const isBot = isKnownCrawlerIp(ip) || (await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url }));
       if (isBot) {
-        if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig, stale: true, req })) return;
+        if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig, stale: true, req, noMatchFallbackEnabled })) return;
       }
     }
 
