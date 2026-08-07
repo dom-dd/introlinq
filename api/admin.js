@@ -1036,6 +1036,19 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, deleted: result.length });
   }
 
+  // Narrower than clear-publisher-cache above - only drops this publisher's
+  // no-match entries, leaving already-matched pages cached as-is (no token
+  // spend re-scanning pages that already found an expert). Use after
+  // switching a publisher onto the no-match fallback (widget6 handoff +
+  // no_match_fallback_enabled) so their existing no-match pages pick up
+  // randomExperts on next visit instead of waiting for a natural cache expiry.
+  if (resource === 'clear-publisher-nomatch-cache' && req.method === 'POST') {
+    const { publisher } = req.body;
+    if (!publisher) return res.status(400).json({ error: 'publisher required' });
+    const result = await sql`DELETE FROM match_cache WHERE publisher = ${publisher} AND has_match = false RETURNING id`.catch(() => []);
+    return res.status(200).json({ ok: true, deleted: result.length });
+  }
+
   // List cached pages (page + country -> stored match result), newest first
   if (resource === 'cache' && req.method === 'GET') {
     const entries = await sql`
