@@ -137,6 +137,11 @@ function slimMatches(matches) {
       if (!m.phrase || expertId == null) return null;
       const out = { phrase: m.phrase, reason: m.reason || '', expert_id: expertId };
       if (typeof m.credential === 'string' && m.credential.trim()) out.credential = m.credential;
+      // AI-derived, in the article's own language (see the HOOK & CTA prompt
+      // rule) - absent on cache rows scanned before this existed, which
+      // hydrateMatchesMulti covers with the old deriveHook keyword lookup.
+      if (typeof m.hook === 'string' && m.hook.trim()) out.hook = m.hook;
+      if (typeof m.cta === 'string' && m.cta.trim()) out.cta = m.cta;
       const alts = (Array.isArray(m.alts) ? m.alts : [])
         .filter(a => a && a.expert_id != null && a.expert_id !== expertId && typeof a.reason === 'string')
         .slice(0, 2)
@@ -210,6 +215,11 @@ const TOPIC_HOOKS = [
 ];
 const FALLBACK_HOOK = { hook: 'Need advice on this? Talk to someone who has been there before.', cta: 'Talk to an expert →' };
 
+// LEGACY FALLBACK ONLY - hydrateMatchesMulti now prefers the AI-derived
+// hook/cta stored on the cache row itself (see the HOOK & CTA prompt rule
+// and slimMatches) and only calls this for rows scanned before that
+// existed. Kept for those, not for new scans.
+//
 // Searches the REASON text first (why this expert was matched to THIS
 // specific phrase - "Dan has trained 10,000+ people on AI... he can
 // clarify what GA4 means for your marketing decisions"), not just the
@@ -222,7 +232,9 @@ const FALLBACK_HOOK = { hook: 'Need advice on this? Talk to someone who has been
 // profile also listed Public Speaking, which outranked Marketing in the
 // list even though the actual match reason was about GA4/marketing, not
 // public speaking at all. Falls back to the expert's topics[] only if the
-// reason/phrase text itself doesn't mention a known keyword.
+// reason/phrase text itself doesn't mention a known keyword - and even the
+// REASON-text search only ever worked for English articles anyway (see
+// languageInstruction), since TOPIC_HOOKS' keywords are English-only.
 function deriveHook(expert, reasonText, phraseText) {
   const haystack = ((reasonText || '') + ' ' + (phraseText || '')).toLowerCase();
   for (const entry of TOPIC_HOOKS) {
@@ -267,8 +279,16 @@ function hydrateMatchesMulti(cachedMatches, experts, enabledPartners, maxPerPhra
       if (typeof c.credential === 'string' && c.credential.trim()) opt.credential = c.credential;
       return opt;
     });
+    // AI-derived hook/cta (see slimMatches) if this row was scanned after
+    // that existed - grounded in the actual match, in the article's own
+    // language. Falls back to the old English-only topic-keyword lookup
+    // only for cache rows scanned before hook/cta were added; those
+    // self-heal to the AI-derived version on their next natural rescan.
     const primaryExpert = byId.get(picked[0].expert_id);
-    const { hook, cta, query } = deriveHook(primaryExpert, picked[0].reason, m.phrase);
+    const hasAiHook = typeof m.hook === 'string' && m.hook.trim() && typeof m.cta === 'string' && m.cta.trim();
+    const { hook, cta, query } = hasAiHook
+      ? { hook: m.hook, cta: m.cta, query: '' }
+      : deriveHook(primaryExpert, picked[0].reason, m.phrase);
     out.push({ phrase: m.phrase, options, hook, cta, query: query || '' });
   }
   return out;
@@ -1397,8 +1417,8 @@ export default async function handler(req, res) {
       // naming "vous/Sie" in the prompt for English articles made the model
       // occasionally swap words ("If vous need...") or answer in French/German.
       const languageInstruction = articleLangCode === 'en'
-        ? 'The article is in English. Write every "reason" field entirely in natural English. Expert names, company names, or bios may be in other languages - ignore that; the reason must be 100% English.'
-        : `The article is in ${articleLangName}. Strongly prioritise experts who speak ${articleLangName}. Write every "reason" field entirely in ${articleLangName} - never mix languages within a sentence. Use formal address, never informal.`;
+        ? 'The article is in English. Write every "reason", "hook" and "cta" field entirely in natural English. Expert names, company names, or bios may be in other languages - ignore that; they must be 100% English.'
+        : `The article is in ${articleLangName}. Strongly prioritise experts who speak ${articleLangName}. Write every "reason", "hook" and "cta" field entirely in ${articleLangName} - never mix languages within a sentence. Use formal address, never informal.`;
 
       // The prompt is split into two blocks so Anthropic prompt caching can
       // work: the static block (instructions + the full experts list - the
@@ -1441,6 +1461,8 @@ IMPORTANT: The name you write inside each "reason" MUST be the exact same expert
 
 ALTERNATES: when OTHER experts from the list are ALSO a genuinely strong fit for the same challenge (passing every rule above, including domain fit), add up to 2 of them to that match's "alternates" array, each with their own complete "reason" written to the same standards and naming that alternate expert. Alternates are interchangeable candidates for the same phrase - the reader is shown exactly one of them - so each reason must stand entirely on its own. Never repeat an expert anywhere in your response: every expert_id across all matches AND all alternates must be unique. Most matches have no genuine alternates - an empty or omitted "alternates" array is the normal case, and a weak alternate is worse than none.
 
+HOOK & CTA: for each match (not each alternate - one per phrase), also write a "hook" (a punchy headline, max 12 words) and a "cta" (a 2-4 word button label ending in →). Both must be grounded in THIS match's specific "reason"/phrase - e.g. a phrase about pricing a first SaaS product gets a hook like "Pricing your first SaaS product?", not a generic restatement of the expert's overall specialty (an expert who also does fundraising should NOT get a fundraising hook on a pricing match). Language for both is given per-request below, not fixed here.
+
 Available experts:
 ${expertsList}`;
 
@@ -1477,7 +1499,7 @@ Article:
 ${article.slice(0, 60000)}
 
 Return only valid JSON, no other text:
-{"matches":[{"phrase":"exact substring from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person, opening with the specific challenge rather than a generic reader description - e.g. 'Negotiating your first term sheet without giving away too much equity is tricky - Phil has backed 200+ startups and can walk you through it.'"${credentialSchema},"alternates":[{"expert_id":2,"reason":"same standards, naming THIS expert"${credentialSchema}}]}],"no_match_reason":"Only include this field when matches is empty. One short phrase explaining why - e.g. 'News article', 'Product announcement', 'Company profile / press release', 'No actionable reader challenge identified', 'Pure statistics reporting'"}}`;
+{"matches":[{"phrase":"exact substring from article","expert_id":1,"reason":"One sentence speaking directly to the reader in second person, opening with the specific challenge rather than a generic reader description - e.g. 'Negotiating your first term sheet without giving away too much equity is tricky - Phil has backed 200+ startups and can walk you through it.'"${credentialSchema},"hook":"punchy headline grounded in THIS match, max 12 words - e.g. 'Negotiating your first term sheet?'","cta":"2-4 word button label ending in →, e.g. 'Get funding advice →'","alternates":[{"expert_id":2,"reason":"same standards, naming THIS expert"${credentialSchema}}]}],"no_match_reason":"Only include this field when matches is empty. One short phrase explaining why - e.g. 'News article', 'Product announcement', 'Company profile / press release', 'No actionable reader challenge identified', 'Pure statistics reporting'"}}`;
 
       // Response is already sent - nothing here races a live visitor anymore,
       // so this just needs to fit inside vercel.json's 60s function ceiling.
@@ -1560,6 +1582,19 @@ Return only valid JSON, no other text:
           // English bio when absent (English articles, old cache entries).
           if (typeof m.credential === 'string' && m.credential.trim()) {
             out.credential = stripEmDash(m.credential.trim()).slice(0, 220);
+          }
+          // AI-derived hook/cta (see the HOOK & CTA prompt rule) - grounded in
+          // THIS match and in the article's own language, unlike the old
+          // deriveHook keyword-lookup (English-only topic list, silently
+          // wrong for non-English articles and occasionally wrong even in
+          // English - see deriveHook's own comment). Flows through cache the
+          // same way credential does; hydrateMatchesMulti falls back to
+          // deriveHook only for older cache rows scanned before this existed.
+          if (typeof m.hook === 'string' && m.hook.trim()) {
+            out.hook = stripEmDash(m.hook.trim()).slice(0, 120);
+          }
+          if (typeof m.cta === 'string' && m.cta.trim()) {
+            out.cta = stripEmDash(m.cta.trim()).slice(0, 60);
           }
           // Interchangeable candidates for the same phrase (see the ALTERNATES
           // prompt rule) - ride along through the cache so serve-time rotation

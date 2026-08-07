@@ -72,10 +72,65 @@
     tr: 'Konuş: {name} →', ar: 'تحدث مع {name} →', zh: '与{name}交谈 →',
     ja: '{name}さんと話す →', ko: '{name}님과 상담하기 →'
   };
+  // Heading above the option-row list (see fillPopup) - {company} is
+  // cfg.company_name when set, otherwise the withoutCompany variant is used
+  // instead of substituting a translated "We" into the withCompany template
+  // (subject-verb agreement for a company name vs. "we" doesn't translate
+  // as a simple word-swap in most of these languages). Kept as a short
+  // colon-terminated heading rather than a full "recommends talking to"
+  // sentence, which sidesteps a lot of fragile per-language preposition/
+  // case grammar around the name list that follows it anyway.
+  var _recommendLabels = {
+    en: { withCompany: '{company} recommends:', withoutCompany: 'We recommend:' },
+    fr: { withCompany: '{company} recommande :', withoutCompany: 'Nous recommandons :' },
+    es: { withCompany: '{company} recomienda:', withoutCompany: 'Recomendamos:' },
+    de: { withCompany: '{company} empfiehlt:', withoutCompany: 'Wir empfehlen:' },
+    it: { withCompany: '{company} consiglia:', withoutCompany: 'Consigliamo:' },
+    pt: { withCompany: '{company} recomenda:', withoutCompany: 'Recomendamos:' },
+    nl: { withCompany: '{company} beveelt aan:', withoutCompany: 'Wij bevelen aan:' },
+    pl: { withCompany: '{company} poleca:', withoutCompany: 'Polecamy:' },
+    sv: { withCompany: '{company} rekommenderar:', withoutCompany: 'Vi rekommenderar:' },
+    no: { withCompany: '{company} anbefaler:', withoutCompany: 'Vi anbefaler:' },
+    da: { withCompany: '{company} anbefaler:', withoutCompany: 'Vi anbefaler:' },
+    fi: { withCompany: '{company} suosittelee:', withoutCompany: 'Suosittelemme:' },
+    ro: { withCompany: '{company} recomandă:', withoutCompany: 'Recomandăm:' },
+    tr: { withCompany: '{company} önerir:', withoutCompany: 'Öneririz:' },
+    ar: { withCompany: '{company} يوصي:', withoutCompany: 'نوصي:' },
+    zh: { withCompany: '{company} 推荐：', withoutCompany: '我们推荐：' },
+    ja: { withCompany: '{company}のおすすめ：', withoutCompany: 'おすすめ：' },
+    ko: { withCompany: '{company} 추천:', withoutCompany: '추천:' }
+  };
+  // NO-MATCH FALLBACK's fixed hook+CTA (see showNoMatchFallback) - unlike a
+  // real match's hook/cta, there's no AI call backing this (by design, zero
+  // AI cost for a page with nothing to match), so it can't be grounded
+  // per-match the way api/match.js's HOOK & CTA prompt rule does. Just a
+  // static translation of the same fixed line every language gets.
+  var _noMatchLabels = {
+    en: { hook: 'Need expert advice on business, growth, or funding?', cta: 'We work with people who’ve done it →' },
+    fr: { hook: 'Besoin de conseils d’experts sur votre entreprise ou son financement ?', cta: 'Nous travaillons avec des personnes qui l’ont déjà fait →' },
+    es: { hook: '¿Necesitas el consejo de un experto sobre tu negocio o su financiación?', cta: 'Trabajamos con personas que ya lo han hecho →' },
+    de: { hook: 'Brauchen Sie fachkundigen Rat zu Ihrem Unternehmen oder dessen Finanzierung?', cta: 'Wir arbeiten mit Menschen, die das schon gemacht haben →' },
+    it: { hook: 'Hai bisogno di consigli di esperti sulla tua attività o sul suo finanziamento?', cta: 'Lavoriamo con persone che l’hanno già fatto →' },
+    pt: { hook: 'Precisa de conselhos de especialistas sobre o seu negócio ou financiamento?', cta: 'Trabalhamos com quem já passou por isso →' },
+    nl: { hook: 'Advies nodig van een expert over je bedrijf of de financiering ervan?', cta: 'Wij werken met mensen die dit al hebben gedaan →' },
+    pl: { hook: 'Potrzebujesz porady eksperta w sprawie firmy lub jej finansowania?', cta: 'Współpracujemy z ludźmi, którzy już to zrobili →' },
+    sv: { hook: 'Behöver du experthjälp med ditt företag eller dess finansiering?', cta: 'Vi samarbetar med personer som redan gjort det →' },
+    no: { hook: 'Trenger du ekspertråd om bedriften din eller finansieringen av den?', cta: 'Vi samarbeider med folk som har gjort det →' },
+    da: { hook: 'Har du brug for ekspertrådgivning om din virksomhed eller dens finansiering?', cta: 'Vi samarbejder med folk, der har gjort det →' },
+    fi: { hook: 'Tarvitsetko asiantuntijan neuvoja yrityksestäsi tai sen rahoituksesta?', cta: 'Teemme yhteistyötä ihmisten kanssa, jotka ovat jo tehneet sen →' },
+    ro: { hook: 'Ai nevoie de sfaturi de la un expert despre afacerea ta sau finanțarea ei?', cta: 'Colaborăm cu oameni care au trecut deja prin asta →' },
+    tr: { hook: 'İşletmeniz veya finansmanı hakkında uzman tavsiyesine mi ihtiyacınız var?', cta: 'Bunu daha önce yapmış kişilerle çalışıyoruz →' },
+    ar: { hook: 'هل تحتاج إلى نصيحة خبير بشأن عملك أو تمويله؟', cta: 'نعمل مع أشخاص قاموا بذلك بالفعل →' },
+    zh: { hook: '需要关于业务或融资的专家建议吗？', cta: '我们与已经做到这一点的人合作 →' },
+    ja: { hook: 'ビジネスや資金調達について専門家のアドバイスが必要ですか？', cta: '実際に経験した人々と協力しています →' },
+    ko: { hook: '사업이나 자금 조달에 대한 전문가의 조언이 필요하신가요?', cta: '이미 경험한 사람들과 함께합니다 →' }
+  };
   // Defaults for the IL_PRELOADED_MATCHES path (no article text to detect from yet).
   // The normal flow overrides these from the article's own text once extracted.
   var _lang = (document.documentElement.lang || 'en').toLowerCase().slice(0, 2);
   var BOOK_LABEL = _bookLabels[_lang] || 'Speak with {name} →';
+  var RECOMMEND_LABEL = _recommendLabels[_lang] || _recommendLabels.en;
+  var NO_MATCH_LABEL = _noMatchLabels[_lang] || _noMatchLabels.en;
 
   // Detects language from the article's own text rather than trusting the page's
   // <html lang> (often misconfigured on CMS sites) or the visitor's browser locale.
@@ -153,6 +208,8 @@
 
     _lang = detectLanguage(text);
     BOOK_LABEL = _bookLabels[_lang] || 'Speak with {name} →';
+    RECOMMEND_LABEL = _recommendLabels[_lang] || _recommendLabels.en;
+    NO_MATCH_LABEL = _noMatchLabels[_lang] || _noMatchLabels.en;
 
     if (window.IL_PRELOADED_MATCHES) {
       var pre = window.IL_PRELOADED_MATCHES;
@@ -613,9 +670,9 @@
     div.id = 'il6-fallback';
     div.innerHTML =
       '<div id="il6-hookwrap">' +
-        '<div id="il6-hook">Need expert advice on business, growth, or funding?</div>' +
+        '<div id="il6-hook">' + NO_MATCH_LABEL.hook.replace(/</g,'&lt;') + '</div>' +
         '<div id="il6-cta-row">' +
-          '<a id="il6-cta" href="' + ctaHref + '" target="_blank" rel="noopener">We work with people who’ve done it →</a>' +
+          '<a id="il6-cta" href="' + ctaHref + '" target="_blank" rel="noopener">' + NO_MATCH_LABEL.cta.replace(/</g,'&lt;') + '</a>' +
           '<div id="il6-avatars">' + avatarsHtml + '</div>' +
         '</div>' +
       '</div>';
@@ -1187,6 +1244,10 @@
     var nameHtml = href !== '#'
       ? '<a class="il2-opt-name" href="' + href + '" target="_blank" rel="noopener">' + nameEsc + '</a>'
       : '<div class="il2-opt-name">' + nameEsc + '</div>';
+    // BOOK_LABEL is the same per-language template the old single-profile
+    // popup used ("Speak with {name} →") - {name} filled with the expert's
+    // first name, same as fillPopup's own header usage.
+    var bookLabel = BOOK_LABEL.replace('{name}', (e.name || '').split(' ')[0]).replace(/</g,'&lt;');
     return '<div class="il2-opt">' +
         photoHtml +
         '<div class="il2-opt-info">' +
@@ -1194,7 +1255,7 @@
           (role ? '<div class="il2-opt-role">' + role.replace(/</g,'&lt;') + '</div>' : '') +
           factsHtml +
         '</div>' +
-        (href !== '#' ? '<a class="il2-opt-book" href="' + href + '" target="_blank" rel="noopener">Meet →</a>' : '') +
+        (href !== '#' ? '<a class="il2-opt-book" href="' + href + '" target="_blank" rel="noopener">' + bookLabel + '</a>' : '') +
       '</div>';
   }
 
@@ -1218,8 +1279,11 @@
       // sends a match with options and no hook - see attachFallbackTrigger
       // - so the label needs to stand on its own whenever there's a list
       // to introduce, hook or no hook.
+      var listLabel = cfg.company_name
+        ? RECOMMEND_LABEL.withCompany.replace('{company}', String(cfg.company_name).replace(/</g,'&lt;'))
+        : RECOMMEND_LABEL.withoutCompany;
       list.innerHTML = options.length
-        ? '<div class="il2-list-label">' + (cfg.company_name || 'We').replace(/</g,'&lt;') + ' recommend' + (cfg.company_name ? 's' : '') + ' talking to</div>' + options.map(function (opt) { return buildOptionRow(opt, match, personClickSource); }).join('')
+        ? '<div class="il2-list-label">' + listLabel + '</div>' + options.map(function (opt) { return buildOptionRow(opt, match, personClickSource); }).join('')
         : '';
     }
     // Partnership attribution footer - same as widget.js/2/3's version,
