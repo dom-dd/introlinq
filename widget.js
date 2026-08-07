@@ -565,8 +565,14 @@
       '.il2-opt-role{font-size:11px!important;font-weight:500!important;color:#4a4a6a!important;line-height:1.25!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0}' +
       // Same dark ink as the name, bold, rather than a saturated accent
       // colour (yellow read as a warning, green wasn't liked either) -
-      // stands out through weight/contrast instead of hue.
+      // stands out through weight/contrast instead of hue. Suits the
+      // original short punchy-facts case ("4 exits | $1B+ processed") but
+      // reads heavy as a full sentence, which is what this line actually
+      // holds for a real match now (opt.reason, not opt.credentials - see
+      // buildOptionRow) - il2-opt-facts-reason lightens the weight and
+      // loosens the line-height for that case specifically.
       '.il2-opt-facts{font-size:10.5px!important;font-weight:700!important;color:#1a1a2e!important;line-height:1.4!important;margin-top:3px}' +
+      '.il2-opt-facts.il2-opt-facts-reason{font-weight:500!important;color:#4a4a6a!important;line-height:1.45!important}' +
       // Filled, not outlined, so it actually stands out next to the name
       // instead of blending into the row.
       '.il2-opt-book{flex-shrink:0!important;display:block!important;background:' + accent + '!important;border:none!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:5px 12px!important;border-radius:100px!important;font-size:11px!important;font-weight:700!important;text-decoration:none!important;white-space:nowrap}' +
@@ -1410,14 +1416,22 @@
     var showCompany = !e.is_demo_provider;
     var role = [e.position, showCompany ? e.company : null].filter(Boolean).join(' · ');
     var href = buildTrackedBookingUrl(e, match, clickSource || 'person');
-    // opt.credentials is an array of short punchy facts ("4 exits", "$1B+
-    // processed") - joined into one line with " | " instead of separate
-    // pill chips, so it reads as one quick scannable line rather than a
-    // row of badges.
-    var facts = Array.isArray(opt.credentials) ? opt.credentials.filter(Boolean) : [];
-    var factsHtml = facts.length
-      ? '<div class="il2-opt-facts">' + facts.map(function (c) { return String(c).replace(/</g,'&lt;'); }).join(' | ') + '</div>'
-      : '';
+    // opt.reason is the AI's actual per-match "why this expert, for this
+    // specific phrase" sentence (see the HOOK & CTA / main prompt rules in
+    // api/match.js) - always present for a real match, in the reader's own
+    // language, and the whole reason this option exists at all. Preferred
+    // over opt.credentials (a short punchy-facts array like "4 exits" |
+    // "$1B+ processed") or opt.credential (a singular translated bio
+    // one-liner) - those only ever come from the no-match fallback's
+    // random picks (pickRandomExperts, api/match.js) or the hand-authored
+    // demo page, neither of which has a "reason" (there's no real match to
+    // explain), so this order covers both without ever showing nothing.
+    var facts = Array.isArray(opt.credentials) ? opt.credentials.filter(Boolean) : (opt.credential ? [opt.credential] : []);
+    var factsHtml = typeof opt.reason === 'string' && opt.reason.trim()
+      ? '<div class="il2-opt-facts il2-opt-facts-reason">' + opt.reason.trim().replace(/</g,'&lt;') + '</div>'
+      : (facts.length
+        ? '<div class="il2-opt-facts">' + facts.map(function (c) { return String(c).replace(/</g,'&lt;'); }).join(' | ') + '</div>'
+        : '');
     // Photo and name are clickable too now, not just the Meet button -
     // same tracked href, bigger click target. Falls back to plain
     // (non-linked) markup when there's no real booking_url, same
