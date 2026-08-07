@@ -1574,20 +1574,6 @@ async function recrawlPublisher(slug) {
   if (document.getElementById('tab-cache').classList.contains('active')) loadCache();
 }
 
-async function recrawlPublisherNoMatch(slug) {
-  const pub = (window._publishers || []).find(x => x.slug === slug);
-  const name = pub ? pub.name : slug;
-  if (!confirm(`Recrawl only the no-match pages for "${name}"?\n\nPages that already found an expert stay cached untouched - only pages with no match get re-scanned on next visit. Use this after enabling the no-match fallback so those pages pick it up.`)) return;
-  const res = await fetch('/api/admin?resource=clear-publisher-nomatch-cache', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
-    body: JSON.stringify({ publisher: slug })
-  });
-  const data = await res.json();
-  toast(`No-match cache cleared for ${name} - ${data.deleted || 0} page${data.deleted !== 1 ? 's' : ''} will recrawl on next visit`);
-  if (document.getElementById('tab-cache').classList.contains('active')) loadCache();
-}
-
 let _allLogs = [];
 let _logsFilter = 'all';
 
@@ -1812,11 +1798,8 @@ async function loadPublishers() {
       <td><div style="display:flex;gap:4px">${renderActiveStatusIcon(p)}${renderWidgetStatusIcon(p)}${renderPaymentStatusIcon(p)}</div></td>
       <td>
         <div style="display:flex;gap:6px;align-items:center;justify-content:flex-start">
-          <button onclick="recrawlPublisher('${esc(p.slug)}')" title="Recrawl all - clear this publisher's entire page cache so every page re-scans on next visit" style="background:#fff7e6;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
+          <button onclick="recrawlPublisher('${esc(p.slug)}')" title="Recrawl - clear this publisher's page cache so every page re-scans on next visit" style="background:#fff7e6;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#e6a820" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-          </button>
-          <button onclick="recrawlPublisherNoMatch('${esc(p.slug)}')" title="Recrawl no-match pages only - leaves already-matched pages cached, re-scans just the ones with no expert match" style="background:#f4f0ff;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
           </button>
           <button onclick="viewPublisherBookings('${esc(p.slug)}')" title="View bookings" style="background:#f4f0ff;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
