@@ -1230,11 +1230,22 @@ export default async function handler(req, res) {
       // themed site - confirmed on justcharmaine.co.uk. Null keeps the
       // widget's existing #1a1a2e default.
       await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS no_match_text_color TEXT`.catch(() => {});
+      // Admin-only escape hatch (set via the admin panel, not the
+      // publisher's own dashboard - it's a raw CSS selector, not something
+      // a non-technical publisher should be filling in). findFallbackAnchor
+      // in widget.js does its best with a generic heuristic, but some
+      // themes genuinely have no DOM signal left to distinguish "real
+      // article" from trailing content (confirmed on justcharmaine.co.uk -
+      // the author bio is literally more content blocks the publisher
+      // added to the end of their own post, not a separate template
+      // region). When set, the widget anchors right after whatever this
+      // selector matches instead of guessing.
+      await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS no_match_anchor_selector TEXT`.catch(() => {});
       noMatchFallbackColumnReady = true;
     }
     const [pubRows, cachedRows] = await Promise.all([
       publisher
-        ? sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, scan_cap_override, no_match_fallback_enabled, no_match_text_color, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null])
+        ? sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, scan_cap_override, no_match_fallback_enabled, no_match_text_color, no_match_anchor_selector, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null])
         : Promise.resolve([null]),
       page_url
         ? sql`
@@ -1274,7 +1285,7 @@ export default async function handler(req, res) {
         open: 'Match on broader topic overlap. If the expert\'s field is relevant to the section, include them. Prefer more matches over fewer.',
       };
       sensitivityInstruction = sensitivityMap[pub.match_sensitivity] ?? sensitivityMap.balanced;
-      pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium', highlightStyle: pub.highlight_style || 'fill', discoveryCue: pub.discovery_cue_enabled !== false, noMatchTextColor: pub.no_match_text_color || null };
+      pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium', highlightStyle: pub.highlight_style || 'fill', discoveryCue: pub.discovery_cue_enabled !== false, noMatchTextColor: pub.no_match_text_color || null, noMatchAnchorSelector: pub.no_match_anchor_selector || null };
       enabledPartners = pub.enabled_partners || ['openintro'];
       noMatchFallbackEnabled = pub.no_match_fallback_enabled === true;
     }

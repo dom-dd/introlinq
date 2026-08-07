@@ -742,6 +742,19 @@ export default async function handler(req, res) {
       return res.status(200).json(pub);
     }
 
+    // Admin-only escape hatch for the no-match fallback's position - see
+    // the comment on this column in match.js. A raw CSS selector, not
+    // exposed on the publisher's own dashboard (they shouldn't need to
+    // know what one is); the widget anchors right after whatever it
+    // matches instead of guessing via findFallbackAnchor's heuristic.
+    // Empty string clears it back to the default heuristic.
+    if (req.method === 'PATCH' && req.query.action === 'no-match-anchor-selector') {
+      const { id, no_match_anchor_selector } = req.body;
+      await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS no_match_anchor_selector TEXT`.catch(() => {});
+      const [pub] = await sql`UPDATE publishers SET no_match_anchor_selector = ${no_match_anchor_selector || null} WHERE id = ${id} RETURNING id, slug, no_match_anchor_selector`;
+      return res.status(200).json(pub);
+    }
+
     if (req.method === 'POST') {
       const { name, email, slug, domain, notes, contact_first_name, contact_last_name, revenue_share, enabled_partners, match_sensitivity } = req.body;
       if (!name || !email || !slug) {

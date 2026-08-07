@@ -1849,6 +1849,9 @@ async function loadPublishers() {
             }
             return `<span title="${esc(breakdown)}" style="background:#f0fdf4;border-radius:50%;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;cursor:default">${layers('#16a34a')}</span>`;
           })()}
+          <button onclick="setNoMatchAnchorSelector(${p.id}, ${JSON.stringify(p.no_match_anchor_selector || '')})" title="${esc(p.no_match_anchor_selector ? 'No-match position override: ' + p.no_match_anchor_selector + ' (click to change/clear)' : 'No-match fallback position - anchors after findArticle()\'s own best guess by default. Click to override with a CSS selector for this publisher\'s theme.')}" style="background:${p.no_match_anchor_selector ? '#eef2ff' : '#f4f4f8'};border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${p.no_match_anchor_selector ? '#4f6ef7' : '#8888a8'}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="3" x2="12" y2="7"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="3" y1="12" x2="7" y2="12"/><line x1="17" y1="12" x2="21" y2="12"/></svg>
+          </button>
           <button onclick="togglePublisher(${p.id}, ${!p.active})" title="${p.active ? 'Deactivate' : 'Activate'}" style="background:${p.active ? 'var(--red-light)' : 'var(--green-light)'};border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${p.active ? 'var(--red)' : 'var(--green)'}" stroke-width="2.5" stroke-linecap="round"><path d="M18.36 6.64A9 9 0 1 1 5.64 6.64"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
           </button>
@@ -1965,6 +1968,17 @@ async function toggleScanCap(id, scan_cap_override) {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest'},
     body: JSON.stringify({ id, scan_cap_override })
+  });
+  loadPublishers();
+}
+
+async function setNoMatchAnchorSelector(id, currentValue) {
+  const input = prompt('CSS selector to anchor the no-match fallback after, for this publisher\'s theme (leave blank to clear and use the default heuristic):', currentValue || '');
+  if (input === null) return; // cancelled
+  await fetch('/api/admin?resource=publishers&action=no-match-anchor-selector', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify({ id, no_match_anchor_selector: input.trim() })
   });
   loadPublishers();
 }

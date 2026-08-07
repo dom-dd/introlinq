@@ -760,7 +760,16 @@
           '<div id="il6-avatars">' + avatarsHtml + '</div>' +
         '</div>' +
       '</div>';
-    var anchor = findFallbackAnchor(articleEl);
+    // cfg.noMatchAnchorSelector is an admin-only per-publisher override
+    // (see api/match.js) for themes where findFallbackAnchor's generic
+    // heuristic can't do any better - takes priority when it actually
+    // matches something on the page; falls through to the heuristic
+    // otherwise (a stale/typo'd selector shouldn't silently break the
+    // fallback entirely).
+    var overrideEl = cfg && cfg.noMatchAnchorSelector
+      ? (function () { try { return document.querySelector(cfg.noMatchAnchorSelector); } catch (e) { return null; } })()
+      : null;
+    var anchor = overrideEl || findFallbackAnchor(articleEl);
     if (anchor) {
       anchor.insertAdjacentElement('afterend', div);
     } else {
