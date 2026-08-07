@@ -656,6 +656,15 @@ tr:last-child td{border-bottom:none}
                 </label>
               </div>
               <div class="setting-block">
+                <div class="setting-title">Suggestion text colour</div>
+                <div class="setting-desc">The line above renders directly on your page's own background, not inside the popup card - adjust if the default dark colour doesn't read on a dark theme</div>
+                <div class="color-row">
+                  <input type="color" class="color-picker" id="nmt-picker" oninput="onColorInput('noMatchText','no_match_text_color',this.value)">
+                  <input type="text" class="color-hex" id="nmt-hex" maxlength="7" placeholder="#1a1a2e" oninput="onHexInput('noMatchText','no_match_text_color','nmt-picker',this.value)">
+                  <button class="color-reset" title="Reset" onclick="resetColor('noMatchText','no_match_text_color','#1a1a2e')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+                </div>
+              </div>
+              <div class="setting-block">
                 <div class="setting-title">Link colour</div>
                 <div class="setting-desc">Underline on highlighted phrases</div>
                 <div class="color-row">
@@ -1094,7 +1103,7 @@ tr:last-child td{border-bottom:none}
 const params = new URLSearchParams(location.search);
 const PUB = params.get('pub') || '';
 
-let settings = { color: '#e6a820', accent: '#e6a820', boardText: '#1a1a2e', size: 'medium', power: 'moderate', sensitivity: 'balanced' };
+let settings = { color: '#e6a820', accent: '#e6a820', boardText: '#1a1a2e', noMatchText: '#1a1a2e', size: 'medium', power: 'moderate', sensitivity: 'balanced' };
 
 if (!PUB) {
   // No ?pub= in the URL doesn't mean no valid session - a bookmark, typed
@@ -1251,6 +1260,7 @@ async function loadDashboard() {
   settings.color = p.widget_color || '#e6a820';
   settings.accent = p.accent_color || '#e6a820';
   settings.boardText = p.board_text_color || '#1a1a2e';
+  settings.noMatchText = p.no_match_text_color || '#1a1a2e';
   settings.size = p.widget_size || 'medium';
   settings.power = p.match_power || 'moderate';
   settings.sensitivity = p.match_sensitivity || 'balanced';
@@ -1378,6 +1388,8 @@ function syncColorPickers(settingKey, value) {
     ? [['color-picker','color-hex'],['b-color-picker','b-color-hex']]
     : settingKey === 'accent'
     ? [['accent-picker','accent-hex'],['c-accent-picker','c-accent-hex'],['b-accent-picker','b-accent-hex']]
+    : settingKey === 'noMatchText'
+    ? [['nmt-picker','nmt-hex']]
     : [['b-text-picker','b-text-hex']];
   pairs.forEach(function(ids) {
     var p = document.getElementById(ids[0]);
@@ -1391,6 +1403,7 @@ function renderSettings() {
   syncColorPickers('color', settings.color);
   syncColorPickers('accent', settings.accent);
   syncColorPickers('boardText', settings.boardText);
+  syncColorPickers('noMatchText', settings.noMatchText);
   setActive('size-group', settings.size);
   setActive('power-group', settings.power);
   setActive('sensitivity-group', settings.sensitivity);

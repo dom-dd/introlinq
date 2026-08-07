@@ -489,6 +489,7 @@
   function injectStyles(cfg) {
     var color = cfg.color || '#e6a820';
     var accent = cfg.accent || color;
+    var noMatchTextColor = cfg.noMatchTextColor || '#1a1a2e';
     // Wider than widget.js's original sizes (240/300/360) - three stacked
     // name+credential+role rows need more breathing room than one profile
     // did, especially once credentials render as wrapping pills below.
@@ -605,9 +606,15 @@
       // ever pushes the article's own content around, and the 3 named
       // people only exist for a reader who actually engages, same as a
       // real match's hover popup.
-      '#il6-fallback{margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid rgba(26,26,46,0.1);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}' +
+      // Both the hook text and the divider line above it render directly in
+      // the article's own background (unlike the popup, which always sits
+      // on its own white card) - a fixed dark colour goes unreadable on a
+      // dark-themed site (confirmed on justcharmaine.co.uk: "dark grey on
+      // black"). cfg.noMatchTextColor lets a publisher override it from
+      // the dashboard; null keeps this same #1a1a2e default.
+      '#il6-fallback{margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid ' + hexToRgba(noMatchTextColor, 0.15) + ';font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}' +
       '#il6-hookwrap{cursor:pointer}' +
-      '#il6-hook{font-size:15px!important;font-weight:700!important;color:#1a1a2e!important;line-height:1.4!important;margin-bottom:10px}' +
+      '#il6-hook{font-size:15px!important;font-weight:700!important;color:' + noMatchTextColor + '!important;line-height:1.4!important;margin-bottom:10px}' +
       '#il6-cta{display:inline-block!important;background:' + accent + '!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:9px 18px!important;border-radius:100px!important;font-size:13px!important;font-weight:700!important;text-decoration:none!important}' +
       '#il6-cta-row{display:flex!important;align-items:center;gap:10px;flex-wrap:wrap}' +
       '#il6-avatars{display:flex!important;align-items:center;flex-shrink:0}' +
@@ -652,14 +659,36 @@
   // A real highlighted match never has this problem (it's anchored to the
   // matched phrase's own DOM position), but the no-match fallback has no
   // phrase to anchor to - appending to the container's true end there can
-  // land it far past the actual article, right before the footer. Anchoring
-  // to the last real text node instead (same collectTextNodes filter real
-  // matches already rely on) keeps it visually right after the last
-  // paragraph regardless of how broad the container turns out to be.
+  // land it far past the actual article, right before the footer.
+  //
+  // Just taking the last real text node (collectTextNodes, same filter
+  // real matches rely on) isn't enough on its own either - confirmed on
+  // justcharmaine.co.uk, a bare classic WordPress theme with no semantic
+  // wrapper narrower than <main id="content"> at all, which spans the
+  // post body AND its author-bio box, related-posts widget, tags line and
+  // comments section. <a>/H1-H6 are already excluded by collectTextNodes
+  // (skips nav links, tag pills, share/social icons, the "About me"/"Buy
+  // me a coffee" buttons), but plain-text fragments like an author bio
+  // sentence or a "Tagged: ..." label aren't. Two extra steps close most
+  // of that gap without needing theme-specific selectors: hard-exclude
+  // #comments/.comments-area (a standard WordPress core marker from
+  // comments_template(), reliable across nearly every theme), then prefer
+  // the last node that sits inside an actual <p> with real sentence
+  // length (>=60 chars) over whatever the literal last text node happens
+  // to be - skips past short label/list fragments a wider net would catch.
   function findFallbackAnchor(articleEl) {
-    var nodes = collectTextNodes(articleEl);
+    var comments = articleEl.querySelector('#comments, .comments-area');
+    var nodes = collectTextNodes(articleEl).filter(function (n) {
+      return !(comments && comments.contains(n));
+    });
     if (!nodes.length) return null;
-    var el = nodes[nodes.length - 1].parentElement;
+    var candidate = null;
+    for (var i = nodes.length - 1; i >= 0 && !candidate; i--) {
+      var p = nodes[i].parentElement;
+      while (p && p !== articleEl && p.tagName !== 'P') p = p.parentElement;
+      if (p && p.tagName === 'P' && (p.textContent || '').trim().length >= 60) candidate = p;
+    }
+    var el = candidate || nodes[nodes.length - 1].parentElement;
     while (el && el.parentElement !== articleEl) el = el.parentElement;
     return (el && el.parentElement === articleEl) ? el : null;
   }

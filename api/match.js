@@ -1224,11 +1224,17 @@ export default async function handler(req, res) {
     // matched phrases, not a line that shows up on every page without one.
     if (!noMatchFallbackColumnReady) {
       await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS no_match_fallback_enabled BOOLEAN NOT NULL DEFAULT false`.catch(() => {});
+      // The fallback's hook line renders directly in the article's own
+      // background (unlike the popup, which always sits on its own white
+      // card), so a fixed dark text colour can go unreadable on a dark-
+      // themed site - confirmed on justcharmaine.co.uk. Null keeps the
+      // widget's existing #1a1a2e default.
+      await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS no_match_text_color TEXT`.catch(() => {});
       noMatchFallbackColumnReady = true;
     }
     const [pubRows, cachedRows] = await Promise.all([
       publisher
-        ? sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, scan_cap_override, no_match_fallback_enabled, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null])
+        ? sql`SELECT match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, scan_cap_override, no_match_fallback_enabled, no_match_text_color, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null])
         : Promise.resolve([null]),
       page_url
         ? sql`
@@ -1268,7 +1274,7 @@ export default async function handler(req, res) {
         open: 'Match on broader topic overlap. If the expert\'s field is relevant to the section, include them. Prefer more matches over fewer.',
       };
       sensitivityInstruction = sensitivityMap[pub.match_sensitivity] ?? sensitivityMap.balanced;
-      pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium', highlightStyle: pub.highlight_style || 'fill', discoveryCue: pub.discovery_cue_enabled !== false };
+      pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium', highlightStyle: pub.highlight_style || 'fill', discoveryCue: pub.discovery_cue_enabled !== false, noMatchTextColor: pub.no_match_text_color || null };
       enabledPartners = pub.enabled_partners || ['openintro'];
       noMatchFallbackEnabled = pub.no_match_fallback_enabled === true;
     }
