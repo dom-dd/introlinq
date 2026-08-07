@@ -58,19 +58,22 @@
   if (window.__ilWidgetInit) return;
   window.__ilWidgetInit = true;
 
-  // {name} is filled in per-match in fillPopup (the expert's first name) -
-  // these are templates, not final labels. "Speak with" reads as a lower-
-  // commitment ask than "Book a call" while still being honest about the
-  // destination. Pl/fi/tr avoid inflecting {name} directly (an arbitrary
-  // Latin name can't be reliably declined into those languages' cases), so
-  // they use a colon construction instead of a real preposition + name.
+  // Deliberately no {name} - naming the expert here ("Speak with Jingjin")
+  // read as a mundane action description next to the option row that
+  // already shows their name and photo right there. A short, energetic
+  // imperative reads stronger and repeats fine across 2-3 rows without
+  // feeling templated. Several translations lean on a neutral verb
+  // ("talk"/"book"/"connect") rather than a literal "meet" where that
+  // would force a gendered object pronoun (es/it) with no expert-gender
+  // data to pick it correctly.
   var _bookLabels = {
-    fr: 'Parler avec {name} →', es: 'Hablar con {name} →', de: 'Mit {name} sprechen →',
-    it: 'Parla con {name} →', pt: 'Falar com {name} →', nl: 'Spreek met {name} →',
-    pl: 'Porozmawiaj z: {name} →', sv: 'Prata med {name} →', no: 'Snakk med {name} →',
-    da: 'Tal med {name} →', fi: 'Keskustele: {name} →', ro: 'Vorbește cu {name} →',
-    tr: 'Konuş: {name} →', ar: 'تحدث مع {name} →', zh: '与{name}交谈 →',
-    ja: '{name}さんと話す →', ko: '{name}님과 상담하기 →'
+    en: 'Meet now →',
+    fr: 'Rencontrez →', es: 'Reúnete ahora →', de: 'Jetzt treffen →',
+    it: 'Parla ora →', pt: 'Fale agora →', nl: 'Nu ontmoeten →',
+    pl: 'Poznaj teraz →', sv: 'Möt nu →', no: 'Møt nå →',
+    da: 'Mød nu →', fi: 'Tapaa nyt →', ro: 'Cunoaște acum →',
+    tr: 'Şimdi tanış →', ar: 'قابل الآن →', zh: '立即预约 →',
+    ja: '今すぐ会う →', ko: '지금 만나기 →'
   };
   // Heading above the option-row list (see fillPopup) - {company} is
   // cfg.company_name when set, otherwise the withoutCompany variant is used
@@ -128,7 +131,7 @@
   // Defaults for the IL_PRELOADED_MATCHES path (no article text to detect from yet).
   // The normal flow overrides these from the article's own text once extracted.
   var _lang = (document.documentElement.lang || 'en').toLowerCase().slice(0, 2);
-  var BOOK_LABEL = _bookLabels[_lang] || 'Speak with {name} →';
+  var BOOK_LABEL = _bookLabels[_lang] || _bookLabels.en;
   var RECOMMEND_LABEL = _recommendLabels[_lang] || _recommendLabels.en;
   var NO_MATCH_LABEL = _noMatchLabels[_lang] || _noMatchLabels.en;
 
@@ -207,7 +210,7 @@
     if (!el || text.length < 150) return;
 
     _lang = detectLanguage(text);
-    BOOK_LABEL = _bookLabels[_lang] || 'Speak with {name} →';
+    BOOK_LABEL = _bookLabels[_lang] || _bookLabels.en;
     RECOMMEND_LABEL = _recommendLabels[_lang] || _recommendLabels.en;
     NO_MATCH_LABEL = _noMatchLabels[_lang] || _noMatchLabels.en;
 
@@ -1286,10 +1289,7 @@
     var nameHtml = href !== '#'
       ? '<a class="il2-opt-name" href="' + href + '" target="_blank" rel="noopener">' + nameEsc + '</a>'
       : '<div class="il2-opt-name">' + nameEsc + '</div>';
-    // BOOK_LABEL is the same per-language template the old single-profile
-    // popup used ("Speak with {name} →") - {name} filled with the expert's
-    // first name, same as fillPopup's own header usage.
-    var bookLabel = BOOK_LABEL.replace('{name}', (e.name || '').split(' ')[0]).replace(/</g,'&lt;');
+    var bookLabel = BOOK_LABEL.replace(/</g,'&lt;');
     return '<div class="il2-opt">' +
         photoHtml +
         '<div class="il2-opt-info">' +
