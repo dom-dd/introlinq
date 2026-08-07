@@ -1377,6 +1377,28 @@
       + '&click_source=' + encodeURIComponent(clickSource);
   }
 
+  // Same tracked-redirect mechanism as buildTrackedBookingUrl, for the
+  // partnership footer's "In partnership with [logo]" link - this used to
+  // be a raw direct <a href> straight to e.provider_website_url, which
+  // never went through IntroLinq's own redirect at all and so never got
+  // the attribution params (ref/aid/click_id) the partner's own webhook
+  // relies on to set its cookie. No expert_id/expert_name/phrase - this
+  // isn't about one specific expert.
+  function buildTrackedProviderUrl(e) {
+    var url = e.provider_website_url || '#';
+    if (url === '#') return '#';
+    return 'https://www.introlinq.com/api/dashboard?action=out'
+      + '&pub=' + encodeURIComponent(PUB)
+      + '&expert_url=' + encodeURIComponent(url)
+      + '&article=' + encodeURIComponent(window.location.href.slice(0, 300))
+      + '&lang=' + encodeURIComponent(navigator.language || '')
+      + '&tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || '')
+      + '&device=' + (window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop')
+      + '&source=' + encodeURIComponent(getTrafficSource())
+      + '&title=' + encodeURIComponent(document.title.slice(0, 150))
+      + '&click_source=partner_logo';
+  }
+
   function buildOptionRow(opt, match, clickSource) {
     var e = opt.expert;
     if (!e) return '';
@@ -1458,7 +1480,7 @@
     if (pv && e) {
       var providerName = e.provider_name || (e.provider_slug || 'openintro');
       var providerLogoUrl = e.provider_logo_url || null;
-      var providerUrl = e.provider_website_url || '#';
+      var providerUrl = buildTrackedProviderUrl(e);
       var prov = { name: providerName, url: providerUrl, logo: providerLogoUrl };
       var ilLogo = '<img src="https://www.introlinq.com/favicon.svg" alt="IntroLinq" style="width:11px!important;height:11px!important;border-radius:2px;vertical-align:middle;margin-left:4px;margin-right:3px;flex-shrink:0">';
       var s = 'font-size:8.5px!important;color:#8888a8!important;font-family:Inter,system-ui,sans-serif;text-decoration:none;display:flex!important;align-items:center;gap:2px;min-width:0;overflow:hidden;white-space:nowrap;flex-shrink:1';
