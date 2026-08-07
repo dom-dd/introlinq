@@ -769,7 +769,17 @@
       // these as an intrinsic sizing hint before any stylesheet is even
       // parsed, which a host page's own img rules can't out-cascade the
       // way they can a plain CSS height declaration.
-      return '<img class="il6-avatar" width="32" height="32" src="' + (e.photo_url || fallback) + '" onerror="this.onerror=null;this.src=\'' + fallback + '\'" alt="">';
+      // Inline style, not just the .il6-avatar class in injectStyles - a
+      // class selector's !important can still lose a specificity fight
+      // against a more-qualified host rule (tagDiv/Newspaper themes like
+      // challenges.tn commonly ship an ID-scoped "img{max-width:100%
+      // !important;height:auto!important}" responsive-image rule, which
+      // outranks a plain class regardless of !important on either side).
+      // An inline style's own !important beats any selector-based rule in
+      // the same origin no matter how specific, so this is the actual
+      // bulletproof fix; the class stays too for the properties that
+      // don't need to survive that fight (border, shadow, background).
+      return '<img class="il6-avatar" width="32" height="32" style="width:32px!important;height:32px!important;max-width:32px!important;max-height:32px!important" src="' + (e.photo_url || fallback) + '" onerror="this.onerror=null;this.src=\'' + fallback + '\'" alt="">';
     }).join('') + (moreCount > 0 ? '<div class="il6-avatar il6-avatar-more">+' + moreCount + '</div>' : '');
 
     var div = document.createElement('div');
