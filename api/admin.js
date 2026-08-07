@@ -516,6 +516,7 @@ export default async function handler(req, res) {
     // allows selecting them un-aggregated under that rule).
     const rows = await sql`
       SELECT cp.id, cp.domain, cp.homepage_url, cp.title, cp.status, cp.priority_score, cp.contact_name, cp.contact_email, cp.company_name, cp.category,
+             cp.person_linkedin_url, cp.company_linkedin_url, cp.twitter_url, cp.facebook_url,
              cp.email_sent_at, cp.followup_1_sent_at, cp.followup_2_sent_at, cp.next_followup_at, cp.outreach_notes, cp.created_at,
              COALESCE(json_agg(oc.clicked_at ORDER BY oc.clicked_at) FILTER (WHERE oc.clicked_at IS NOT NULL), '[]') AS click_times
       FROM candidate_publishers cp

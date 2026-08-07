@@ -2547,14 +2547,10 @@ async function submitCreateLead() {
 function outreachEmailTemplates(c) {
   const firstName = (c.contact_name || '').trim().split(' ')[0] || 'there';
   const company = (c.company_name || '').trim() || prettifyDomain(c.domain);
-  // Routes through /api/r so a click can be attributed back to this
-  // candidate (logged, then redirected to the real homepage) - see
-  // outreachClickIcon for where that shows up.
-  const trackedLink = `https://www.introlinq.com/api/r?id=${c.id}`;
   return {
     intro: {
       subject: `Affiliation proposal - IntroLinq x ${company}`,
-      body: `Hi ${firstName},\n\nI am Dom - founder of Introlinq.com. We are a new company enabling publishers and bloggers to generate a new revenue stream from their content.\nI came across ${company} and think it would be a great fit if you would like to monetise your blog effortlessly.\n\nOur widget automatically scans your pages (old and new), matching keywords and topics - and creating affiliate links to bookable, vetted industry experts on our partners sites.\nIf a reader books - within a 90 day cookie period - we split the commission 50/50 with you.\n\nIt's 100% free, no maintenance required, and setup takes a couple of minutes.\n\nHere's the platform: https://www.introlinq.com/\n${trackedLink}\n\nFeel free to register or I'd be happy to send more details or hop on a call if you'd prefer.\nLooking forward to hearing your thoughts.\n\nBest,\nDom`,
+      body: `Hi ${firstName},\n\nI am Dom - founder of Introlinq.com. We are a new company enabling publishers and bloggers to generate a new revenue stream from their content.\nI came across ${company} and think it would be a great fit if you would like to monetise your blog effortlessly.\n\nOur widget automatically scans your pages (old and new), matching keywords and topics - and creating affiliate links to bookable, vetted industry experts on our partners sites.\nIf a reader books - within a 90 day cookie period - we split the commission 50/50 with you.\n\nIt's 100% free, no maintenance required, and setup takes a couple of minutes.\n\nHere's the platform: https://www.introlinq.com/\n\nFeel free to register or I'd be happy to send more details or hop on a call if you'd prefer.\nLooking forward to hearing your thoughts.\n\nBest,\nDom`,
     },
     followup1: {
       subject: `Re: Quick idea for ${company}`,
@@ -2611,21 +2607,6 @@ function outreachActionButton(c) {
   return '';
 }
 
-// Grey when the tracked link (see outreachEmailTemplates) has never been
-// clicked, green once it has - native title attribute shows every click
-// time on hover rather than building a custom tooltip for it.
-function outreachClickIcon(c) {
-  const times = c.click_times || [];
-  const clicked = times.length > 0;
-  const color = clicked ? '#3d7a5f' : '#c4c4d4';
-  const title = clicked
-    ? `Clicked ${times.length} time${times.length === 1 ? '' : 's'}:\n` + times.map(t => new Date(t).toLocaleString('en-GB')).join('\n')
-    : 'Link not clicked yet';
-  return `<span title="${esc(title)}" style="display:inline-block;vertical-align:middle;margin-left:5px">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-  </span>`;
-}
-
 // Best-effort guess at a human-readable brand name from the bare domain -
 // title-cases the registrable label and drops common non-brand subdomain
 // prefixes (hiring.monster.com -> Monster). Can't reliably split compound
@@ -2640,6 +2621,23 @@ function prettifyDomain(domain) {
   const label = parts.length > 1 ? parts[parts.length - 2] : parts[0];
   return label.replace(/[-_]+/g, ' ').split(' ').filter(Boolean)
     .map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+}
+
+// Small inline link badges for the contact/company social profiles Apollo
+// imports bring along (see import-apollo.js) - only rendered when present,
+// since most organically-discovered leads won't have these at all.
+const OUTREACH_SOCIAL_LINKS = [
+  ['person_linkedin_url', 'in', 'Founder/contact LinkedIn'],
+  ['company_linkedin_url', 'Co', 'Company LinkedIn'],
+  ['twitter_url', 'X', 'Twitter/X'],
+  ['facebook_url', 'f', 'Facebook'],
+];
+function outreachSocialLinks(c) {
+  const links = OUTREACH_SOCIAL_LINKS.filter(([field]) => c[field]);
+  if (!links.length) return '';
+  return `<div style="margin-top:3px">${links.map(([field, label, title]) =>
+    `<a href="${esc(c[field])}" target="_blank" rel="noopener" title="${esc(title)}" style="display:inline-block;min-width:18px;text-align:center;margin-right:4px;padding:1px 4px;border-radius:4px;border:1px solid var(--border);font-size:0.65rem;font-weight:700;color:var(--ink-muted);text-decoration:none">${label}</a>`
+  ).join('')}</div>`;
 }
 
 // mode controls which columns render, matching each sub-tab's <thead>:
@@ -2666,8 +2664,9 @@ function outreachRow(c, mode) {
   return `
     <tr>
       <td>
-        <a href="${esc(c.homepage_url)}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:600;font-size:0.8125rem;text-decoration:none">${esc(c.domain)}</a>${outreachClickIcon(c)}${categorySelect}
+        <a href="${esc(c.homepage_url)}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:600;font-size:0.8125rem;text-decoration:none">${esc(c.domain)}</a>${categorySelect}
         ${title ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px">${title}</div>` : ''}
+        ${outreachSocialLinks(c)}
         <input type="text" value="${esc(c.company_name || prettifyDomain(c.domain))}" placeholder="Company name (used in emails)" onblur="outreachSaveCompanyName(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE};margin-top:4px">
       </td>
       <td>
@@ -2930,17 +2929,14 @@ async function submitCreateAffiliateLead() {
 
 // Pitches IntroLinq AS the affiliate (refer readers to this company),
 // opposite direction from outreachEmailTemplates above (which recruits a
-// publisher to install the widget). trackedLink routes through /api/ar
-// (not /api/r) so clicks land in affiliate_outreach_clicks, kept separate
-// from the publisher pipeline's click data.
+// publisher to install the widget).
 function affiliateOutreachEmailTemplates(c) {
   const firstName = (c.contact_name || '').trim().split(' ')[0] || 'there';
   const company = (c.company_name || '').trim() || prettifyDomain(c.domain);
-  const trackedLink = `https://www.introlinq.com/api/ar?id=${c.id}`;
   return {
     intro: {
       subject: `Affiliate partnership - IntroLinq x ${company}`,
-      body: `Hi ${firstName},\n\nI'm Dom, founder of IntroLinq. We run an AI widget on business and startup blogs that reads the article a reader is on and surfaces the most relevant next step - today that's mostly matching readers with vetted experts to book a call with, and we're expanding into relevant products and tools too.\n\nI'd love for ${company} to be one of the places we send readers to. If you already have an affiliate or referral program, I'm happy to just sign up for it directly - point me to it and I'll get set up today. If not, I'd welcome a quick chat about a simple tracked-referral arrangement.\n\nHere's the platform: https://www.introlinq.com/\n${trackedLink}\n\nLet me know if this is worth exploring - happy to answer questions or jump on a call.\n\nBest,\nDom`,
+      body: `Hi ${firstName},\n\nI'm Dom, founder of IntroLinq. We run an AI widget on business and startup blogs that reads the article a reader is on and surfaces the most relevant next step - today that's mostly matching readers with vetted experts to book a call with, and we're expanding into relevant products and tools too.\n\nI'd love for ${company} to be one of the places we send readers to. If you already have an affiliate or referral program, I'm happy to just sign up for it directly - point me to it and I'll get set up today. If not, I'd welcome a quick chat about a simple tracked-referral arrangement.\n\nHere's the platform: https://www.introlinq.com/\n\nLet me know if this is worth exploring - happy to answer questions or jump on a call.\n\nBest,\nDom`,
     },
     followup1: {
       subject: `Re: Affiliate partnership - IntroLinq x ${company}`,
