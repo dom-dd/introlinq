@@ -420,17 +420,10 @@
       '#il-cue img{width:100%!important;height:100%!important;display:block!important}' +
       // Face variant (cfg.discoveryCueStyle === 'face', see showFaceCue) -
       // circular photo with a white ring instead of the drop-shadowed
-      // cursor artwork; same #il-cue base rules apply, but il-cue-play is
-      // overridden below to drop the scale-squish (il-cue-tap) - a real
-      // face squishing to 78% and popping back up reads as a wobble, not
-      // a "tap". A ripple ring on ::after at the same 1.1s mark takes its
-      // place instead, so the photo itself stays undistorted.
+      // cursor artwork; same #il-cue base rules and il-cue-play animation
+      // otherwise apply unchanged.
       '#il-cue.il-cue-face{width:34px!important;height:34px!important;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3))!important}' +
       '#il-cue.il-cue-face img{border-radius:50%!important;object-fit:cover!important;border:2px solid #fff!important;background:#edf5f0!important}' +
-      '#il-cue.il-cue-face.il-cue-play{animation:il-cue-in 1.1s ease forwards,il-cue-out 1s ease 2.4s forwards!important}' +
-      '#il-cue.il-cue-face::after{content:"";position:absolute!important;left:0!important;top:0!important;width:100%!important;height:100%!important;border-radius:50%!important;border:2px solid ' + hexToRgba(color, 0.8) + '!important;opacity:0!important;pointer-events:none!important}' +
-      '#il-cue.il-cue-face.il-cue-play::after{animation:il-cue-face-ripple .8s ease 1.1s!important}' +
-      '@keyframes il-cue-face-ripple{0%{transform:scale(1);opacity:.75}100%{transform:scale(1.9);opacity:0}}' +
       '@keyframes il-pulse-glow{0%,100%{box-shadow:0 0 0 0 ' + hexToRgba(color, 0) + '}50%{box-shadow:0 0 0 6px ' + hexToRgba(color, 0.35) + '}}' +
       '.il-hl.il-cue-pulse{animation:il-pulse-glow 1s ease-in-out 2!important}';
     document.head.appendChild(s);
@@ -667,12 +660,12 @@
   }
 
   // Alternate discovery-cue skin (cfg.discoveryCueStyle === 'face') - same
-  // positioning and fade-in/fade-out timing as showPhantomHand, with the
-  // matched expert's actual circular photo instead of the generic
-  // hand-cursor artwork, so the nudge doubles as a preview of who you'd
-  // actually be talking to. No click-icon swap and no scale-squish at
-  // 1100ms here (see injectStyles) - a ripple ring expands around the
-  // photo instead, so the "tap" reads without distorting a real face.
+  // positioning, timing, and fade-in/tap/fade-out animation as
+  // showPhantomHand, just the matched expert's actual circular photo
+  // instead of the generic hand-cursor artwork, so the nudge doubles as a
+  // preview of who you'd actually be talking to. No click-icon swap at
+  // 1100ms here - there's no equivalent second state for a photo, so it
+  // just holds through the tap-bounce.
   function showFaceCue(anchor, photoUrl) {
     var rect = anchor.getBoundingClientRect();
     var scrollX = window.pageXOffset || document.documentElement.scrollLeft;
