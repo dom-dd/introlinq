@@ -585,9 +585,11 @@
       // Filled, not outlined, so it actually stands out next to the name
       // instead of blending into the row.
       '.il2-opt-book{flex-shrink:0!important;display:block!important;background:' + accent + '!important;border:none!important;color:' + getContrastColor(accent) + '!important;text-align:center;padding:5px 12px!important;border-radius:100px!important;font-size:11px!important;font-weight:700!important;text-decoration:none!important;white-space:nowrap}' +
-      // Discoverability nudge (see maybeShowDiscoveryCue) - a
-      // white "phantom hand" tap on desktop, a soft pulse on the highlight
-      // itself on touch. pointer-events:none on #il-cue is load-bearing:
+      // Discoverability nudge (see maybeShowDiscoveryCue) - a white
+      // "phantom hand" tap, same animation on every device now (touch used
+      // to get a pulsing glow on the highlight instead; it read as weird/
+      // unclear, especially against the fill-less underline styles).
+      // pointer-events:none on #il-cue is load-bearing:
       // it must never intercept the mouseenter/click that actually opens
       // the popup, or the outside-click dismiss handler on touch.
       // position:absolute (not fixed) + document-relative left/top - the
@@ -611,8 +613,13 @@
       // guarantees the starting state is committed first.
       '#il-cue.il-cue-play{animation:il-cue-in 1.1s ease forwards,il-cue-tap .8s ease 1.1s,il-cue-out 1s ease 2.4s forwards!important}' +
       '#il-cue img{width:100%!important;height:100%!important;display:block!important}' +
-      '@keyframes il-pulse-glow{0%,100%{box-shadow:0 0 0 0 ' + hexToRgba(color, 0) + '}50%{box-shadow:0 0 0 6px ' + hexToRgba(color, 0.35) + '}}' +
-      '.il-hl.il-cue-pulse{animation:il-pulse-glow 1s ease-in-out 2!important}' +
+      // Face variant (see showFaceCue) - circular photo of the actual
+      // matched expert, white ring, instead of the generic cursor artwork.
+      // Live for every publisher now (was /demo/introlinq-only). Same
+      // #il-cue base rules and il-cue-play animation otherwise apply
+      // unchanged.
+      '#il-cue.il-cue-face{width:34px!important;height:34px!important;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3))!important}' +
+      '#il-cue.il-cue-face img{border-radius:50%!important;object-fit:cover!important;border:2px solid #fff!important;background:#edf5f0!important}' +
       // NO-MATCH FALLBACK (formerly widget6.js - see this file's header
       // comment). #il6-hookwrap (headline + CTA pill) is the only thing on
       // the page -
@@ -1026,9 +1033,8 @@
   // Most readers never notice a highlight is interactive - it's deliberately
   // subtle (see the .il-hl rules in injectStyles above), which is good for
   // not looking spammy but bad for discoverability. This shows an animated
-  // nudge - a white "phantom hand" tap on desktop, a soft pulse on the
-  // highlight itself on touch (same 'ontouchstart' in window check used
-  // everywhere else in this file) - on EVERY highlighted phrase, each time
+  // nudge - a white "phantom hand" tap, same on every device now (see
+  // showPhantomHand) - on EVERY highlighted phrase, each time
   // it's been in view for a couple of seconds (not the instant it appears -
   // a reader who's still scrolling past it hasn't "looked" at it yet), then
   // repeats every CUE_REPEAT_MS for as long as they stay on it. Each
@@ -1050,7 +1056,7 @@
   // of playing once and disappearing forever. Under evaluation on
   // /demo/introlinq; not a final decision on the real UX.
   var CUE_REPEAT_MS = 14000;
-  function maybeShowDiscoveryCue(anchor, cfg) {
+  function maybeShowDiscoveryCue(anchor, cfg, match) {
     // Publisher-controlled - see the "Discovery animation" toggle on the
     // dashboard's Appearance & behaviour tab. Defaults to enabled (only
     // an explicit false, never a missing/undefined field, turns it off)
@@ -1058,11 +1064,24 @@
     // unless they deliberately opt out.
     if (cfg && cfg.discoveryCue === false) return;
     if (typeof IntersectionObserver !== 'function') return;
+    // Live for every publisher now (used to be /demo/introlinq-only, gated
+    // behind cfg.discoveryCueStyle === 'face'): shows the actual matched
+    // expert's own photo in the cue instead of the generic hand cursor -
+    // the nudge doubles as a preview of who you'd actually be talking to.
+    // discoveryCueStyle === 'hand' is the escape hatch, for a publisher who
+    // explicitly wants the old generic-cursor cue back. Only takes effect
+    // when a real photo exists for this match - falls back to the hand
+    // rather than showing a blank/fallback avatar in a transient animation.
+    var facePhoto = (!cfg || cfg.discoveryCueStyle !== 'hand') && match && match.options && match.options[0] && match.options[0].expert && match.options[0].expert.photo_url;
     var play = function () {
       if (cueLearned) return;
-      if ('ontouchstart' in window) {
-        anchor.classList.add('il-cue-pulse');
-        setTimeout(function () { anchor.classList.remove('il-cue-pulse'); }, 2200);
+      // Same animation on every device now - the old touch-only branch's
+      // pulsing glow ring (il-cue-pulse/il-pulse-glow, now unused) read as
+      // weird/unclear on mobile, especially against the 'underline'/
+      // 'underline-solid' highlight styles which have no fill background
+      // for the glow to sit inside.
+      if (facePhoto) {
+        showFaceCue(anchor, facePhoto);
       } else {
         showPhantomHand(anchor);
       }
@@ -1117,6 +1136,31 @@
     void cue.offsetWidth; // force layout so the pre-animation state above is committed before il-cue-play starts the animation clock
     cue.classList.add('il-cue-play');
     setTimeout(function () { img.src = 'https://www.introlinq.com/cue-icons/cursor-click.png'; }, 1100);
+    setTimeout(function () { cue.remove(); }, 3450);
+  }
+
+  // Alternate discovery-cue skin (see the facePhoto check in
+  // maybeShowDiscoveryCue) - same positioning, timing, and fade-in/tap/
+  // fade-out animation as showPhantomHand, just the matched expert's
+  // actual circular photo instead of the generic hand-cursor artwork. No
+  // click-icon swap at 1100ms here - there's no equivalent second state for
+  // a photo, so it just holds through the tap-bounce.
+  function showFaceCue(anchor, photoUrl) {
+    var rect = anchor.getBoundingClientRect();
+    var scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+    var scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    var cue = document.createElement('div');
+    cue.id = 'il-cue';
+    cue.className = 'il-cue-face';
+    cue.style.left = (rect.left + rect.width / 2 + scrollX) + 'px';
+    cue.style.top = (rect.top + rect.height / 2 + scrollY) + 'px';
+    var img = document.createElement('img');
+    img.src = photoUrl;
+    img.alt = '';
+    cue.appendChild(img);
+    document.body.appendChild(cue);
+    void cue.offsetWidth;
+    cue.classList.add('il-cue-play');
     setTimeout(function () { cue.remove(); }, 3450);
   }
 
@@ -1362,7 +1406,7 @@
     // see attachGroupEvents for why.
     if (spans.length) {
       attachGroupEvents(spans, match, popup, cfg);
-      maybeShowDiscoveryCue(spans[0], cfg);
+      maybeShowDiscoveryCue(spans[0], cfg, match);
       maybeTrackSeen(spans[0], match);
     }
     return spans.length > 0;
