@@ -481,6 +481,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
         <button class="outreach-subtab" data-name="products" onclick="switchOutreachSubtab('products',this)">Products partners</button>
         <button class="outreach-subtab" data-name="openintro" onclick="switchOutreachSubtab('openintro',this)">OpenIntro partners</button>
         <span class="outreach-subtab-divider"></span>
+        <button class="outreach-subtab" data-name="interested" onclick="switchOutreachSubtab('interested',this)">Interested</button>
         <button class="outreach-subtab" data-name="closed" onclick="switchOutreachSubtab('closed',this)">Not a fit</button>
         <button class="btn btn-primary btn-sm" style="flex-shrink:0;margin:0.4rem 0 0.4rem auto;padding-left:0.75rem;padding-right:0.75rem" onclick="openCreateLeadModal()">+ Create a lead</button>
       </div>
@@ -674,6 +675,26 @@ tr:hover td{background:rgba(0,0,0,0.01)}
         </div>
       </div>
 
+      <div class="outreach-subpanel" id="outreach-sub-interested">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-interested-title">Interested / Signed up</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:600px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-interested-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-interested-empty">Loading...</div>
+        </div>
+      </div>
+
       <div class="outreach-subpanel" id="outreach-sub-closed">
         <div class="section">
           <div class="section-header">
@@ -770,7 +791,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
           <div class="modal-title" id="cl-title">Create a lead</div>
           <button class="modal-close" onclick="closeCreateLeadModal()" aria-label="Close">✕</button>
         </div>
-        <div style="overflow-y:auto">
+        <div>
           <div class="form-group" style="margin-bottom:0.875rem">
             <label class="form-label">Domain *</label>
             <input class="form-input" id="cl-domain" placeholder="example.com">
@@ -795,9 +816,13 @@ tr:hover td{background:rgba(0,0,0,0.01)}
               <select class="form-input" id="cl-status"></select>
             </div>
             <div class="form-group">
-              <label class="form-label">Next follow-up (optional)</label>
-              <input class="form-input" id="cl-followup" type="date">
+              <label class="form-label">Category</label>
+              <select class="form-input" id="cl-category"></select>
             </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0.875rem">
+            <label class="form-label">Next follow-up (optional)</label>
+            <input class="form-input" id="cl-followup" type="date">
           </div>
           <div class="form-group" style="margin-bottom:0.875rem">
             <label class="form-label">Notes</label>
@@ -2407,6 +2432,7 @@ async function loadOutreach() {
 // of getting lumped into the generic "waiting on a reply" bucket, which
 // means something different (already emailed, no reply yet).
 function outreachBucket(c, today) {
+  if (c.status === 'replied_interested' || c.status === 'signed_up') return 'interested';
   if (OUTREACH_RESOLVED.includes(c.status)) return 'closed';
   if (c.next_followup_at && c.next_followup_at.slice(0, 10) <= today) return 'due';
   if (c.status === 'important') return 'important';
@@ -2442,7 +2468,7 @@ function renderOutreachSection(name, titleText, items, emptyMessage, rowMode) {
 
 function renderOutreach() {
   const today = new Date().toISOString().slice(0, 10);
-  const buckets = { due: [], later: [], important: [], substack: [], partner: [], openintro: [], products: [], confirmedfit: [], todo: [], waiting: [], closed: [] };
+  const buckets = { due: [], later: [], important: [], substack: [], partner: [], openintro: [], products: [], confirmedfit: [], todo: [], waiting: [], interested: [], closed: [] };
   const visible = _outreachCategoryFilter ? _outreach.filter((c) => c.category === _outreachCategoryFilter) : _outreach;
   for (const c of visible) buckets[outreachBucket(c, today)].push(c);
 
@@ -2460,6 +2486,7 @@ function renderOutreach() {
   // moment they exist with no code change needed here.
   buckets.todo.sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0) || new Date(b.created_at) - new Date(a.created_at));
   buckets.waiting.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
+  buckets.interested.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.closed.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   // 'full' = every column (Next follow-up/Action/Emails included) - these
@@ -2477,6 +2504,7 @@ function renderOutreach() {
   renderOutreachSection('partner', 'Partners', buckets.partner, 'No potential partners flagged yet.', 'simple');
   renderOutreachSection('products', 'Products partners', buckets.products, 'No potential products partners flagged yet.', 'simple');
   renderOutreachSection('openintro', 'OpenIntro partners', buckets.openintro, 'No potential OpenIntro partners flagged yet.', 'simple');
+  renderOutreachSection('interested', 'Interested / Signed up', buckets.interested, 'No one has replied interested or signed up yet.', 'simple');
   renderOutreachSection('closed', 'Not a fit', buckets.closed, 'Nothing here yet.', 'simple');
 
   const todoShown = buckets.todo.slice(0, _outreachTodoLimit);
@@ -2548,6 +2576,10 @@ function openCreateLeadModal() {
   statusSelect.innerHTML = Object.entries(OUTREACH_STATUS_LABELS)
     .map(([v, label]) => `<option value="${v}" ${v === 'discovered' ? 'selected' : ''}>${esc(label)}</option>`).join('');
 
+  const categorySelect = document.getElementById('cl-category');
+  categorySelect.innerHTML = '<option value="">No category</option>' +
+    OUTREACH_CATEGORIES.map((cat) => `<option value="${esc(cat)}">${esc(cat)}</option>`).join('');
+
   document.getElementById('create-lead-modal').classList.add('open');
   document.getElementById('cl-domain').focus();
 }
@@ -2574,6 +2606,7 @@ async function submitCreateLead() {
     contact_name: document.getElementById('cl-contact-name').value.trim() || null,
     contact_email: document.getElementById('cl-contact-email').value.trim() || null,
     status,
+    category: document.getElementById('cl-category').value || null,
     next_followup_at,
     outreach_notes: document.getElementById('cl-notes').value.trim() || null,
   };
@@ -2623,7 +2656,7 @@ function outreachEmailTemplates(c) {
   return {
     intro: {
       subject: `Affiliation proposal - IntroLinq x ${company}`,
-      body: `Hi ${firstName},\n\nI am Dom - founder of Introlinq.com. We are a new company enabling publishers and bloggers to generate a new revenue stream from their content.\nI came across ${company} and think it would be a great fit if you would like to monetise your blog effortlessly.\n\nOur widget automatically scans your pages (old and new), matching keywords and topics - and creating affiliate links to bookable, vetted industry experts on our partners sites.\nIf a reader books - within a 90 day cookie period - we split the commission 50/50 with you.\n\nIt's 100% free, no maintenance required, and setup takes a couple of minutes.\n\nHere's the platform: https://www.introlinq.com/\n\nFeel free to register or I'd be happy to send more details or hop on a call if you'd prefer.\nLooking forward to hearing your thoughts.\n\nBest,\nDom`,
+      body: `Hi ${firstName},\n\nI am Dom - founder of Introlinq.com. We are a new company enabling publishers and bloggers to generate a new revenue stream from their content.\nI came across ${company} and think it would be a great fit if you would like to monetise your blog effortlessly.\n\nOur widget automatically scans your pages (old and new), matching keywords and topics - and creating affiliate links to bookable, vetted industry experts on our partners sites.\nIf a reader books - within a 90 day cookie period - we split the commission 50/50 with you.\n\nIt's 100% free, no maintenance required, and setup takes a couple of minutes.\n\nHere's the platform: https://introlinq.com/\nOur current partner is OpenIntro (https://open-intro.com/), with more partners joining soon.\n\nFeel free to register or I'd be happy to send more details or hop on a call if you'd prefer.\nLooking forward to hearing your thoughts.\n\nBest,\nDom`,
     },
     followup1: {
       subject: `Re: Quick idea for ${company}`,
