@@ -7,13 +7,17 @@
 // page instantly - no rescan, no per-page AI cost, translated once here
 // instead. Real facts only: translate, never invent or embellish.
 //
-// Usage: node discovery/translate-highlights-fr.js [--limit N] [--dry-run]
+// Usage: node discovery/translate-highlights-fr.js [--limit N] [--dry-run] [--force]
 
 import { sql } from './lib/db.js';
 
 const CONCURRENCY = 6;
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
+// Re-translates experts that already have highlights_fr, not just the ones
+// missing it - needed for the gender-agreement fix (see guessGender below),
+// which corrects existing wrong translations, not just fills gaps.
+const FORCE = args.includes('--force');
 const limitArg = args.find((a) => a.startsWith('--limit'));
 const LIMIT = limitArg ? parseInt(limitArg.split('=')[1] || args[args.indexOf(limitArg) + 1], 10) : null;
 
@@ -21,8 +25,34 @@ async function ensureColumn() {
   await sql`ALTER TABLE experts ADD COLUMN IF NOT EXISTS highlights_fr TEXT[]`;
 }
 
+// French grammatically genders nouns/adjectives describing the person
+// ("conférencier"/"conférencière", "nommé"/"nommée") - the first version of
+// this script never told the AI which one applied, so it guessed per call
+// and got roughly 1 in 5 experts wrong (confirmed by scanning highlights_fr
+// against a pronoun-based gender guess after the fact). description_long is
+// third-person English prose about the expert (see the experts table) -
+// counting he/his/him vs she/her/hers gives a reliable per-expert signal
+// without needing a dedicated gender field that doesn't exist in the schema.
+function guessGender(text) {
+  const lower = (text || '').toLowerCase();
+  const male = (lower.match(/\bhe\b|\bhis\b|\bhim\b/g) || []).length;
+  const female = (lower.match(/\bshe\b|\bher\b|\bhers\b/g) || []).length;
+  if (male > female && male > 0) return 'male';
+  if (female > male && female > 0) return 'female';
+  return 'unknown';
+}
+
 async function translateOne(expert) {
+  const gender = guessGender(expert.description_long);
+  const genderInstruction = gender === 'male'
+    ? "This person is MALE (confirmed by he/his/him pronouns in their profile). Use masculine grammatical agreement throughout for every noun/adjective/past participle describing them - e.g. \"conférencier\" not \"conférencière\", \"nommé\" not \"nommée\", \"consultant\" not \"consultante\", \"expert\" not \"experte\"."
+    : gender === 'female'
+    ? "This person is FEMALE (confirmed by she/her/hers pronouns in their profile). Use feminine grammatical agreement throughout for every noun/adjective/past participle describing them - e.g. \"conférencière\" not \"conférencier\", \"nommée\" not \"nommé\", \"consultante\" not \"consultant\", \"experte\" not \"expert\"."
+    : 'This person\'s gender could not be determined from their profile text - default to masculine grammatical agreement (standard French convention when gender is genuinely unknown), unless their first name is unambiguously a female name.';
+
   const prompt = `Translate this list of short professional highlight facts into French. Keep numbers, currency amounts, and company/product names exactly as they are - translate only the surrounding language. Keep the same short, punchy, resume-headline style (do not turn them into full sentences).
+
+${genderInstruction}
 
 Facts (JSON array):
 ${JSON.stringify(expert.highlights)}
@@ -85,13 +115,20 @@ async function main() {
 
   await ensureColumn();
 
-  let experts = await sql`
-    SELECT id, name, highlights
-    FROM experts
-    WHERE active = true AND highlights IS NOT NULL AND array_length(highlights, 1) > 0
-      AND highlights_fr IS NULL
-    ORDER BY id ASC
-  `;
+  let experts = FORCE
+    ? await sql`
+        SELECT id, name, highlights, description_long
+        FROM experts
+        WHERE active = true AND highlights IS NOT NULL AND array_length(highlights, 1) > 0
+        ORDER BY id ASC
+      `
+    : await sql`
+        SELECT id, name, highlights, description_long
+        FROM experts
+        WHERE active = true AND highlights IS NOT NULL AND array_length(highlights, 1) > 0
+          AND highlights_fr IS NULL
+        ORDER BY id ASC
+      `;
   if (LIMIT) experts = experts.slice(0, LIMIT);
   console.log(`Translating highlights for ${experts.length} expert(s) into French, concurrency ${CONCURRENCY}${DRY_RUN ? ' [DRY RUN]' : ''}...`);
 
