@@ -91,6 +91,13 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .ao-subpanel{display:none}
 .ao-subpanel.active{display:block}
 .ao-subtab-divider{width:1px;align-self:stretch;background:var(--border);margin:0.5rem 0.25rem;flex-shrink:0}
+/* Publishers sub-tabs - same reasoning as .ao-* above, own scoped classes. */
+.pub-subtab-bar{display:flex;align-items:center;flex-wrap:nowrap;gap:0.125rem;overflow-x:auto;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
+.pub-subtab{flex-shrink:0;padding:0.625rem 0.6rem;font-size:0.75rem;font-weight:500;color:var(--ink-muted);border:none;background:none;cursor:pointer;font-family:'Inter',sans-serif;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;white-space:nowrap}
+.pub-subtab:hover{color:var(--ink)}
+.pub-subtab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
+.pub-subpanel{display:none}
+.pub-subpanel.active{display:block}
 .outreach-subpanel.active{display:block}
 .outreach-subtab-divider{width:1px;align-self:stretch;background:var(--border);margin:0.5rem 0.25rem;flex-shrink:0}
 
@@ -302,24 +309,84 @@ tr:hover td{background:rgba(0,0,0,0.01)}
           <div id="form-error" style="font-size:0.8125rem;color:var(--red);margin-top:0.5rem;display:none"></div>
         </div>
 
-        <!-- Table -->
-        <div class="section-body" style="overflow-x:auto">
-          <table style="min-width:900px">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Links</th>
-                <th>Stats</th>
-                <th>Networks</th>
-                <th>Added</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="publishers-tbody"></tbody>
-          </table>
+      </div>
+
+      <!-- Three buckets are mutually exclusive and cover every publisher -
+           see publisherWidgetBucket() below, which reuses the exact
+           never-installed/live/gone-quiet logic renderWidgetStatusIcon
+           already used for the single status icon, so a publisher moves
+           between these tabs automatically the moment its widget fire
+           timestamps change - no separate stored status to keep in sync. -->
+      <div class="pub-subtab-bar">
+        <button class="pub-subtab active" data-name="pub-active" onclick="switchPublishersSubtab('pub-active',this)">Active</button>
+        <button class="pub-subtab" data-name="pub-pending" onclick="switchPublishersSubtab('pub-pending',this)">Pending Install</button>
+        <button class="pub-subtab" data-name="pub-quiet" onclick="switchPublishersSubtab('pub-quiet',this)">Went Quiet</button>
+      </div>
+
+      <div class="pub-subpanel active" id="publishers-sub-pub-active">
+        <div class="section">
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:900px">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Links</th>
+                  <th>Stats</th>
+                  <th>Networks</th>
+                  <th>Added</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="publishers-tbody-active"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="publishers-empty-active">Loading...</div>
         </div>
-        <div class="empty" id="publishers-empty">Loading...</div>
+      </div>
+
+      <div class="pub-subpanel" id="publishers-sub-pub-pending">
+        <div class="section">
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:900px">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Links</th>
+                  <th>Stats</th>
+                  <th>Networks</th>
+                  <th>Added</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="publishers-tbody-pending"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="publishers-empty-pending">Loading...</div>
+        </div>
+      </div>
+
+      <div class="pub-subpanel" id="publishers-sub-pub-quiet">
+        <div class="section">
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:900px">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Links</th>
+                  <th>Stats</th>
+                  <th>Networks</th>
+                  <th>Added</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="publishers-tbody-quiet"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="publishers-empty-quiet">Loading...</div>
+        </div>
       </div>
     </div>
 
@@ -1804,22 +1871,57 @@ function reminderTooltip(p) {
   return lines.join('\n') + '\n\n' + action;
 }
 
+// Mirrors renderWidgetStatusIcon's own never-installed/live/gone-quiet
+// logic exactly (same WIDGET_STALE_MS threshold) so a publisher's sub-tab
+// bucket always agrees with the status icon shown in its row - there's no
+// separate stored status field to drift out of sync with it.
+function publisherWidgetBucket(p) {
+  const lastFire = p.last_widget_fire_at ? new Date(p.last_widget_fire_at) : null;
+  const neverInstalled = !p.first_widget_fire_at;
+  if (neverInstalled) return 'pub-pending';
+  const isLive = !!lastFire && (Date.now() - lastFire.getTime()) < WIDGET_STALE_MS;
+  return isLive ? 'pub-active' : 'pub-quiet';
+}
+
+function switchPublishersSubtab(name, btn) {
+  document.querySelectorAll('#tab-publishers .pub-subtab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#tab-publishers .pub-subpanel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('publishers-sub-' + name).classList.add('active');
+}
+
 async function loadPublishers() {
   const res = await fetch('/api/admin?resource=publishers', {});
   const list = await res.json();
   window._publishers = list;
-  const tbody = document.getElementById('publishers-tbody');
-  const emptyEl = document.getElementById('publishers-empty');
-  emptyEl.style.display = 'none';
 
-  if (!list.length) {
-    tbody.innerHTML = '';
-    emptyEl.textContent = 'No publishers yet. Add your first one above.';
-    emptyEl.style.display = 'block';
-    return;
+  const buckets = { 'pub-active': [], 'pub-pending': [], 'pub-quiet': [] };
+  list.forEach(p => buckets[publisherWidgetBucket(p)].push(p));
+
+  const emptyMessage = {
+    'pub-active': 'No active publishers yet.',
+    'pub-pending': 'No publishers pending install - everyone who signed up has added the embed code.',
+    'pub-quiet': 'No publishers have gone quiet.',
+  };
+
+  for (const name of Object.keys(buckets)) {
+    const suffix = name.replace('pub-', '');
+    const tbody = document.getElementById('publishers-tbody-' + suffix);
+    const emptyEl = document.getElementById('publishers-empty-' + suffix);
+    const rows = buckets[name];
+    if (!rows.length) {
+      tbody.innerHTML = '';
+      emptyEl.textContent = list.length ? emptyMessage[name] : 'No publishers yet. Add your first one above.';
+      emptyEl.style.display = 'block';
+    } else {
+      tbody.innerHTML = rows.map(publisherRow).join('');
+      emptyEl.style.display = 'none';
+    }
   }
+}
 
-  tbody.innerHTML = list.map(p => `
+function publisherRow(p) {
+  return `
     <tr>
       <td>
         <div class="td-name">${esc(p.name)}</div>
@@ -1917,7 +2019,7 @@ async function loadPublishers() {
         </div>
       </td>
     </tr>
-  `).join('');
+  `;
 }
 
 function toggleAddForm() {
