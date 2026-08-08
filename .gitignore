@@ -6,3 +6,5 @@ node_modules
 .vercel
 .env.tmp
 discovery/*.csv
+*.log
+discovery/test-response*.json
