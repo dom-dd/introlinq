@@ -416,6 +416,52 @@ export default async function handler(req, res) {
   // discovery (SerpAPI only ever returns domain-level results, never a
   // person) - filled in by hand here once someone's actually done the
   // legwork of finding a contact on the site itself.
+  // Email deliverability check for the Outreach tab - proxies Abstract
+  // API's Email Reputation product so the key never reaches the browser.
+  // Stateless: no DB write. This is a live yes/no for whoever just typed
+  // an address they found online (to avoid sending to it and eating a
+  // bounce), not a stored audit field - see admin/index.html's
+  // verifyEmailInto for how the result is used and cached client-side.
+  if (resource === 'verify_email') {
+    const email = (req.query.email || '').trim();
+    if (!email) return res.status(400).json({ error: 'email required' });
+    if (!process.env.ABSTRACT_EMAIL_API_KEY) return res.status(500).json({ error: 'Email verification is not configured' });
+
+    try {
+      const apiRes = await fetch(`https://emailreputation.abstractapi.com/v1/?api_key=${process.env.ABSTRACT_EMAIL_API_KEY}&email=${encodeURIComponent(email)}`, {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!apiRes.ok) throw new Error(`Abstract API ${apiRes.status}`);
+      const data = await apiRes.json();
+
+      const status = data.email_deliverability?.status;
+      const isCatchall = !!data.email_quality?.is_catchall;
+      const isDisposable = !!data.email_quality?.is_disposable;
+
+      let state, tooltip;
+      if (isDisposable) {
+        state = 'invalid';
+        tooltip = 'This is a disposable/throwaway email address.';
+      } else if (status === 'deliverable') {
+        state = 'valid';
+        tooltip = isCatchall
+          ? 'Deliverable, but this domain accepts mail at any address (catch-all) - a bounce is still possible even though this specific address checks out.'
+          : 'Deliverable - this mailbox exists.';
+      } else if (status === 'undeliverable') {
+        state = 'invalid';
+        tooltip = 'Undeliverable - this mailbox does not appear to exist.';
+      } else {
+        state = 'unknown';
+        tooltip = `Could not confirm deliverability (status: ${status || 'unknown'}) - send with caution.`;
+      }
+
+      return res.status(200).json({ state, tooltip });
+    } catch (err) {
+      console.error('verify_email failed:', err);
+      return res.status(502).json({ error: 'Verification service unavailable' });
+    }
+  }
+
   if (resource === 'outreach') {
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_name TEXT`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_email TEXT`.catch(() => {});
