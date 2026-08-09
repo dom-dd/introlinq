@@ -877,8 +877,8 @@ tr:hover td{background:rgba(0,0,0,0.01)}
             <div class="form-group">
               <label class="form-label">Contact email</label>
               <div style="position:relative">
-                <input class="form-input" id="cl-contact-email" type="email" style="padding-right:28px" onblur="verifyEmailInto('everify-cl', this.value)">
-                <span id="everify-cl" style="position:absolute;right:9px;top:50%;transform:translateY(-50%);display:inline-flex;width:14px;height:14px" title=""></span>
+                <input class="form-input" id="cl-contact-email" type="email" style="padding-right:28px" oninput="resetEmailVerifyIcon('everify-cl')">
+                <span id="everify-cl" onclick="verifyEmailInto('everify-cl', document.getElementById('cl-contact-email').value)" style="position:absolute;right:9px;top:50%;transform:translateY(-50%);display:inline-flex;width:14px;height:14px;cursor:pointer" title="Click to check deliverability"></span>
               </div>
             </div>
           </div>
@@ -2683,7 +2683,7 @@ function openCreateLeadModal() {
   document.getElementById('cl-company').value = '';
   document.getElementById('cl-contact-name').value = '';
   document.getElementById('cl-contact-email').value = '';
-  document.getElementById('everify-cl').innerHTML = '';
+  resetEmailVerifyIcon('everify-cl');
   document.getElementById('cl-followup').value = '';
   document.getElementById('cl-notes').value = '';
   document.getElementById('cl-error').style.display = 'none';
@@ -2894,8 +2894,8 @@ function outreachRow(c, mode) {
       <td>
         <input type="text" value="${esc(c.contact_name || '')}" placeholder="Name" onblur="outreachSaveContact(${c.id}, this.value, null)" style="${OUTREACH_INPUT_STYLE};margin-bottom:3px">
         <div style="display:flex;align-items:center;gap:5px">
-          <input type="email" value="${esc(c.contact_email || '')}" placeholder="Email" onblur="outreachSaveContact(${c.id}, null, this.value); verifyEmailInto('everify-${c.id}', this.value)" style="${OUTREACH_INPUT_STYLE};width:auto;flex:1;min-width:0">
-          <span id="everify-${c.id}" style="display:inline-flex;flex-shrink:0;width:14px;height:14px" title=""></span>
+          <input type="email" id="einput-${c.id}" value="${esc(c.contact_email || '')}" placeholder="Email" onblur="outreachSaveContact(${c.id}, null, this.value)" oninput="resetEmailVerifyIcon('everify-${c.id}')" style="${OUTREACH_INPUT_STYLE};width:auto;flex:1;min-width:0">
+          <span id="everify-${c.id}" onclick="verifyEmailInto('everify-${c.id}', document.getElementById('einput-${c.id}').value)" style="display:inline-flex;flex-shrink:0;width:14px;height:14px;cursor:pointer" title="Click to check deliverability">${c.contact_email ? emailVerifyIconHTML('idle') : ''}</span>
         </div>
       </td>
       <td>
@@ -3536,10 +3536,13 @@ function toast(msg, isError) {
 
 // Email deliverability check (Outreach tab "Verify" icon, backed by
 // /api/admin?resource=verify_email -> Abstract API's Email Reputation
-// product). Fires on blur, not on every keystroke or page load, and
-// caches by lowercased address in-memory - the free tier is only 100
-// checks/month, and re-checking an address that hasn't changed just to
-// re-render the same tick would burn through that for nothing.
+// product). Click-triggered only - never fires on blur or page load. With
+// 1,494+ existing leads already carrying a saved contact_email, anything
+// that auto-fired (on blur, on render) would burn through the free tier's
+// 100 checks/month by accident; requiring an explicit click makes every
+// check a deliberate one, right before Dom actually sends to that address.
+// Cached by lowercased address in-memory on top of that, so clicking the
+// same unchanged address twice doesn't cost a second check.
 window._emailVerifyCache = window._emailVerifyCache || {};
 
 function emailVerifyIconHTML(state) {
@@ -3552,10 +3555,26 @@ function emailVerifyIconHTML(state) {
   if (state === 'invalid') {
     return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
   }
-  // 'unknown' - Abstract couldn't confirm either way (e.g. a provider that
-  // doesn't support SMTP-level checks). Amber rather than green/red so it
-  // never reads as a false all-clear or a false rejection.
-  return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e6a820" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+  if (state === 'unknown') {
+    // Abstract couldn't confirm either way (e.g. a provider that doesn't
+    // support SMTP-level checks). Amber rather than green/red so it never
+    // reads as a false all-clear or a false rejection.
+    return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e6a820" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+  }
+  // 'idle' - not checked yet (or the field was edited since the last check
+  // and the old result no longer applies to what's in the box now). Muted
+  // magnifying glass signals "click me", distinct from the 3 result colors.
+  return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b0b0c8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
+}
+
+// Resets an icon to idle - called oninput so a stale tick/X from a
+// previous address never lingers next to a since-edited one that hasn't
+// been (re)checked yet.
+function resetEmailVerifyIcon(iconElId) {
+  const el = document.getElementById(iconElId);
+  if (!el) return;
+  el.innerHTML = emailVerifyIconHTML('idle');
+  el.title = 'Click to check deliverability';
 }
 
 async function verifyEmailInto(iconElId, email) {
@@ -3563,8 +3582,8 @@ async function verifyEmailInto(iconElId, email) {
   if (!el) return;
   const value = (email || '').trim();
   if (!value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-    el.innerHTML = '';
-    el.title = '';
+    el.innerHTML = emailVerifyIconHTML('idle');
+    el.title = 'Enter a valid email first';
     return;
   }
 
@@ -3576,9 +3595,9 @@ async function verifyEmailInto(iconElId, email) {
     return;
   }
 
-  // Token guard: if the field gets blurred again (edited further) before
-  // this request lands, its response is stale and must not overwrite a
-  // newer check's result.
+  // Token guard: if this same icon gets clicked again (e.g. after an edit)
+  // before this request lands, the earlier response is stale and must not
+  // overwrite the newer check's result.
   const myToken = String(Date.now()) + Math.random();
   el.dataset.everifyToken = myToken;
   el.innerHTML = emailVerifyIconHTML('checking');
