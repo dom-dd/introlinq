@@ -1950,11 +1950,19 @@ function publisherRow(p) {
           const hoverRate = seen > 0 ? (hov / seen * 100).toFixed(1) : '0.0';
           const hoverToClick = hov > 0 ? (clk / hov * 100).toFixed(1) : '0.0';
           const hoverTitle = `${imp.toLocaleString()} page visits → ${seen.toLocaleString()} links seen (${seenRate}%) → ${hov.toLocaleString()} hovers (${hoverRate}%) → ${clk.toLocaleString()} clicks (${hoverToClick}% of hovers)`;
+          // Each separator used to be "word &nbsp;\n            <span" -
+          // the &nbsp; plus the collapsed newline/indent whitespace around
+          // it rendered as ~3 spaces per gap, not one. On publishers with
+          // real traffic (large comma-formatted numbers) that padding was
+          // enough extra width across 4 gaps to push the whole table past
+          // the section's width and force a horizontal scrollbar. A single
+          // middot with normal (collapsible) spaces on each side reads just
+          // as clearly at a fraction of the width.
           return `<div title="${esc(hoverTitle)}" style="font-size:0.75rem;color:var(--ink-soft);line-height:1.9;white-space:nowrap">
-            <span style="font-weight:500;color:var(--ink)">${imp.toLocaleString()}</span> visits &nbsp;
-            <span style="font-weight:500;color:var(--ink)">${seen.toLocaleString()}</span> seen &nbsp;
-            <span style="font-weight:500;color:var(--ink)">${hov.toLocaleString()}</span> hov &nbsp;
-            <span style="font-weight:500;color:var(--ink)">${clk.toLocaleString()}</span> clk &nbsp;
+            <span style="font-weight:500;color:var(--ink)">${imp.toLocaleString()}</span> visits ·
+            <span style="font-weight:500;color:var(--ink)">${seen.toLocaleString()}</span> seen ·
+            <span style="font-weight:500;color:var(--ink)">${hov.toLocaleString()}</span> hov ·
+            <span style="font-weight:500;color:var(--ink)">${clk.toLocaleString()}</span> clk ·
             <span style="font-weight:500;color:var(--ink)">${ctr}%</span>
           </div>`;
         })()}
