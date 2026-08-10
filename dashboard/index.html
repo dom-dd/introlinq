@@ -91,6 +91,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .onboarding-test-result.pending{color:var(--ink-muted)}
 .onboarding-test-result.ok{color:var(--sage)}
 .onboarding-test-result.fail{color:#b91c1c}
+.onboarding-download-btn{display:inline-flex;align-items:center;gap:0.5rem;background:var(--sage);color:#fff;text-decoration:none;padding:0.75rem 1.5rem;border-radius:100px;font-size:0.8125rem;font-weight:700}
+.onboarding-download-btn:hover{opacity:0.88}
 .onboarding-later{background:none;border:none;color:var(--ink-muted);font-size:0.8rem;cursor:pointer;font-family:'Inter',sans-serif;text-decoration:underline;padding:0}
 .onboarding-later:hover{color:var(--ink)}
 .onboarding-unsupported-box{background:var(--cream);border-radius:10px;padding:1.25rem;font-size:0.8375rem;color:var(--ink-soft);line-height:1.6}
@@ -435,16 +437,14 @@ tr:last-child td{border-bottom:none}
   <!-- Setup banner - shown until widget fires for the first time -->
   <div class="setup-banner" id="setup-banner">
     <div class="setup-banner-top">
-      <div>
-        <div class="setup-banner-title">Add the widget to your blog to get started</div>
-        <div class="setup-banner-sub">Add this once to your site's shared template (not each individual page) - paste it before the <code style="background:rgba(255,255,255,0.1);padding:0 4px;border-radius:3px">&lt;/body&gt;</code> tag, not in the header, so it loads without slowing your site down. It'll then appear automatically on every page. Need help? <a id="setup-install-link" href="/install">View the installation guide →</a></div>
-      </div>
+      <div class="setup-banner-title">Your widget isn't installed yet</div>
+      <button class="onboarding-test-btn" onclick="reopenOnboarding()">Install widget now</button>
     </div>
     <div class="setup-embed">
       <div class="setup-embed-code" id="setup-embed-code"></div>
       <button class="setup-copy-btn" onclick="copySetupCode()">Copy code</button>
     </div>
-    <div style="font-size:0.75rem;color:var(--ink-muted);line-height:1.5;margin-top:0.75rem;font-style:italic">Don't panic if nothing shows up on the very first page you check - the widget takes a couple of seconds to scan a new page, and not every article will have a matching expert. Try a few different pages. Once a page's been scanned once, it loads instantly for every reader after that.</div>
+    <div class="setup-banner-sub" style="margin-top:0.75rem">Prefer to do it yourself? Paste that code before the <code style="background:rgba(0,0,0,0.05);padding:0 4px;border-radius:3px">&lt;/body&gt;</code> tag in your site's shared template. Need help? <a id="setup-install-link" href="/install">View the full installation guide →</a></div>
   </div>
 
   <div class="tab-bar">
@@ -1244,6 +1244,7 @@ async function loadDashboard() {
     document.getElementById('setup-banner').style.display = 'block';
     document.getElementById('setup-embed-code').textContent = embedCode;
     document.getElementById('setup-install-link').href = `/install?pub=${encodeURIComponent(d.publisher.slug)}`;
+    _onboardingSavedPlatform = d.publisher.platform;
     if (!sessionStorage.getItem('il_onboarding_dismissed_' + d.publisher.slug)) {
       openOnboarding(d.publisher.slug, d.publisher.platform);
     }
@@ -2264,7 +2265,7 @@ const ONBOARDING_PLATFORMS = {
     label: 'WordPress',
     icon: `<svg viewBox="0 0 24 24" fill="#21759b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 14.5l-3-8.5h1.5l1.8 5.1 1.7-5.1h1.5l-3 8.5zm6.3 0h-1.5l-1.8-5.1-1.2 3.6.9 2.5H13l-1.2-3.3L13 9h1.5l1.8 5.1 1.5-5.1h1.5l-2.5 7.5z"/></svg>`,
     steps: [
-      { title: `Download and install the plugin`, desc: `Download it <a href="https://www.introlinq.com/downloads/introlinq.zip" target="_blank" rel="noopener">here</a>. In your WordPress admin, go to <strong>Plugins → Add New → Upload Plugin</strong>, select the downloaded <code>introlinq.zip</code>, and click <strong>Install Now</strong>, then <strong>Activate</strong>.` },
+      { title: `Download and install the plugin`, desc: `<a class="onboarding-download-btn" href="https://www.introlinq.com/downloads/introlinq.zip" download>⬇ Download IntroLinq plugin</a><br><br>Then in your WordPress admin, go to <strong>Plugins → Add New → Upload Plugin</strong>, select the downloaded <code>introlinq.zip</code>, and click <strong>Install Now</strong>, then <strong>Activate</strong>.` },
       { title: `Enter your Publisher ID`, desc: `Go to <strong>Settings → IntroLinq</strong> in your WordPress admin sidebar. Enter your Publisher ID and click <strong>Save Publisher ID</strong>.` },
       { title: `Done - visit any article to confirm`, desc: `Open a blog post with at least a few paragraphs of text. After a few seconds, you should see phrases highlighted when there's a matching expert.` },
     ],
@@ -2349,6 +2350,15 @@ const ONBOARDING_UNSUPPORTED = {
 };
 
 let _onboardingPub = null;
+let _onboardingSavedPlatform = null;
+
+// Re-entry point for the "Install widget now" button in the setup banner -
+// dismissing the modal only stops it from popping up automatically, it
+// shouldn't strand anyone with no way back in short of the banner's raw
+// embed code.
+function reopenOnboarding() {
+  openOnboarding(PUB, _onboardingSavedPlatform);
+}
 
 function openOnboarding(pub, savedPlatform) {
   _onboardingPub = pub;
@@ -2484,10 +2494,10 @@ async function testOnboardingWidget() {
     setTimeout(() => { document.getElementById('onboarding-modal').classList.remove('open'); location.reload(); }, 1800);
   } else if (data && data.status === 'not_found') {
     result.className = 'onboarding-test-result fail';
-    result.innerHTML = `Not found yet - double check the steps above, or <a href="mailto:hello@introlinq.com">contact support</a>.`;
+    result.innerHTML = `Not found yet - double check the steps above, or email <a href="mailto:hello@introlinq.com">hello@introlinq.com</a>.`;
   } else {
     result.className = 'onboarding-test-result fail';
-    result.innerHTML = `Couldn't verify - make sure your site has a homepage domain on file, or <a href="mailto:hello@introlinq.com">contact support</a>.`;
+    result.innerHTML = `Couldn't verify - make sure your site has a homepage domain on file, or email <a href="mailto:hello@introlinq.com">hello@introlinq.com</a>.`;
   }
 }
 </script>
