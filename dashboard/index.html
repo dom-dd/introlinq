@@ -78,6 +78,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .platform-badge{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:1rem;color:#fff}
 .onboarding-back{background:none;border:none;color:var(--ink-muted);font-size:0.8125rem;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:0.35rem;margin-bottom:1rem;padding:0}
 .onboarding-back:hover{color:var(--ink)}
+.onboarding-platform-header{display:flex;align-items:center;gap:0.625rem;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.onboarding-platform-icon{width:26px;height:26px;flex-shrink:0}
+.onboarding-platform-icon svg{width:100%;height:100%}
+.onboarding-platform-name{font-family:'DM Serif Display',serif;font-size:1.0625rem;color:var(--ink)}
+.onboarding-platform-tag{font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#fff;background:var(--sv-color,var(--sage));padding:0.2rem 0.55rem;border-radius:100px;margin-left:0.25rem}
 .onboarding-progress{font-size:0.7rem;font-weight:700;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.5rem}
 .onboarding-progress-bar{height:4px;background:var(--border);border-radius:2px;margin-bottom:1.5rem;overflow:hidden}
 .onboarding-progress-bar-fill{height:100%;background:var(--sage);transition:width .2s}
@@ -2529,6 +2534,11 @@ function renderOnboardingSteps(id, stepIndex) {
   const backLabel = stepIndex === 0 ? '← Choose a different platform' : '← Back';
   document.getElementById('install-tab-body').innerHTML = `
     <button class="onboarding-back" onclick="${backAction}">${backLabel}</button>
+    <div class="onboarding-platform-header" style="--sv-color:${p.color}">
+      <div class="onboarding-platform-icon">${p.icon}</div>
+      <div class="onboarding-platform-name">${esc(p.label)}</div>
+      <span class="onboarding-platform-tag">Steps for ${esc(p.label)}</span>
+    </div>
     <div class="setup-embed" style="margin-bottom:1.5rem">
       <div class="setup-embed-code" id="onboarding-embed-code">${esc(embedCode)}</div>
       <button class="setup-copy-btn" onclick="copyOnboardingCode()">Copy code</button>
@@ -2568,6 +2578,10 @@ function renderOnboardingUnsupported(id) {
   const p = ONBOARDING_UNSUPPORTED[id];
   document.getElementById('install-tab-body').innerHTML = `
     <button class="onboarding-back" onclick="renderOnboardingPicker()">← Choose a different platform</button>
+    <div class="onboarding-platform-header">
+      <div class="platform-badge" style="background:${p.badge};width:26px;height:26px;font-size:0.8125rem">${p.letter}</div>
+      <div class="onboarding-platform-name">${esc(p.label)}</div>
+    </div>
     <div class="onboarding-unsupported-box">
       <strong>${esc(p.label)} isn't supported yet.</strong><br><br>
       ${p.label} doesn't currently allow the kind of embed our widget needs (${id === 'substack' ? 'Substack blocks custom HTML/scripts' : 'Medium has no support for custom code at all'}), so there's no install we can walk you through today.
