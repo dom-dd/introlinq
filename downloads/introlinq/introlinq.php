@@ -5,7 +5,6 @@
  * Description: Connect your readers with bookable experts — automatically. Paste your Publisher ID below and the widget activates on every article.
  * Version:     1.0.0
  * Author:      IntroLinq
- * Author URI:  https://www.introlinq.com
  * License:     GPL-2.0+
  * Text Domain: introlinq
  */
