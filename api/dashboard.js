@@ -452,7 +452,8 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-    const { match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, no_match_fallback_enabled, no_match_text_color, enabled_partners, payment_email, active, carousel_title, board_text_color, name, contact_first_name, contact_last_name, domain } = req.body;
+    const { match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, no_match_fallback_enabled, no_match_text_color, enabled_partners, payment_email, active, carousel_title, board_text_color, name, contact_first_name, contact_last_name, domain, platform } = req.body;
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS platform TEXT`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS carousel_title TEXT`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS board_text_color TEXT`.catch(() => {});
     // Same reasoning as board_text_color: the no-match fallback's hook line
@@ -496,9 +497,10 @@ export default async function handler(req, res) {
         name = COALESCE(${name?.trim() || null}, name),
         contact_first_name = COALESCE(${contact_first_name?.trim() || null}, contact_first_name),
         contact_last_name = COALESCE(${contact_last_name?.trim() || null}, contact_last_name),
-        domain = COALESCE(${domain?.trim() || null}, domain)
+        domain = COALESCE(${domain?.trim() || null}, domain),
+        platform = COALESCE(${platform ?? null}, platform)
       WHERE slug = ${pub} AND active = true
-      RETURNING match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, no_match_fallback_enabled, no_match_text_color, enabled_partners, payment_email, active, carousel_title, board_text_color, name, contact_first_name, contact_last_name, domain
+      RETURNING match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, no_match_fallback_enabled, no_match_text_color, enabled_partners, payment_email, active, carousel_title, board_text_color, name, contact_first_name, contact_last_name, domain, platform
     `;
     // Clear match cache if matching settings changed so new settings take effect immediately.
     // highlight_style is deliberately excluded - it's a pure rendering choice
@@ -609,6 +611,7 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS discovery_cue_enabled BOOLEAN DEFAULT true`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS no_match_fallback_enabled BOOLEAN NOT NULL DEFAULT false`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS no_match_text_color TEXT`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS platform TEXT`.catch(() => {});
     // Ensure providers have a name column
     await sql`ALTER TABLE providers ADD COLUMN IF NOT EXISTS name TEXT`;
     await sql`UPDATE providers SET name = 'OpenIntro' WHERE slug = 'openintro' AND name IS NULL`;
@@ -633,7 +636,7 @@ export default async function handler(req, res) {
              COALESCE(no_match_fallback_enabled, false) AS no_match_fallback_enabled,
              COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners,
              COALESCE(revenue_share, 0.70) AS revenue_share,
-             payment_email, carousel_title, board_text_color, no_match_text_color, first_widget_fire_at, last_widget_fire_at,
+             payment_email, carousel_title, board_text_color, no_match_text_color, first_widget_fire_at, last_widget_fire_at, platform,
              email, contact_first_name, contact_last_name,
              (password_hash IS NOT NULL) AS has_password
       FROM publishers WHERE slug = ${pub} AND active = true LIMIT 1

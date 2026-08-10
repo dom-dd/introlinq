@@ -58,6 +58,40 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .modal-page-url{font-size:0.8125rem;color:var(--sage);text-decoration:none;word-break:break-all;flex:1}
 .modal-page-url:hover{text-decoration:underline}
 .modal-page-count{font-size:0.75rem;color:var(--ink-muted);white-space:nowrap;background:var(--white);border:1px solid var(--border);border-radius:100px;padding:0.1rem 0.5rem}
+
+/* ── Onboarding modal ── */
+.onboarding-modal{width:min(680px,92vw);max-height:88vh}
+.onboarding-body{overflow-y:auto}
+.onboarding-lede{font-size:0.875rem;color:var(--ink-soft);line-height:1.5;margin-bottom:1.5rem}
+.platform-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem}
+.platform-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.625rem;padding:1.25rem 0.75rem;border:2px solid var(--border);border-radius:12px;background:var(--white);cursor:pointer;transition:border-color .15s,transform .1s;font-family:'Inter',sans-serif}
+.platform-card:hover{border-color:var(--sage);transform:translateY(-1px)}
+.platform-card-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center}
+.platform-card-icon svg{width:100%;height:100%}
+.platform-card-label{font-size:0.8125rem;font-weight:600;color:var(--ink)}
+.platform-card.unsupported{border-style:dashed;opacity:0.8}
+.platform-card.unsupported .platform-card-label{color:var(--ink-soft)}
+.platform-badge{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:1rem;color:#fff}
+.onboarding-back{background:none;border:none;color:var(--ink-muted);font-size:0.8125rem;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:0.35rem;margin-bottom:1rem;padding:0}
+.onboarding-back:hover{color:var(--ink)}
+.onboarding-steps{display:flex;flex-direction:column;gap:1.1rem;margin-bottom:1.25rem}
+.onboarding-step{display:flex;gap:0.875rem}
+.onboarding-step-num{width:22px;height:22px;border-radius:50%;background:var(--sage);color:#fff;font-size:0.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.onboarding-step-title{font-size:0.875rem;font-weight:600;color:var(--ink);margin-bottom:0.2rem}
+.onboarding-step-desc{font-size:0.8125rem;color:var(--ink-soft);line-height:1.5}
+.onboarding-note{background:var(--gold-light);border:1px solid rgba(230,168,32,0.25);border-radius:8px;padding:0.75rem 1rem;font-size:0.78rem;color:#78500a;line-height:1.5;margin-bottom:1.25rem}
+.onboarding-test-row{display:flex;align-items:center;gap:0.875rem;flex-wrap:wrap;padding-top:0.5rem;border-top:1px solid var(--border)}
+.onboarding-test-btn{background:var(--ink);color:#fff;border:none;padding:0.7rem 1.5rem;border-radius:100px;font-size:0.8125rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:opacity .15s}
+.onboarding-test-btn:hover{opacity:0.85}
+.onboarding-test-btn:disabled{opacity:0.5;cursor:default}
+.onboarding-test-result{font-size:0.8125rem;font-weight:600;flex:1}
+.onboarding-test-result.pending{color:var(--ink-muted)}
+.onboarding-test-result.ok{color:var(--sage)}
+.onboarding-test-result.fail{color:#b91c1c}
+.onboarding-later{background:none;border:none;color:var(--ink-muted);font-size:0.8rem;cursor:pointer;font-family:'Inter',sans-serif;text-decoration:underline;padding:0}
+.onboarding-later:hover{color:var(--ink)}
+.onboarding-unsupported-box{background:var(--cream);border-radius:10px;padding:1.25rem;font-size:0.8375rem;color:var(--ink-soft);line-height:1.6}
+.onboarding-unsupported-box strong{color:var(--ink)}
 .modal-empty{font-size:0.875rem;color:var(--ink-muted);text-align:center;padding:2rem}
 
 /* ── Suggest an Expert modal ── */
@@ -1207,6 +1241,9 @@ async function loadDashboard() {
     document.getElementById('setup-banner').style.display = 'block';
     document.getElementById('setup-embed-code').textContent = embedCode;
     document.getElementById('setup-install-link').href = `/install?pub=${encodeURIComponent(d.publisher.slug)}`;
+    if (!sessionStorage.getItem('il_onboarding_dismissed_' + d.publisher.slug)) {
+      openOnboarding(d.publisher.slug, d.publisher.platform);
+    }
   } else if (d.publisher.last_widget_fire_at) {
     // Always visible once live, not just right after setup - last_widget_fire_at
     // updates on every single widget request, so this is an ongoing "is it still
@@ -2200,7 +2237,249 @@ function openPagesModal() {
 function closePagesModal() {
   document.getElementById('pages-modal').classList.remove('open');
 }
+
+// ── Onboarding modal ────────────────────────────────────────────────────────
+// Shown on login for any publisher whose widget has never fired, so they
+// can't wander into the dashboard and forget to install - same content as
+// /install, just walked step by step with their real Publisher ID already
+// filled in. Dismissible (not a true lockout - some people just want to
+// look around first) but reappears every new session until the widget
+// actually fires, and the existing setup-banner stays as a persistent
+// reminder for anyone who dismisses it.
+const ONBOARDING_PLATFORMS = {
+  html: {
+    label: 'Any website',
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="#4a4a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+    steps: [
+      { title: `Find your site's HTML template`, desc: `Open the main layout or template file that wraps all your pages - usually called <code>layout.html</code>, <code>base.html</code>, <code>_layout.liquid</code>, or similar depending on your platform.` },
+      { title: `Paste just before &lt;/body&gt;`, desc: `Find the closing <code>&lt;/body&gt;</code> tag and paste your embed code immediately before it.` },
+      { title: `Deploy and verify`, desc: `Deploy your changes and open a content-rich page. The widget loads asynchronously so it won't slow down your site.` },
+    ],
+    note: `Using a tag manager? Pick <strong>Google Tag Manager</strong> instead for step-by-step instructions.`,
+  },
+  wordpress: {
+    label: 'WordPress',
+    icon: `<svg viewBox="0 0 24 24" fill="#21759b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 14.5l-3-8.5h1.5l1.8 5.1 1.7-5.1h1.5l-3 8.5zm6.3 0h-1.5l-1.8-5.1-1.2 3.6.9 2.5H13l-1.2-3.3L13 9h1.5l1.8 5.1 1.5-5.1h1.5l-2.5 7.5z"/></svg>`,
+    steps: [
+      { title: `Download and install the plugin`, desc: `Download it <a href="https://www.introlinq.com/downloads/introlinq.zip" target="_blank" rel="noopener">here</a>. In your WordPress admin, go to <strong>Plugins → Add New → Upload Plugin</strong>, select the downloaded <code>introlinq.zip</code>, and click <strong>Install Now</strong>, then <strong>Activate</strong>.` },
+      { title: `Enter your Publisher ID`, desc: `Go to <strong>Settings → IntroLinq</strong> in your WordPress admin sidebar. Enter your Publisher ID and click <strong>Save Publisher ID</strong>.` },
+      { title: `Done - visit any article to confirm`, desc: `Open a blog post with at least a few paragraphs of text. After a few seconds, you should see phrases highlighted when there's a matching expert.` },
+    ],
+    note: `The widget only activates on article/post pages with substantial content (150+ words).`,
+  },
+  ghost: {
+    label: 'Ghost',
+    icon: `<svg viewBox="0 0 24 24" fill="#15171a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>`,
+    steps: [
+      { title: `Open Ghost Admin settings`, desc: `Log in to your Ghost admin panel and click the <strong>Settings</strong> icon (gear icon) in the bottom-left sidebar.` },
+      { title: `Go to Code injection`, desc: `In Settings, scroll down and click <strong>Code injection</strong>.` },
+      { title: `Paste in the Site Footer box`, desc: `Paste your embed code into the <strong>Site Footer</strong> text area (not the header). Then click <strong>Save</strong>.` },
+      { title: `Done - open any post to verify`, desc: `Visit a published post with a good amount of text. Phrases matching available experts will be subtly highlighted.` },
+    ],
+    note: `Ghost Pro users: Code injection is available on the Starter plan and above.`,
+  },
+  webflow: {
+    label: 'Webflow',
+    icon: `<svg viewBox="0 0 24 24" fill="#4353ff"><path d="M17.5 3h-11C4.67 3 3 4.67 3 6.5v11C3 19.33 4.67 21 6.5 21h11c1.83 0 3.5-1.67 3.5-3.5v-11C21 4.67 19.33 3 17.5 3zm-2.1 10.5l-2.4-4-1.6 2.7L10 10.5l-2.5 4.5h9.9l-2-1.5z"/></svg>`,
+    steps: [
+      { title: `Open Project Settings`, desc: `In the Webflow Designer, click the <strong>W</strong> logo in the top-left corner, then go to <strong>Project Settings</strong>.` },
+      { title: `Go to the Custom Code tab`, desc: `Click the <strong>Custom Code</strong> tab at the top of Project Settings.` },
+      { title: `Paste in the Footer Code box`, desc: `Scroll to the <strong>Footer Code</strong> section and paste your embed code there. Click <strong>Save Changes</strong>.` },
+      { title: `Publish your site`, desc: `Click <strong>Publish</strong> in the Designer to push the changes live. The widget won't appear in the Webflow preview.` },
+    ],
+    note: `CMS collections: the footer code injection above covers all of them automatically.`,
+  },
+  squarespace: {
+    label: 'Squarespace',
+    icon: `<svg viewBox="0 0 24 24" fill="#000"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>`,
+    steps: [
+      { title: `Go to Settings`, desc: `In your Squarespace admin, click <strong>Settings</strong> in the left sidebar.` },
+      { title: `Open Advanced → Code Injection`, desc: `Scroll to the <strong>Advanced</strong> section and click <strong>Code Injection</strong>.` },
+      { title: `Paste in the Footer box`, desc: `Paste your embed code into the <strong>Footer</strong> text area. Click <strong>Save</strong>.` },
+      { title: `Done - visit a blog post to verify`, desc: `Open a published blog post. You should see the widget running on posts with enough content.` },
+    ],
+    note: `Code Injection requires the Business plan or above - not available on Personal.`,
+  },
+  wix: {
+    label: 'Wix',
+    icon: `<svg viewBox="0 0 24 24" fill="#FAAD4D"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>`,
+    steps: [
+      { title: `Open Settings`, desc: `Log in to your Wix account, select your site, and click <strong>Settings</strong> in the left sidebar.` },
+      { title: `Open Custom Code`, desc: `Scroll to the <strong>Advanced</strong> section and click <strong>Custom Code</strong>.` },
+      { title: `Add a new code snippet`, desc: `Click <strong>+ Add Custom Code</strong>. Paste your embed code, name it "IntroLinq", set placement to <strong>Body - end</strong>, apply to <strong>All Pages</strong>, then click <strong>Apply</strong>.` },
+      { title: `Publish your site`, desc: `Click <strong>Publish</strong> in the Wix editor - the widget won't appear in the Editor preview.` },
+    ],
+    note: `Custom Code requires a paid Wix plan (Core or above) - not available on the free plan.`,
+  },
+  framer: {
+    label: 'Framer',
+    icon: `<svg viewBox="0 0 24 24" fill="#0055FF"><path d="M5 3h14v6h-7zm0 6h7l7 6H5zm0 6h7v6z"/></svg>`,
+    steps: [
+      { title: `Open Project Settings`, desc: `In your Framer project, click the <strong>gear icon</strong> in the top-right corner.` },
+      { title: `Go to General → Custom Code`, desc: `Select the <strong>General</strong> tab and scroll to <strong>Custom Code</strong>.` },
+      { title: `Paste in "End of &lt;body&gt; tag"`, desc: `Paste your embed code into the <strong>End of &lt;body&gt; tag</strong> field (not the head). Click <strong>Save</strong>.` },
+      { title: `Publish your site`, desc: `Click <strong>Publish</strong> to push the changes live - the widget won't appear in the Framer canvas preview.` },
+    ],
+    note: `Framer CMS: adding the code to Project Settings covers all CMS pages automatically.`,
+  },
+  gtm: {
+    label: 'Tag Manager',
+    icon: `<svg viewBox="0 0 24 24" fill="#4285f4"><path d="M12 2L2 7l10 5 10-5-10-5zm0 15l-7-3.5V18l7 3.5 7-3.5v-4.5L12 17z"/></svg>`,
+    steps: [
+      { title: `Open your GTM container`, desc: `Go to <a href="https://tagmanager.google.com" target="_blank" rel="noopener">tagmanager.google.com</a> and open the container for your website.` },
+      { title: `Create a new tag`, desc: `Click <strong>Tags → New</strong>. Name it "IntroLinq Widget".` },
+      { title: `Set Tag Configuration to Custom HTML`, desc: `Click <strong>Tag Configuration</strong>, choose <strong>Custom HTML</strong>, and paste your embed code in the HTML box.` },
+      { title: `Set the trigger to All Pages`, desc: `Click <strong>Triggering</strong>, select <strong>All Pages</strong>, then <strong>Save</strong>.` },
+      { title: `Submit and publish the container`, desc: `Click <strong>Submit</strong>, add a version name like "Add IntroLinq", and click <strong>Publish</strong>.` },
+    ],
+    note: `Already using GTM? This is the fastest path - works across WordPress, Wix, Squarespace, or any platform that has GTM installed.`,
+  },
+};
+
+// Substack/Medium can't run the widget today (Substack blocklists Custom
+// HTML via GTM, Medium has no code support at all) - shown anyway so we
+// capture who's asking and can reach out the moment either becomes
+// possible, instead of starting a partner conversation from zero.
+const ONBOARDING_UNSUPPORTED = {
+  substack: { label: 'Substack', badge: '#FF6719', letter: 'S' },
+  medium: { label: 'Medium', badge: '#000000', letter: 'M' },
+};
+
+let _onboardingPub = null;
+
+function openOnboarding(pub, savedPlatform) {
+  _onboardingPub = pub;
+  document.getElementById('onboarding-modal').classList.add('open');
+  if (savedPlatform && ONBOARDING_PLATFORMS[savedPlatform]) {
+    renderOnboardingSteps(savedPlatform);
+  } else if (savedPlatform && ONBOARDING_UNSUPPORTED[savedPlatform]) {
+    renderOnboardingUnsupported(savedPlatform);
+  } else {
+    renderOnboardingPicker();
+  }
+}
+
+function dismissOnboarding() {
+  document.getElementById('onboarding-modal').classList.remove('open');
+  sessionStorage.setItem('il_onboarding_dismissed_' + _onboardingPub, '1');
+}
+
+function renderOnboardingPicker() {
+  const cards = Object.entries(ONBOARDING_PLATFORMS).map(([id, p]) => `
+    <button class="platform-card" onclick="selectOnboardingPlatform('${id}')">
+      <div class="platform-card-icon">${p.icon}</div>
+      <div class="platform-card-label">${esc(p.label)}</div>
+    </button>
+  `).join('');
+  const unsupported = Object.entries(ONBOARDING_UNSUPPORTED).map(([id, p]) => `
+    <button class="platform-card unsupported" onclick="selectOnboardingPlatform('${id}')">
+      <div class="platform-badge" style="background:${p.badge}">${p.letter}</div>
+      <div class="platform-card-label">${esc(p.label)}</div>
+    </button>
+  `).join('');
+  document.getElementById('onboarding-body').innerHTML = `
+    <div class="onboarding-lede">How is your blog built? Pick your platform and we'll walk you through installing the widget - it only takes a couple of minutes.</div>
+    <div class="platform-grid">${cards}${unsupported}</div>
+    <div style="text-align:center;margin-top:1.5rem"><button class="onboarding-later" onclick="dismissOnboarding()">I'll do this later</button></div>
+  `;
+}
+
+function selectOnboardingPlatform(id) {
+  fetch('/api/dashboard?pub=' + encodeURIComponent(_onboardingPub), {
+    method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ platform: id }),
+  }).catch(() => {});
+  if (ONBOARDING_UNSUPPORTED[id]) {
+    renderOnboardingUnsupported(id);
+  } else {
+    renderOnboardingSteps(id);
+  }
+}
+
+function renderOnboardingSteps(id) {
+  const p = ONBOARDING_PLATFORMS[id];
+  const embedCode = `<script src="https://www.introlinq.com/widget.js" data-publisher="${esc(_onboardingPub)}"><\/script>`;
+  const steps = p.steps.map((s, i) => `
+    <div class="onboarding-step">
+      <div class="onboarding-step-num">${i + 1}</div>
+      <div>
+        <div class="onboarding-step-title">${s.title}</div>
+        <div class="onboarding-step-desc">${s.desc}</div>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('onboarding-body').innerHTML = `
+    <button class="onboarding-back" onclick="renderOnboardingPicker()">← Choose a different platform</button>
+    <div class="setup-embed" style="margin-bottom:1.25rem">
+      <div class="setup-embed-code" id="onboarding-embed-code">${esc(embedCode)}</div>
+      <button class="setup-copy-btn" onclick="copyOnboardingCode()">Copy code</button>
+    </div>
+    <div class="onboarding-steps">${steps}</div>
+    ${p.note ? `<div class="onboarding-note">${p.note}</div>` : ''}
+    <div class="onboarding-test-row">
+      <button class="onboarding-test-btn" id="onboarding-test-btn" onclick="testOnboardingWidget()">Test my install</button>
+      <div class="onboarding-test-result" id="onboarding-test-result"></div>
+    </div>
+  `;
+}
+
+function copyOnboardingCode() {
+  navigator.clipboard.writeText(document.getElementById('onboarding-embed-code').textContent.trim());
+  toast('Embed code copied!');
+}
+
+function renderOnboardingUnsupported(id) {
+  const p = ONBOARDING_UNSUPPORTED[id];
+  document.getElementById('onboarding-body').innerHTML = `
+    <button class="onboarding-back" onclick="renderOnboardingPicker()">← Choose a different platform</button>
+    <div class="onboarding-unsupported-box">
+      <strong>${esc(p.label)} isn't supported yet.</strong><br><br>
+      ${p.label} doesn't currently allow the kind of embed our widget needs (${id === 'substack' ? 'Substack blocks custom HTML/scripts' : 'Medium has no support for custom code at all'}), so there's no install we can walk you through today.
+      <br><br>
+      We've noted that you're on ${esc(p.label)} - if we manage to get official support (or a partnership) sorted, you'll be one of the first people we reach out to. In the meantime, drop us a line at <a href="mailto:hello@introlinq.com">hello@introlinq.com</a> if you'd like to be added to a manual-link option we're exploring.
+    </div>
+    <div style="text-align:center;margin-top:1.5rem"><button class="onboarding-later" onclick="dismissOnboarding()">Got it, close this</button></div>
+  `;
+}
+
+async function testOnboardingWidget() {
+  const btn = document.getElementById('onboarding-test-btn');
+  const result = document.getElementById('onboarding-test-result');
+  btn.disabled = true;
+  result.className = 'onboarding-test-result pending';
+  result.textContent = 'Checking your site…';
+  let data;
+  try {
+    const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(_onboardingPub) + '&action=check_live', { credentials: 'include' });
+    data = res.ok ? await res.json() : null;
+  } catch {
+    data = null;
+  }
+  btn.disabled = false;
+  if (data && data.status === 'live') {
+    result.className = 'onboarding-test-result ok';
+    result.textContent = "✓ You're live! Widget found and working.";
+    setTimeout(() => { document.getElementById('onboarding-modal').classList.remove('open'); location.reload(); }, 1800);
+  } else if (data && data.status === 'not_found') {
+    result.className = 'onboarding-test-result fail';
+    result.innerHTML = `Not found yet - double check the steps above, or <a href="mailto:hello@introlinq.com">contact support</a>.`;
+  } else {
+    result.className = 'onboarding-test-result fail';
+    result.innerHTML = `Couldn't verify - make sure your site has a homepage domain on file, or <a href="mailto:hello@introlinq.com">contact support</a>.`;
+  }
+}
 </script>
+
+<!-- Onboarding modal -->
+<div class="modal-overlay" id="onboarding-modal">
+  <div class="modal onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+    <div class="modal-head">
+      <div class="modal-title" id="onboarding-title">Let's get your widget live</div>
+      <button class="modal-close" id="onboarding-close" onclick="dismissOnboarding()" aria-label="Close">✕</button>
+    </div>
+    <div class="onboarding-body" id="onboarding-body"></div>
+  </div>
+</div>
 
 <!-- Pages modal -->
 <div class="modal-overlay" id="pages-modal" onclick="if(event.target===this)closePagesModal()">
