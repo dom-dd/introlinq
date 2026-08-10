@@ -75,9 +75,17 @@ function introlinq_settings_page() {
     <?php
 }
 
-// Inject widget script in footer on all pages
-add_action( 'wp_footer', function () {
+// Enqueue widget script on all pages
+add_action( 'wp_enqueue_scripts', function () {
     $pub = get_option( 'introlinq_publisher_id', '' );
     if ( ! $pub ) return;
-    echo '<script src="https://www.introlinq.com/widget.js" data-publisher="' . esc_attr( $pub ) . '"></script>' . "\n";
+    wp_enqueue_script( 'introlinq-widget', 'https://www.introlinq.com/widget.js', [], '1.0.0', true );
+    wp_script_add_data( 'introlinq-widget', 'introlinq_publisher', $pub );
 } );
+
+// Add the data-publisher attribute to the enqueued script tag
+add_filter( 'script_loader_tag', function ( $tag, $handle ) {
+    if ( 'introlinq-widget' !== $handle ) return $tag;
+    $pub = wp_scripts()->get_data( $handle, 'introlinq_publisher' );
+    return str_replace( ' src=', ' data-publisher="' . esc_attr( $pub ) . '" src=', $tag );
+}, 10, 2 );
