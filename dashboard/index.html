@@ -101,6 +101,46 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .onboarding-later:hover{color:var(--ink)}
 .onboarding-unsupported-box{background:var(--cream);border-radius:10px;padding:1.25rem;font-size:0.8375rem;color:var(--ink-soft);line-height:1.6}
 .onboarding-unsupported-box strong{color:var(--ink)}
+
+/* ── Step visual ──────────────────────────────────────────────────────────
+   Illustrated mockup, not a real screenshot - we don't have accounts on
+   most of these platforms to verify pixel-accurate UI against, and a
+   confidently-wrong fake screenshot would be worse than none for an
+   audience that's been told to trust it literally. Same fixed spot on
+   every step (right below the progress bar) so it becomes a habit: read
+   the step, glance here. One reusable component parameterized per step
+   rather than ~35 bespoke images. */
+.step-visual{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--white);margin-bottom:1.5rem;box-shadow:0 2px 10px rgba(0,0,0,0.05)}
+.step-visual-chrome{background:#eef0f2;padding:0.5rem 0.75rem;display:flex;align-items:center;gap:5px;border-bottom:1px solid var(--border)}
+.step-visual-dot{width:7px;height:7px;border-radius:50%;background:#d8dadf}
+.step-visual-url{margin-left:6px;background:#fff;border-radius:100px;padding:0.2rem 0.75rem;font-size:0.68rem;color:var(--ink-muted);font-family:monospace;border:1px solid var(--border)}
+.step-visual-body{display:flex;min-height:170px}
+.step-visual-sidebar{width:130px;background:#fafafa;border-right:1px solid var(--border);padding:0.75rem 0.5rem;display:flex;flex-direction:column;gap:3px;flex-shrink:0}
+.step-visual-nav-item{font-size:0.68rem;color:var(--ink-muted);padding:0.4rem 0.6rem;border-radius:6px;position:relative}
+.step-visual-nav-item.active{background:var(--sv-color,var(--sage));color:#fff;font-weight:600}
+.step-visual-tap{position:absolute;top:50%;right:6px;transform:translateY(-50%);width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.9);animation:svTap 1.8s ease-in-out infinite}
+.step-visual-content{flex:1;padding:1rem 1.25rem;display:flex;flex-direction:column;justify-content:center;gap:0.625rem}
+.step-visual-label{font-size:0.68rem;font-weight:700;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.03em}
+.step-visual-box{background:var(--sage-light);border:1px solid rgba(61,122,95,0.2);border-radius:8px;padding:0.6rem 0.75rem;font-family:monospace;font-size:0.68rem;color:var(--sage);overflow:hidden;white-space:nowrap;position:relative}
+.step-visual-box .sv-typed{display:inline-block;overflow:hidden;white-space:nowrap;border-right:2px solid var(--sage);animation:svType 2.4s steps(30,end) infinite}
+.step-visual-cta{align-self:flex-start;background:var(--sv-color,var(--sage));color:#fff;font-size:0.7rem;font-weight:700;padding:0.45rem 1.1rem;border-radius:100px;position:relative}
+.step-visual-cta .step-visual-tap{right:-4px;top:-4px}
+.step-visual-upload{border:2px dashed var(--border);border-radius:10px;padding:1rem;display:flex;align-items:center;gap:0.75rem}
+.step-visual-upload-icon{width:28px;height:28px;flex-shrink:0;animation:svDrop 2.4s ease-in-out infinite}
+.step-visual-progress{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.step-visual-progress-fill{height:100%;background:var(--sv-color,var(--sage));width:0;animation:svFill 2.4s ease-in-out infinite}
+.step-visual-article{display:flex;flex-direction:column;gap:0.4rem}
+.step-visual-line{height:6px;border-radius:3px;background:#ececf2;width:100%}
+.step-visual-line.short{width:65%}
+.step-visual-line.match{background:none;position:relative;color:var(--ink-soft);font-size:0.68rem;line-height:1.5;height:auto}
+.step-visual-highlight{background-image:linear-gradient(transparent 60%, var(--gold-light) 60%);border-bottom:2px solid var(--gold);animation:svHighlight 2.4s ease-in-out infinite}
+.step-visual-card{margin-top:0.4rem;background:var(--white);border:1px solid var(--border);box-shadow:0 4px 12px rgba(0,0,0,0.08);border-radius:8px;padding:0.4rem 0.6rem;font-size:0.65rem;color:var(--ink-soft);width:fit-content;opacity:0;animation:svCard 2.4s ease-in-out infinite}
+@keyframes svTap{0%,20%{transform:translateY(-50%) scale(0.6);opacity:0}30%{opacity:1}45%,100%{transform:translateY(-50%) scale(1.4);opacity:0}}
+@keyframes svType{0%,8%{width:0}60%,85%{width:100%}100%{width:100%}}
+@keyframes svDrop{0%,10%{transform:translateY(-8px);opacity:0}30%,70%{transform:translateY(0);opacity:1}90%,100%{opacity:0.3}}
+@keyframes svFill{0%,25%{width:0}75%,100%{width:100%}}
+@keyframes svHighlight{0%,30%{border-bottom-color:transparent;background-image:none}55%,100%{border-bottom-color:var(--gold);background-image:linear-gradient(transparent 60%, var(--gold-light) 60%)}}
+@keyframes svCard{0%,50%{opacity:0;transform:translateY(-4px)}70%,100%{opacity:1;transform:translateY(0)}}
 .modal-empty{font-size:0.875rem;color:var(--ink-muted);text-align:center;padding:2rem}
 
 /* ── Suggest an Expert modal ── */
@@ -2244,87 +2284,95 @@ const ONBOARDING_PLATFORMS = {
   html: {
     label: 'Any website',
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="#4a4a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+    color: '#4a4a6a', url: 'yoursite.com',
     steps: [
-      { title: `Find your site's HTML template`, desc: `Open the main layout or template file that wraps all your pages - usually called <code>layout.html</code>, <code>base.html</code>, <code>_layout.liquid</code>, or similar depending on your platform.` },
-      { title: `Paste just before &lt;/body&gt;`, desc: `Find the closing <code>&lt;/body&gt;</code> tag and paste your embed code immediately before it.` },
-      { title: `Deploy and verify`, desc: `Deploy your changes and open a content-rich page. The widget loads asynchronously so it won't slow down your site.` },
+      { title: `Find your site's HTML template`, desc: `Open the main layout or template file that wraps all your pages - usually called <code>layout.html</code>, <code>base.html</code>, <code>_layout.liquid</code>, or similar depending on your platform.`, visual: { type: 'nav', items: ['layout.html', 'base.html', '_layout.liquid'], active: 0 } },
+      { title: `Paste just before &lt;/body&gt;`, desc: `Find the closing <code>&lt;/body&gt;</code> tag and paste your embed code immediately before it.`, visual: { type: 'field', fieldLabel: 'layout.html · before </body>', cta: 'Save file' } },
+      { title: `Deploy and verify`, desc: `Deploy your changes and open a content-rich page. The widget loads asynchronously so it won't slow down your site.`, visual: { type: 'preview' } },
     ],
     note: `Using a tag manager? Pick <strong>Google Tag Manager</strong> instead for step-by-step instructions.`,
   },
   wordpress: {
     label: 'WordPress',
     icon: `<svg viewBox="0 0 24 24" fill="#21759b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 14.5l-3-8.5h1.5l1.8 5.1 1.7-5.1h1.5l-3 8.5zm6.3 0h-1.5l-1.8-5.1-1.2 3.6.9 2.5H13l-1.2-3.3L13 9h1.5l1.8 5.1 1.5-5.1h1.5l-2.5 7.5z"/></svg>`,
+    color: '#21759b', url: 'yoursite.com/wp-admin',
     steps: [
-      { title: `Download and install the plugin`, desc: `<a class="onboarding-download-btn" href="https://www.introlinq.com/downloads/introlinq.zip" download>⬇ Download IntroLinq plugin</a><br><br>Then in your WordPress admin, go to <strong>Plugins → Add New → Upload Plugin</strong>, select the downloaded <code>introlinq.zip</code>, and click <strong>Install Now</strong>, then <strong>Activate</strong>.` },
-      { title: `Enter your Publisher ID`, desc: `Go to <strong>Settings → IntroLinq</strong> in your WordPress admin sidebar. Enter your Publisher ID and click <strong>Save Publisher ID</strong>.` },
-      { title: `Done - visit any article to confirm`, desc: `Open a blog post with at least a few paragraphs of text. After a few seconds, you should see phrases highlighted when there's a matching expert.` },
+      { title: `Download and install the plugin`, desc: `<a class="onboarding-download-btn" href="https://www.introlinq.com/downloads/introlinq.zip" download>⬇ Download IntroLinq plugin</a><br><br>Then in your WordPress admin, go to <strong>Plugins → Add New → Upload Plugin</strong>, select the downloaded <code>introlinq.zip</code>, and click <strong>Install Now</strong>, then <strong>Activate</strong>.`, visual: { type: 'upload', label: 'introlinq.zip' } },
+      { title: `Enter your Publisher ID`, desc: `Go to <strong>Settings → IntroLinq</strong> in your WordPress admin sidebar. Enter your Publisher ID and click <strong>Save Publisher ID</strong>.`, visual: { type: 'field', fieldLabel: 'Settings → IntroLinq', cta: 'Save Publisher ID' } },
+      { title: `Done - visit any article to confirm`, desc: `Open a blog post with at least a few paragraphs of text. After a few seconds, you should see phrases highlighted when there's a matching expert.`, visual: { type: 'preview' } },
     ],
     note: `The widget only activates on article/post pages with substantial content (150+ words).`,
   },
   ghost: {
     label: 'Ghost',
     icon: `<svg viewBox="0 0 24 24" fill="#15171a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>`,
+    color: '#15171a', url: 'yoursite.com/ghost',
     steps: [
-      { title: `Open Ghost Admin settings`, desc: `Log in to your Ghost admin panel and click the <strong>Settings</strong> icon (gear icon) in the bottom-left sidebar.` },
-      { title: `Go to Code injection`, desc: `In Settings, scroll down and click <strong>Code injection</strong>.` },
-      { title: `Paste in the Site Footer box`, desc: `Paste your embed code into the <strong>Site Footer</strong> text area (not the header). Then click <strong>Save</strong>.` },
-      { title: `Done - open any post to verify`, desc: `Visit a published post with a good amount of text. Phrases matching available experts will be subtly highlighted.` },
+      { title: `Open Ghost Admin settings`, desc: `Log in to your Ghost admin panel and click the <strong>Settings</strong> icon (gear icon) in the bottom-left sidebar.`, visual: { type: 'nav', items: ['Dashboard', 'Settings', 'Members'], active: 1 } },
+      { title: `Go to Code injection`, desc: `In Settings, scroll down and click <strong>Code injection</strong>.`, visual: { type: 'nav', items: ['General', 'Code injection', 'Membership'], active: 1 } },
+      { title: `Paste in the Site Footer box`, desc: `Paste your embed code into the <strong>Site Footer</strong> text area (not the header). Then click <strong>Save</strong>.`, visual: { type: 'field', fieldLabel: 'Site Footer', cta: 'Save' } },
+      { title: `Done - open any post to verify`, desc: `Visit a published post with a good amount of text. Phrases matching available experts will be subtly highlighted.`, visual: { type: 'preview' } },
     ],
     note: `Ghost Pro users: Code injection is available on the Starter plan and above.`,
   },
   webflow: {
     label: 'Webflow',
     icon: `<svg viewBox="0 0 24 24" fill="#4353ff"><path d="M17.5 3h-11C4.67 3 3 4.67 3 6.5v11C3 19.33 4.67 21 6.5 21h11c1.83 0 3.5-1.67 3.5-3.5v-11C21 4.67 19.33 3 17.5 3zm-2.1 10.5l-2.4-4-1.6 2.7L10 10.5l-2.5 4.5h9.9l-2-1.5z"/></svg>`,
+    color: '#4353ff', url: 'webflow.com/design/yoursite',
     steps: [
-      { title: `Open Project Settings`, desc: `In the Webflow Designer, click the <strong>W</strong> logo in the top-left corner, then go to <strong>Project Settings</strong>.` },
-      { title: `Go to the Custom Code tab`, desc: `Click the <strong>Custom Code</strong> tab at the top of Project Settings.` },
-      { title: `Paste in the Footer Code box`, desc: `Scroll to the <strong>Footer Code</strong> section and paste your embed code there. Click <strong>Save Changes</strong>.` },
-      { title: `Publish your site`, desc: `Click <strong>Publish</strong> in the Designer to push the changes live. The widget won't appear in the Webflow preview.` },
+      { title: `Open Project Settings`, desc: `In the Webflow Designer, click the <strong>W</strong> logo in the top-left corner, then go to <strong>Project Settings</strong>.`, visual: { type: 'nav', items: ['Design', 'Project Settings'], active: 1 } },
+      { title: `Go to the Custom Code tab`, desc: `Click the <strong>Custom Code</strong> tab at the top of Project Settings.`, visual: { type: 'nav', items: ['General', 'Custom Code', 'Backups'], active: 1 } },
+      { title: `Paste in the Footer Code box`, desc: `Scroll to the <strong>Footer Code</strong> section and paste your embed code there. Click <strong>Save Changes</strong>.`, visual: { type: 'field', fieldLabel: 'Footer Code', cta: 'Save Changes' } },
+      { title: `Publish your site`, desc: `Click <strong>Publish</strong> in the Designer to push the changes live. The widget won't appear in the Webflow preview.`, visual: { type: 'button', label: 'Publish' } },
     ],
     note: `CMS collections: the footer code injection above covers all of them automatically.`,
   },
   squarespace: {
     label: 'Squarespace',
     icon: `<svg viewBox="0 0 24 24" fill="#000"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>`,
+    color: '#000000', url: 'yoursite.com/config',
     steps: [
-      { title: `Go to Settings`, desc: `In your Squarespace admin, click <strong>Settings</strong> in the left sidebar.` },
-      { title: `Open Advanced → Code Injection`, desc: `Scroll to the <strong>Advanced</strong> section and click <strong>Code Injection</strong>.` },
-      { title: `Paste in the Footer box`, desc: `Paste your embed code into the <strong>Footer</strong> text area. Click <strong>Save</strong>.` },
-      { title: `Done - visit a blog post to verify`, desc: `Open a published blog post. You should see the widget running on posts with enough content.` },
+      { title: `Go to Settings`, desc: `In your Squarespace admin, click <strong>Settings</strong> in the left sidebar.`, visual: { type: 'nav', items: ['Home', 'Settings'], active: 1 } },
+      { title: `Open Advanced → Code Injection`, desc: `Scroll to the <strong>Advanced</strong> section and click <strong>Code Injection</strong>.`, visual: { type: 'nav', items: ['Advanced', 'Code Injection'], active: 1 } },
+      { title: `Paste in the Footer box`, desc: `Paste your embed code into the <strong>Footer</strong> text area. Click <strong>Save</strong>.`, visual: { type: 'field', fieldLabel: 'Footer', cta: 'Save' } },
+      { title: `Done - visit a blog post to verify`, desc: `Open a published blog post. You should see the widget running on posts with enough content.`, visual: { type: 'preview' } },
     ],
     note: `Code Injection requires the Business plan or above - not available on Personal.`,
   },
   wix: {
     label: 'Wix',
     icon: `<svg viewBox="0 0 24 24" fill="#FAAD4D"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>`,
+    color: '#FAAD4D', url: 'manage.wix.com',
     steps: [
-      { title: `Open Settings`, desc: `Log in to your Wix account, select your site, and click <strong>Settings</strong> in the left sidebar.` },
-      { title: `Open Custom Code`, desc: `Scroll to the <strong>Advanced</strong> section and click <strong>Custom Code</strong>.` },
-      { title: `Add a new code snippet`, desc: `Click <strong>+ Add Custom Code</strong>. Paste your embed code, name it "IntroLinq", set placement to <strong>Body - end</strong>, apply to <strong>All Pages</strong>, then click <strong>Apply</strong>.` },
-      { title: `Publish your site`, desc: `Click <strong>Publish</strong> in the Wix editor - the widget won't appear in the Editor preview.` },
+      { title: `Open Settings`, desc: `Log in to your Wix account, select your site, and click <strong>Settings</strong> in the left sidebar.`, visual: { type: 'nav', items: ['Dashboard', 'Settings'], active: 1 } },
+      { title: `Open Custom Code`, desc: `Scroll to the <strong>Advanced</strong> section and click <strong>Custom Code</strong>.`, visual: { type: 'nav', items: ['Advanced', 'Custom Code'], active: 1 } },
+      { title: `Add a new code snippet`, desc: `Click <strong>+ Add Custom Code</strong>. Paste your embed code, name it "IntroLinq", set placement to <strong>Body - end</strong>, apply to <strong>All Pages</strong>, then click <strong>Apply</strong>.`, visual: { type: 'field', fieldLabel: 'Custom Code · Body End', cta: 'Apply' } },
+      { title: `Publish your site`, desc: `Click <strong>Publish</strong> in the Wix editor - the widget won't appear in the Editor preview.`, visual: { type: 'button', label: 'Publish' } },
     ],
     note: `Custom Code requires a paid Wix plan (Core or above) - not available on the free plan.`,
   },
   framer: {
     label: 'Framer',
     icon: `<svg viewBox="0 0 24 24" fill="#0055FF"><path d="M5 3h14v6h-7zm0 6h7l7 6H5zm0 6h7v6z"/></svg>`,
+    color: '#0055FF', url: 'framer.com/projects',
     steps: [
-      { title: `Open Project Settings`, desc: `In your Framer project, click the <strong>gear icon</strong> in the top-right corner.` },
-      { title: `Go to General → Custom Code`, desc: `Select the <strong>General</strong> tab and scroll to <strong>Custom Code</strong>.` },
-      { title: `Paste in "End of &lt;body&gt; tag"`, desc: `Paste your embed code into the <strong>End of &lt;body&gt; tag</strong> field (not the head). Click <strong>Save</strong>.` },
-      { title: `Publish your site`, desc: `Click <strong>Publish</strong> to push the changes live - the widget won't appear in the Framer canvas preview.` },
+      { title: `Open Project Settings`, desc: `In your Framer project, click the <strong>gear icon</strong> in the top-right corner.`, visual: { type: 'nav', items: ['Canvas', 'Project Settings'], active: 1 } },
+      { title: `Go to General → Custom Code`, desc: `Select the <strong>General</strong> tab and scroll to <strong>Custom Code</strong>.`, visual: { type: 'nav', items: ['General', 'Custom Code'], active: 1 } },
+      { title: `Paste in "End of &lt;body&gt; tag"`, desc: `Paste your embed code into the <strong>End of &lt;body&gt; tag</strong> field (not the head). Click <strong>Save</strong>.`, visual: { type: 'field', fieldLabel: 'End of <body> tag', cta: 'Save' } },
+      { title: `Publish your site`, desc: `Click <strong>Publish</strong> to push the changes live - the widget won't appear in the Framer canvas preview.`, visual: { type: 'button', label: 'Publish' } },
     ],
     note: `Framer CMS: adding the code to Project Settings covers all CMS pages automatically.`,
   },
   gtm: {
     label: 'Tag Manager',
     icon: `<svg viewBox="0 0 24 24" fill="#4285f4"><path d="M12 2L2 7l10 5 10-5-10-5zm0 15l-7-3.5V18l7 3.5 7-3.5v-4.5L12 17z"/></svg>`,
+    color: '#4285f4', url: 'tagmanager.google.com',
     steps: [
-      { title: `Open your GTM container`, desc: `Go to <a href="https://tagmanager.google.com" target="_blank" rel="noopener">tagmanager.google.com</a> and open the container for your website.` },
-      { title: `Create a new tag`, desc: `Click <strong>Tags → New</strong>. Name it "IntroLinq Widget".` },
-      { title: `Set Tag Configuration to Custom HTML`, desc: `Click <strong>Tag Configuration</strong>, choose <strong>Custom HTML</strong>, and paste your embed code in the HTML box.` },
-      { title: `Set the trigger to All Pages`, desc: `Click <strong>Triggering</strong>, select <strong>All Pages</strong>, then <strong>Save</strong>.` },
-      { title: `Submit and publish the container`, desc: `Click <strong>Submit</strong>, add a version name like "Add IntroLinq", and click <strong>Publish</strong>.` },
+      { title: `Open your GTM container`, desc: `Go to <a href="https://tagmanager.google.com" target="_blank" rel="noopener">tagmanager.google.com</a> and open the container for your website.`, visual: { type: 'nav', items: ['Overview', 'Tags', 'Triggers', 'Variables'], active: 0 } },
+      { title: `Create a new tag`, desc: `Click <strong>Tags → New</strong>. Name it "IntroLinq Widget".`, visual: { type: 'button', label: '+ New Tag' } },
+      { title: `Set Tag Configuration to Custom HTML`, desc: `Click <strong>Tag Configuration</strong>, choose <strong>Custom HTML</strong>, and paste your embed code in the HTML box.`, visual: { type: 'field', fieldLabel: 'Tag Configuration', cta: 'Custom HTML' } },
+      { title: `Set the trigger to All Pages`, desc: `Click <strong>Triggering</strong>, select <strong>All Pages</strong>, then <strong>Save</strong>.`, visual: { type: 'nav', items: ['Tag Configuration', 'Triggering'], active: 1 } },
+      { title: `Submit and publish the container`, desc: `Click <strong>Submit</strong>, add a version name like "Add IntroLinq", and click <strong>Publish</strong>.`, visual: { type: 'button', label: 'Publish' } },
     ],
     note: `Already using GTM? This is the fastest path - works across WordPress, Wix, Squarespace, or any platform that has GTM installed.`,
   },
@@ -2388,6 +2436,82 @@ function selectOnboardingPlatform(id) {
   }
 }
 
+// Illustrated step visual - a browser-chrome mockup with the relevant nav
+// item/field/button highlighted and gently animated, always in the same
+// slot (right below the progress bar) on every step. Deliberately generic/
+// schematic rather than a claimed real screenshot - see the CSS comment
+// above .step-visual for why.
+function stepVisualChrome(url, color, bodyHtml) {
+  return `
+    <div class="step-visual" style="--sv-color:${color}">
+      <div class="step-visual-chrome">
+        <div class="step-visual-dot"></div><div class="step-visual-dot"></div><div class="step-visual-dot"></div>
+        <div class="step-visual-url">${esc(url)}</div>
+      </div>
+      <div class="step-visual-body">${bodyHtml}</div>
+    </div>
+  `;
+}
+
+function renderStepVisual(spec, color, url) {
+  if (!spec) return '';
+  if (spec.type === 'nav') {
+    const items = spec.items.map((label, i) => `
+      <div class="step-visual-nav-item${i === spec.active ? ' active' : ''}">${esc(label)}${i === spec.active ? '<div class="step-visual-tap"></div>' : ''}</div>
+    `).join('');
+    return stepVisualChrome(url, color, `
+      <div class="step-visual-sidebar">${items}</div>
+      <div class="step-visual-content">
+        <div class="step-visual-label">${esc(spec.items[spec.active])}</div>
+        <div class="step-visual-line"></div>
+        <div class="step-visual-line short"></div>
+      </div>
+    `);
+  }
+  if (spec.type === 'field') {
+    return stepVisualChrome(url, color, `
+      <div class="step-visual-content" style="width:100%">
+        <div class="step-visual-label">${esc(spec.fieldLabel)}</div>
+        <div class="step-visual-box"><span class="sv-typed">&lt;script src="introlinq.com/widget.js"&gt;</span></div>
+        <div class="step-visual-cta">${esc(spec.cta || 'Save')}<div class="step-visual-tap"></div></div>
+      </div>
+    `);
+  }
+  if (spec.type === 'button') {
+    return stepVisualChrome(url, color, `
+      <div class="step-visual-content" style="width:100%;align-items:center">
+        <div class="step-visual-cta" style="font-size:0.8rem;padding:0.6rem 1.5rem">${esc(spec.label)}<div class="step-visual-tap"></div></div>
+      </div>
+    `);
+  }
+  if (spec.type === 'upload') {
+    return stepVisualChrome(url, color, `
+      <div class="step-visual-content" style="width:100%">
+        <div class="step-visual-upload">
+          <svg class="step-visual-upload-icon" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <div style="flex:1">
+            <div style="font-size:0.7rem;color:var(--ink-soft);margin-bottom:0.35rem">${esc(spec.label)}</div>
+            <div class="step-visual-progress"><div class="step-visual-progress-fill"></div></div>
+          </div>
+        </div>
+      </div>
+    `);
+  }
+  // preview - mirrors the real widget behaviour (highlighted phrase + hover
+  // card), which we know precisely since it's our own product, not a guess
+  // at someone else's UI.
+  return stepVisualChrome(url, color, `
+    <div class="step-visual-content" style="width:100%">
+      <div class="step-visual-article">
+        <div class="step-visual-line"></div>
+        <div class="step-visual-line match">...you could reach out to a <span class="step-visual-highlight">startup mentor</span> who's done it before.</div>
+        <div class="step-visual-line short"></div>
+        <div class="step-visual-card">↳ Jane Doe · Startup Mentor · Book a call</div>
+      </div>
+    </div>
+  `);
+}
+
 // One step per screen rather than a full list - this is meant to hold
 // someone's hand through to the end rather than hand them a manual, so
 // showing every step at once (and the accompanying wall of text) defeats
@@ -2411,6 +2535,7 @@ function renderOnboardingSteps(id, stepIndex) {
     </div>
     <div class="onboarding-progress">Step ${stepIndex + 1} of ${total}</div>
     <div class="onboarding-progress-bar"><div class="onboarding-progress-bar-fill" style="width:${((stepIndex + 1) / total) * 100}%"></div></div>
+    ${renderStepVisual(step.visual, p.color, p.url)}
     <div class="onboarding-steps">
       <div class="onboarding-step">
         <div class="onboarding-step-num">${stepIndex + 1}</div>
