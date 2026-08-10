@@ -59,9 +59,13 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .modal-page-url:hover{text-decoration:underline}
 .modal-page-count{font-size:0.75rem;color:var(--ink-muted);white-space:nowrap;background:var(--white);border:1px solid var(--border);border-radius:100px;padding:0.1rem 0.5rem}
 
-/* ── Onboarding modal ── */
-.onboarding-modal{width:min(680px,92vw);max-height:88vh}
-.onboarding-body{overflow-y:auto}
+/* ── Get started (install) tab ── */
+.tab-btn.install-tab-btn{color:#b91c1c;font-weight:700}
+.tab-btn.install-tab-btn:hover{color:#b91c1c}
+.tab-btn.install-tab-btn.active{border-bottom-color:#b91c1c;color:#b91c1c}
+.install-tab-header{margin-bottom:1.75rem}
+.install-tab-title{font-family:'DM Serif Display',serif;font-size:1.375rem;color:var(--ink);margin-bottom:0.375rem}
+.install-tab-sub{font-size:0.9375rem;color:var(--ink-soft);line-height:1.5}
 .onboarding-lede{font-size:0.875rem;color:var(--ink-soft);line-height:1.5;margin-bottom:1.5rem}
 .platform-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem}
 .platform-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.625rem;padding:1.25rem 0.75rem;border:2px solid var(--border);border-radius:12px;background:var(--white);cursor:pointer;transition:border-color .15s,transform .1s;font-family:'Inter',sans-serif}
@@ -172,13 +176,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .log-no-match-detail{font-size:0.8rem;color:var(--ink-muted)}
 .logs-empty{text-align:center;padding:3rem;color:var(--ink-muted);font-size:0.875rem}
 
-/* ── Setup banner ── */
-.setup-banner{background:#fff8f8;border:2px dashed #f87171;border-radius:var(--radius);padding:1.5rem;margin:1.5rem auto;display:none;width:calc(100% - 3rem);max-width:860px}
-.setup-banner-top{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem}
-.setup-banner-title{font-family:'DM Serif Display',serif;font-size:1.125rem;color:#b91c1c;margin-bottom:0.25rem}
-.setup-banner-sub{font-size:0.8125rem;color:var(--ink-soft);line-height:1.5}
-.setup-banner-sub a{color:var(--sage);text-decoration:none;font-weight:500}
-.setup-banner-sub a:hover{text-decoration:underline}
+/* ── Embed code box (reused inside the Get started tab) ── */
 .setup-embed{display:flex;align-items:center;gap:0.75rem}
 .setup-embed-code{font-family:monospace;font-size:0.8rem;color:var(--sage);background:var(--sage-light);padding:0.625rem 1rem;border-radius:8px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:1px solid rgba(61,122,95,0.2)}
 .setup-copy-btn{background:var(--ink);color:#fff;border:none;padding:0.6rem 1.25rem;border-radius:100px;font-size:0.8125rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:opacity .15s;flex-shrink:0}
@@ -434,21 +432,9 @@ tr:last-child td{border-bottom:none}
 
 <div id="main" style="display:none">
 
-  <!-- Setup banner - shown until widget fires for the first time -->
-  <div class="setup-banner" id="setup-banner">
-    <div class="setup-banner-top">
-      <div class="setup-banner-title">Your widget isn't installed yet</div>
-      <button class="onboarding-test-btn" onclick="reopenOnboarding()">Install widget now</button>
-    </div>
-    <div class="setup-embed">
-      <div class="setup-embed-code" id="setup-embed-code"></div>
-      <button class="setup-copy-btn" onclick="copySetupCode()">Copy code</button>
-    </div>
-    <div class="setup-banner-sub" style="margin-top:0.75rem">Prefer to do it yourself? Paste that code before the <code style="background:rgba(0,0,0,0.05);padding:0 4px;border-radius:3px">&lt;/body&gt;</code> tag in your site's shared template. Need help? <a id="setup-install-link" href="/install">View the full installation guide →</a></div>
-  </div>
-
   <div class="tab-bar">
-    <button class="tab-btn active" onclick="switchTab('overview',this)">Overview</button>
+    <button class="tab-btn install-tab-btn" id="install-tab-btn" style="display:none" onclick="switchTab('install',this)">● Get started</button>
+    <button class="tab-btn active" id="overview-tab-btn" onclick="switchTab('overview',this)">Overview</button>
     <button class="tab-btn" onclick="switchTab('widget',this)">Widgets</button>
     <button class="tab-btn" onclick="switchTab('payouts',this)">Payouts</button>
     <button class="tab-btn" onclick="switchTab('matches',this)">Logs</button>
@@ -461,6 +447,15 @@ tr:last-child td{border-bottom:none}
   </div>
 
   <div class="body">
+
+    <!-- ── Get started (install) ── -->
+    <div class="tab-panel" id="tab-install">
+      <div class="install-tab-header">
+        <div class="install-tab-title">Let's get your widget live</div>
+        <div class="install-tab-sub">Your widget isn't installed yet - pick your platform below and we'll walk you through it, step by step.</div>
+      </div>
+      <div id="install-tab-body"></div>
+    </div>
 
     <!-- ── Overview ── -->
     <div class="tab-panel active" id="tab-overview">
@@ -1241,13 +1236,14 @@ async function loadDashboard() {
   // reconstructed from them instead.
   const embedCode = `<script src="https://www.introlinq.com/widget.js" data-publisher="${esc(d.publisher.slug)}"><\/script>`;
   if (!d.publisher.first_widget_fire_at) {
-    document.getElementById('setup-banner').style.display = 'block';
-    document.getElementById('setup-embed-code').textContent = embedCode;
-    document.getElementById('setup-install-link').href = `/install?pub=${encodeURIComponent(d.publisher.slug)}`;
-    _onboardingSavedPlatform = d.publisher.platform;
-    if (!sessionStorage.getItem('il_onboarding_dismissed_' + d.publisher.slug)) {
-      openOnboarding(d.publisher.slug, d.publisher.platform);
-    }
+    // Not live yet - the "Get started" tab is the entry point (not a modal,
+    // not a banner sitting oddly above the tab bar). It stays in the tab
+    // bar for as long as the widget's never fired, so navigating away to
+    // look around and coming back to it is just clicking a tab, no
+    // dismiss/reopen tracking needed.
+    initInstallTab(d.publisher.slug, d.publisher.platform);
+    document.getElementById('install-tab-btn').style.display = '';
+    switchTab('install', document.getElementById('install-tab-btn'));
   } else if (d.publisher.last_widget_fire_at) {
     // Always visible once live, not just right after setup - last_widget_fire_at
     // updates on every single widget request, so this is an ongoing "is it still
@@ -1674,11 +1670,6 @@ function copyCarouselEmbed() {
 function copyBoardEmbed() {
   navigator.clipboard.writeText(document.getElementById('board-embed-display').textContent.trim());
   toast('Expert Board code copied!');
-}
-
-function copySetupCode() {
-  navigator.clipboard.writeText(document.getElementById('setup-embed-code').textContent.trim());
-  toast('Embed code copied!');
 }
 
 // ── Partners ─────────────────────────────────────────────────────────────────
@@ -2242,14 +2233,13 @@ function closePagesModal() {
   document.getElementById('pages-modal').classList.remove('open');
 }
 
-// ── Onboarding modal ────────────────────────────────────────────────────────
-// Shown on login for any publisher whose widget has never fired, so they
-// can't wander into the dashboard and forget to install - same content as
-// /install, just walked step by step with their real Publisher ID already
-// filled in. Dismissible (not a true lockout - some people just want to
-// look around first) but reappears every new session until the widget
-// actually fires, and the existing setup-banner stays as a persistent
-// reminder for anyone who dismisses it.
+// ── Get started (install) tab ───────────────────────────────────────────────
+// Own tab rather than a modal or a banner sitting above the tab bar - shown
+// (and made the active tab) on login for any publisher whose widget has
+// never fired, same content as /install, walked one step at a time with
+// their real Publisher ID already filled in. Stays in the tab bar for as
+// long as the widget's never fired; navigating to another tab and back is
+// all the "dismiss" it needs, no separate tracking required.
 const ONBOARDING_PLATFORMS = {
   html: {
     label: 'Any website',
@@ -2350,19 +2340,13 @@ const ONBOARDING_UNSUPPORTED = {
 };
 
 let _onboardingPub = null;
-let _onboardingSavedPlatform = null;
 
-// Re-entry point for the "Install widget now" button in the setup banner -
-// dismissing the modal only stops it from popping up automatically, it
-// shouldn't strand anyone with no way back in short of the banner's raw
-// embed code.
-function reopenOnboarding() {
-  openOnboarding(PUB, _onboardingSavedPlatform);
+function goToOverviewTab() {
+  switchTab('overview', document.getElementById('overview-tab-btn'));
 }
 
-function openOnboarding(pub, savedPlatform) {
+function initInstallTab(pub, savedPlatform) {
   _onboardingPub = pub;
-  document.getElementById('onboarding-modal').classList.add('open');
   if (savedPlatform && ONBOARDING_PLATFORMS[savedPlatform]) {
     renderOnboardingSteps(savedPlatform);
   } else if (savedPlatform && ONBOARDING_UNSUPPORTED[savedPlatform]) {
@@ -2370,11 +2354,6 @@ function openOnboarding(pub, savedPlatform) {
   } else {
     renderOnboardingPicker();
   }
-}
-
-function dismissOnboarding() {
-  document.getElementById('onboarding-modal').classList.remove('open');
-  sessionStorage.setItem('il_onboarding_dismissed_' + _onboardingPub, '1');
 }
 
 function renderOnboardingPicker() {
@@ -2390,10 +2369,10 @@ function renderOnboardingPicker() {
       <div class="platform-card-label">${esc(p.label)}</div>
     </button>
   `).join('');
-  document.getElementById('onboarding-body').innerHTML = `
+  document.getElementById('install-tab-body').innerHTML = `
     <div class="onboarding-lede">How is your blog built? Pick your platform and we'll walk you through installing the widget - it only takes a couple of minutes.</div>
     <div class="platform-grid">${cards}${unsupported}</div>
-    <div style="text-align:center;margin-top:1.5rem"><button class="onboarding-later" onclick="dismissOnboarding()">I'll do this later</button></div>
+    <div style="text-align:center;margin-top:1.5rem"><button class="onboarding-later" onclick="goToOverviewTab()">I'll do this later</button></div>
   `;
 }
 
@@ -2424,7 +2403,7 @@ function renderOnboardingSteps(id, stepIndex) {
   const embedCode = `<script src="https://www.introlinq.com/widget.js" data-publisher="${esc(_onboardingPub)}"><\/script>`;
   const backAction = stepIndex === 0 ? `renderOnboardingPicker()` : `renderOnboardingSteps('${id}', ${stepIndex - 1})`;
   const backLabel = stepIndex === 0 ? '← Choose a different platform' : '← Back';
-  document.getElementById('onboarding-body').innerHTML = `
+  document.getElementById('install-tab-body').innerHTML = `
     <button class="onboarding-back" onclick="${backAction}">${backLabel}</button>
     <div class="setup-embed" style="margin-bottom:1.5rem">
       <div class="setup-embed-code" id="onboarding-embed-code">${esc(embedCode)}</div>
@@ -2462,7 +2441,7 @@ function copyOnboardingCode() {
 
 function renderOnboardingUnsupported(id) {
   const p = ONBOARDING_UNSUPPORTED[id];
-  document.getElementById('onboarding-body').innerHTML = `
+  document.getElementById('install-tab-body').innerHTML = `
     <button class="onboarding-back" onclick="renderOnboardingPicker()">← Choose a different platform</button>
     <div class="onboarding-unsupported-box">
       <strong>${esc(p.label)} isn't supported yet.</strong><br><br>
@@ -2470,7 +2449,7 @@ function renderOnboardingUnsupported(id) {
       <br><br>
       We've noted that you're on ${esc(p.label)} - if we manage to get official support (or a partnership) sorted, you'll be one of the first people we reach out to. In the meantime, drop us a line at <a href="mailto:hello@introlinq.com">hello@introlinq.com</a> if you'd like to be added to a manual-link option we're exploring.
     </div>
-    <div style="text-align:center;margin-top:1.5rem"><button class="onboarding-later" onclick="dismissOnboarding()">Got it, close this</button></div>
+    <div style="text-align:center;margin-top:1.5rem"><button class="onboarding-later" onclick="goToOverviewTab()">Got it, close this</button></div>
   `;
 }
 
@@ -2491,7 +2470,12 @@ async function testOnboardingWidget() {
   if (data && data.status === 'live') {
     result.className = 'onboarding-test-result ok';
     result.textContent = "✓ You're live! Widget found and working.";
-    setTimeout(() => { document.getElementById('onboarding-modal').classList.remove('open'); location.reload(); }, 1800);
+    // first_widget_fire_at only gets set by real reader traffic hitting the
+    // widget (see api/match.js), not by this check - so there's nothing to
+    // reload yet. Just take them to Overview directly instead of reloading
+    // into a state that would look identical to "still not installed".
+    document.getElementById('install-tab-btn').style.display = 'none';
+    setTimeout(goToOverviewTab, 1800);
   } else if (data && data.status === 'not_found') {
     result.className = 'onboarding-test-result fail';
     result.innerHTML = `Not found yet - double check the steps above, or email <a href="mailto:hello@introlinq.com">hello@introlinq.com</a>.`;
@@ -2501,17 +2485,6 @@ async function testOnboardingWidget() {
   }
 }
 </script>
-
-<!-- Onboarding modal -->
-<div class="modal-overlay" id="onboarding-modal">
-  <div class="modal onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
-    <div class="modal-head">
-      <div class="modal-title" id="onboarding-title">Let's get your widget live</div>
-      <button class="modal-close" id="onboarding-close" onclick="dismissOnboarding()" aria-label="Close">✕</button>
-    </div>
-    <div class="onboarding-body" id="onboarding-body"></div>
-  </div>
-</div>
 
 <!-- Pages modal -->
 <div class="modal-overlay" id="pages-modal" onclick="if(event.target===this)closePagesModal()">
