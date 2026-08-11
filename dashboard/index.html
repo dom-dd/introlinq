@@ -125,7 +125,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .step-visual-tap{position:absolute;top:50%;right:6px;transform:translateY(-50%);width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.9);animation:svTap 1.8s ease-in-out infinite}
 .step-visual-content{flex:1;padding:1rem 1.25rem;display:flex;flex-direction:column;justify-content:center;gap:0.625rem}
 .step-visual-label{font-size:0.68rem;font-weight:700;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.03em}
-.step-visual-box{background:var(--sage-light);border:1px solid rgba(61,122,95,0.2);border-radius:8px;padding:0.6rem 0.75rem;font-family:monospace;font-size:0.68rem;color:var(--sage);overflow:hidden;white-space:nowrap;position:relative}
+.step-visual-box{background:var(--sage-light);border:1px solid rgba(61,122,95,0.2);border-radius:8px;padding:0.6rem 0.75rem;font-family:monospace;font-size:0.68rem;color:var(--sage);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;position:relative}
+.step-visual-box.input{background:#fff;border:1px solid var(--border);color:var(--ink);font-family:'Inter',sans-serif;font-size:0.72rem}
 .step-visual-box .sv-typed{display:inline-block;overflow:hidden;white-space:nowrap;border-right:2px solid var(--sage);animation:svType 2.4s steps(30,end) infinite}
 .step-visual-cta{align-self:flex-start;background:var(--sv-color,var(--sage));color:#fff;font-size:0.7rem;font-weight:700;padding:0.45rem 1.1rem;border-radius:100px;position:relative}
 .step-visual-cta .step-visual-tap{right:-4px;top:-4px}
@@ -2302,7 +2303,7 @@ const ONBOARDING_PLATFORMS = {
     color: '#21759b', url: 'yoursite.com/wp-admin',
     steps: [
       { title: `Download and install the plugin`, desc: `<a class="onboarding-download-btn" href="https://www.introlinq.com/downloads/introlinq.zip" download>⬇ Download IntroLinq plugin</a><br><br>Then in your WordPress admin, go to <strong>Plugins → Add New → Upload Plugin</strong>, select the downloaded <code>introlinq.zip</code>, and click <strong>Install Now</strong>, then <strong>Activate</strong>.`, visual: { type: 'upload', label: 'introlinq.zip' } },
-      { title: `Enter your Publisher ID`, desc: `Go to <strong>Settings → IntroLinq</strong> in your WordPress admin sidebar. Enter your Publisher ID and click <strong>Save Publisher ID</strong>.`, visual: { type: 'field', fieldLabel: 'Settings → IntroLinq', cta: 'Save Publisher ID' } },
+      { title: `Enter your Publisher ID`, desc: `Go to <strong>Settings → IntroLinq</strong> in your WordPress admin sidebar. Enter your Publisher ID and click <strong>Save Publisher ID</strong>.`, visual: { type: 'field', fieldLabel: 'Settings → IntroLinq', cta: 'Save Publisher ID', content: 'id' } },
       { title: `Done - visit any article to confirm`, desc: `Open a blog post with at least a few paragraphs of text. After a few seconds, you should see phrases highlighted when there's a matching expert.`, visual: { type: 'preview' } },
     ],
     note: `The widget only activates on article/post pages with substantial content (150+ words).`,
@@ -2459,7 +2460,7 @@ function stepVisualChrome(url, color, bodyHtml) {
   `;
 }
 
-function renderStepVisual(spec, color, url) {
+function renderStepVisual(spec, color, url, realCode, realId) {
   if (!spec) return '';
   if (spec.type === 'nav') {
     const items = spec.items.map((label, i) => `
@@ -2475,10 +2476,17 @@ function renderStepVisual(spec, color, url) {
     `);
   }
   if (spec.type === 'field') {
+    // Uses the publisher's real embed code / real Publisher ID, not a
+    // generic placeholder - a mockup showing fake text next to a real
+    // "paste here" instruction risks someone copying the wrong thing
+    // straight out of the illustration instead of the actual Copy code
+    // button above it.
+    const isId = spec.content === 'id';
+    const shown = isId ? esc(realId || 'your-publisher-id') : esc(realCode || '<script src="widget.js">');
     return stepVisualChrome(url, color, `
       <div class="step-visual-content" style="width:100%">
         <div class="step-visual-label">${esc(spec.fieldLabel)}</div>
-        <div class="step-visual-box"><span class="sv-typed">&lt;script src="introlinq.com/widget.js"&gt;</span></div>
+        <div class="step-visual-box${isId ? ' input' : ''}"><span class="sv-typed">${shown}</span></div>
         <div class="step-visual-cta">${esc(spec.cta || 'Save')}<div class="step-visual-tap"></div></div>
       </div>
     `);
@@ -2547,7 +2555,7 @@ function renderOnboardingSteps(id, stepIndex) {
     </div>
     <div class="onboarding-progress">Step ${stepIndex + 1} of ${total}</div>
     <div class="onboarding-progress-bar"><div class="onboarding-progress-bar-fill" style="width:${((stepIndex + 1) / total) * 100}%"></div></div>
-    ${renderStepVisual(step.visual, p.color, p.url)}
+    ${renderStepVisual(step.visual, p.color, p.url, embedCode, _onboardingPub)}
     <div class="onboarding-steps">
       <div class="onboarding-step">
         <div class="onboarding-step-num">${stepIndex + 1}</div>
