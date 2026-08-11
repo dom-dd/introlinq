@@ -29,7 +29,12 @@ function getSessionToken(req) {
 function detectPlatformFromSite(hostname, html) {
   const host = (hostname || '').toLowerCase();
   const h = (html || '').toLowerCase();
-  if (host.endsWith('.medium.com')) return 'medium';
+  // Medium's default URL is path-based (medium.com/@username), not a
+  // subdomain - confirmed against a real publisher's domain on file
+  // (medium.com/@mansidhyani) that the subdomain-only check below would
+  // have missed entirely. The subdomain form still exists for older/custom
+  // setups, so both are checked.
+  if (host === 'medium.com' || host.endsWith('.medium.com')) return 'medium';
   if (host.endsWith('.substack.com')) return 'substack';
   if (h.includes('/wp-content/') || h.includes('/wp-includes/') || h.includes('wp-json') || /name=["']generator["'][^>]*wordpress/i.test(h)) return 'wordpress';
   if (h.includes('static.wixstatic.com') || /name=["']generator["'][^>]*wix\.com/i.test(h)) return 'wix';
