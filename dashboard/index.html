@@ -1285,7 +1285,7 @@ async function loadDashboard() {
     // bar for as long as the widget's never fired, so navigating away to
     // look around and coming back to it is just clicking a tab, no
     // dismiss/reopen tracking needed.
-    initInstallTab(d.publisher.slug, d.publisher.platform);
+    initInstallTab(d.publisher.slug, d.publisher.platform, d.publisher.platform_detected);
     document.getElementById('install-tab-btn').style.display = '';
     switchTab('install', document.getElementById('install-tab-btn'));
   } else if (d.publisher.last_widget_fire_at) {
@@ -2392,13 +2392,15 @@ const ONBOARDING_UNSUPPORTED = {
 };
 
 let _onboardingPub = null;
+let _onboardingPlatformDetected = false;
 
 function goToOverviewTab() {
   switchTab('overview', document.getElementById('overview-tab-btn'));
 }
 
-function initInstallTab(pub, savedPlatform) {
+function initInstallTab(pub, savedPlatform, wasDetected) {
   _onboardingPub = pub;
+  _onboardingPlatformDetected = !!wasDetected;
   if (savedPlatform && ONBOARDING_PLATFORMS[savedPlatform]) {
     renderOnboardingSteps(savedPlatform);
   } else if (savedPlatform && ONBOARDING_UNSUPPORTED[savedPlatform]) {
@@ -2538,6 +2540,7 @@ function renderOnboardingSteps(id, stepIndex) {
       <div class="onboarding-platform-name">${esc(p.label)}</div>
       <span class="onboarding-platform-tag">Steps for ${esc(p.label)}</span>
     </div>
+    ${stepIndex === 0 && _onboardingPlatformDetected ? `<div class="onboarding-note">We spotted this automatically from your site - not right? Use "Choose a different platform" above.</div>` : ''}
     <div class="setup-embed" style="margin-bottom:1.5rem">
       <div class="setup-embed-code" id="onboarding-embed-code">${esc(embedCode)}</div>
       <button class="setup-copy-btn" onclick="copyOnboardingCode()">Copy code</button>

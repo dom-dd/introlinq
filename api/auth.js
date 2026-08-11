@@ -18,6 +18,32 @@ function getSessionToken(req) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+// Sniffs a site's homepage HTML for platform-specific fingerprints so the
+// Get Started tab can skip straight to the right install steps instead of
+// making every new publisher pick from a grid. Deliberately conservative -
+// only matches on things that are genuinely distinctive to that platform
+// (a CDN domain baked into every page it serves, not a generic keyword),
+// so a wrong guess is rare rather than just "usually right." Hostname
+// checked first for Substack/Medium since those are hosted platforms
+// identifiable from the domain alone, before any HTML is even fetched.
+function detectPlatformFromSite(hostname, html) {
+  const host = (hostname || '').toLowerCase();
+  const h = (html || '').toLowerCase();
+  if (host.endsWith('.medium.com')) return 'medium';
+  if (host.endsWith('.substack.com')) return 'substack';
+  if (h.includes('/wp-content/') || h.includes('/wp-includes/') || h.includes('wp-json') || /name=["']generator["'][^>]*wordpress/i.test(h)) return 'wordpress';
+  if (h.includes('static.wixstatic.com') || /name=["']generator["'][^>]*wix\.com/i.test(h)) return 'wix';
+  if (h.includes('squarespace-cdn.com') || h.includes('static1.squarespace.com') || /name=["']generator["'][^>]*squarespace/i.test(h)) return 'squarespace';
+  if (h.includes('website-files.com') || h.includes('data-wf-site') || /name=["']generator["'][^>]*webflow/i.test(h)) return 'webflow';
+  if (h.includes('/ghost/api/') || /name=["']generator["'][^>]*ghost/i.test(h)) return 'ghost';
+  if (h.includes('framerusercontent.com') || /name=["']generator["'][^>]*framer/i.test(h)) return 'framer';
+  if (h.includes('substackcdn.com')) return 'substack';
+  // Checked last, deliberately - GTM can sit on top of any of the platforms
+  // above, so a CMS-specific match should always win over "they have GTM".
+  if (h.includes('googletagmanager.com/gtm.js')) return 'gtm';
+  return null;
+}
+
 async function ensureTables(sql) {
   if (tableReady) return;
   await sql`CREATE TABLE IF NOT EXISTS magic_links (
@@ -163,6 +189,25 @@ export default async function handler(req, res) {
               0.50, true, true)
       RETURNING *
     `;
+
+    // Best-effort platform detection - never allowed to fail or meaningfully
+    // delay signup. A wrong or missing result just means the Get Started
+    // tab falls back to the manual picker, same as before this existed.
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS platform TEXT`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS platform_detected BOOLEAN NOT NULL DEFAULT false`.catch(() => {});
+    try {
+      const siteRes = await fetch(cleanDomain, {
+        signal: AbortSignal.timeout(8000),
+        headers: { 'User-Agent': 'IntroLinq-PlatformDetect/1.0 (+https://www.introlinq.com)' },
+      });
+      if (siteRes.ok) {
+        const html = await siteRes.text();
+        const detected = detectPlatformFromSite(new URL(cleanDomain).hostname, html);
+        if (detected) {
+          await sql`UPDATE publishers SET platform = ${detected}, platform_detected = true WHERE id = ${pub.id}`;
+        }
+      }
+    } catch {}
 
     // Send welcome email with 7-day magic link
     const token = await createMagicToken(sql, normalised, 7 * 24 * 60 * 60 * 1000);
