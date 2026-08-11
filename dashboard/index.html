@@ -92,6 +92,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .onboarding-step-title{font-size:0.875rem;font-weight:600;color:var(--ink);margin-bottom:0.2rem}
 .onboarding-step-desc{font-size:0.8125rem;color:var(--ink-soft);line-height:1.5}
 .onboarding-note{background:var(--gold-light);border:1px solid rgba(230,168,32,0.25);border-radius:8px;padding:0.75rem 1rem;font-size:0.78rem;color:#78500a;line-height:1.5;margin-bottom:1.25rem}
+.onboarding-warning{background:#fff1f1;border:1px solid rgba(185,28,28,0.3);border-radius:8px;padding:0.875rem 1rem;font-size:0.8125rem;color:#b91c1c;line-height:1.55;margin-bottom:1.25rem;font-weight:600}
+.onboarding-warning strong{color:#7f1d1d}
 .onboarding-test-row{display:flex;align-items:center;gap:0.875rem;flex-wrap:wrap;padding-top:0.5rem;border-top:1px solid var(--border)}
 .onboarding-test-btn{background:var(--ink);color:#fff;border:none;padding:0.7rem 1.5rem;border-radius:100px;font-size:0.8125rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:opacity .15s}
 .onboarding-test-btn:hover{opacity:0.85}
@@ -2539,6 +2541,7 @@ function renderOnboardingSteps(id, stepIndex) {
       <div class="onboarding-platform-name">${esc(p.label)}</div>
       <span class="onboarding-platform-tag">Steps for ${esc(p.label)}</span>
     </div>
+    <div class="onboarding-warning">⚠ Important: the widget won't show anything on the very first visit to a page. That first visit triggers a background scan - open a page, wait about 30 seconds, then <strong>refresh</strong>. The result will show straight away on that reload, and for every visitor after.</div>
     <div class="setup-embed" style="margin-bottom:1.5rem">
       <div class="setup-embed-code" id="onboarding-embed-code">${esc(embedCode)}</div>
       <button class="setup-copy-btn" onclick="copyOnboardingCode()">Copy code</button>
