@@ -152,9 +152,12 @@ export default async function handler(req, res) {
   // and serverless functions (12) per deployment - this reuses the existing
   // api/admin.js function instead of adding a 13th file. Finds up to 50 new
   // candidate domains via SerpAPI using the same logic/tables as the manual
-  // discovery/discover.js script. Deliberately does not run classify.js or
-  // enrich.js - those cost Anthropic/Apollo credits per lead and stay a
-  // manual, deliberate spend.
+  // discovery/discover.js script. This endpoint itself does not run
+  // classify.js or enrich.js - the same GitHub Actions workflow runs
+  // discovery/classify.js directly on the runner right after calling this,
+  // which auto-cascades into Apollo enrichment for anything it classifies
+  // as "publisher". That step spends real Anthropic/Apollo credits per
+  // lead automatically, every day - it is not a manual/deliberate trigger.
   if (resource === 'run-discovery') {
     if (req.headers['authorization'] !== `Bearer ${process.env.CRON_SECRET}`) {
       return res.status(401).json({ error: 'Unauthorized' });
