@@ -448,23 +448,36 @@ tr:last-child td{border-bottom:none}
 .prev-board-btn{height:11px;border-radius:100px;background:var(--gold);margin-top:1px}
 
 /* Newsletter Links preview + live panel */
+@keyframes nl-pulse{0%,100%{background:var(--sage-light)}50%{background:var(--sage)}}
 .prev-nl-row{display:flex;align-items:center;gap:8px;border:1px solid #e4e4ee;border-radius:7px;background:var(--white);padding:6px 8px;margin-bottom:6px;opacity:0;animation:board-fadein .4s ease forwards}
 .prev-nl-row:nth-child(2){animation-delay:.1s}
 .prev-nl-row:nth-child(3){animation-delay:.25s}
 .prev-nl-row:nth-child(4){animation-delay:.4s}
-.prev-nl-copy-btn{width:34px;height:11px;border-radius:100px;background:var(--sage-light);flex-shrink:0}
-.nl-search-row{margin-bottom:0.875rem}
-.nl-search-input{width:100%;max-width:360px;padding:0.55rem 0.875rem;border:1.5px solid var(--border);border-radius:100px;font-size:0.8125rem;font-family:'Inter',sans-serif;outline:none;color:var(--ink);transition:border-color .15s}
-.nl-search-input:focus{border-color:var(--sage)}
-.nl-list{display:flex;flex-direction:column;gap:0.625rem}
-.nl-card{display:flex;align-items:center;gap:0.875rem;border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem 1rem}
+.prev-nl-copy-btn{width:34px;height:11px;border-radius:100px;background:var(--sage-light);flex-shrink:0;animation:nl-pulse 2.4s ease-in-out infinite;animation-delay:1.2s}
+.prev-nl-row:nth-child(3) .prev-nl-copy-btn{animation-delay:1.6s}
+.prev-nl-row:nth-child(4) .prev-nl-copy-btn{animation-delay:2s}
+.nl-search-row{padding:1.25rem 1.5rem 0;margin-bottom:0.875rem}
+.nl-search-wrap{position:relative;max-width:360px}
+.nl-search-icon{position:absolute;left:0.875rem;top:50%;transform:translateY(-50%);color:var(--ink-muted);pointer-events:none}
+.nl-search-input{width:100%;padding:0.55rem 0.875rem 0.55rem 2.25rem;border:1.5px solid var(--border);border-radius:100px;font-size:0.8125rem;font-family:'Inter',sans-serif;outline:none;color:var(--ink);background:var(--cream);transition:border-color .15s,background .15s}
+.nl-search-input:focus{border-color:var(--sage);background:var(--white)}
+.nl-list{display:flex;flex-direction:column;gap:0.625rem;padding:0 1.5rem 1.5rem}
+.nl-card{border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem 1rem}
+.nl-card-main{display:flex;align-items:center;gap:0.875rem}
 .nl-photo{width:40px;height:40px;border-radius:50%;object-fit:cover;background:var(--sage-light);flex-shrink:0}
 .nl-info{flex:1;min-width:0}
 .nl-name{font-size:0.8125rem;font-weight:600;color:var(--ink)}
 .nl-role{font-size:0.7rem;color:var(--ink-muted);margin-top:0.1rem}
 .nl-desc{font-size:0.75rem;color:var(--ink-soft);margin-top:0.2rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nl-actions{display:flex;align-items:center;gap:0.4rem;flex-shrink:0}
+.nl-icon-btn{flex-shrink:0;width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:none;border:1px solid var(--border);color:var(--ink-muted);border-radius:50%;cursor:pointer;transition:all .15s;text-decoration:none}
+.nl-icon-btn:hover{border-color:var(--sage);color:var(--sage)}
+.nl-card.expanded .nl-icon-btn.nl-expand-btn{border-color:var(--sage);color:var(--sage);transform:rotate(180deg)}
 .nl-copy-btn{flex-shrink:0;background:var(--sage-light);color:var(--sage);border:none;font-size:0.75rem;font-weight:700;font-family:'Inter',sans-serif;padding:0.45rem 0.875rem;border-radius:100px;cursor:pointer;transition:opacity .15s}
 .nl-copy-btn:hover{opacity:0.8}
+.nl-detail{display:none;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);font-size:0.75rem;color:var(--ink-soft);line-height:1.55}
+.nl-card.expanded .nl-detail{display:block}
+.nl-detail-meta{margin-top:0.4rem;color:var(--ink-muted);font-size:0.7rem}
 </style>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-J1RDCPZ6SB"></script>
@@ -1029,7 +1042,10 @@ tr:last-child td{border-bottom:none}
             <div class="section-sub">Nothing to install - search, then copy a link to paste into your newsletter</div>
           </div>
           <div class="nl-search-row">
-            <input type="text" class="nl-search-input" id="nl-search" placeholder="Search by name, topic, or role…" oninput="filterNewsletterExperts(this.value)">
+            <div class="nl-search-wrap">
+              <svg class="nl-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+              <input type="text" class="nl-search-input" id="nl-search" placeholder="Search by name, topic, or role…" oninput="filterNewsletterExperts(this.value)">
+            </div>
           </div>
           <div id="nl-list" class="nl-list"><div class="logs-empty">Loading experts…</div></div>
         </div>
@@ -1797,16 +1813,38 @@ function renderNewsletterExperts(list) {
     const fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=96&name=' + encodeURIComponent(e.name);
     const role = [e.position, e.company].filter(Boolean).join(' · ');
     const desc = (e.headlines || {}).en || e.bio || '';
-    return `<div class="nl-card">
-      <a href="${esc(e.photo_url || fallback)}" target="_blank" rel="noopener"><img class="nl-photo" src="${esc(e.photo_url || fallback)}" onerror="this.src='${esc(fallback)}'" alt="${esc(e.name)}"></a>
-      <div class="nl-info">
-        <div class="nl-name">${esc(e.name)}</div>
-        ${role ? `<div class="nl-role">${esc(role)}</div>` : ''}
-        ${desc ? `<div class="nl-desc">${esc(desc)}</div>` : ''}
+    const fullBio = e.bio || desc || 'No further details available.';
+    const metaParts = [];
+    if (e.location_country) metaParts.push(e.location_country);
+    if (e.languages && e.languages.length) metaParts.push(e.languages.join(', '));
+    if (e.price_from) metaParts.push(`${e.price_currency || ''} ${e.price_from}+`.trim());
+    const metaLine = metaParts.join(' · ');
+    return `<div class="nl-card" id="nl-card-${e.id}">
+      <div class="nl-card-main">
+        <img class="nl-photo" src="${esc(e.photo_url || fallback)}" onerror="this.src='${esc(fallback)}'" alt="${esc(e.name)}">
+        <div class="nl-info">
+          <div class="nl-name">${esc(e.name)}</div>
+          ${role ? `<div class="nl-role">${esc(role)}</div>` : ''}
+          ${desc ? `<div class="nl-desc">${esc(desc)}</div>` : ''}
+        </div>
+        <div class="nl-actions">
+          <a class="nl-icon-btn" href="${esc(e.photo_url || fallback)}" target="_blank" rel="noopener" title="Open photo - right-click to save">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></svg>
+          </a>
+          <button class="nl-icon-btn nl-expand-btn" onclick="toggleNewsletterDetail(${e.id})" title="More details">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <button class="nl-copy-btn" onclick="copyNewsletterLink(${e.id})">Copy link</button>
+        </div>
       </div>
-      <button class="nl-copy-btn" onclick="copyNewsletterLink(${e.id})">Copy link</button>
+      <div class="nl-detail">${esc(fullBio)}${metaLine ? `<div class="nl-detail-meta">${esc(metaLine)}</div>` : ''}</div>
     </div>`;
   }).join('');
+}
+
+function toggleNewsletterDetail(expertId) {
+  const card = document.getElementById('nl-card-' + expertId);
+  if (card) card.classList.toggle('expanded');
 }
 
 function filterNewsletterExperts(term) {
