@@ -24,9 +24,12 @@ export default async function handler(req, res) {
   if (!publisher) return res.status(404).json({ error: 'Publisher not found' });
 
   const experts = await sql`
-    SELECT e.id, e.name, e.position, e.company, e.bio, e.photo_url, e.booking_url,
+    SELECT e.id, e.name, e.position, e.company, e.bio, e.description_long, e.photo_url, e.booking_url,
            e.price_from, e.price_currency, e.topics, e.languages, e.location_country,
            COALESCE(e.headlines, '{}'::jsonb) AS headlines,
+           COALESCE(e.highlights, '{}') AS highlights,
+           COALESCE(e.services, '{}') AS services,
+           COALESCE(e.notable_categories, '{}') AS notable_categories,
            p.slug AS provider_slug, p.website_url AS provider_url
     FROM experts e
     JOIN providers p ON p.id = e.provider_id

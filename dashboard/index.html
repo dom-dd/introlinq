@@ -448,14 +448,18 @@ tr:last-child td{border-bottom:none}
 .prev-board-btn{height:11px;border-radius:100px;background:var(--gold);margin-top:1px}
 
 /* Newsletter Links preview + live panel */
-@keyframes nl-pulse{0%,100%{background:var(--sage-light)}50%{background:var(--sage)}}
 .prev-nl-row{display:flex;align-items:center;gap:8px;border:1px solid #e4e4ee;border-radius:7px;background:var(--white);padding:6px 8px;margin-bottom:6px;opacity:0;animation:board-fadein .4s ease forwards}
 .prev-nl-row:nth-child(2){animation-delay:.1s}
 .prev-nl-row:nth-child(3){animation-delay:.25s}
 .prev-nl-row:nth-child(4){animation-delay:.4s}
-.prev-nl-copy-btn{width:34px;height:11px;border-radius:100px;background:var(--sage-light);flex-shrink:0;animation:nl-pulse 2.4s ease-in-out infinite;animation-delay:1.2s}
-.prev-nl-row:nth-child(3) .prev-nl-copy-btn{animation-delay:1.6s}
-.prev-nl-row:nth-child(4) .prev-nl-copy-btn{animation-delay:2s}
+.prev-nl-linkbtn{width:22px;height:22px;border-radius:50%;background:var(--sage-light);flex-shrink:0;position:relative}
+.prev-nl-linkbtn svg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--sage)}
+@keyframes nl-link-icon{0%,55%,100%{opacity:1;transform:translate(-50%,-50%) scale(1)}70%,90%{opacity:0;transform:translate(-50%,-50%) scale(0.5)}}
+@keyframes nl-check-icon{0%,55%,100%{opacity:0;transform:translate(-50%,-50%) scale(0.5)}75%,85%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.prev-nl-icon-link{animation:nl-link-icon 2.6s ease-in-out infinite;animation-delay:1.3s}
+.prev-nl-icon-check{animation:nl-check-icon 2.6s ease-in-out infinite;animation-delay:1.3s}
+.prev-nl-row:nth-child(3) .prev-nl-icon-link,.prev-nl-row:nth-child(3) .prev-nl-icon-check{animation-delay:1.7s}
+.prev-nl-row:nth-child(4) .prev-nl-icon-link,.prev-nl-row:nth-child(4) .prev-nl-icon-check{animation-delay:2.1s}
 .nl-search-row{padding:1.25rem 1.5rem 0;margin-bottom:0.875rem}
 .nl-search-wrap{position:relative;max-width:360px}
 .nl-search-icon{position:absolute;left:0.875rem;top:50%;transform:translateY(-50%);color:var(--ink-muted);pointer-events:none}
@@ -477,7 +481,11 @@ tr:last-child td{border-bottom:none}
 .nl-copy-btn:hover{opacity:0.8}
 .nl-detail{display:none;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);font-size:0.75rem;color:var(--ink-soft);line-height:1.55}
 .nl-card.expanded .nl-detail{display:block}
-.nl-detail-meta{margin-top:0.4rem;color:var(--ink-muted);font-size:0.7rem}
+.nl-detail-highlights{margin:0.5rem 0 0;padding-left:1.1rem;color:var(--ink-soft)}
+.nl-detail-highlights li{margin-bottom:0.2rem}
+.nl-detail-tags{display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.5rem}
+.nl-tag{display:inline-block;background:var(--sage-light);color:var(--sage);font-size:0.68rem;font-weight:500;padding:0.15rem 0.55rem;border-radius:100px}
+.nl-detail-meta{margin-top:0.5rem;color:var(--ink-muted);font-size:0.7rem}
 </style>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-J1RDCPZ6SB"></script>
@@ -1030,9 +1038,9 @@ tr:last-child td{border-bottom:none}
                 <div class="prev-board-search-icon"></div>
                 <div class="prev-board-search-bar"></div>
               </div>
-              <div class="prev-nl-row"><div class="prev-board-avatar"></div><div style="flex:1"><div class="prev-board-name" style="width:40%"></div><div class="prev-board-bio" style="width:70%;margin-top:3px"></div></div><div class="prev-nl-copy-btn"></div></div>
-              <div class="prev-nl-row"><div class="prev-board-avatar"></div><div style="flex:1"><div class="prev-board-name" style="width:32%"></div><div class="prev-board-bio" style="width:58%;margin-top:3px"></div></div><div class="prev-nl-copy-btn"></div></div>
-              <div class="prev-nl-row"><div class="prev-board-avatar"></div><div style="flex:1"><div class="prev-board-name" style="width:45%"></div><div class="prev-board-bio" style="width:65%;margin-top:3px"></div></div><div class="prev-nl-copy-btn"></div></div>
+              <div class="prev-nl-row"><div class="prev-board-avatar"></div><div style="flex:1"><div class="prev-board-name" style="width:40%"></div><div class="prev-board-bio" style="width:70%;margin-top:3px"></div></div><div class="prev-nl-linkbtn"><svg class="prev-nl-icon-link" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><svg class="prev-nl-icon-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+              <div class="prev-nl-row"><div class="prev-board-avatar"></div><div style="flex:1"><div class="prev-board-name" style="width:32%"></div><div class="prev-board-bio" style="width:58%;margin-top:3px"></div></div><div class="prev-nl-linkbtn"><svg class="prev-nl-icon-link" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><svg class="prev-nl-icon-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+              <div class="prev-nl-row"><div class="prev-board-avatar"></div><div style="flex:1"><div class="prev-board-name" style="width:45%"></div><div class="prev-board-bio" style="width:65%;margin-top:3px"></div></div><div class="prev-nl-linkbtn"><svg class="prev-nl-icon-link" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><svg class="prev-nl-icon-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
             </div>
           </div>
         </div>
@@ -1813,7 +1821,11 @@ function renderNewsletterExperts(list) {
     const fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=96&name=' + encodeURIComponent(e.name);
     const role = [e.position, e.company].filter(Boolean).join(' · ');
     const desc = (e.headlines || {}).en || e.bio || '';
-    const fullBio = e.bio || desc || 'No further details available.';
+    // description_long is OpenIntro's actual long-form bio - falls back to
+    // the short bio only for experts that don't have one synced yet.
+    const fullBio = e.description_long || e.bio || desc || 'No further details available.';
+    const highlights = e.highlights || [];
+    const tags = [...new Set([...(e.services || []), ...(e.notable_categories || [])])];
     const metaParts = [];
     if (e.location_country) metaParts.push(e.location_country);
     if (e.languages && e.languages.length) metaParts.push(e.languages.join(', '));
@@ -1837,7 +1849,12 @@ function renderNewsletterExperts(list) {
           <button class="nl-copy-btn" onclick="copyNewsletterLink(${e.id})">Copy link</button>
         </div>
       </div>
-      <div class="nl-detail">${esc(fullBio)}${metaLine ? `<div class="nl-detail-meta">${esc(metaLine)}</div>` : ''}</div>
+      <div class="nl-detail">
+        <div>${esc(fullBio)}</div>
+        ${highlights.length ? `<ul class="nl-detail-highlights">${highlights.map(h => `<li>${esc(h)}</li>`).join('')}</ul>` : ''}
+        ${tags.length ? `<div class="nl-detail-tags">${tags.map(t => `<span class="nl-tag">${esc(t)}</span>`).join('')}</div>` : ''}
+        ${metaLine ? `<div class="nl-detail-meta">${esc(metaLine)}</div>` : ''}
+      </div>
     </div>`;
   }).join('');
 }
