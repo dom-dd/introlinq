@@ -446,6 +446,25 @@ tr:last-child td{border-bottom:none}
 .prev-board-name{height:5px;border-radius:3px;background:#e4e4ee;flex:1}
 .prev-board-bio{height:4px;border-radius:3px;background:#f0f0f8}
 .prev-board-btn{height:11px;border-radius:100px;background:var(--gold);margin-top:1px}
+
+/* Newsletter Links preview + live panel */
+.prev-nl-row{display:flex;align-items:center;gap:8px;border:1px solid #e4e4ee;border-radius:7px;background:var(--white);padding:6px 8px;margin-bottom:6px;opacity:0;animation:board-fadein .4s ease forwards}
+.prev-nl-row:nth-child(2){animation-delay:.1s}
+.prev-nl-row:nth-child(3){animation-delay:.25s}
+.prev-nl-row:nth-child(4){animation-delay:.4s}
+.prev-nl-copy-btn{width:34px;height:11px;border-radius:100px;background:var(--sage-light);flex-shrink:0}
+.nl-search-row{margin-bottom:0.875rem}
+.nl-search-input{width:100%;max-width:360px;padding:0.55rem 0.875rem;border:1.5px solid var(--border);border-radius:100px;font-size:0.8125rem;font-family:'Inter',sans-serif;outline:none;color:var(--ink);transition:border-color .15s}
+.nl-search-input:focus{border-color:var(--sage)}
+.nl-list{display:flex;flex-direction:column;gap:0.625rem}
+.nl-card{display:flex;align-items:center;gap:0.875rem;border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem 1rem}
+.nl-photo{width:40px;height:40px;border-radius:50%;object-fit:cover;background:var(--sage-light);flex-shrink:0}
+.nl-info{flex:1;min-width:0}
+.nl-name{font-size:0.8125rem;font-weight:600;color:var(--ink)}
+.nl-role{font-size:0.7rem;color:var(--ink-muted);margin-top:0.1rem}
+.nl-desc{font-size:0.75rem;color:var(--ink-soft);margin-top:0.2rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nl-copy-btn{flex-shrink:0;background:var(--sage-light);color:var(--sage);border:none;font-size:0.75rem;font-weight:700;font-family:'Inter',sans-serif;padding:0.45rem 0.875rem;border-radius:100px;cursor:pointer;transition:opacity .15s}
+.nl-copy-btn:hover{opacity:0.8}
 </style>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-J1RDCPZ6SB"></script>
@@ -600,6 +619,7 @@ tr:last-child td{border-bottom:none}
         <button class="wtab-btn active" onclick="switchWidgetTab('text',this)">Text Widget</button>
         <button class="wtab-btn" onclick="switchWidgetTab('carousel',this)">Expert Carousel</button>
         <button class="wtab-btn" onclick="switchWidgetTab('board',this)">Expert Board</button>
+        <button class="wtab-btn" onclick="switchWidgetTab('newsletter',this)">Newsletter Links</button>
       </div>
 
       <!-- TEXT WIDGET -->
@@ -983,6 +1003,38 @@ tr:last-child td{border-bottom:none}
         </div>
       </div>
 
+      <!-- NEWSLETTER LINKS -->
+      <div class="wtab-panel" id="wtab-newsletter">
+        <div class="wpreview">
+          <div class="wpreview-desc">
+            <div class="wpreview-desc-label">Newsletter Links</div>
+            <div class="wpreview-desc-text">Search your available experts and copy a tracked link to paste into a newsletter by hand.</div>
+            <div class="wpreview-desc-sub">For Substack, Medium, or any newsletter where the widget can't run - clicks are tracked the same way as your other widgets.</div>
+          </div>
+          <div class="wpreview-anim">
+            <div class="wpreview-inner">
+              <div class="prev-board-search">
+                <div class="prev-board-search-icon"></div>
+                <div class="prev-board-search-bar"></div>
+              </div>
+              <div class="prev-nl-row"><div class="prev-board-avatar"></div><div style="flex:1"><div class="prev-board-name" style="width:40%"></div><div class="prev-board-bio" style="width:70%;margin-top:3px"></div></div><div class="prev-nl-copy-btn"></div></div>
+              <div class="prev-nl-row"><div class="prev-board-avatar"></div><div style="flex:1"><div class="prev-board-name" style="width:32%"></div><div class="prev-board-bio" style="width:58%;margin-top:3px"></div></div><div class="prev-nl-copy-btn"></div></div>
+              <div class="prev-nl-row"><div class="prev-board-avatar"></div><div style="flex:1"><div class="prev-board-name" style="width:45%"></div><div class="prev-board-bio" style="width:65%;margin-top:3px"></div></div><div class="prev-nl-copy-btn"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Browse &amp; copy expert links</div>
+            <div class="section-sub">Nothing to install - search, then copy a link to paste into your newsletter</div>
+          </div>
+          <div class="nl-search-row">
+            <input type="text" class="nl-search-input" id="nl-search" placeholder="Search by name, topic, or role…" oninput="filterNewsletterExperts(this.value)">
+          </div>
+          <div id="nl-list" class="nl-list"><div class="logs-empty">Loading experts…</div></div>
+        </div>
+      </div>
+
       <!-- Expert networks — shared across all widgets -->
       <div class="section" id="partners-section" style="display:none">
         <div class="section-header">
@@ -1181,6 +1233,8 @@ const params = new URLSearchParams(location.search);
 const PUB = params.get('pub') || '';
 
 let settings = { color: '#e6a820', accent: '#e6a820', boardText: '#1a1a2e', noMatchText: '#1a1a2e', size: 'medium', power: 'moderate', sensitivity: 'balanced' };
+
+let _nlExperts = null; // lazy-loaded on first visit to the Newsletter Links tab
 
 if (!PUB) {
   // No ?pub= in the URL doesn't mean no valid session - a bookmark, typed
@@ -1572,6 +1626,7 @@ function switchWidgetTab(name, btn) {
   document.querySelectorAll('.wtab-panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('wtab-' + name).classList.add('active');
+  if (name === 'newsletter' && _nlExperts === null) loadNewsletterExperts();
 }
 
 function switchEmbedTab(name, btn) {
@@ -1715,6 +1770,68 @@ function copyCarouselEmbed() {
 function copyBoardEmbed() {
   navigator.clipboard.writeText(document.getElementById('board-embed-display').textContent.trim());
   toast('Expert Board code copied!');
+}
+
+// ── Newsletter Links ────────────────────────────────────────────────────────
+
+function loadNewsletterExperts() {
+  fetch('/api/board?pub=' + encodeURIComponent(PUB))
+    .then(r => r.ok ? r.json() : { experts: [] })
+    .then(data => {
+      _nlExperts = data.experts || [];
+      renderNewsletterExperts(_nlExperts);
+    })
+    .catch(() => {
+      _nlExperts = [];
+      document.getElementById('nl-list').innerHTML = '<div class="logs-empty">Could not load experts - try refreshing the page.</div>';
+    });
+}
+
+function renderNewsletterExperts(list) {
+  const el = document.getElementById('nl-list');
+  if (!list.length) {
+    el.innerHTML = '<div class="logs-empty">No experts available yet.</div>';
+    return;
+  }
+  el.innerHTML = list.map(e => {
+    const fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=96&name=' + encodeURIComponent(e.name);
+    const role = [e.position, e.company].filter(Boolean).join(' · ');
+    const desc = (e.headlines || {}).en || e.bio || '';
+    return `<div class="nl-card">
+      <a href="${esc(e.photo_url || fallback)}" target="_blank" rel="noopener"><img class="nl-photo" src="${esc(e.photo_url || fallback)}" onerror="this.src='${esc(fallback)}'" alt="${esc(e.name)}"></a>
+      <div class="nl-info">
+        <div class="nl-name">${esc(e.name)}</div>
+        ${role ? `<div class="nl-role">${esc(role)}</div>` : ''}
+        ${desc ? `<div class="nl-desc">${esc(desc)}</div>` : ''}
+      </div>
+      <button class="nl-copy-btn" onclick="copyNewsletterLink(${e.id})">Copy link</button>
+    </div>`;
+  }).join('');
+}
+
+function filterNewsletterExperts(term) {
+  if (!_nlExperts) return;
+  const q = term.trim().toLowerCase();
+  if (!q) { renderNewsletterExperts(_nlExperts); return; }
+  const filtered = _nlExperts.filter(e => {
+    const bioText = ((e.headlines || {}).en || e.bio || '');
+    return [e.name, e.position, e.company, bioText, (e.topics || []).join(' ')]
+      .filter(Boolean).join(' ').toLowerCase().indexOf(q) !== -1;
+  });
+  renderNewsletterExperts(filtered);
+}
+
+function copyNewsletterLink(expertId) {
+  const e = (_nlExperts || []).find(x => x.id === expertId);
+  if (!e || !e.booking_url) return;
+  const url = 'https://www.introlinq.com/api/dashboard?action=out'
+    + '&pub=' + encodeURIComponent(PUB)
+    + '&expert_id=' + encodeURIComponent(e.id)
+    + '&expert_name=' + encodeURIComponent(e.name || '')
+    + '&expert_url=' + encodeURIComponent(e.booking_url)
+    + '&phrase=newsletter&source=newsletter';
+  navigator.clipboard.writeText(url);
+  toast('Link copied!');
 }
 
 // ── Partners ─────────────────────────────────────────────────────────────────
