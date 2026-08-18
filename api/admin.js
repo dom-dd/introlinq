@@ -77,13 +77,17 @@ async function issueOutreachSession(sql, res, userId) {
   res.setHeader('Set-Cookie', `il_outreach_session=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`);
 }
 
-// Owner status can come from either the legacy IP allowlist (Dom, still
-// useful as a fallback if he hasn't logged into /outreach on this device
-// yet) or a real outreach_users row with role='owner'.
+// Owner status comes from a real outreach_users session when one exists -
+// checked FIRST and treated as authoritative, so a helper logged in from
+// Dom's own allowlisted IP (home/office network) is still correctly
+// restricted to helper access instead of the IP silently overriding their
+// session's role. The IP allowlist only serves as a fallback for reaching
+// this without ever having logged into /outreach at all (e.g. Dom on his
+// own network, no session cookie present).
 async function isOutreachOwner(req, sql) {
-  if (auth(req)) return true;
   const session = await getOutreachSession(req, sql);
-  return !!(session && session.role === 'owner');
+  if (session) return session.role === 'owner';
+  return auth(req);
 }
 
 // Fire-and-forget - a Slack outage or missing webhook URL must never block
@@ -513,19 +517,27 @@ export default async function handler(req, res) {
   }
 
   // Outreach tracking for candidate_publishers (the SerpAPI discovery
-  // pipeline's leads - see run-discovery above). Access: the IP-allowlisted
-  // owner sees/edits everything, unrestricted. A logged-in helper only ever
-  // sees/edits rows where assigned_to = their own id - enforced in the
-  // WHERE clause of every query below, not just hidden in the UI, so a
-  // helper can't read or write a lead that isn't theirs even by guessing an
-  // id.
+  // pipeline's leads - see run-discovery above). Access: the owner
+  // (real outreach_users session, or the IP allowlist as a fallback when
+  // there's no session at all) sees/edits everything, unrestricted. A
+  // logged-in helper only ever sees/edits rows where assigned_to = their
+  // own id - enforced in the WHERE clause of every query below, not just
+  // hidden in the UI, so a helper can't read or write a lead that isn't
+  // theirs even by guessing an id.
+  //
+  // The session is checked FIRST and is authoritative whenever one exists -
+  // otherwise a helper logged in from Dom's own allowlisted network would
+  // get silently upgraded to owner access by the IP check alone, which is
+  // exactly the bug that let a freshly-created helper account see every
+  // lead instead of just their own.
   if (resource === 'outreach') {
     const sql = neon(process.env.DATABASE_URL);
     await ensureOutreachTables(sql);
-    const isOwner = auth(req);
-    const session = isOwner ? null : await getOutreachSession(req, sql);
-    if (!isOwner && !session) return res.status(403).json({ error: 'Forbidden' });
-    const helperId = session ? session.id : -1; // -1 never matches a real id, keeps the OR below well-defined
+    const session = await getOutreachSession(req, sql);
+    const isOwner = session ? session.role === 'owner' : auth(req);
+    const isHelper = !!(session && session.role === 'helper');
+    if (!isOwner && !isHelper) return res.status(403).json({ error: 'Forbidden' });
+    const helperId = isHelper ? session.id : -1; // -1 never matches a real id, keeps the OR below well-defined
 
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_name TEXT`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_email TEXT`.catch(() => {});
