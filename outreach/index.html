@@ -58,6 +58,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 /* Group coloring so the 3 clusters (pipeline status / partner track /
    catch-all) are visible at a glance, matching their grouping in the
    Status dropdown too. Due sits outside any group (always first, neutral). */
+.outreach-subtab.grp-urgent{background:rgba(245,158,11,0.10);border-radius:6px 6px 0 0}
+.outreach-subtab.grp-urgent:hover{background:rgba(245,158,11,0.18)}
+.outreach-subtab.grp-urgent.active{background:rgba(245,158,11,0.24)}
 .outreach-subtab.grp-status{background:rgba(79,110,247,0.07);border-radius:6px 6px 0 0}
 .outreach-subtab.grp-partner{background:rgba(139,92,246,0.07);border-radius:6px 6px 0 0}
 .outreach-subtab.grp-others{background:rgba(230,168,32,0.08);border-radius:6px 6px 0 0}
@@ -178,10 +181,10 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
   <div class="admin-body" id="outreach-content">
 
       <div class="outreach-subtab-bar">
-        <button class="outreach-subtab active" data-name="due" onclick="switchOutreachSubtab('due',this)">Due</button>
+        <button class="outreach-subtab grp-urgent active" data-name="due" onclick="switchOutreachSubtab('due',this)">Due</button>
+        <button class="outreach-subtab grp-urgent" data-name="tocontact" onclick="switchOutreachSubtab('tocontact',this)">To contact</button>
         <span class="outreach-subtab-divider"></span>
         <button class="outreach-subtab grp-status" data-name="todo" onclick="switchOutreachSubtab('todo',this)">Untouched</button>
-        <button class="outreach-subtab grp-status" data-name="tocontact" onclick="switchOutreachSubtab('tocontact',this)">To contact</button>
         <button class="outreach-subtab grp-status" data-name="waiting" onclick="switchOutreachSubtab('waiting',this)">Follow ups</button>
         <button class="outreach-subtab grp-status" data-name="discussion" onclick="switchOutreachSubtab('discussion',this)">In discussion</button>
         <button class="outreach-subtab grp-status" data-name="onboarded" onclick="switchOutreachSubtab('onboarded',this)">Onboarded</button>
@@ -781,6 +784,22 @@ const OUTREACH_STATUS_COLORS = {
 // not cluttering the Due list.
 const OUTREACH_RESOLVED = ['replied_interested', 'signed_up', 'replied_not_interested', 'not_a_fit'];
 
+// Same 3 groups as the subtab bar's coloring, rendered as <optgroup>s so
+// every Status <select> in the page (the row dropdown and the Create-a-lead
+// modal) shows the same dividers between groups - a plain flat list made it
+// hard to tell where one group ended and the next began.
+const OUTREACH_STATUS_GROUPS = [
+  { label: 'Status', keys: ['discovered', 'to_contact', 'emailed', 'followed_up_1', 'followed_up_2', 'followed_up_3', 'replied_interested', 'signed_up', 'contact_later'] },
+  { label: 'Partner', keys: ['partner', 'openintro_partner', 'products_partner'] },
+  { label: 'Others', keys: ['important', 'not_a_fit', 'replied_not_interested'] },
+];
+
+function outreachStatusOptionsHTML(selectedValue) {
+  return OUTREACH_STATUS_GROUPS.map(g => `<optgroup label="${esc(g.label)}">${
+    g.keys.map(k => `<option value="${k}" ${k === selectedValue ? 'selected' : ''}>${esc(OUTREACH_STATUS_LABELS[k])}</option>`).join('')
+  }</optgroup>`).join('');
+}
+
 function populateOutreachCategoryFilter() {
   const el = document.getElementById('outreach-category-filter');
   if (!el || el.dataset.populated) return;
@@ -912,8 +931,7 @@ function openCreateLeadModal() {
   document.getElementById('cl-error').style.display = 'none';
 
   const statusSelect = document.getElementById('cl-status');
-  statusSelect.innerHTML = Object.entries(OUTREACH_STATUS_LABELS)
-    .map(([v, label]) => `<option value="${v}" ${v === 'discovered' ? 'selected' : ''}>${esc(label)}</option>`).join('');
+  statusSelect.innerHTML = outreachStatusOptionsHTML('discovered');
 
   const categorySelect = document.getElementById('cl-category');
   categorySelect.innerHTML = '<option value="">No category</option>' +
@@ -1064,8 +1082,7 @@ function outreachRow(c, mode) {
     <option value="">No category</option>
     ${OUTREACH_CATEGORIES.map((cat) => `<option value="${esc(cat)}" ${c.category === cat ? 'selected' : ''}>${esc(cat)}</option>`).join('')}
   </select>`;
-  const statusOptions = Object.entries(OUTREACH_STATUS_LABELS)
-    .map(([v, label]) => `<option value="${v}" ${c.status === v ? 'selected' : ''}>${esc(label)}</option>`).join('');
+  const statusOptions = outreachStatusOptionsHTML(c.status);
 
   const followupCell = mode === 'full' || mode === 'later'
     ? `<td><input type="date" value="${c.next_followup_at ? c.next_followup_at.slice(0, 10) : ''}" onchange="outreachSetFollowup(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE}"></td>`
