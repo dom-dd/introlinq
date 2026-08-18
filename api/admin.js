@@ -615,8 +615,16 @@ export default async function handler(req, res) {
 
   // Stats
   if (resource === 'stats') {
+    // live_count used to check first_widget_fire_at IS NOT NULL - "ever
+    // fired once" - which only ever goes up, so a publisher stays counted
+    // as live forever even after they remove the widget entirely (caught
+    // on challenges-tn, gone since 2026-08-14 but still showing here).
+    // last_widget_fire_at updates on every fire and freezes once the
+    // widget stops running, so recency of that is what "currently live"
+    // actually means - 3 days mirrors the silence threshold
+    // widget-removed-check.js already uses to flag a publisher as gone.
     const [publishers, experts, lastSync] = await Promise.all([
-      sql`SELECT COUNT(*)::int AS count, COUNT(*) FILTER (WHERE first_widget_fire_at IS NOT NULL)::int AS live_count FROM publishers WHERE active = true AND slug NOT LIKE 'demo-%'`,
+      sql`SELECT COUNT(*)::int AS count, COUNT(*) FILTER (WHERE last_widget_fire_at > NOW() - INTERVAL '3 days')::int AS live_count FROM publishers WHERE active = true AND slug NOT LIKE 'demo-%'`,
       // Labeled "from OpenIntro" in the UI - must actually filter to that
       // provider, not count every active expert across every provider
       // (demo providers included), or the number silently drifts from what
