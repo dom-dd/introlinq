@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>IntroLinq Outreach</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#e6a820;--gold-light:#fef3c7;
+  --sage:#3d7a5f;--sage-light:#edf5f0;
+  --ink:#1a1a2e;--ink-soft:#4a4a6a;--ink-muted:#8888a8;
+  --cream:#faf8f4;--white:#fff;
+  --border:rgba(26,26,46,0.10);--radius:10px;
+  --red:#dc2626;--red-light:#fff1f1;
+  --green:#16a34a;--green-light:#f0fdf4;
+}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh}
+
+/* Login / bootstrap */
+#login-view{display:flex;align-items:center;justify-content:center;min-height:100vh}
+.login-card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:2.5rem;width:360px;box-shadow:0 4px 24px rgba(0,0,0,0.06)}
+.login-logo{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--ink);margin-bottom:0.25rem}
+.login-logo span{color:var(--sage)}
+.login-sub{font-size:0.8125rem;color:var(--ink-muted);margin-bottom:2rem}
+.login-input{width:100%;padding:0.75rem 1rem;border:1.5px solid var(--border);border-radius:var(--radius);font-size:0.9375rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);outline:none;margin-bottom:0.75rem;transition:border-color 0.15s}
+.login-input:focus{border-color:var(--sage);background:var(--white)}
+.login-btn{width:100%;background:var(--ink);color:var(--white);border:none;padding:0.875rem;border-radius:100px;font-size:0.9375rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity 0.15s}
+.login-btn:hover{opacity:0.85}
+.login-error{font-size:0.8125rem;color:var(--red);margin-top:0.5rem;display:none}
+
+/* Outreach layout */
+#outreach-view{display:none;min-height:100vh}
+.admin-header{background:var(--ink);padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between}
+.admin-logo{font-family:'DM Serif Display',serif;font-size:1.125rem;color:var(--white)}
+.admin-logo span{color:var(--gold)}
+.admin-logo em{font-style:normal;font-size:0.75rem;color:rgba(255,255,255,0.4);margin-left:0.5rem;font-family:'Inter',sans-serif}
+.header-right{display:flex;align-items:center;gap:0.75rem}
+.header-user{font-size:0.8125rem;color:rgba(255,255,255,0.7)}
+.logout-btn{background:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);font-size:0.75rem;padding:0.25rem 0.75rem;border-radius:100px;cursor:pointer;font-family:'Inter',sans-serif;transition:border-color 0.15s}
+.logout-btn:hover{border-color:rgba(255,255,255,0.5);color:var(--white)}
+.admin-body{max-width:1280px;margin:0 auto;padding:2.5rem 2rem 5rem}
+
+/* Outreach sub-tabs */
+.outreach-subtab-bar{display:flex;align-items:center;flex-wrap:nowrap;gap:0.125rem;overflow-x:auto;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
+.outreach-subtab{flex-shrink:0;padding:0.625rem 0.6rem;font-size:0.75rem;font-weight:500;color:var(--ink-muted);border:none;background:none;cursor:pointer;font-family:'Inter',sans-serif;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;white-space:nowrap}
+.outreach-subtab:hover{color:var(--ink)}
+.outreach-subtab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
+.outreach-subpanel{display:none}
+.outreach-subpanel.active{display:block}
+.outreach-subtab-divider{width:1px;align-self:stretch;background:var(--border);margin:0.5rem 0.25rem;flex-shrink:0}
+
+/* Section */
+.section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1.5rem}
+.section-body{overflow-x:auto}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border)}
+.section-title{font-weight:600;font-size:0.9375rem;color:var(--ink)}
+.section-body{padding:0}
+
+/* Buttons */
+.btn{border:none;padding:0.5rem 1.125rem;border-radius:100px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity 0.15s}
+.btn:hover{opacity:0.85}
+.btn-primary{background:var(--sage);color:var(--white)}
+.btn-gold{background:var(--gold);color:var(--ink)}
+.btn-ghost{background:var(--cream);color:var(--ink-soft);border:1px solid var(--border)}
+.btn-danger{background:var(--red-light);color:var(--red);border:1px solid rgba(220,38,38,0.2)}
+.btn-sm{padding:0.3rem 0.75rem;font-size:0.75rem}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,26,46,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:auto}
+.modal{background:var(--white);border-radius:var(--radius);padding:1.75rem;width:min(600px,90vw);max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.15);overflow-y:auto}
+.modal-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:1.25rem}
+.modal-title{font-family:'DM Serif Display',serif;font-size:1.125rem;color:var(--ink)}
+.modal-close{background:none;border:none;font-size:1.25rem;cursor:pointer;color:var(--ink-muted);line-height:1;padding:0}
+.modal-close:hover{color:var(--ink)}
+
+/* Forms */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem}
+.form-group{display:flex;flex-direction:column;gap:0.375rem}
+.form-label{font-size:0.75rem;font-weight:500;color:var(--ink-muted)}
+.form-input{padding:0.625rem 0.875rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.875rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--white);outline:none;transition:border-color 0.15s}
+.form-input:focus{border-color:var(--sage)}
+.form-actions{display:flex;gap:0.5rem;margin-top:0.25rem}
+
+/* Table */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:0.75rem 1.1rem;font-size:0.7rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border)}
+td{padding:0.875rem 1.1rem;font-size:0.875rem;color:var(--ink-soft);border-bottom:1px solid var(--border)}
+td:last-child{text-align:right;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(0,0,0,0.01)}
+.td-name{font-weight:500;color:var(--ink)}
+
+/* Email verify icon */
+.everify-spin{animation:everify-spin 0.8s linear infinite}
+@keyframes everify-spin{to{transform:rotate(360deg)}}
+
+/* Toast */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--ink);color:var(--white);padding:0.75rem 1.25rem;border-radius:100px;font-size:0.875rem;opacity:0;transform:translateY(8px);transition:opacity 0.2s,transform 0.2s;pointer-events:none;z-index:9999}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.toast-error{background:#c0392b}
+
+/* Empty */
+.empty{padding:3rem;text-align:center;color:var(--ink-muted);font-size:0.875rem}
+
+/* Assign-to + manage-users (owner-only additions) */
+.assign-th,.assign-td{display:none}
+body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
+.assign-select{padding:0.3rem 0.5rem;border:1.5px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--white)}
+.users-list{display:flex;flex-direction:column;gap:0.625rem;margin-bottom:1.25rem}
+.user-row{display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;border:1px solid var(--border);border-radius:var(--radius)}
+.user-row-name{font-weight:600;font-size:0.875rem;color:var(--ink)}
+.user-row-role{font-size:0.7rem;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.04em;margin-left:0.5rem}
+.user-row-inactive{opacity:0.5}
+</style>
+</head>
+<body>
+
+<!-- Login / bootstrap (shown until outreach-me succeeds) -->
+<div id="login-view">
+  <div class="login-card">
+    <div class="login-logo">Intro<span>Linq</span></div>
+    <div class="login-sub" id="login-sub">Outreach</div>
+    <div id="bootstrap-fields" style="display:none">
+      <input type="text" class="login-input" id="bootstrap-name" placeholder="Your name" autocomplete="name">
+    </div>
+    <input type="password" class="login-input" id="login-password" placeholder="Password" autocomplete="current-password">
+    <button class="login-btn" id="login-submit-btn" onclick="submitLogin()">Log in</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- Outreach -->
+<div id="outreach-view">
+  <div class="admin-header">
+    <div class="admin-logo">Intro<span>Linq</span><em>Outreach</em></div>
+    <div class="header-right">
+      <span class="header-user" id="header-user"></span>
+      <button class="btn btn-ghost btn-sm" id="manage-users-btn" style="display:none" onclick="openManageUsersModal()">Manage users</button>
+      <button class="logout-btn" onclick="outreachLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="admin-body" id="outreach-content">
+
+      <div class="outreach-subtab-bar">
+        <button class="outreach-subtab active" data-name="due" onclick="switchOutreachSubtab('due',this)">Due</button>
+        <span class="outreach-subtab-divider"></span>
+        <button class="outreach-subtab" data-name="confirmedfit" onclick="switchOutreachSubtab('confirmedfit',this)">Blogs</button>
+        <button class="outreach-subtab" data-name="todo" onclick="switchOutreachSubtab('todo',this)">Not contacted</button>
+        <button class="outreach-subtab" data-name="waiting" onclick="switchOutreachSubtab('waiting',this)">Follow ups</button>
+        <span class="outreach-subtab-divider"></span>
+        <button class="outreach-subtab" data-name="important" onclick="switchOutreachSubtab('important',this)">VIP</button>
+        <button class="outreach-subtab" data-name="later" onclick="switchOutreachSubtab('later',this)">Contact later</button>
+        <button class="outreach-subtab" data-name="substack" onclick="switchOutreachSubtab('substack',this)">Substack blogs</button>
+        <span class="outreach-subtab-divider"></span>
+        <button class="outreach-subtab" data-name="partner" onclick="switchOutreachSubtab('partner',this)">Partners</button>
+        <button class="outreach-subtab" data-name="products" onclick="switchOutreachSubtab('products',this)">Products partners</button>
+        <button class="outreach-subtab" data-name="openintro" onclick="switchOutreachSubtab('openintro',this)">OpenIntro partners</button>
+        <span class="outreach-subtab-divider"></span>
+        <button class="outreach-subtab" data-name="interested" onclick="switchOutreachSubtab('interested',this)">Interested</button>
+        <button class="outreach-subtab" data-name="closed" onclick="switchOutreachSubtab('closed',this)">Not a fit</button>
+        <button class="btn btn-primary btn-sm" style="flex-shrink:0;margin:0.4rem 0 0.4rem auto;padding-left:0.75rem;padding-right:0.75rem" onclick="openCreateLeadModal()">+ Create a lead</button>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:0.5rem;margin:0.75rem 0 1rem;flex-wrap:wrap">
+        <label class="form-label" style="margin:0">Filter by category</label>
+        <select id="outreach-category-filter" class="form-input" style="width:auto;padding:0.35rem 0.6rem;font-size:0.8125rem" onchange="_outreachCategoryFilter=this.value;renderOutreach()">
+          <option value="">All categories</option>
+        </select>
+        <input type="text" id="outreach-search-input" class="form-input" placeholder="Search by website or company name..." style="width:280px;padding:0.35rem 0.6rem;font-size:0.8125rem;margin-left:0.5rem" oninput="outreachSearch(this.value)">
+      </div>
+
+      <div class="outreach-subpanel active" id="outreach-sub-due">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-due-title">Due for follow-up</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th style="width:130px">Next follow-up</th>
+                <th style="width:190px">Action</th>
+                <th style="width:150px">Emails</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-due-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-due-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-confirmedfit">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-confirmedfit-title">Blog &amp; Publishers</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th style="width:130px">Next follow-up</th>
+                <th style="width:190px">Action</th>
+                <th style="width:150px">Emails</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-confirmedfit-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-confirmedfit-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-waiting">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-waiting-title">To follow up</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th style="width:130px">Next follow-up</th>
+                <th style="width:190px">Action</th>
+                <th style="width:150px">Emails</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-waiting-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-waiting-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-later">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-later-title">Contact later</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:700px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th style="width:130px">Next follow-up</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-later-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-later-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-important">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-important-title">VIP</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:600px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-important-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-important-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-substack">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-substack-title">Substack blogs</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:600px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-substack-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-substack-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-partner">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-partner-title">Partners</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:600px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-partner-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-partner-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-todo">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-todo-title">Not yet contacted</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th style="width:130px">Next follow-up</th>
+                <th style="width:190px">Action</th>
+                <th style="width:150px">Emails</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-todo-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-todo-empty">Loading...</div>
+          <div style="padding:0.75rem 1.25rem;border-top:1px solid var(--border)">
+            <button class="btn btn-ghost btn-sm" id="outreach-todo-more" onclick="showMoreOutreachTodo()" style="display:none">Show more</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-interested">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-interested-title">Interested / Signed up</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:600px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-interested-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-interested-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-closed">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-closed-title">Not a fit</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:600px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-closed-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-closed-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-openintro">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-openintro-title">OpenIntro partners</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:600px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-openintro-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-openintro-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-products">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-products-title">Products partners</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:600px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-products-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-products-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-search">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-search-title">Search results</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th style="width:220px">Blog</th>
+                <th style="width:180px">Contact</th>
+                <th style="width:150px">Status</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th style="width:130px">Next follow-up</th>
+                <th style="width:190px">Action</th>
+                <th style="width:150px">Emails</th>
+                <th>Notes</th>
+              </tr></thead>
+              <tbody id="outreach-search-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-search-empty">Loading...</div>
+        </div>
+      </div>
+
+  </div>
+
+  <!-- Create a lead modal -->
+  <div class="modal-overlay" id="create-lead-modal" onclick="if(event.target===this)closeCreateLeadModal()">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cl-title">
+      <div class="modal-head">
+        <div class="modal-title" id="cl-title">Create a lead</div>
+        <button class="modal-close" onclick="closeCreateLeadModal()" aria-label="Close">✕</button>
+      </div>
+      <div>
+        <div class="form-group" style="margin-bottom:0.875rem">
+          <label class="form-label">Domain *</label>
+          <input class="form-input" id="cl-domain" placeholder="example.com">
+        </div>
+        <div class="form-group" style="margin-bottom:0.875rem">
+          <label class="form-label">Company name</label>
+          <input class="form-input" id="cl-company">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Contact name</label>
+            <input class="form-input" id="cl-contact-name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contact email</label>
+            <div style="position:relative">
+              <input class="form-input" id="cl-contact-email" type="email" style="padding-right:28px" oninput="resetEmailVerifyIcon('everify-cl')">
+              <span id="everify-cl" onclick="verifyEmailInto('everify-cl', document.getElementById('cl-contact-email').value)" style="position:absolute;right:9px;top:50%;transform:translateY(-50%);display:inline-flex;width:14px;height:14px;cursor:pointer" title="Click to check deliverability"></span>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select class="form-input" id="cl-status"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select class="form-input" id="cl-category"></select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0.875rem">
+          <label class="form-label">Next follow-up (optional)</label>
+          <input class="form-input" id="cl-followup" type="date">
+        </div>
+        <div class="form-group" style="margin-bottom:0.875rem">
+          <label class="form-label">Notes</label>
+          <input class="form-input" id="cl-notes">
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitCreateLead()">Create lead</button>
+          <button class="btn btn-ghost" onclick="closeCreateLeadModal()">Cancel</button>
+        </div>
+        <div id="cl-error" style="font-size:0.8125rem;color:var(--red, #dc2626);margin-top:0.75rem;display:none"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Manage users modal (owner-only) -->
+<div class="modal-overlay" id="manage-users-modal" onclick="if(event.target===this)closeManageUsersModal()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mu-title">
+    <div class="modal-head">
+      <div class="modal-title" id="mu-title">Manage users</div>
+      <button class="modal-close" onclick="closeManageUsersModal()" aria-label="Close">✕</button>
+    </div>
+    <div class="users-list" id="users-list"></div>
+    <div class="form-row" style="grid-template-columns:1fr 1fr">
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input class="form-input" id="new-user-name" placeholder="Bob">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="new-user-password" placeholder="e.g. 123" autocomplete="new-password">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="submitCreateUser()">Create user</button>
+    </div>
+    <div id="mu-error" style="font-size:0.8125rem;color:var(--red);margin-top:0.75rem;display:none"></div>
+  </div>
+</div>
+
+<script>
+// ── Auth / session ───────────────────────────────────────────────────────
+let _outreachUser = null; // {id, name, role} once logged in
+let _needsBootstrap = false;
+
+async function initOutreachAuth() {
+  try {
+    const meRes = await fetch('/api/admin?resource=outreach-me', { credentials: 'include' });
+    if (meRes.ok) {
+      _outreachUser = await meRes.json();
+      showOutreachView();
+      return;
+    }
+  } catch {}
+
+  // Not logged in - figure out whether this is the very first run (no
+  // owner account exists yet) before showing the normal login form.
+  try {
+    const checkRes = await fetch('/api/admin?resource=outreach-bootstrap-check');
+    const data = await checkRes.json();
+    _needsBootstrap = !!data.needsBootstrap;
+  } catch {}
+
+  document.getElementById('login-sub').textContent = _needsBootstrap ? 'Set your owner password' : 'Outreach';
+  document.getElementById('bootstrap-fields').style.display = _needsBootstrap ? 'block' : 'none';
+  document.getElementById('login-submit-btn').textContent = _needsBootstrap ? 'Create account' : 'Log in';
+}
+
+async function submitLogin() {
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  const password = document.getElementById('login-password').value;
+  if (!password) { errEl.textContent = 'Enter a password'; errEl.style.display = 'block'; return; }
+
+  try {
+    let res;
+    if (_needsBootstrap) {
+      const name = document.getElementById('bootstrap-name').value.trim();
+      if (!name) { errEl.textContent = 'Enter your name'; errEl.style.display = 'block'; return; }
+      res = await fetch('/api/admin?resource=outreach-bootstrap', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ name, password }),
+      });
+    } else {
+      res = await fetch('/api/admin?resource=outreach-login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ password }),
+      });
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { errEl.textContent = data.error || 'Login failed'; errEl.style.display = 'block'; return; }
+
+    const meRes = await fetch('/api/admin?resource=outreach-me', { credentials: 'include' });
+    _outreachUser = await meRes.json();
+    showOutreachView();
+  } catch {
+    errEl.textContent = 'Something went wrong - try again';
+    errEl.style.display = 'block';
+  }
+}
+
+async function outreachLogout() {
+  await fetch('/api/admin?resource=outreach-logout', { method: 'DELETE', credentials: 'include' }).catch(() => {});
+  window.location.reload();
+}
+
+function showOutreachView() {
+  document.getElementById('login-view').style.display = 'none';
+  document.getElementById('outreach-view').style.display = 'block';
+  document.getElementById('header-user').textContent = _outreachUser.name + (_outreachUser.role === 'owner' ? ' (owner)' : '');
+  if (_outreachUser.role === 'owner') {
+    document.getElementById('manage-users-btn').style.display = 'inline-block';
+    document.body.classList.add('is-owner');
+    loadOutreachHelpersForAssignSelects();
+  }
+  loadOutreach();
+  populateOutreachCategoryFilter();
+}
+
+document.getElementById('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') submitLogin(); });
+
+initOutreachAuth();
+
+// ── Outreach data/rendering (relocated from admin/index.html) ──────────────
+
+let _outreachLoaded = false;
+let _outreach = [];
+let _outreachTodoLimit = 30;
+
+const OUTREACH_INPUT_STYLE = 'width:100%;box-sizing:border-box;padding:0.3rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:Inter,sans-serif;color:var(--ink)';
+const OUTREACH_CATEGORIES = [
+  'Business & Entrepreneurship', 'Marketing & Sales', 'Finance & Investing',
+  'Technology & Product', 'Legal', 'Health & Medicine', 'Fitness & Wellness',
+  'Music', 'Art & Design', 'Media & Entertainment', 'Education & Coaching',
+  'Real Estate', 'Other',
+];
+let _outreachCategoryFilter = '';
+let _outreachSearchQuery = '';
+const OUTREACH_STATUS_LABELS = {
+  discovered: 'Not contacted',
+  emailed: 'Emailed',
+  followed_up_1: 'Follow-up 1 sent',
+  followed_up_2: 'Follow-up 2 sent',
+  important: 'VIP',
+  contact_later: 'Contact later',
+  substack: 'Substack blog',
+  partner: 'Partner',
+  openintro_partner: 'OpenIntro partner',
+  products_partner: 'Products partner',
+  confirmed_fit: 'Blog & Publishers',
+  replied_interested: 'Interested',
+  replied_not_interested: 'Not interested (replied)',
+  signed_up: 'Signed up',
+  not_a_fit: 'Not a fit',
+};
+const OUTREACH_STATUS_COLORS = {
+  discovered: 'var(--ink-muted)',
+  emailed: '#4f6ef7',
+  followed_up_1: '#4f6ef7',
+  followed_up_2: '#4f6ef7',
+  important: '#e6a820',
+  contact_later: '#4f6ef7',
+  substack: '#f97316',
+  partner: '#8b5cf6',
+  openintro_partner: '#0d9488',
+  products_partner: '#db2777',
+  confirmed_fit: '#16a34a',
+  replied_interested: 'var(--sage)',
+  signed_up: 'var(--sage)',
+  replied_not_interested: 'var(--red, #dc2626)',
+  not_a_fit: 'var(--ink-muted)',
+};
+const OUTREACH_RESOLVED = ['replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
+
+function populateOutreachCategoryFilter() {
+  const el = document.getElementById('outreach-category-filter');
+  if (!el || el.dataset.populated) return;
+  el.dataset.populated = '1';
+  el.insertAdjacentHTML('beforeend', OUTREACH_CATEGORIES.map((cat) => `<option value="${esc(cat)}">${esc(cat)}</option>`).join(''));
+}
+
+async function loadOutreach() {
+  populateOutreachCategoryFilter();
+  const res = await fetch('/api/admin?resource=outreach', { headers: { 'x-requested-with': 'xmlhttprequest' }, credentials: 'include' });
+  _outreach = await res.json();
+  renderOutreach();
+}
+
+function outreachBucket(c, today) {
+  if (c.status === 'replied_interested' || c.status === 'signed_up') return 'interested';
+  if (OUTREACH_RESOLVED.includes(c.status)) return 'closed';
+  if (c.next_followup_at && c.next_followup_at.slice(0, 10) <= today) return 'due';
+  if (c.status === 'important') return 'important';
+  if (c.status === 'contact_later') return 'later';
+  if (c.status === 'substack') return 'substack';
+  if (c.status === 'partner') return 'partner';
+  if (c.status === 'openintro_partner') return 'openintro';
+  if (c.status === 'products_partner') return 'products';
+  if (c.status === 'confirmed_fit') return 'confirmedfit';
+  if (c.status === 'discovered') return 'todo';
+  return 'waiting';
+}
+
+function renderOutreachSection(name, titleText, items, emptyMessage, rowMode) {
+  document.getElementById(`outreach-${name}-title`).textContent = `${titleText} (${items.length})`;
+  const tbody = document.getElementById(`outreach-${name}-tbody`);
+  const emptyEl = document.getElementById(`outreach-${name}-empty`);
+  if (items.length) {
+    tbody.innerHTML = items.map((c) => outreachRow(c, rowMode)).join('');
+    emptyEl.style.display = 'none';
+  } else {
+    tbody.innerHTML = '';
+    emptyEl.textContent = emptyMessage;
+    emptyEl.style.display = 'block';
+  }
+}
+
+function renderOutreach() {
+  const today = new Date().toISOString().slice(0, 10);
+  const buckets = { due: [], later: [], important: [], substack: [], partner: [], openintro: [], products: [], confirmedfit: [], todo: [], waiting: [], interested: [], closed: [] };
+  const visible = _outreachCategoryFilter ? _outreach.filter((c) => c.category === _outreachCategoryFilter) : _outreach;
+  for (const c of visible) buckets[outreachBucket(c, today)].push(c);
+
+  buckets.due.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
+  buckets.later.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
+  buckets.important.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.substack.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.partner.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.openintro.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.products.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.confirmedfit.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.todo.sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0) || new Date(b.created_at) - new Date(a.created_at));
+  buckets.waiting.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
+  buckets.interested.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.closed.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  renderOutreachSection('due', 'Due for follow-up', buckets.due, 'Nothing due right now.', 'full');
+  renderOutreachSection('confirmedfit', 'Blog & Publishers', buckets.confirmedfit, 'Nothing confirmed as a strong fit yet.', 'full');
+  renderOutreachSection('waiting', 'To follow up', buckets.waiting, 'No one waiting on a reply.', 'full');
+  renderOutreachSection('later', 'Contact later', buckets.later, 'Nothing parked for later.', 'later');
+  renderOutreachSection('important', 'VIP', buckets.important, 'Nothing flagged as VIP.', 'simple');
+  renderOutreachSection('substack', 'Substack blogs', buckets.substack, 'No Substack blogs flagged yet.', 'simple');
+  renderOutreachSection('partner', 'Partners', buckets.partner, 'No potential partners flagged yet.', 'simple');
+  renderOutreachSection('products', 'Products partners', buckets.products, 'No potential products partners flagged yet.', 'simple');
+  renderOutreachSection('openintro', 'OpenIntro partners', buckets.openintro, 'No potential OpenIntro partners flagged yet.', 'simple');
+  renderOutreachSection('interested', 'Interested / Signed up', buckets.interested, 'No one has replied interested or signed up yet.', 'simple');
+  renderOutreachSection('closed', 'Not a fit', buckets.closed, 'Nothing here yet.', 'simple');
+
+  const todoShown = buckets.todo.slice(0, _outreachTodoLimit);
+  renderOutreachSection('todo', 'Not yet contacted', todoShown, 'Nothing left to contact.', 'full');
+  document.getElementById('outreach-todo-title').textContent = `Not yet contacted (${buckets.todo.length})`;
+  document.getElementById('outreach-todo-more').style.display = buckets.todo.length > _outreachTodoLimit ? 'inline-block' : 'none';
+
+  if (_outreachSearchQuery) {
+    const q = _outreachSearchQuery.toLowerCase();
+    const matches = _outreach
+      .filter((c) => (c.domain || '').toLowerCase().includes(q) || (c.company_name || '').toLowerCase().includes(q))
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    renderOutreachSection('search', 'Search results', matches, 'No leads match that search.', 'full');
+  }
+}
+
+function showMoreOutreachTodo() {
+  _outreachTodoLimit += 30;
+  renderOutreach();
+}
+
+function switchOutreachSubtab(name, btn) {
+  if (_outreachSearchQuery) {
+    _outreachSearchQuery = '';
+    const input = document.getElementById('outreach-search-input');
+    if (input) input.value = '';
+  }
+  document.querySelectorAll('.outreach-subtab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.outreach-subpanel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('outreach-sub-' + name).classList.add('active');
+}
+
+function outreachSearch(query) {
+  _outreachSearchQuery = query.trim();
+  renderOutreach();
+  if (_outreachSearchQuery) {
+    document.querySelectorAll('.outreach-subtab').forEach((b) => b.classList.remove('active'));
+    document.querySelectorAll('.outreach-subpanel').forEach((p) => p.classList.remove('active'));
+    document.getElementById('outreach-sub-search').classList.add('active');
+  } else {
+    switchOutreachSubtab('due', document.querySelector('.outreach-subtab[data-name="due"]'));
+  }
+}
+
+function openCreateLeadModal() {
+  document.getElementById('cl-domain').value = '';
+  document.getElementById('cl-company').value = '';
+  document.getElementById('cl-contact-name').value = '';
+  document.getElementById('cl-contact-email').value = '';
+  resetEmailVerifyIcon('everify-cl');
+  document.getElementById('cl-followup').value = '';
+  document.getElementById('cl-notes').value = '';
+  document.getElementById('cl-error').style.display = 'none';
+
+  const statusSelect = document.getElementById('cl-status');
+  statusSelect.innerHTML = Object.entries(OUTREACH_STATUS_LABELS)
+    .map(([v, label]) => `<option value="${v}" ${v === 'discovered' ? 'selected' : ''}>${esc(label)}</option>`).join('');
+
+  const categorySelect = document.getElementById('cl-category');
+  categorySelect.innerHTML = '<option value="">No category</option>' +
+    OUTREACH_CATEGORIES.map((cat) => `<option value="${esc(cat)}">${esc(cat)}</option>`).join('');
+
+  document.getElementById('create-lead-modal').classList.add('open');
+  document.getElementById('cl-domain').focus();
+}
+
+function closeCreateLeadModal() {
+  document.getElementById('create-lead-modal').classList.remove('open');
+}
+
+async function submitCreateLead() {
+  const domain = document.getElementById('cl-domain').value.trim();
+  const errorEl = document.getElementById('cl-error');
+  errorEl.style.display = 'none';
+  if (!domain) {
+    errorEl.textContent = 'Domain is required.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const status = document.getElementById('cl-status').value;
+  const next_followup_at = document.getElementById('cl-followup').value || null;
+  const body = {
+    domain,
+    company_name: document.getElementById('cl-company').value.trim() || null,
+    contact_name: document.getElementById('cl-contact-name').value.trim() || null,
+    contact_email: document.getElementById('cl-contact-email').value.trim() || null,
+    status,
+    category: document.getElementById('cl-category').value || null,
+    next_followup_at,
+    outreach_notes: document.getElementById('cl-notes').value.trim() || null,
+  };
+
+  const res = await fetch('/api/admin?resource=outreach', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    credentials: 'include',
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    errorEl.textContent = data.error || 'Something went wrong - please try again.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  closeCreateLeadModal();
+  await loadOutreach();
+
+  const today = new Date().toISOString().slice(0, 10);
+  const bucket = outreachBucket({ status, next_followup_at }, today);
+  const btn = document.querySelector(`.outreach-subtab[data-name="${bucket}"]`);
+  if (btn) switchOutreachSubtab(bucket, btn);
+}
+
+function outreachEmailTemplates(c) {
+  const firstName = (c.contact_name || '').trim().split(' ')[0] || 'there';
+  const company = (c.company_name || '').trim() || prettifyDomain(c.domain);
+  return {
+    intro: {
+      subject: `Affiliation proposal - IntroLinq x ${company}`,
+      body: `Hi ${firstName},\n\nI am Dom - founder of Introlinq.com. We are a new company enabling publishers and bloggers to generate a new revenue stream from their content.\nI came across ${company} and think it would be a great fit if you would like to monetise your blog effortlessly.\n\nOur widget automatically scans your pages (old and new), matching keywords and topics - and creating affiliate links to bookable, vetted industry experts on our partners sites.\nIf a reader books - within a 90 day cookie period - we split the commission 50/50 with you.\n\nIt's 100% free, no maintenance required, and setup takes a couple of minutes.\n\nHere's the platform: https://introlinq.com/\nOur current partner is OpenIntro (https://open-intro.com/), with more partners joining soon.\n\nFeel free to register or I'd be happy to send more details or hop on a call if you'd prefer.\nLooking forward to hearing your thoughts.\n\nBest,\nDom`,
+    },
+    followup1: {
+      subject: `Re: Quick idea for ${company}`,
+      body: `Hi ${firstName},\n\nJust wanted to bump this in case it got buried - I reached out about IntroLinq, a way to turn ${company}'s existing articles into a new revenue stream (readers get matched with experts to book calls with, you earn 50% commission, zero extra work).\n\nNo pressure at all if it's not a fit - just didn't want it to slip through the cracks. Happy to answer any questions.\n\nBest,\nDom`,
+    },
+    followup2: {
+      subject: `Re: Quick idea for ${company}`,
+      body: `Hi ${firstName},\n\nLast note from me on this one - I don't want to keep cluttering your inbox.\n\nIf turning ${company}'s content into a passive revenue stream is ever something you'd want to explore, the door's always open. Either way, wishing you all the best with the site.\n\nBest,\nDom`,
+    },
+  };
+}
+
+const OUTREACH_EMAIL_TITLES = { intro: 'Intro email', followup1: 'First follow-up', followup2: 'Second follow-up' };
+
+function outreachNextStage(c) {
+  if (c.status === 'discovered' || c.status === 'confirmed_fit') return 'intro';
+  if (c.status === 'emailed') return 'followup1';
+  if (c.status === 'followed_up_1') return 'followup2';
+  return null;
+}
+
+function outreachEmailButton(c) {
+  const stage = outreachNextStage(c);
+  if (!stage) return '';
+  return `<button class="btn btn-ghost btn-sm" onclick="openOutreachEmailInGmail(${c.id},'${stage}')">${OUTREACH_EMAIL_TITLES[stage]}</button>`;
+}
+
+function openOutreachEmailInGmail(id, stage) {
+  const c = _outreach.find(x => x.id === id);
+  if (!c) return;
+  const tpl = outreachEmailTemplates(c)[stage];
+  const params = new URLSearchParams({ view: 'cm', fs: '1', su: tpl.subject, body: tpl.body });
+  if (c.contact_email) params.set('to', c.contact_email);
+  else toast('No email saved for this contact - opening blank, add the address in Gmail');
+  window.open(`https://mail.google.com/mail/?${params.toString()}`, '_blank');
+}
+
+function outreachActionButton(c) {
+  if (c.status === 'discovered' || c.status === 'confirmed_fit') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_email_sent')">Mark email sent</button>`;
+  if (c.status === 'emailed') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_followup_1')">Mark follow-up 1 sent</button>`;
+  if (c.status === 'followed_up_1') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_followup_2')">Mark follow-up 2 sent</button>`;
+  return '';
+}
+
+function prettifyDomain(domain) {
+  if (!domain) return '';
+  const GENERIC_SUBDOMAINS = ['www', 'blog', 'hiring', 'careers', 'jobs', 'shop', 'app', 'my', 'get', 'about', 'news'];
+  let parts = domain.split('.');
+  if (parts.length > 2 && GENERIC_SUBDOMAINS.includes(parts[0])) parts = parts.slice(1);
+  const label = parts.length > 1 ? parts[parts.length - 2] : parts[0];
+  return label.replace(/[-_]+/g, ' ').split(' ').filter(Boolean)
+    .map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+}
+
+const OUTREACH_SOCIAL_LINKS = [
+  ['person_linkedin_url', 'in', 'Founder/contact LinkedIn'],
+  ['company_linkedin_url', 'Co', 'Company LinkedIn'],
+  ['twitter_url', 'X', 'Twitter/X'],
+  ['facebook_url', 'f', 'Facebook'],
+];
+function outreachSocialLinks(c) {
+  const links = OUTREACH_SOCIAL_LINKS.filter(([field]) => c[field]);
+  if (!links.length) return '';
+  return `<div style="margin-top:3px">${links.map(([field, label, title]) =>
+    `<a href="${esc(c[field])}" target="_blank" rel="noopener" title="${esc(title)}" style="display:inline-block;min-width:18px;text-align:center;margin-right:4px;padding:1px 4px;border-radius:4px;border:1px solid var(--border);font-size:0.65rem;font-weight:700;color:var(--ink-muted);text-decoration:none">${label}</a>`
+  ).join('')}</div>`;
+}
+
+// mode controls which non-assign columns render, matching each sub-tab's
+// <thead>. The Assign cell renders in every mode (hidden via CSS unless
+// body.is-owner) - the owner should be able to reassign a lead regardless
+// of which bucket it's currently sitting in.
+function outreachRow(c, mode) {
+  const title = c.title ? esc(c.title.slice(0, 60)) : '';
+  const categorySelect = `<select onchange="outreachSaveCategory(${c.id}, this.value)" style="display:inline-block;width:auto;max-width:160px;margin-left:6px;padding:1px 4px;border-radius:100px;border:1px solid var(--border);background:${c.category ? 'var(--sage-light,#edf5f0)' : 'var(--cream,#faf8f4)'};color:${c.category ? 'var(--sage,#3d7a5f)' : 'var(--ink-muted)'};font-size:0.65rem;font-weight:600;vertical-align:middle;cursor:pointer">
+    <option value="">No category</option>
+    ${OUTREACH_CATEGORIES.map((cat) => `<option value="${esc(cat)}" ${c.category === cat ? 'selected' : ''}>${esc(cat)}</option>`).join('')}
+  </select>`;
+  const statusOptions = Object.entries(OUTREACH_STATUS_LABELS)
+    .map(([v, label]) => `<option value="${v}" ${c.status === v ? 'selected' : ''}>${esc(label)}</option>`).join('');
+
+  const followupCell = mode === 'full' || mode === 'later'
+    ? `<td><input type="date" value="${c.next_followup_at ? c.next_followup_at.slice(0, 10) : ''}" onchange="outreachSetFollowup(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE}"></td>`
+    : '';
+  const actionEmailCells = mode === 'full'
+    ? `<td>${outreachActionButton(c)}</td><td>${outreachEmailButton(c)}</td>`
+    : '';
+  const assignCell = `<td class="assign-td">${outreachAssignSelect(c)}</td>`;
+
+  return `
+    <tr>
+      <td>
+        <a href="${esc(c.homepage_url)}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:600;font-size:0.8125rem;text-decoration:none">${esc(c.domain)}</a>${categorySelect}
+        ${title ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px">${title}</div>` : ''}
+        ${outreachSocialLinks(c)}
+        <input type="text" value="${esc(c.company_name || prettifyDomain(c.domain))}" placeholder="Company name (used in emails)" onblur="outreachSaveCompanyName(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE};margin-top:4px">
+      </td>
+      <td>
+        <input type="text" value="${esc(c.contact_name || '')}" placeholder="Name" onblur="outreachSaveContact(${c.id}, this.value, null)" style="${OUTREACH_INPUT_STYLE};margin-bottom:3px">
+        <div style="display:flex;align-items:center;gap:5px">
+          <input type="email" id="einput-${c.id}" value="${esc(c.contact_email || '')}" placeholder="Email" onblur="outreachSaveContact(${c.id}, null, this.value)" oninput="resetEmailVerifyIcon('everify-${c.id}')" style="${OUTREACH_INPUT_STYLE};width:auto;flex:1;min-width:0">
+          <span id="everify-${c.id}" onclick="verifyEmailInto('everify-${c.id}', document.getElementById('einput-${c.id}').value)" style="display:inline-flex;flex-shrink:0;width:14px;height:14px;cursor:pointer" title="Click to check deliverability">${c.contact_email ? emailVerifyIconHTML('idle') : ''}</span>
+        </div>
+      </td>
+      <td>
+        <select onchange="outreachSetStatus(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE};color:${OUTREACH_STATUS_COLORS[c.status] || 'var(--ink)'};font-weight:600">${statusOptions}</select>
+      </td>
+      ${assignCell}
+      ${followupCell}
+      ${actionEmailCells}
+      <td><input type="text" value="${esc(c.outreach_notes || '')}" placeholder="Notes" onblur="outreachSaveNotes(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE};width:100%"></td>
+    </tr>
+  `;
+}
+
+async function outreachPatch(body) {
+  try {
+    const res = await fetch('/api/admin?resource=outreach', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+      credentials: 'include',
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error('PATCH failed: ' + res.status);
+    toast('Saved');
+    return true;
+  } catch {
+    toast('Failed to save - try again', true);
+    return false;
+  }
+}
+
+async function outreachMark(id, action) {
+  if (await outreachPatch({ id, action })) await loadOutreach();
+}
+
+async function outreachSetStatus(id, value) {
+  if (await outreachPatch({ id, action: 'set_status', value })) await loadOutreach();
+}
+
+async function outreachSetFollowup(id, value) {
+  if (await outreachPatch({ id, action: 'set_next_followup', value })) await loadOutreach();
+}
+
+async function outreachSaveContact(id, name, email) {
+  const c = _outreach.find(x => x.id === id);
+  const contact_name = name !== null ? name : (c?.contact_name || '');
+  const contact_email = email !== null ? email : (c?.contact_email || '');
+  if (await outreachPatch({ id, action: 'set_contact', contact_name, contact_email })) {
+    if (c) { c.contact_name = contact_name; c.contact_email = contact_email; }
+  }
+}
+
+async function outreachSaveCompanyName(id, value) {
+  if (await outreachPatch({ id, action: 'set_company_name', value })) {
+    const c = _outreach.find(x => x.id === id);
+    if (c) c.company_name = value;
+  }
+}
+
+async function outreachSaveCategory(id, value) {
+  if (await outreachPatch({ id, action: 'set_category', value })) {
+    const c = _outreach.find(x => x.id === id);
+    if (c) c.category = value || null;
+    renderOutreach();
+  }
+}
+
+async function outreachSaveNotes(id, value) {
+  if (!(await outreachPatch({ id, action: 'set_notes', value }))) return;
+  const c = _outreach.find(x => x.id === id);
+  if (c) c.outreach_notes = value;
+}
+
+// ── Shared helpers (relocated from admin/index.html) ────────────────────
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.toggle('toast-error', !!isError);
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+window._emailVerifyCache = window._emailVerifyCache || {};
+
+function emailVerifyIconHTML(state) {
+  if (state === 'checking') {
+    return `<svg class="everify-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8888a8" stroke-width="3" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-9-9"/></svg>`;
+  }
+  if (state === 'valid') {
+    return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+  }
+  if (state === 'invalid') {
+    return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+  }
+  if (state === 'unknown') {
+    return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e6a820" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+  }
+  return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b0b0c8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
+}
+
+function resetEmailVerifyIcon(iconElId) {
+  const el = document.getElementById(iconElId);
+  if (!el) return;
+  el.innerHTML = emailVerifyIconHTML('idle');
+  el.title = 'Click to check deliverability';
+}
+
+async function verifyEmailInto(iconElId, email) {
+  const el = document.getElementById(iconElId);
+  if (!el) return;
+  const value = (email || '').trim();
+  if (!value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    el.innerHTML = emailVerifyIconHTML('idle');
+    el.title = 'Enter a valid email first';
+    return;
+  }
+
+  const key = value.toLowerCase();
+  const cached = window._emailVerifyCache[key];
+  if (cached) {
+    el.innerHTML = emailVerifyIconHTML(cached.state);
+    el.title = cached.tooltip;
+    return;
+  }
+
+  const myToken = String(Date.now()) + Math.random();
+  el.dataset.everifyToken = myToken;
+  el.innerHTML = emailVerifyIconHTML('checking');
+  el.title = 'Checking deliverability...';
+
+  try {
+    const res = await fetch('/api/admin?resource=verify_email&email=' + encodeURIComponent(value), { credentials: 'include' });
+    const data = await res.json().catch(() => ({}));
+    if (el.dataset.everifyToken !== myToken) return;
+    if (!res.ok) throw new Error(data.error || 'Verification failed');
+    window._emailVerifyCache[key] = { state: data.state, tooltip: data.tooltip };
+    el.innerHTML = emailVerifyIconHTML(data.state);
+    el.title = data.tooltip;
+  } catch (err) {
+    if (el.dataset.everifyToken !== myToken) return;
+    el.innerHTML = emailVerifyIconHTML('unknown');
+    el.title = 'Could not check this email right now - ' + (err.message || 'try again later');
+  }
+}
+
+// ── Assign-to (owner only) ──────────────────────────────────────────────
+
+let _outreachHelpers = null; // [{id, name, role, active}] once loaded
+
+async function loadOutreachHelpersForAssignSelects() {
+  try {
+    const res = await fetch('/api/admin?resource=outreach-users', { credentials: 'include' });
+    if (!res.ok) return;
+    _outreachHelpers = await res.json();
+    renderOutreach(); // re-render so the now-populated helper list shows in assign selects
+  } catch {}
+}
+
+function outreachAssignSelect(c) {
+  if (!_outreachHelpers) return '';
+  const options = _outreachHelpers
+    .filter(u => u.active)
+    .map(u => `<option value="${u.id}" ${c.assigned_to === u.id ? 'selected' : ''}>${esc(u.name)}</option>`).join('');
+  return `<select class="assign-select" onchange="assignLead(${c.id}, this.value)">
+    <option value="">Unassigned</option>
+    ${options}
+  </select>`;
+}
+
+async function assignLead(id, value) {
+  if (await outreachPatch({ id, action: 'assign_lead', value: value || null })) {
+    const c = _outreach.find(x => x.id === id);
+    if (c) c.assigned_to = value ? Number(value) : null;
+  }
+}
+
+// ── Manage users (owner only) ───────────────────────────────────────────
+
+function openManageUsersModal() {
+  document.getElementById('new-user-name').value = '';
+  document.getElementById('new-user-password').value = '';
+  document.getElementById('mu-error').style.display = 'none';
+  renderUsersList();
+  document.getElementById('manage-users-modal').classList.add('open');
+}
+
+function closeManageUsersModal() {
+  document.getElementById('manage-users-modal').classList.remove('open');
+}
+
+function renderUsersList() {
+  const el = document.getElementById('users-list');
+  if (!_outreachHelpers || !_outreachHelpers.length) {
+    el.innerHTML = '<div class="empty" style="padding:1.5rem">No users yet.</div>';
+    return;
+  }
+  el.innerHTML = _outreachHelpers.map(u => `
+    <div class="user-row ${u.active ? '' : 'user-row-inactive'}">
+      <div>
+        <span class="user-row-name">${esc(u.name)}</span>
+        <span class="user-row-role">${esc(u.role)}</span>
+      </div>
+      ${u.role === 'owner' ? '' : `<button class="btn btn-ghost btn-sm" onclick="toggleUserActive(${u.id}, ${!u.active})">${u.active ? 'Deactivate' : 'Reactivate'}</button>`}
+    </div>
+  `).join('');
+}
+
+async function submitCreateUser() {
+  const errEl = document.getElementById('mu-error');
+  errEl.style.display = 'none';
+  const name = document.getElementById('new-user-name').value.trim();
+  const password = document.getElementById('new-user-password').value;
+  if (!name || !password) {
+    errEl.textContent = 'Name and password are required.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/admin?resource=outreach-users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ name, password }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      errEl.textContent = data.error || 'Something went wrong.';
+      errEl.style.display = 'block';
+      return;
+    }
+    document.getElementById('new-user-name').value = '';
+    document.getElementById('new-user-password').value = '';
+    await loadOutreachHelpersForAssignSelects();
+    renderUsersList();
+    toast('User created');
+  } catch {
+    errEl.textContent = 'Something went wrong - try again.';
+    errEl.style.display = 'block';
+  }
+}
+
+async function toggleUserActive(id, active) {
+  const res = await fetch('/api/admin?resource=outreach-users', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ id, active }),
+  });
+  if (res.ok) {
+    await loadOutreachHelpersForAssignSelects();
+    renderUsersList();
+    toast(active ? 'User reactivated' : 'User deactivated');
+  } else {
+    toast('Failed to update user', true);
+  }
+}
+</script>
+</body>
+</html>

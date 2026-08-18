@@ -1,7 +1,9 @@
 ﻿import { neon } from '@neondatabase/serverless';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { createMagicToken } from './auth.js';
 import { DECK_HTML_B64 } from './_deckContent.js';
-import { ensureBotColumns } from './_botDetect.js';
+import { ensureBotColumns, getClientIp } from './_botDetect.js';
 import { CATEGORIES } from './suggest-expert.js';
 
 let adminBotColumnsReady = false;
@@ -10,6 +12,71 @@ function auth(req) {
   const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress;
   const allowed = process.env.OWNER_IP?.split(',').map(s => s.trim());
   return allowed && allowed.includes(ip);
+}
+
+// ── Outreach helper-access auth (separate from the IP-gated owner auth()
+// above) - password-only accounts Dom creates himself for people helping
+// with outreach, so each helper only ever sees leads assigned to them.
+// See /outreach (outreach/index.html) for the page this backs.
+const OUTREACH_LOGIN_MAX_ATTEMPTS = 5;
+const OUTREACH_LOGIN_LOCKOUT_MS = 15 * 60 * 1000;
+
+async function ensureOutreachTables(sql) {
+  await sql`CREATE TABLE IF NOT EXISTS outreach_users (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'helper',
+    active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  )`.catch(() => {});
+  await sql`CREATE TABLE IF NOT EXISTS outreach_sessions (
+    token TEXT PRIMARY KEY,
+    outreach_user_id INT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  )`.catch(() => {});
+  // Lockout is keyed by IP, not account - there's no username to look failed
+  // attempts up by before a password has actually matched someone.
+  await sql`CREATE TABLE IF NOT EXISTS outreach_login_attempts (
+    ip TEXT PRIMARY KEY,
+    fail_count INT NOT NULL DEFAULT 0,
+    locked_until TIMESTAMPTZ
+  )`.catch(() => {});
+  await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS assigned_to INT REFERENCES outreach_users(id)`.catch(() => {});
+}
+
+function getOutreachSessionToken(req) {
+  const cookies = req.headers.cookie || '';
+  const match = cookies.match(/il_outreach_session=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+async function getOutreachSession(req, sql) {
+  const token = getOutreachSessionToken(req);
+  if (!token) return null;
+  const [row] = await sql`
+    SELECT u.id, u.name, u.role
+    FROM outreach_sessions s JOIN outreach_users u ON u.id = s.outreach_user_id
+    WHERE s.token = ${token} AND s.expires_at > NOW() AND u.active = true
+  `;
+  return row || null;
+}
+
+async function issueOutreachSession(sql, res, userId) {
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  await sql`INSERT INTO outreach_sessions (token, outreach_user_id, expires_at) VALUES (${token}, ${userId}, ${expiresAt})`;
+  res.setHeader('Set-Cookie', `il_outreach_session=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`);
+}
+
+// Owner status can come from either the legacy IP allowlist (Dom, still
+// useful as a fallback if he hasn't logged into /outreach on this device
+// yet) or a real outreach_users row with role='owner'.
+async function isOutreachOwner(req, sql) {
+  if (auth(req)) return true;
+  const session = await getOutreachSession(req, sql);
+  return !!(session && session.role === 'owner');
 }
 
 // Fire-and-forget - a Slack outage or missing webhook URL must never block
@@ -261,6 +328,287 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, added, queriesRun, stopReason, elapsedMs: Date.now() - started });
   }
 
+  // ── Outreach helper login (password-only) ──────────────────────────────
+  // Everything below runs before the IP gate - helpers have no allowlisted
+  // IP, so they need to reach these without passing it. See /outreach.
+
+  if (resource === 'outreach-bootstrap-check' && req.method === 'GET') {
+    const sql = neon(process.env.DATABASE_URL);
+    await ensureOutreachTables(sql);
+    const [owner] = await sql`SELECT id FROM outreach_users WHERE role = 'owner' LIMIT 1`;
+    return res.status(200).json({ needsBootstrap: !owner });
+  }
+
+  // One-time: creates the very first owner account. Only works while no
+  // owner row exists yet - re-checked here (not just hidden client-side) so
+  // it can't be replayed to mint a second owner later.
+  if (resource === 'outreach-bootstrap' && req.method === 'POST') {
+    const sql = neon(process.env.DATABASE_URL);
+    await ensureOutreachTables(sql);
+    const [existingOwner] = await sql`SELECT id FROM outreach_users WHERE role = 'owner' LIMIT 1`;
+    if (existingOwner) return res.status(409).json({ error: 'An owner account already exists' });
+
+    const { name, password } = req.body || {};
+    if (!name || !password || String(password).length < 4) {
+      return res.status(400).json({ error: 'Name and a password (4+ characters) are required' });
+    }
+    const passwordHash = await bcrypt.hash(password, 10);
+    const [user] = await sql`INSERT INTO outreach_users (name, password_hash, role) VALUES (${name.trim()}, ${passwordHash}, 'owner') RETURNING id`;
+    await issueOutreachSession(sql, res, user.id);
+    return res.status(201).json({ ok: true });
+  }
+
+  // No username - the submitted password is compared against every active
+  // account's hash until one matches (fine at the handful-of-people scale
+  // this is built for). Lockout is keyed by IP rather than account, since
+  // there's no account identity to key it by before a match is found.
+  if (resource === 'outreach-login' && req.method === 'POST') {
+    const sql = neon(process.env.DATABASE_URL);
+    await ensureOutreachTables(sql);
+    const ip = getClientIp(req);
+    const { password } = req.body || {};
+    if (!password) return res.status(400).json({ error: 'Password required' });
+
+    const [attempt] = await sql`SELECT fail_count, locked_until FROM outreach_login_attempts WHERE ip = ${ip}`;
+    if (attempt?.locked_until && new Date(attempt.locked_until) > new Date()) {
+      return res.status(401).json({ error: 'Too many attempts - try again later' });
+    }
+
+    const users = await sql`SELECT id, password_hash FROM outreach_users WHERE active = true`;
+    let matched = null;
+    for (const u of users) {
+      if (await bcrypt.compare(password, u.password_hash)) { matched = u; break; }
+    }
+
+    if (!matched) {
+      const failCount = (attempt?.fail_count || 0) + 1;
+      const lockUntil = failCount >= OUTREACH_LOGIN_MAX_ATTEMPTS ? new Date(Date.now() + OUTREACH_LOGIN_LOCKOUT_MS) : null;
+      await sql`
+        INSERT INTO outreach_login_attempts (ip, fail_count, locked_until) VALUES (${ip}, ${lockUntil ? 0 : failCount}, ${lockUntil})
+        ON CONFLICT (ip) DO UPDATE SET fail_count = ${lockUntil ? 0 : failCount}, locked_until = ${lockUntil}
+      `;
+      return res.status(401).json({ error: 'Incorrect password' });
+    }
+
+    await sql`DELETE FROM outreach_login_attempts WHERE ip = ${ip}`;
+    await issueOutreachSession(sql, res, matched.id);
+    return res.status(200).json({ ok: true });
+  }
+
+  if (resource === 'outreach-me' && req.method === 'GET') {
+    const sql = neon(process.env.DATABASE_URL);
+    await ensureOutreachTables(sql);
+    const session = await getOutreachSession(req, sql);
+    if (!session) return res.status(401).json({ error: 'Not authenticated' });
+    return res.status(200).json(session);
+  }
+
+  if (resource === 'outreach-logout') {
+    const sql = neon(process.env.DATABASE_URL);
+    const token = getOutreachSessionToken(req);
+    if (token) await sql`DELETE FROM outreach_sessions WHERE token = ${token}`.catch(() => {});
+    res.setHeader('Set-Cookie', 'il_outreach_session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0');
+    return res.status(200).json({ ok: true });
+  }
+
+  // Owner-only management of helper accounts - "Manage users" panel on
+  // /outreach. Never returns password_hash.
+  if (resource === 'outreach-users') {
+    const sql = neon(process.env.DATABASE_URL);
+    await ensureOutreachTables(sql);
+    if (!(await isOutreachOwner(req, sql))) return res.status(403).json({ error: 'Forbidden' });
+
+    if (req.method === 'GET') {
+      const users = await sql`SELECT id, name, role, active, created_at FROM outreach_users ORDER BY role DESC, name ASC`;
+      return res.status(200).json(users);
+    }
+    if (req.method === 'POST') {
+      const { name, password } = req.body || {};
+      if (!name || !password || String(password).length < 4) {
+        return res.status(400).json({ error: 'Name and a password (4+ characters) are required' });
+      }
+      const passwordHash = await bcrypt.hash(password, 10);
+      const [user] = await sql`INSERT INTO outreach_users (name, password_hash, role) VALUES (${name.trim()}, ${passwordHash}, 'helper') RETURNING id`;
+      return res.status(201).json({ ok: true, id: user.id });
+    }
+    if (req.method === 'PATCH') {
+      const { id, active } = req.body || {};
+      if (!id) return res.status(400).json({ error: 'id required' });
+      await sql`UPDATE outreach_users SET active = ${!!active} WHERE id = ${id} AND role != 'owner'`;
+      return res.status(200).json({ ok: true });
+    }
+    return res.status(405).end();
+  }
+
+  // Email deliverability check for the Outreach page - proxies Abstract
+  // API's Email Reputation product so the key never reaches the browser.
+  // Stateless: no DB write. Reachable by the IP-allowlisted owner or any
+  // logged-in outreach user (owner or helper).
+  if (resource === 'verify_email') {
+    const sql = neon(process.env.DATABASE_URL);
+    await ensureOutreachTables(sql);
+    if (!auth(req) && !(await getOutreachSession(req, sql))) return res.status(403).json({ error: 'Forbidden' });
+
+    const email = (req.query.email || '').trim();
+    if (!email) return res.status(400).json({ error: 'email required' });
+    if (!process.env.ABSTRACT_EMAIL_API_KEY) return res.status(500).json({ error: 'Email verification is not configured' });
+
+    try {
+      const apiRes = await fetch(`https://emailreputation.abstractapi.com/v1/?api_key=${process.env.ABSTRACT_EMAIL_API_KEY}&email=${encodeURIComponent(email)}`, {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!apiRes.ok) throw new Error(`Abstract API ${apiRes.status}`);
+      const data = await apiRes.json();
+
+      const status = data.email_deliverability?.status;
+      const isCatchall = !!data.email_quality?.is_catchall;
+      const isDisposable = !!data.email_quality?.is_disposable;
+
+      let state, tooltip;
+      if (isDisposable) {
+        state = 'invalid';
+        tooltip = 'This is a disposable/throwaway email address.';
+      } else if (status === 'deliverable') {
+        state = 'valid';
+        tooltip = isCatchall
+          ? 'Deliverable, but this domain accepts mail at any address (catch-all) - a bounce is still possible even though this specific address checks out.'
+          : 'Deliverable - this mailbox exists.';
+      } else if (status === 'undeliverable') {
+        state = 'invalid';
+        tooltip = 'Undeliverable - this mailbox does not appear to exist.';
+      } else {
+        state = 'unknown';
+        tooltip = `Could not confirm deliverability (status: ${status || 'unknown'}) - send with caution.`;
+      }
+
+      return res.status(200).json({ state, tooltip });
+    } catch (err) {
+      console.error('verify_email failed:', err);
+      return res.status(502).json({ error: 'Verification service unavailable' });
+    }
+  }
+
+  // Outreach tracking for candidate_publishers (the SerpAPI discovery
+  // pipeline's leads - see run-discovery above). Access: the IP-allowlisted
+  // owner sees/edits everything, unrestricted. A logged-in helper only ever
+  // sees/edits rows where assigned_to = their own id - enforced in the
+  // WHERE clause of every query below, not just hidden in the UI, so a
+  // helper can't read or write a lead that isn't theirs even by guessing an
+  // id.
+  if (resource === 'outreach') {
+    const sql = neon(process.env.DATABASE_URL);
+    await ensureOutreachTables(sql);
+    const isOwner = auth(req);
+    const session = isOwner ? null : await getOutreachSession(req, sql);
+    if (!isOwner && !session) return res.status(403).json({ error: 'Forbidden' });
+    const helperId = session ? session.id : -1; // -1 never matches a real id, keeps the OR below well-defined
+
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_name TEXT`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_email TEXT`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS company_name TEXT`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS category TEXT`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS followup_1_sent_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS followup_2_sent_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS next_followup_at DATE`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS outreach_notes TEXT`.catch(() => {});
+    await sql`CREATE TABLE IF NOT EXISTS outreach_clicks (
+      id SERIAL PRIMARY KEY,
+      candidate_id INT NOT NULL REFERENCES candidate_publishers(id),
+      clicked_at TIMESTAMPTZ DEFAULT NOW()
+    )`.catch(() => {});
+
+    const ALLOWED_STATUSES = ['discovered', 'emailed', 'followed_up_1', 'followed_up_2', 'important', 'contact_later', 'substack', 'partner', 'openintro_partner', 'products_partner', 'confirmed_fit', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
+
+    // Manually-added leads (the "Create a lead" button). A helper's own
+    // manually-added lead is auto-assigned to them (otherwise they'd
+    // immediately lose sight of it); the owner can optionally assign it to
+    // someone else at creation time.
+    if (req.method === 'POST') {
+      const { domain, company_name, contact_name, contact_email, status, next_followup_at, outreach_notes, assigned_to } = req.body || {};
+      const cleanDomain = (domain || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+      if (!cleanDomain) return res.status(400).json({ error: 'Domain is required' });
+
+      const initialStatus = ALLOWED_STATUSES.includes(status) ? status : 'discovered';
+      const initialAssignee = isOwner ? (assigned_to || null) : helperId;
+
+      try {
+        const [row] = await sql`
+          INSERT INTO candidate_publishers (domain, homepage_url, company_name, contact_name, contact_email, status, next_followup_at, outreach_notes, discovery_source, assigned_to)
+          VALUES (${cleanDomain}, ${'https://' + cleanDomain}, ${company_name || null}, ${contact_name || null}, ${contact_email || null}, ${initialStatus}, ${next_followup_at || null}, ${outreach_notes || null}, 'manual', ${initialAssignee})
+          RETURNING id
+        `;
+        return res.status(201).json({ ok: true, id: row.id });
+      } catch (err) {
+        if (String(err.message || '').includes('duplicate key')) {
+          return res.status(409).json({ error: 'A lead with this domain already exists' });
+        }
+        throw err;
+      }
+    }
+
+    if (req.method === 'PATCH') {
+      const { id, action, value } = req.body || {};
+      if (!id || !action) return res.status(400).json({ error: 'id and action required' });
+
+      // Every UPDATE below is scoped "... AND (assigned_to = helperId OR
+      // isOwner)" - isOwner/helperId are plain bound parameters, not
+      // string-built SQL, so this is the same one statement either way,
+      // just a no-op filter for the owner. A helper's UPDATE simply matches
+      // zero rows if the id isn't theirs.
+      if (action === 'assign_lead') {
+        if (!isOwner) return res.status(403).json({ error: 'Forbidden' });
+        await sql`UPDATE candidate_publishers SET assigned_to = ${value || null} WHERE id = ${id}`;
+      } else if (action === 'mark_email_sent') {
+        await sql`UPDATE candidate_publishers SET email_sent_at = NOW(), status = 'emailed', next_followup_at = CURRENT_DATE + 4 WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
+      } else if (action === 'mark_followup_1') {
+        await sql`UPDATE candidate_publishers SET followup_1_sent_at = NOW(), status = 'followed_up_1', next_followup_at = CURRENT_DATE + 5 WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
+      } else if (action === 'mark_followup_2') {
+        await sql`UPDATE candidate_publishers SET followup_2_sent_at = NOW(), status = 'followed_up_2', next_followup_at = NULL WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
+      } else if (action === 'set_next_followup') {
+        await sql`UPDATE candidate_publishers SET next_followup_at = ${value || null} WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
+      } else if (action === 'set_status') {
+        if (!ALLOWED_STATUSES.includes(value)) return res.status(400).json({ error: 'invalid status' });
+        const resolved = ['replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'].includes(value);
+        if (resolved) {
+          await sql`UPDATE candidate_publishers SET status = ${value}, next_followup_at = NULL WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
+        } else {
+          await sql`UPDATE candidate_publishers SET status = ${value} WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
+        }
+      } else if (action === 'set_contact') {
+        const { contact_name, contact_email } = req.body || {};
+        await sql`UPDATE candidate_publishers SET contact_name = ${contact_name || null}, contact_email = ${contact_email || null} WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
+      } else if (action === 'set_company_name') {
+        await sql`UPDATE candidate_publishers SET company_name = ${value || null} WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
+      } else if (action === 'set_category') {
+        if (value && !CATEGORIES.includes(value)) return res.status(400).json({ error: 'invalid category' });
+        await sql`UPDATE candidate_publishers SET category = ${value || null} WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
+      } else if (action === 'set_notes') {
+        await sql`UPDATE candidate_publishers SET outreach_notes = ${value || null} WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
+      } else {
+        return res.status(400).json({ error: 'unknown action' });
+      }
+      return res.status(200).json({ ok: true });
+    }
+
+    // click_times aggregates outreach_clicks per candidate - GROUP BY cp.id
+    // alone is valid here since id is candidate_publishers' primary key, so
+    // every other cp.* column is functionally dependent on it (Postgres
+    // allows selecting them un-aggregated under that rule).
+    const rows = await sql`
+      SELECT cp.id, cp.domain, cp.homepage_url, cp.title, cp.status, cp.priority_score, cp.contact_name, cp.contact_email, cp.company_name, cp.category,
+             cp.person_linkedin_url, cp.company_linkedin_url, cp.twitter_url, cp.facebook_url, cp.assigned_to,
+             cp.email_sent_at, cp.followup_1_sent_at, cp.followup_2_sent_at, cp.next_followup_at, cp.outreach_notes, cp.created_at,
+             COALESCE(json_agg(oc.clicked_at ORDER BY oc.clicked_at) FILTER (WHERE oc.clicked_at IS NOT NULL), '[]') AS click_times
+      FROM candidate_publishers cp
+      LEFT JOIN outreach_clicks oc ON oc.candidate_id = cp.id
+      WHERE (cp.assigned_to = ${helperId} OR ${isOwner})
+      GROUP BY cp.id
+      ORDER BY cp.priority_score DESC NULLS LAST, cp.created_at DESC
+    `;
+    return res.status(200).json(rows);
+  }
+
   if (!auth(req)) return res.status(403).json({ error: 'Forbidden' });
 
   const sql = neon(process.env.DATABASE_URL);
@@ -406,172 +754,6 @@ export default async function handler(req, res) {
       SELECT id, name, email, blog_url, monthly_visitors, country, created_at, contacted_at, installed_at, starred,
         contact_first_override, contact_last_override, email_override, domain_override, publication_name_override
       FROM subscribers ORDER BY created_at DESC
-    `;
-    return res.status(200).json(rows);
-  }
-
-  // Outreach tracking for candidate_publishers (the SerpAPI discovery
-  // pipeline's leads - see run-discovery above). Deliberately reuses the
-  // table's existing `status` column for the outreach stage instead of
-  // adding a second status-shaped column that could drift out of sync -
-  // 'discovered' (its long-standing default) doubles as "not yet
-  // contacted" here. contact_name/contact_email are NOT populated by
-  // discovery (SerpAPI only ever returns domain-level results, never a
-  // person) - filled in by hand here once someone's actually done the
-  // legwork of finding a contact on the site itself.
-  // Email deliverability check for the Outreach tab - proxies Abstract
-  // API's Email Reputation product so the key never reaches the browser.
-  // Stateless: no DB write. This is a live yes/no for whoever just typed
-  // an address they found online (to avoid sending to it and eating a
-  // bounce), not a stored audit field - see admin/index.html's
-  // verifyEmailInto for how the result is used and cached client-side.
-  if (resource === 'verify_email') {
-    const email = (req.query.email || '').trim();
-    if (!email) return res.status(400).json({ error: 'email required' });
-    if (!process.env.ABSTRACT_EMAIL_API_KEY) return res.status(500).json({ error: 'Email verification is not configured' });
-
-    try {
-      const apiRes = await fetch(`https://emailreputation.abstractapi.com/v1/?api_key=${process.env.ABSTRACT_EMAIL_API_KEY}&email=${encodeURIComponent(email)}`, {
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!apiRes.ok) throw new Error(`Abstract API ${apiRes.status}`);
-      const data = await apiRes.json();
-
-      const status = data.email_deliverability?.status;
-      const isCatchall = !!data.email_quality?.is_catchall;
-      const isDisposable = !!data.email_quality?.is_disposable;
-
-      let state, tooltip;
-      if (isDisposable) {
-        state = 'invalid';
-        tooltip = 'This is a disposable/throwaway email address.';
-      } else if (status === 'deliverable') {
-        state = 'valid';
-        tooltip = isCatchall
-          ? 'Deliverable, but this domain accepts mail at any address (catch-all) - a bounce is still possible even though this specific address checks out.'
-          : 'Deliverable - this mailbox exists.';
-      } else if (status === 'undeliverable') {
-        state = 'invalid';
-        tooltip = 'Undeliverable - this mailbox does not appear to exist.';
-      } else {
-        state = 'unknown';
-        tooltip = `Could not confirm deliverability (status: ${status || 'unknown'}) - send with caution.`;
-      }
-
-      return res.status(200).json({ state, tooltip });
-    } catch (err) {
-      console.error('verify_email failed:', err);
-      return res.status(502).json({ error: 'Verification service unavailable' });
-    }
-  }
-
-  if (resource === 'outreach') {
-    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_name TEXT`.catch(() => {});
-    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_email TEXT`.catch(() => {});
-    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS company_name TEXT`.catch(() => {});
-    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS category TEXT`.catch(() => {});
-    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMPTZ`.catch(() => {});
-    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS followup_1_sent_at TIMESTAMPTZ`.catch(() => {});
-    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS followup_2_sent_at TIMESTAMPTZ`.catch(() => {});
-    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS next_followup_at DATE`.catch(() => {});
-    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS outreach_notes TEXT`.catch(() => {});
-    await sql`CREATE TABLE IF NOT EXISTS outreach_clicks (
-      id SERIAL PRIMARY KEY,
-      candidate_id INT NOT NULL REFERENCES candidate_publishers(id),
-      clicked_at TIMESTAMPTZ DEFAULT NOW()
-    )`.catch(() => {});
-
-    const ALLOWED_STATUSES = ['discovered', 'emailed', 'followed_up_1', 'followed_up_2', 'important', 'contact_later', 'substack', 'partner', 'openintro_partner', 'products_partner', 'confirmed_fit', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
-
-    // Manually-added leads (the "Create a lead" button) - bypasses the
-    // SerpAPI discovery pipeline entirely, for a company Dom already knows
-    // about. discovery_source distinguishes these from the normal
-    // 'serpapi' default so it's visible in the data which leads came from
-    // where.
-    if (req.method === 'POST') {
-      const { domain, company_name, contact_name, contact_email, status, next_followup_at, outreach_notes } = req.body || {};
-      const cleanDomain = (domain || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
-      if (!cleanDomain) return res.status(400).json({ error: 'Domain is required' });
-
-      const initialStatus = ALLOWED_STATUSES.includes(status) ? status : 'discovered';
-
-      try {
-        const [row] = await sql`
-          INSERT INTO candidate_publishers (domain, homepage_url, company_name, contact_name, contact_email, status, next_followup_at, outreach_notes, discovery_source)
-          VALUES (${cleanDomain}, ${'https://' + cleanDomain}, ${company_name || null}, ${contact_name || null}, ${contact_email || null}, ${initialStatus}, ${next_followup_at || null}, ${outreach_notes || null}, 'manual')
-          RETURNING id
-        `;
-        return res.status(201).json({ ok: true, id: row.id });
-      } catch (err) {
-        if (String(err.message || '').includes('duplicate key')) {
-          return res.status(409).json({ error: 'A lead with this domain already exists' });
-        }
-        throw err;
-      }
-    }
-
-    if (req.method === 'PATCH') {
-      const { id, action, value } = req.body || {};
-      if (!id || !action) return res.status(400).json({ error: 'id and action required' });
-
-      // Each "mark sent" step stamps its own timestamp, advances the status,
-      // and suggests a next-follow-up date a few days out - editable
-      // afterward via set_next_followup, never re-computed automatically,
-      // so a manual override here is never silently clobbered by a later
-      // step. Follow-up 2 clears next_followup_at instead of suggesting a
-      // 3rd date - past that point it's a deliberate manual decision, not
-      // an assumed cadence.
-      if (action === 'mark_email_sent') {
-        await sql`UPDATE candidate_publishers SET email_sent_at = NOW(), status = 'emailed', next_followup_at = CURRENT_DATE + 4 WHERE id = ${id}`;
-      } else if (action === 'mark_followup_1') {
-        await sql`UPDATE candidate_publishers SET followup_1_sent_at = NOW(), status = 'followed_up_1', next_followup_at = CURRENT_DATE + 5 WHERE id = ${id}`;
-      } else if (action === 'mark_followup_2') {
-        await sql`UPDATE candidate_publishers SET followup_2_sent_at = NOW(), status = 'followed_up_2', next_followup_at = NULL WHERE id = ${id}`;
-      } else if (action === 'set_next_followup') {
-        await sql`UPDATE candidate_publishers SET next_followup_at = ${value || null} WHERE id = ${id}`;
-      } else if (action === 'set_status') {
-        if (!ALLOWED_STATUSES.includes(value)) return res.status(400).json({ error: 'invalid status' });
-        // A resolved outcome means no further action is expected - clearing
-        // next_followup_at drops the row out of the "due" section instead of
-        // it going stale and looking overdue. not_a_fit is a screening
-        // decision (a "write for us" page, wrong audience, etc.) rather than
-        // a reply - can be applied from any stage, most often straight from
-        // "not yet contacted" without ever emailing them.
-        const resolved = ['replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'].includes(value);
-        if (resolved) {
-          await sql`UPDATE candidate_publishers SET status = ${value}, next_followup_at = NULL WHERE id = ${id}`;
-        } else {
-          await sql`UPDATE candidate_publishers SET status = ${value} WHERE id = ${id}`;
-        }
-      } else if (action === 'set_contact') {
-        const { contact_name, contact_email } = req.body || {};
-        await sql`UPDATE candidate_publishers SET contact_name = ${contact_name || null}, contact_email = ${contact_email || null} WHERE id = ${id}`;
-      } else if (action === 'set_company_name') {
-        await sql`UPDATE candidate_publishers SET company_name = ${value || null} WHERE id = ${id}`;
-      } else if (action === 'set_category') {
-        if (value && !CATEGORIES.includes(value)) return res.status(400).json({ error: 'invalid category' });
-        await sql`UPDATE candidate_publishers SET category = ${value || null} WHERE id = ${id}`;
-      } else if (action === 'set_notes') {
-        await sql`UPDATE candidate_publishers SET outreach_notes = ${value || null} WHERE id = ${id}`;
-      } else {
-        return res.status(400).json({ error: 'unknown action' });
-      }
-      return res.status(200).json({ ok: true });
-    }
-
-    // click_times aggregates outreach_clicks per candidate - GROUP BY cp.id
-    // alone is valid here since id is candidate_publishers' primary key, so
-    // every other cp.* column is functionally dependent on it (Postgres
-    // allows selecting them un-aggregated under that rule).
-    const rows = await sql`
-      SELECT cp.id, cp.domain, cp.homepage_url, cp.title, cp.status, cp.priority_score, cp.contact_name, cp.contact_email, cp.company_name, cp.category,
-             cp.person_linkedin_url, cp.company_linkedin_url, cp.twitter_url, cp.facebook_url,
-             cp.email_sent_at, cp.followup_1_sent_at, cp.followup_2_sent_at, cp.next_followup_at, cp.outreach_notes, cp.created_at,
-             COALESCE(json_agg(oc.clicked_at ORDER BY oc.clicked_at) FILTER (WHERE oc.clicked_at IS NOT NULL), '[]') AS click_times
-      FROM candidate_publishers cp
-      LEFT JOIN outreach_clicks oc ON oc.candidate_id = cp.id
-      GROUP BY cp.id
-      ORDER BY cp.priority_score DESC NULLS LAST, cp.created_at DESC
     `;
     return res.status(200).json(rows);
   }
