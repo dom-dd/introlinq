@@ -210,6 +210,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
     <button class="tab-btn" onclick="switchTab('stats',this)">Stats</button>
     <button class="tab-btn" onclick="switchTab('waitlist',this)">Waitlist</button>
     <a class="tab-btn" href="/outreach" target="_blank" rel="noopener">Outreach ↗</a>
+    <button class="tab-btn" onclick="switchTab('outreach-users',this)">Outreach users</button>
     <button class="tab-btn" onclick="switchTab('affiliate-outreach',this)">Affiliate outreach</button>
     <button class="tab-btn" onclick="switchTab('bookings',this)">Bookings</button>
     <button class="tab-btn" onclick="switchTab('logs',this)">Logs</button>
@@ -533,7 +534,54 @@ tr:hover td{background:rgba(0,0,0,0.01)}
       </div>
     </div>
 
-    <!-- Outreach tab -->
+    <!-- Outreach users - account provisioning only (create/deactivate
+         helper logins for /outreach). The actual lead table lives
+         exclusively at /outreach now, not here - see outreach/index.html.
+         Reuses the same resource=outreach-users endpoint /outreach's own
+         former "Manage users" panel used; that panel was removed from
+         there once this existed, so there's exactly one place to manage
+         accounts. -->
+    <div class="tab-panel" id="tab-outreach-users">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Create a user</div>
+        </div>
+        <div style="padding:1.25rem 1.5rem">
+          <div class="form-row" style="grid-template-columns:1fr 1fr auto;align-items:end">
+            <div class="form-group">
+              <label class="form-label">Name</label>
+              <input class="form-input" id="ou-new-name" placeholder="Bob">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <input class="form-input" id="ou-new-password" placeholder="e.g. 123" autocomplete="new-password">
+            </div>
+            <button class="btn btn-primary" onclick="submitCreateOutreachUser()">Create user</button>
+          </div>
+          <div id="ou-error" style="font-size:0.8125rem;color:var(--red);margin-top:0.75rem;display:none"></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Users</div>
+        </div>
+        <div class="section-body" style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th></th>
+            </tr></thead>
+            <tbody id="outreach-users-tbody"></tbody>
+          </table>
+        </div>
+        <div class="empty" id="outreach-users-empty">Loading...</div>
+      </div>
+    </div>
+
     <!-- Affiliate outreach tab - same pipeline shape as Outreach (now at
          /outreach - see outreach/index.html), but for companies IntroLinq
          wants to become an affiliate OF (SaaS tools, retailers, expert-
@@ -1151,6 +1199,7 @@ function switchTab(name, btn) {
   if (name === 'experts') loadHeadlines();
   if (name === 'cache') loadCache();
   if (name === 'stats') loadAnalytics();
+  if (name === 'outreach-users' && !_outreachUsersLoaded) { _outreachUsersLoaded = true; loadOutreachUsers(); }
   if (name === 'affiliate-outreach' && !_affiliateOutreachLoaded) { _affiliateOutreachLoaded = true; loadAffiliateOutreach(); }
 }
 
@@ -2117,6 +2166,88 @@ function prettifyDomain(domain) {
     .map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
 }
 
+
+// ── Outreach users (account provisioning for /outreach) ─────────────────
+// Reuses the same resource=outreach-users endpoint /outreach's own "Manage
+// users" panel used before it was removed from there in favour of this one
+// place - the endpoint already accepts either the IP allowlist (this page)
+// or an owner-role /outreach session, so no backend change was needed.
+
+let _outreachUsers = [];
+let _outreachUsersLoaded = false;
+
+async function loadOutreachUsers() {
+  const res = await fetch('/api/admin?resource=outreach-users');
+  _outreachUsers = await res.json();
+  renderOutreachUsersList();
+}
+
+function renderOutreachUsersList() {
+  const tbody = document.getElementById('outreach-users-tbody');
+  const emptyEl = document.getElementById('outreach-users-empty');
+  if (!_outreachUsers.length) {
+    tbody.innerHTML = '';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  tbody.innerHTML = _outreachUsers.map(u => `
+    <tr>
+      <td class="td-name">${esc(u.name)}</td>
+      <td>${esc(u.role)}</td>
+      <td><span class="badge ${u.active ? 'badge-active' : 'badge-inactive'}">${u.active ? 'Active' : 'Inactive'}</span></td>
+      <td>${new Date(u.created_at).toLocaleDateString()}</td>
+      <td>${u.role === 'owner' ? '' : `<button class="btn btn-ghost btn-sm" onclick="toggleOutreachUserActive(${u.id}, ${!u.active})">${u.active ? 'Deactivate' : 'Reactivate'}</button>`}</td>
+    </tr>
+  `).join('');
+}
+
+async function submitCreateOutreachUser() {
+  const errEl = document.getElementById('ou-error');
+  errEl.style.display = 'none';
+  const name = document.getElementById('ou-new-name').value.trim();
+  const password = document.getElementById('ou-new-password').value;
+  if (!name || !password) {
+    errEl.textContent = 'Name and password are required.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/admin?resource=outreach-users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, password }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      errEl.textContent = data.error || 'Something went wrong.';
+      errEl.style.display = 'block';
+      return;
+    }
+    document.getElementById('ou-new-name').value = '';
+    document.getElementById('ou-new-password').value = '';
+    await loadOutreachUsers();
+    toast('User created');
+  } catch {
+    errEl.textContent = 'Something went wrong - try again.';
+    errEl.style.display = 'block';
+  }
+}
+
+async function toggleOutreachUserActive(id, active) {
+  const res = await fetch('/api/admin?resource=outreach-users', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, active }),
+  });
+  if (res.ok) {
+    await loadOutreachUsers();
+    toast(active ? 'User reactivated' : 'User deactivated');
+  } else {
+    toast('Failed to update user', true);
+  }
+}
 
 // ── Affiliate outreach ───────────────────────────────────────────────────
 // Same shape/pattern as the Outreach section above, for companies IntroLinq

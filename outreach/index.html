@@ -113,11 +113,6 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 .assign-th,.assign-td{display:none}
 body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
 .assign-select{padding:0.3rem 0.5rem;border:1.5px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--white)}
-.users-list{display:flex;flex-direction:column;gap:0.625rem;margin-bottom:1.25rem}
-.user-row{display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;border:1px solid var(--border);border-radius:var(--radius)}
-.user-row-name{font-weight:600;font-size:0.875rem;color:var(--ink)}
-.user-row-role{font-size:0.7rem;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.04em;margin-left:0.5rem}
-.user-row-inactive{opacity:0.5}
 </style>
 </head>
 <body>
@@ -142,7 +137,6 @@ body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
     <div class="admin-logo">Intro<span>Linq</span><em>Outreach</em></div>
     <div class="header-right">
       <span class="header-user" id="header-user"></span>
-      <button class="btn btn-ghost btn-sm" id="manage-users-btn" style="display:none" onclick="openManageUsersModal()">Manage users</button>
       <button class="logout-btn" onclick="outreachLogout()">Sign out</button>
     </div>
   </div>
@@ -530,31 +524,6 @@ body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
 
 <div class="toast" id="toast"></div>
 
-<!-- Manage users modal (owner-only) -->
-<div class="modal-overlay" id="manage-users-modal" onclick="if(event.target===this)closeManageUsersModal()">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mu-title">
-    <div class="modal-head">
-      <div class="modal-title" id="mu-title">Manage users</div>
-      <button class="modal-close" onclick="closeManageUsersModal()" aria-label="Close">✕</button>
-    </div>
-    <div class="users-list" id="users-list"></div>
-    <div class="form-row" style="grid-template-columns:1fr 1fr">
-      <div class="form-group">
-        <label class="form-label">Name</label>
-        <input class="form-input" id="new-user-name" placeholder="Bob">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Password</label>
-        <input class="form-input" id="new-user-password" placeholder="e.g. 123" autocomplete="new-password">
-      </div>
-    </div>
-    <div class="form-actions">
-      <button class="btn btn-primary" onclick="submitCreateUser()">Create user</button>
-    </div>
-    <div id="mu-error" style="font-size:0.8125rem;color:var(--red);margin-top:0.75rem;display:none"></div>
-  </div>
-</div>
-
 <script>
 // ── Auth / session ───────────────────────────────────────────────────────
 let _outreachUser = null; // {id, name, role} once logged in
@@ -626,7 +595,6 @@ function showOutreachView() {
   document.getElementById('outreach-view').style.display = 'block';
   document.getElementById('header-user').textContent = _outreachUser.name + (_outreachUser.role === 'owner' ? ' (owner)' : '');
   if (_outreachUser.role === 'owner') {
-    document.getElementById('manage-users-btn').style.display = 'inline-block';
     document.body.classList.add('is-owner');
     loadOutreachHelpersForAssignSelects();
   }
@@ -1167,87 +1135,6 @@ async function assignLead(id, value) {
   }
 }
 
-// ── Manage users (owner only) ───────────────────────────────────────────
-
-function openManageUsersModal() {
-  document.getElementById('new-user-name').value = '';
-  document.getElementById('new-user-password').value = '';
-  document.getElementById('mu-error').style.display = 'none';
-  renderUsersList();
-  document.getElementById('manage-users-modal').classList.add('open');
-}
-
-function closeManageUsersModal() {
-  document.getElementById('manage-users-modal').classList.remove('open');
-}
-
-function renderUsersList() {
-  const el = document.getElementById('users-list');
-  if (!_outreachHelpers || !_outreachHelpers.length) {
-    el.innerHTML = '<div class="empty" style="padding:1.5rem">No users yet.</div>';
-    return;
-  }
-  el.innerHTML = _outreachHelpers.map(u => `
-    <div class="user-row ${u.active ? '' : 'user-row-inactive'}">
-      <div>
-        <span class="user-row-name">${esc(u.name)}</span>
-        <span class="user-row-role">${esc(u.role)}</span>
-      </div>
-      ${u.role === 'owner' ? '' : `<button class="btn btn-ghost btn-sm" onclick="toggleUserActive(${u.id}, ${!u.active})">${u.active ? 'Deactivate' : 'Reactivate'}</button>`}
-    </div>
-  `).join('');
-}
-
-async function submitCreateUser() {
-  const errEl = document.getElementById('mu-error');
-  errEl.style.display = 'none';
-  const name = document.getElementById('new-user-name').value.trim();
-  const password = document.getElementById('new-user-password').value;
-  if (!name || !password) {
-    errEl.textContent = 'Name and password are required.';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  try {
-    const res = await fetch('/api/admin?resource=outreach-users', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ name, password }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      errEl.textContent = data.error || 'Something went wrong.';
-      errEl.style.display = 'block';
-      return;
-    }
-    document.getElementById('new-user-name').value = '';
-    document.getElementById('new-user-password').value = '';
-    await loadOutreachHelpersForAssignSelects();
-    renderUsersList();
-    toast('User created');
-  } catch {
-    errEl.textContent = 'Something went wrong - try again.';
-    errEl.style.display = 'block';
-  }
-}
-
-async function toggleUserActive(id, active) {
-  const res = await fetch('/api/admin?resource=outreach-users', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ id, active }),
-  });
-  if (res.ok) {
-    await loadOutreachHelpersForAssignSelects();
-    renderUsersList();
-    toast(active ? 'User reactivated' : 'User deactivated');
-  } else {
-    toast('Failed to update user', true);
-  }
-}
 </script>
 </body>
 </html>
