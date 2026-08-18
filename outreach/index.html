@@ -47,13 +47,26 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .admin-body{max-width:1800px;margin:0 auto;padding:2.5rem 2rem 5rem}
 
 /* Outreach sub-tabs */
-.outreach-subtab-bar{display:flex;align-items:center;flex-wrap:nowrap;gap:0.125rem;overflow-x:auto;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
+.outreach-subtab-bar{display:flex;align-items:center;flex-wrap:nowrap;gap:0.125rem;overflow-x:auto;overflow-y:hidden;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
 .outreach-subtab{flex-shrink:0;padding:0.625rem 0.6rem;font-size:0.75rem;font-weight:500;color:var(--ink-muted);border:none;background:none;cursor:pointer;font-family:'Inter',sans-serif;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;white-space:nowrap}
 .outreach-subtab:hover{color:var(--ink)}
 .outreach-subtab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
 .outreach-subpanel{display:none}
 .outreach-subpanel.active{display:block}
 .outreach-subtab-divider{width:1px;align-self:stretch;background:var(--border);margin:0.5rem 0.25rem;flex-shrink:0}
+
+/* Group coloring so the 3 clusters (pipeline status / partner track /
+   catch-all) are visible at a glance, matching their grouping in the
+   Status dropdown too. Due sits outside any group (always first, neutral). */
+.outreach-subtab.grp-status{background:rgba(79,110,247,0.07);border-radius:6px 6px 0 0}
+.outreach-subtab.grp-partner{background:rgba(139,92,246,0.07);border-radius:6px 6px 0 0}
+.outreach-subtab.grp-others{background:rgba(230,168,32,0.08);border-radius:6px 6px 0 0}
+.outreach-subtab.grp-status:hover{background:rgba(79,110,247,0.14)}
+.outreach-subtab.grp-partner:hover{background:rgba(139,92,246,0.14)}
+.outreach-subtab.grp-others:hover{background:rgba(230,168,32,0.16)}
+.outreach-subtab.grp-status.active{background:rgba(79,110,247,0.18)}
+.outreach-subtab.grp-partner.active{background:rgba(139,92,246,0.18)}
+.outreach-subtab.grp-others.active{background:rgba(230,168,32,0.2)}
 
 /* Section */
 .section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1.5rem}
@@ -160,20 +173,19 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
       <div class="outreach-subtab-bar">
         <button class="outreach-subtab active" data-name="due" onclick="switchOutreachSubtab('due',this)">Due</button>
         <span class="outreach-subtab-divider"></span>
-        <button class="outreach-subtab" data-name="confirmedfit" onclick="switchOutreachSubtab('confirmedfit',this)">Blogs</button>
-        <button class="outreach-subtab" data-name="todo" onclick="switchOutreachSubtab('todo',this)">Not contacted</button>
-        <button class="outreach-subtab" data-name="waiting" onclick="switchOutreachSubtab('waiting',this)">Follow ups</button>
+        <button class="outreach-subtab grp-status" data-name="todo" onclick="switchOutreachSubtab('todo',this)">Untouched</button>
+        <button class="outreach-subtab grp-status" data-name="waiting" onclick="switchOutreachSubtab('waiting',this)">Follow ups</button>
+        <button class="outreach-subtab grp-status" data-name="discussion" onclick="switchOutreachSubtab('discussion',this)">In discussion</button>
+        <button class="outreach-subtab grp-status" data-name="onboarded" onclick="switchOutreachSubtab('onboarded',this)">Onboarded</button>
+        <button class="outreach-subtab grp-status" data-name="later" onclick="switchOutreachSubtab('later',this)">Contact later</button>
         <span class="outreach-subtab-divider"></span>
-        <button class="outreach-subtab" data-name="important" onclick="switchOutreachSubtab('important',this)">VIP</button>
-        <button class="outreach-subtab" data-name="later" onclick="switchOutreachSubtab('later',this)">Contact later</button>
-        <button class="outreach-subtab" data-name="substack" onclick="switchOutreachSubtab('substack',this)">Substack blogs</button>
+        <button class="outreach-subtab grp-partner" data-name="partner" onclick="switchOutreachSubtab('partner',this)">IntroLinq partners</button>
+        <button class="outreach-subtab grp-partner" data-name="openintro" onclick="switchOutreachSubtab('openintro',this)">OpenIntro partners</button>
+        <button class="outreach-subtab grp-partner" data-name="products" onclick="switchOutreachSubtab('products',this)">Products partners</button>
         <span class="outreach-subtab-divider"></span>
-        <button class="outreach-subtab" data-name="partner" onclick="switchOutreachSubtab('partner',this)">Partners</button>
-        <button class="outreach-subtab" data-name="products" onclick="switchOutreachSubtab('products',this)">Products partners</button>
-        <button class="outreach-subtab" data-name="openintro" onclick="switchOutreachSubtab('openintro',this)">OpenIntro partners</button>
-        <span class="outreach-subtab-divider"></span>
-        <button class="outreach-subtab" data-name="interested" onclick="switchOutreachSubtab('interested',this)">Interested</button>
-        <button class="outreach-subtab" data-name="closed" onclick="switchOutreachSubtab('closed',this)">Not a fit</button>
+        <button class="outreach-subtab grp-others" data-name="important" onclick="switchOutreachSubtab('important',this)">VIP</button>
+        <button class="outreach-subtab grp-others" data-name="notfit" onclick="switchOutreachSubtab('notfit',this)">Not a fit</button>
+        <button class="outreach-subtab grp-others" data-name="notinterested" onclick="switchOutreachSubtab('notinterested',this)">Not interested</button>
         <button class="btn btn-primary btn-sm" style="flex-shrink:0;margin:0.4rem 0 0.4rem auto;padding-left:0.75rem;padding-right:0.75rem" onclick="openCreateLeadModal()">+ Create a lead</button>
       </div>
 
@@ -201,44 +213,19 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
             <table style="min-width:1000px">
               <thead><tr>
                 <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:220px">Blog</th>
-                <th style="width:180px">Contact</th>
-                <th style="width:150px">Status</th>
+                <th style="width:220px">1. Blog</th>
+                <th style="width:180px">2. Contact</th>
+                <th style="width:150px">3. Status</th>
                 <th style="width:100px" class="assign-th">Assign</th>
-                <th style="width:130px">Next follow-up</th>
-                <th style="width:190px">Action</th>
-                <th style="width:150px">Emails</th>
-                <th>Notes</th>
+                <th style="width:130px">4. Next follow-up</th>
+                <th style="width:190px">5. Action</th>
+                <th style="width:150px">6. Emails</th>
+                <th>7. Notes</th>
               </tr></thead>
               <tbody id="outreach-due-tbody"></tbody>
             </table>
           </div>
           <div class="empty" id="outreach-due-empty">Loading...</div>
-        </div>
-      </div>
-
-      <div class="outreach-subpanel" id="outreach-sub-confirmedfit">
-        <div class="section">
-          <div class="section-header">
-            <div class="section-title" id="outreach-confirmedfit-title">Blog &amp; Publishers</div>
-          </div>
-          <div class="section-body" style="overflow-x:auto">
-            <table style="min-width:1000px">
-              <thead><tr>
-                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:220px">Blog</th>
-                <th style="width:180px">Contact</th>
-                <th style="width:150px">Status</th>
-                <th style="width:100px" class="assign-th">Assign</th>
-                <th style="width:130px">Next follow-up</th>
-                <th style="width:190px">Action</th>
-                <th style="width:150px">Emails</th>
-                <th>Notes</th>
-              </tr></thead>
-              <tbody id="outreach-confirmedfit-tbody"></tbody>
-            </table>
-          </div>
-          <div class="empty" id="outreach-confirmedfit-empty">Loading...</div>
         </div>
       </div>
 
@@ -251,14 +238,14 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
             <table style="min-width:1000px">
               <thead><tr>
                 <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:220px">Blog</th>
-                <th style="width:180px">Contact</th>
-                <th style="width:150px">Status</th>
+                <th style="width:220px">1. Blog</th>
+                <th style="width:180px">2. Contact</th>
+                <th style="width:150px">3. Status</th>
                 <th style="width:100px" class="assign-th">Assign</th>
-                <th style="width:130px">Next follow-up</th>
-                <th style="width:190px">Action</th>
-                <th style="width:150px">Emails</th>
-                <th>Notes</th>
+                <th style="width:130px">4. Next follow-up</th>
+                <th style="width:190px">5. Action</th>
+                <th style="width:150px">6. Emails</th>
+                <th>7. Notes</th>
               </tr></thead>
               <tbody id="outreach-waiting-tbody"></tbody>
             </table>
@@ -276,12 +263,12 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
             <table style="min-width:700px">
               <thead><tr>
                 <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:220px">Blog</th>
-                <th style="width:180px">Contact</th>
-                <th style="width:150px">Status</th>
+                <th style="width:220px">1. Blog</th>
+                <th style="width:180px">2. Contact</th>
+                <th style="width:150px">3. Status</th>
                 <th style="width:100px" class="assign-th">Assign</th>
-                <th style="width:130px">Next follow-up</th>
-                <th>Notes</th>
+                <th style="width:130px">4. Next follow-up</th>
+                <th>5. Notes</th>
               </tr></thead>
               <tbody id="outreach-later-tbody"></tbody>
             </table>
@@ -299,11 +286,11 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
             <table style="min-width:600px">
               <thead><tr>
                 <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:220px">Blog</th>
-                <th style="width:180px">Contact</th>
-                <th style="width:150px">Status</th>
+                <th style="width:220px">1. Blog</th>
+                <th style="width:180px">2. Contact</th>
+                <th style="width:150px">3. Status</th>
                 <th style="width:100px" class="assign-th">Assign</th>
-                <th>Notes</th>
+                <th>4. Notes</th>
               </tr></thead>
               <tbody id="outreach-important-tbody"></tbody>
             </table>
@@ -312,42 +299,20 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
         </div>
       </div>
 
-      <div class="outreach-subpanel" id="outreach-sub-substack">
-        <div class="section">
-          <div class="section-header">
-            <div class="section-title" id="outreach-substack-title">Substack blogs</div>
-          </div>
-          <div class="section-body" style="overflow-x:auto">
-            <table style="min-width:600px">
-              <thead><tr>
-                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:220px">Blog</th>
-                <th style="width:180px">Contact</th>
-                <th style="width:150px">Status</th>
-                <th style="width:100px" class="assign-th">Assign</th>
-                <th>Notes</th>
-              </tr></thead>
-              <tbody id="outreach-substack-tbody"></tbody>
-            </table>
-          </div>
-          <div class="empty" id="outreach-substack-empty">Loading...</div>
-        </div>
-      </div>
-
       <div class="outreach-subpanel" id="outreach-sub-partner">
         <div class="section">
           <div class="section-header">
-            <div class="section-title" id="outreach-partner-title">Partners</div>
+            <div class="section-title" id="outreach-partner-title">IntroLinq partners</div>
           </div>
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:600px">
               <thead><tr>
                 <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:220px">Blog</th>
-                <th style="width:180px">Contact</th>
-                <th style="width:150px">Status</th>
+                <th style="width:220px">1. Blog</th>
+                <th style="width:180px">2. Contact</th>
+                <th style="width:150px">3. Status</th>
                 <th style="width:100px" class="assign-th">Assign</th>
-                <th>Notes</th>
+                <th>4. Notes</th>
               </tr></thead>
               <tbody id="outreach-partner-tbody"></tbody>
             </table>
@@ -359,20 +324,20 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
       <div class="outreach-subpanel" id="outreach-sub-todo">
         <div class="section">
           <div class="section-header">
-            <div class="section-title" id="outreach-todo-title">Not yet contacted</div>
+            <div class="section-title" id="outreach-todo-title">Untouched</div>
           </div>
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:1000px">
               <thead><tr>
                 <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:220px">Blog</th>
-                <th style="width:180px">Contact</th>
-                <th style="width:150px">Status</th>
+                <th style="width:220px">1. Blog</th>
+                <th style="width:180px">2. Contact</th>
+                <th style="width:150px">3. Status</th>
                 <th style="width:100px" class="assign-th">Assign</th>
-                <th style="width:130px">Next follow-up</th>
-                <th style="width:190px">Action</th>
-                <th style="width:150px">Emails</th>
-                <th>Notes</th>
+                <th style="width:130px">4. Next follow-up</th>
+                <th style="width:190px">5. Action</th>
+                <th style="width:150px">6. Emails</th>
+                <th>7. Notes</th>
               </tr></thead>
               <tbody id="outreach-todo-tbody"></tbody>
             </table>
@@ -384,47 +349,91 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
         </div>
       </div>
 
-      <div class="outreach-subpanel" id="outreach-sub-interested">
+      <div class="outreach-subpanel" id="outreach-sub-discussion">
         <div class="section">
           <div class="section-header">
-            <div class="section-title" id="outreach-interested-title">Interested / Signed up</div>
+            <div class="section-title" id="outreach-discussion-title">In discussion</div>
           </div>
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:600px">
               <thead><tr>
                 <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:220px">Blog</th>
-                <th style="width:180px">Contact</th>
-                <th style="width:150px">Status</th>
+                <th style="width:220px">1. Blog</th>
+                <th style="width:180px">2. Contact</th>
+                <th style="width:150px">3. Status</th>
                 <th style="width:100px" class="assign-th">Assign</th>
-                <th>Notes</th>
+                <th>4. Notes</th>
               </tr></thead>
-              <tbody id="outreach-interested-tbody"></tbody>
+              <tbody id="outreach-discussion-tbody"></tbody>
             </table>
           </div>
-          <div class="empty" id="outreach-interested-empty">Loading...</div>
+          <div class="empty" id="outreach-discussion-empty">Loading...</div>
         </div>
       </div>
 
-      <div class="outreach-subpanel" id="outreach-sub-closed">
+      <div class="outreach-subpanel" id="outreach-sub-onboarded">
         <div class="section">
           <div class="section-header">
-            <div class="section-title" id="outreach-closed-title">Not a fit</div>
+            <div class="section-title" id="outreach-onboarded-title">Onboarded</div>
           </div>
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:600px">
               <thead><tr>
                 <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:220px">Blog</th>
-                <th style="width:180px">Contact</th>
-                <th style="width:150px">Status</th>
+                <th style="width:220px">1. Blog</th>
+                <th style="width:180px">2. Contact</th>
+                <th style="width:150px">3. Status</th>
                 <th style="width:100px" class="assign-th">Assign</th>
-                <th>Notes</th>
+                <th>4. Notes</th>
               </tr></thead>
-              <tbody id="outreach-closed-tbody"></tbody>
+              <tbody id="outreach-onboarded-tbody"></tbody>
             </table>
           </div>
-          <div class="empty" id="outreach-closed-empty">Loading...</div>
+          <div class="empty" id="outreach-onboarded-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-notfit">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-notfit-title">Not a fit</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:600px">
+              <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
+                <th style="width:220px">1. Blog</th>
+                <th style="width:180px">2. Contact</th>
+                <th style="width:150px">3. Status</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th>4. Notes</th>
+              </tr></thead>
+              <tbody id="outreach-notfit-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-notfit-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-notinterested">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="outreach-notinterested-title">Not interested</div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:600px">
+              <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
+                <th style="width:220px">1. Blog</th>
+                <th style="width:180px">2. Contact</th>
+                <th style="width:150px">3. Status</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th>4. Notes</th>
+              </tr></thead>
+              <tbody id="outreach-notinterested-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-notinterested-empty">Loading...</div>
         </div>
       </div>
 
@@ -437,11 +446,11 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
             <table style="min-width:600px">
               <thead><tr>
                 <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:220px">Blog</th>
-                <th style="width:180px">Contact</th>
-                <th style="width:150px">Status</th>
+                <th style="width:220px">1. Blog</th>
+                <th style="width:180px">2. Contact</th>
+                <th style="width:150px">3. Status</th>
                 <th style="width:100px" class="assign-th">Assign</th>
-                <th>Notes</th>
+                <th>4. Notes</th>
               </tr></thead>
               <tbody id="outreach-openintro-tbody"></tbody>
             </table>
@@ -459,11 +468,11 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
             <table style="min-width:600px">
               <thead><tr>
                 <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:220px">Blog</th>
-                <th style="width:180px">Contact</th>
-                <th style="width:150px">Status</th>
+                <th style="width:220px">1. Blog</th>
+                <th style="width:180px">2. Contact</th>
+                <th style="width:150px">3. Status</th>
                 <th style="width:100px" class="assign-th">Assign</th>
-                <th>Notes</th>
+                <th>4. Notes</th>
               </tr></thead>
               <tbody id="outreach-products-tbody"></tbody>
             </table>
@@ -481,14 +490,14 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
             <table style="min-width:1000px">
               <thead><tr>
                 <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:220px">Blog</th>
-                <th style="width:180px">Contact</th>
-                <th style="width:150px">Status</th>
+                <th style="width:220px">1. Blog</th>
+                <th style="width:180px">2. Contact</th>
+                <th style="width:150px">3. Status</th>
                 <th style="width:100px" class="assign-th">Assign</th>
-                <th style="width:130px">Next follow-up</th>
-                <th style="width:190px">Action</th>
-                <th style="width:150px">Emails</th>
-                <th>Notes</th>
+                <th style="width:130px">4. Next follow-up</th>
+                <th style="width:190px">5. Action</th>
+                <th style="width:150px">6. Emails</th>
+                <th>7. Notes</th>
               </tr></thead>
               <tbody id="outreach-search-tbody"></tbody>
             </table>
@@ -655,41 +664,48 @@ const OUTREACH_CATEGORIES = [
 ];
 let _outreachCategoryFilter = '';
 let _outreachSearchQuery = '';
+// Three groups, matching the subtab bar's grouping/coloring below:
+// Status (the outreach pipeline itself), Partner (which partner track a
+// blog fits), Others (catch-all classification). 'substack' and
+// 'confirmed_fit' were removed (Aug 2026) - existing rows were migrated to
+// 'discovered' via a one-off script, not kept as selectable statuses.
 const OUTREACH_STATUS_LABELS = {
-  discovered: 'Not contacted',
+  discovered: 'Untouched',
   emailed: 'Emailed',
   followed_up_1: 'Follow-up 1 sent',
   followed_up_2: 'Follow-up 2 sent',
-  important: 'VIP',
+  followed_up_3: 'Follow-up 3 sent',
+  replied_interested: 'In discussion',
+  signed_up: 'Onboarded',
   contact_later: 'Contact later',
-  substack: 'Substack blog',
-  partner: 'Partner',
-  openintro_partner: 'OpenIntro partner',
-  products_partner: 'Products partner',
-  confirmed_fit: 'Blog & Publishers',
-  replied_interested: 'Interested',
-  replied_not_interested: 'Not interested (replied)',
-  signed_up: 'Signed up',
+  partner: 'IntroLinq partners',
+  openintro_partner: 'OpenIntro partners',
+  products_partner: 'Products partners',
+  important: 'VIP',
   not_a_fit: 'Not a fit',
+  replied_not_interested: 'Not interested',
 };
 const OUTREACH_STATUS_COLORS = {
   discovered: 'var(--ink-muted)',
   emailed: '#4f6ef7',
   followed_up_1: '#4f6ef7',
   followed_up_2: '#4f6ef7',
-  important: '#e6a820',
+  followed_up_3: '#4f6ef7',
+  replied_interested: 'var(--sage)',
+  signed_up: 'var(--sage)',
   contact_later: '#4f6ef7',
-  substack: '#f97316',
   partner: '#8b5cf6',
   openintro_partner: '#0d9488',
   products_partner: '#db2777',
-  confirmed_fit: '#16a34a',
-  replied_interested: 'var(--sage)',
-  signed_up: 'var(--sage)',
-  replied_not_interested: 'var(--red, #dc2626)',
+  important: '#e6a820',
   not_a_fit: 'var(--ink-muted)',
+  replied_not_interested: 'var(--red, #dc2626)',
 };
-const OUTREACH_RESOLVED = ['replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
+// Terminal-ish statuses that take priority over "Due" even if a stale
+// next_followup_at is somehow still set - once a lead is in discussion,
+// onboarded, not a fit, or not interested, it belongs in its own section,
+// not cluttering the Due list.
+const OUTREACH_RESOLVED = ['replied_interested', 'signed_up', 'replied_not_interested', 'not_a_fit'];
 
 function populateOutreachCategoryFilter() {
   const el = document.getElementById('outreach-category-filter');
@@ -706,18 +722,18 @@ async function loadOutreach() {
 }
 
 function outreachBucket(c, today) {
-  if (c.status === 'replied_interested' || c.status === 'signed_up') return 'interested';
-  if (OUTREACH_RESOLVED.includes(c.status)) return 'closed';
+  if (c.status === 'replied_interested') return 'discussion';
+  if (c.status === 'signed_up') return 'onboarded';
+  if (c.status === 'not_a_fit') return 'notfit';
+  if (c.status === 'replied_not_interested') return 'notinterested';
   if (c.next_followup_at && c.next_followup_at.slice(0, 10) <= today) return 'due';
   if (c.status === 'important') return 'important';
   if (c.status === 'contact_later') return 'later';
-  if (c.status === 'substack') return 'substack';
   if (c.status === 'partner') return 'partner';
   if (c.status === 'openintro_partner') return 'openintro';
   if (c.status === 'products_partner') return 'products';
-  if (c.status === 'confirmed_fit') return 'confirmedfit';
   if (c.status === 'discovered') return 'todo';
-  return 'waiting';
+  return 'waiting'; // emailed, followed_up_1/2/3
 }
 
 function renderOutreachSection(name, titleText, items, emptyMessage, rowMode) {
@@ -736,38 +752,37 @@ function renderOutreachSection(name, titleText, items, emptyMessage, rowMode) {
 
 function renderOutreach() {
   const today = new Date().toISOString().slice(0, 10);
-  const buckets = { due: [], later: [], important: [], substack: [], partner: [], openintro: [], products: [], confirmedfit: [], todo: [], waiting: [], interested: [], closed: [] };
+  const buckets = { due: [], todo: [], waiting: [], discussion: [], onboarded: [], later: [], partner: [], openintro: [], products: [], important: [], notfit: [], notinterested: [] };
   const visible = _outreachCategoryFilter ? _outreach.filter((c) => c.category === _outreachCategoryFilter) : _outreach;
   for (const c of visible) buckets[outreachBucket(c, today)].push(c);
 
   buckets.due.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
   buckets.later.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
   buckets.important.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  buckets.substack.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.partner.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.openintro.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.products.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  buckets.confirmedfit.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.todo.sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0) || new Date(b.created_at) - new Date(a.created_at));
   buckets.waiting.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
-  buckets.interested.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  buckets.closed.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.discussion.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.onboarded.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.notfit.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.notinterested.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   renderOutreachSection('due', 'Due for follow-up', buckets.due, 'Nothing due right now.', 'full');
-  renderOutreachSection('confirmedfit', 'Blog & Publishers', buckets.confirmedfit, 'Nothing confirmed as a strong fit yet.', 'full');
-  renderOutreachSection('waiting', 'To follow up', buckets.waiting, 'No one waiting on a reply.', 'full');
+  renderOutreachSection('todo', 'Untouched', buckets.todo.slice(0, _outreachTodoLimit), 'Nothing left to contact.', 'full');
+  renderOutreachSection('waiting', 'Follow ups', buckets.waiting, 'No one waiting on a reply.', 'full');
+  renderOutreachSection('discussion', 'In discussion', buckets.discussion, 'No one currently in discussion.', 'simple');
+  renderOutreachSection('onboarded', 'Onboarded', buckets.onboarded, 'No one onboarded yet.', 'simple');
   renderOutreachSection('later', 'Contact later', buckets.later, 'Nothing parked for later.', 'later');
-  renderOutreachSection('important', 'VIP', buckets.important, 'Nothing flagged as VIP.', 'simple');
-  renderOutreachSection('substack', 'Substack blogs', buckets.substack, 'No Substack blogs flagged yet.', 'simple');
-  renderOutreachSection('partner', 'Partners', buckets.partner, 'No potential partners flagged yet.', 'simple');
-  renderOutreachSection('products', 'Products partners', buckets.products, 'No potential products partners flagged yet.', 'simple');
+  renderOutreachSection('partner', 'IntroLinq partners', buckets.partner, 'No potential IntroLinq partners flagged yet.', 'simple');
   renderOutreachSection('openintro', 'OpenIntro partners', buckets.openintro, 'No potential OpenIntro partners flagged yet.', 'simple');
-  renderOutreachSection('interested', 'Interested / Signed up', buckets.interested, 'No one has replied interested or signed up yet.', 'simple');
-  renderOutreachSection('closed', 'Not a fit', buckets.closed, 'Nothing here yet.', 'simple');
+  renderOutreachSection('products', 'Products partners', buckets.products, 'No potential products partners flagged yet.', 'simple');
+  renderOutreachSection('important', 'VIP', buckets.important, 'Nothing flagged as VIP.', 'simple');
+  renderOutreachSection('notfit', 'Not a fit', buckets.notfit, 'Nothing here yet.', 'simple');
+  renderOutreachSection('notinterested', 'Not interested', buckets.notinterested, 'No one has replied not interested yet.', 'simple');
 
-  const todoShown = buckets.todo.slice(0, _outreachTodoLimit);
-  renderOutreachSection('todo', 'Not yet contacted', todoShown, 'Nothing left to contact.', 'full');
-  document.getElementById('outreach-todo-title').textContent = `Not yet contacted (${buckets.todo.length})`;
+  document.getElementById('outreach-todo-title').textContent = `Untouched (${buckets.todo.length})`;
   document.getElementById('outreach-todo-more').style.display = buckets.todo.length > _outreachTodoLimit ? 'inline-block' : 'none';
 
   if (_outreachSearchQuery) {
@@ -895,17 +910,22 @@ function outreachEmailTemplates(c) {
     },
     followup2: {
       subject: `Re: Quick idea for ${company}`,
+      body: `Hi ${firstName},\n\nStill think this could be a good fit for ${company} - turning existing articles into a passive revenue stream, zero extra work on your side.\n\nHappy to answer any questions, or just say the word and I'll set you up.\n\nBest,\nDom`,
+    },
+    followup3: {
+      subject: `Re: Quick idea for ${company}`,
       body: `Hi ${firstName},\n\nLast note from me on this one - I don't want to keep cluttering your inbox.\n\nIf turning ${company}'s content into a passive revenue stream is ever something you'd want to explore, the door's always open. Either way, wishing you all the best with the site.\n\nBest,\nDom`,
     },
   };
 }
 
-const OUTREACH_EMAIL_TITLES = { intro: 'Intro email', followup1: 'First follow-up', followup2: 'Second follow-up' };
+const OUTREACH_EMAIL_TITLES = { intro: 'Intro email', followup1: 'First follow-up', followup2: 'Second follow-up', followup3: 'Third follow-up' };
 
 function outreachNextStage(c) {
-  if (c.status === 'discovered' || c.status === 'confirmed_fit') return 'intro';
+  if (c.status === 'discovered') return 'intro';
   if (c.status === 'emailed') return 'followup1';
   if (c.status === 'followed_up_1') return 'followup2';
+  if (c.status === 'followed_up_2') return 'followup3';
   return null;
 }
 
@@ -926,9 +946,10 @@ function openOutreachEmailInGmail(id, stage) {
 }
 
 function outreachActionButton(c) {
-  if (c.status === 'discovered' || c.status === 'confirmed_fit') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_email_sent')">Mark email sent</button>`;
+  if (c.status === 'discovered') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_email_sent')">Mark email sent</button>`;
   if (c.status === 'emailed') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_followup_1')">Mark follow-up 1 sent</button>`;
   if (c.status === 'followed_up_1') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_followup_2')">Mark follow-up 2 sent</button>`;
+  if (c.status === 'followed_up_2') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_followup_3')">Mark follow-up 3 sent</button>`;
   return '';
 }
 

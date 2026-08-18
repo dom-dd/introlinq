@@ -546,6 +546,7 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMPTZ`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS followup_1_sent_at TIMESTAMPTZ`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS followup_2_sent_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS followup_3_sent_at TIMESTAMPTZ`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS next_followup_at DATE`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS outreach_notes TEXT`.catch(() => {});
     await sql`CREATE TABLE IF NOT EXISTS outreach_clicks (
@@ -554,7 +555,10 @@ export default async function handler(req, res) {
       clicked_at TIMESTAMPTZ DEFAULT NOW()
     )`.catch(() => {});
 
-    const ALLOWED_STATUSES = ['discovered', 'emailed', 'followed_up_1', 'followed_up_2', 'important', 'contact_later', 'substack', 'partner', 'openintro_partner', 'products_partner', 'confirmed_fit', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
+    // 'substack' and 'confirmed_fit' were removed (Aug 2026) - any existing
+    // rows were migrated to 'discovered' via a one-off script, not here, so
+    // this list intentionally no longer accepts either as a set_status value.
+    const ALLOWED_STATUSES = ['discovered', 'emailed', 'followed_up_1', 'followed_up_2', 'followed_up_3', 'important', 'contact_later', 'partner', 'openintro_partner', 'products_partner', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
 
     // Manually-added leads (the "Create a lead" button). A helper's own
     // manually-added lead is auto-assigned to them (otherwise they'd
@@ -600,7 +604,9 @@ export default async function handler(req, res) {
       } else if (action === 'mark_followup_1') {
         await sql`UPDATE candidate_publishers SET followup_1_sent_at = NOW(), status = 'followed_up_1', next_followup_at = CURRENT_DATE + 5 WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
       } else if (action === 'mark_followup_2') {
-        await sql`UPDATE candidate_publishers SET followup_2_sent_at = NOW(), status = 'followed_up_2', next_followup_at = NULL WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
+        await sql`UPDATE candidate_publishers SET followup_2_sent_at = NOW(), status = 'followed_up_2', next_followup_at = CURRENT_DATE + 5 WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
+      } else if (action === 'mark_followup_3') {
+        await sql`UPDATE candidate_publishers SET followup_3_sent_at = NOW(), status = 'followed_up_3', next_followup_at = NULL WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
       } else if (action === 'set_next_followup') {
         await sql`UPDATE candidate_publishers SET next_followup_at = ${value || null} WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
       } else if (action === 'set_status') {
@@ -634,7 +640,7 @@ export default async function handler(req, res) {
     const rows = await sql`
       SELECT cp.id, cp.domain, cp.homepage_url, cp.title, cp.status, cp.priority_score, cp.contact_name, cp.contact_email, cp.company_name, cp.category,
              cp.person_linkedin_url, cp.company_linkedin_url, cp.twitter_url, cp.facebook_url, cp.assigned_to,
-             cp.email_sent_at, cp.followup_1_sent_at, cp.followup_2_sent_at, cp.next_followup_at, cp.outreach_notes, cp.created_at,
+             cp.email_sent_at, cp.followup_1_sent_at, cp.followup_2_sent_at, cp.followup_3_sent_at, cp.next_followup_at, cp.outreach_notes, cp.created_at,
              COALESCE(json_agg(oc.clicked_at ORDER BY oc.clicked_at) FILTER (WHERE oc.clicked_at IS NOT NULL), '[]') AS click_times
       FROM candidate_publishers cp
       LEFT JOIN outreach_clicks oc ON oc.candidate_id = cp.id
