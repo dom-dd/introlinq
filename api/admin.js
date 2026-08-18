@@ -437,6 +437,19 @@ export default async function handler(req, res) {
       await sql`UPDATE outreach_users SET active = ${!!active} WHERE id = ${id} AND role != 'owner'`;
       return res.status(200).json({ ok: true });
     }
+    // Permanent delete (deactivate above is the soft version). Their leads
+    // aren't deleted or touched otherwise - just unassigned, so they fall
+    // back into the owner-visible unassigned pool instead of pointing at a
+    // user_id that no longer exists. Any live session of theirs is killed
+    // too, so a deleted user can't keep using a token issued before this.
+    if (req.method === 'DELETE') {
+      const { id } = req.body || {};
+      if (!id) return res.status(400).json({ error: 'id required' });
+      await sql`UPDATE candidate_publishers SET assigned_to = NULL WHERE assigned_to = ${id}`;
+      await sql`DELETE FROM outreach_sessions WHERE outreach_user_id = ${id}`;
+      await sql`DELETE FROM outreach_users WHERE id = ${id} AND role != 'owner'`;
+      return res.status(200).json({ ok: true });
+    }
     return res.status(405).end();
   }
 

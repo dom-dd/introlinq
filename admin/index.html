@@ -2197,7 +2197,10 @@ function renderOutreachUsersList() {
       <td>${esc(u.role)}</td>
       <td><span class="badge ${u.active ? 'badge-active' : 'badge-inactive'}">${u.active ? 'Active' : 'Inactive'}</span></td>
       <td>${new Date(u.created_at).toLocaleDateString()}</td>
-      <td>${u.role === 'owner' ? '' : `<button class="btn btn-ghost btn-sm" onclick="toggleOutreachUserActive(${u.id}, ${!u.active})">${u.active ? 'Deactivate' : 'Reactivate'}</button>`}</td>
+      <td>${u.role === 'owner' ? '' : `
+        <button class="btn btn-ghost btn-sm" onclick="toggleOutreachUserActive(${u.id}, ${!u.active})">${u.active ? 'Deactivate' : 'Reactivate'}</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteOutreachUser(${u.id}, '${esc(u.name).replace(/'/g, "\\'")}')">Delete</button>
+      `}</td>
     </tr>
   `).join('');
 }
@@ -2246,6 +2249,23 @@ async function toggleOutreachUserActive(id, active) {
     toast(active ? 'User reactivated' : 'User deactivated');
   } else {
     toast('Failed to update user', true);
+  }
+}
+
+// Permanent - unlike deactivate, this can't be undone (their leads are
+// unassigned, not deleted, and fall back into the unassigned pool).
+async function deleteOutreachUser(id, name) {
+  if (!confirm(`Permanently delete ${name}? Their leads will become unassigned - this can't be undone.`)) return;
+  const res = await fetch('/api/admin?resource=outreach-users', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  });
+  if (res.ok) {
+    await loadOutreachUsers();
+    toast('User deleted');
+  } else {
+    toast('Failed to delete user', true);
   }
 }
 
