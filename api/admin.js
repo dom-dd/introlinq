@@ -558,7 +558,7 @@ export default async function handler(req, res) {
     // 'substack' and 'confirmed_fit' were removed (Aug 2026) - any existing
     // rows were migrated to 'discovered' via a one-off script, not here, so
     // this list intentionally no longer accepts either as a set_status value.
-    const ALLOWED_STATUSES = ['discovered', 'emailed', 'followed_up_1', 'followed_up_2', 'followed_up_3', 'important', 'contact_later', 'partner', 'openintro_partner', 'products_partner', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
+    const ALLOWED_STATUSES = ['discovered', 'to_contact', 'emailed', 'followed_up_1', 'followed_up_2', 'followed_up_3', 'important', 'contact_later', 'partner', 'openintro_partner', 'products_partner', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit'];
 
     // Manually-added leads (the "Create a lead" button). A helper's own
     // manually-added lead is auto-assigned to them (otherwise they'd

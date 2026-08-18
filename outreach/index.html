@@ -181,6 +181,7 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
         <button class="outreach-subtab active" data-name="due" onclick="switchOutreachSubtab('due',this)">Due</button>
         <span class="outreach-subtab-divider"></span>
         <button class="outreach-subtab grp-status" data-name="todo" onclick="switchOutreachSubtab('todo',this)">Untouched</button>
+        <button class="outreach-subtab grp-status" data-name="tocontact" onclick="switchOutreachSubtab('tocontact',this)">To contact</button>
         <button class="outreach-subtab grp-status" data-name="waiting" onclick="switchOutreachSubtab('waiting',this)">Follow ups</button>
         <button class="outreach-subtab grp-status" data-name="discussion" onclick="switchOutreachSubtab('discussion',this)">In discussion</button>
         <button class="outreach-subtab grp-status" data-name="onboarded" onclick="switchOutreachSubtab('onboarded',this)">Onboarded</button>
@@ -371,6 +372,34 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
           <div style="padding:0.75rem 1.25rem;border-top:1px solid var(--border)">
             <button class="btn btn-ghost btn-sm" id="outreach-todo-more" onclick="showMoreOutreachTodo()" style="display:none">Show more</button>
           </div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-tocontact">
+        <div class="section">
+          <div class="section-header">
+            <div style="display:flex;align-items:center">
+              <div class="section-title" id="outreach-tocontact-title">To contact</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Reviewed and worth pursuing, but the intro email hasn't gone out yet - often still needs a contact name/email found before it can be sent.</span></span>
+            </div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1000px">
+              <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
+                <th style="width:220px">1. Blog</th>
+                <th style="width:180px">2. Contact</th>
+                <th style="width:150px">3. Status</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th style="width:130px">4. Next follow-up</th>
+                <th style="width:190px">5. Action</th>
+                <th style="width:150px">6. Emails</th>
+                <th>7. Notes</th>
+              </tr></thead>
+              <tbody id="outreach-tocontact-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-tocontact-empty">Loading...</div>
         </div>
       </div>
 
@@ -714,6 +743,7 @@ let _outreachSearchQuery = '';
 // 'discovered' via a one-off script, not kept as selectable statuses.
 const OUTREACH_STATUS_LABELS = {
   discovered: 'Untouched',
+  to_contact: 'To contact',
   emailed: 'Emailed',
   followed_up_1: 'Follow-up 1 sent',
   followed_up_2: 'Follow-up 2 sent',
@@ -730,6 +760,7 @@ const OUTREACH_STATUS_LABELS = {
 };
 const OUTREACH_STATUS_COLORS = {
   discovered: 'var(--ink-muted)',
+  to_contact: '#f59e0b',
   emailed: '#4f6ef7',
   followed_up_1: '#4f6ef7',
   followed_up_2: '#4f6ef7',
@@ -776,6 +807,7 @@ function outreachBucket(c, today) {
   if (c.status === 'openintro_partner') return 'openintro';
   if (c.status === 'products_partner') return 'products';
   if (c.status === 'discovered') return 'todo';
+  if (c.status === 'to_contact') return 'tocontact';
   return 'waiting'; // emailed, followed_up_1/2/3
 }
 
@@ -795,7 +827,7 @@ function renderOutreachSection(name, titleText, items, emptyMessage, rowMode) {
 
 function renderOutreach() {
   const today = new Date().toISOString().slice(0, 10);
-  const buckets = { due: [], todo: [], waiting: [], discussion: [], onboarded: [], later: [], partner: [], openintro: [], products: [], important: [], notfit: [], notinterested: [] };
+  const buckets = { due: [], todo: [], tocontact: [], waiting: [], discussion: [], onboarded: [], later: [], partner: [], openintro: [], products: [], important: [], notfit: [], notinterested: [] };
   const visible = _outreachCategoryFilter ? _outreach.filter((c) => c.category === _outreachCategoryFilter) : _outreach;
   for (const c of visible) buckets[outreachBucket(c, today)].push(c);
 
@@ -806,6 +838,7 @@ function renderOutreach() {
   buckets.openintro.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.products.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.todo.sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0) || new Date(b.created_at) - new Date(a.created_at));
+  buckets.tocontact.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.waiting.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
   buckets.discussion.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.onboarded.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -814,6 +847,7 @@ function renderOutreach() {
 
   renderOutreachSection('due', 'Due for follow-up', buckets.due, 'Nothing due right now.', 'full');
   renderOutreachSection('todo', 'Untouched', buckets.todo.slice(0, _outreachTodoLimit), 'Nothing left to contact.', 'full');
+  renderOutreachSection('tocontact', 'To contact', buckets.tocontact, 'Nothing queued to contact yet.', 'full');
   renderOutreachSection('waiting', 'Follow ups', buckets.waiting, 'No one waiting on a reply.', 'full');
   renderOutreachSection('discussion', 'In discussion', buckets.discussion, 'No one currently in discussion.', 'simple');
   renderOutreachSection('onboarded', 'Onboarded', buckets.onboarded, 'No one onboarded yet.', 'simple');
@@ -965,7 +999,7 @@ function outreachEmailTemplates(c) {
 const OUTREACH_EMAIL_TITLES = { intro: 'Intro email', followup1: 'First follow-up', followup2: 'Second follow-up', followup3: 'Third follow-up' };
 
 function outreachNextStage(c) {
-  if (c.status === 'discovered') return 'intro';
+  if (c.status === 'discovered' || c.status === 'to_contact') return 'intro';
   if (c.status === 'emailed') return 'followup1';
   if (c.status === 'followed_up_1') return 'followup2';
   if (c.status === 'followed_up_2') return 'followup3';
@@ -989,7 +1023,7 @@ function openOutreachEmailInGmail(id, stage) {
 }
 
 function outreachActionButton(c) {
-  if (c.status === 'discovered') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_email_sent')">Mark email sent</button>`;
+  if (c.status === 'discovered' || c.status === 'to_contact') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_email_sent')">Mark email sent</button>`;
   if (c.status === 'emailed') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_followup_1')">Mark follow-up 1 sent</button>`;
   if (c.status === 'followed_up_1') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_followup_2')">Mark follow-up 2 sent</button>`;
   if (c.status === 'followed_up_2') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_followup_3')">Mark follow-up 3 sent</button>`;
