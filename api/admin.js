@@ -30,6 +30,13 @@ async function ensureOutreachTables(sql) {
     active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT NOW()
   )`.catch(() => {});
+  // Case-insensitive - names are the only human-readable way to tell
+  // accounts apart (login itself is password-only, never by name), so two
+  // people/accounts sharing a display name is confusing in the assign
+  // dropdown even though nothing would actually break. Silently a no-op if
+  // a duplicate already exists from before this existed - see the POST
+  // handler below for the check needed to actually prevent new ones.
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS outreach_users_name_lower_idx ON outreach_users (LOWER(name))`.catch(() => {});
   await sql`CREATE TABLE IF NOT EXISTS outreach_sessions (
     token TEXT PRIMARY KEY,
     outreach_user_id INT NOT NULL,
@@ -427,8 +434,12 @@ export default async function handler(req, res) {
       if (!name || !password || String(password).length < 4) {
         return res.status(400).json({ error: 'Name and a password (4+ characters) are required' });
       }
+      const trimmedName = name.trim();
+      const [existing] = await sql`SELECT id FROM outreach_users WHERE LOWER(name) = LOWER(${trimmedName})`;
+      if (existing) return res.status(409).json({ error: `A user named "${trimmedName}" already exists - pick a different name` });
+
       const passwordHash = await bcrypt.hash(password, 10);
-      const [user] = await sql`INSERT INTO outreach_users (name, password_hash, role) VALUES (${name.trim()}, ${passwordHash}, 'helper') RETURNING id`;
+      const [user] = await sql`INSERT INTO outreach_users (name, password_hash, role) VALUES (${trimmedName}, ${passwordHash}, 'helper') RETURNING id`;
       return res.status(201).json({ ok: true, id: user.id });
     }
     if (req.method === 'PATCH') {
