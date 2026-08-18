@@ -129,6 +129,13 @@ body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
 body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
 .lead-checkbox{width:15px;height:15px;cursor:pointer;accent-color:var(--sage)}
 .assigned-name{font-size:0.8125rem;color:var(--ink-soft)}
+
+/* Info icon + hover tooltip next to each section title */
+.info-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;color:var(--ink-muted);cursor:help;margin-left:0.4rem;position:relative;vertical-align:middle}
+.info-icon svg{display:block}
+.info-icon:hover,.info-icon:focus{color:var(--sage)}
+.info-tooltip{display:none;position:absolute;left:0;top:calc(100% + 8px);width:280px;background:var(--ink);color:var(--white);font-size:0.75rem;font-weight:400;line-height:1.5;padding:0.625rem 0.75rem;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.15);z-index:100;text-align:left}
+.info-icon:hover .info-tooltip,.info-icon:focus .info-tooltip{display:block}
 .assigned-name.unassigned{color:var(--ink-muted);font-style:italic}
 
 /* Bulk-action toolbar (owner only) - mirrors the Apollo/HubSpot pattern:
@@ -207,7 +214,10 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
       <div class="outreach-subpanel active" id="outreach-sub-due">
         <div class="section">
           <div class="section-header">
-            <div class="section-title" id="outreach-due-title">Due for follow-up</div>
+            <div style="display:flex;align-items:center">
+              <div class="section-title" id="outreach-due-title">Due for follow-up</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Anything with a follow-up date that's arrived, regardless of status - always takes priority over other sections.</span></span>
+            </div>
           </div>
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:1000px">
@@ -232,7 +242,10 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
       <div class="outreach-subpanel" id="outreach-sub-waiting">
         <div class="section">
           <div class="section-header">
-            <div class="section-title" id="outreach-waiting-title">To follow up</div>
+            <div style="display:flex;align-items:center">
+              <div class="section-title" id="outreach-waiting-title">To follow up</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Mid-sequence - intro emailed, or follow-up 1/2/3 sent - and not due for a touch right now.</span></span>
+            </div>
           </div>
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:1000px">
@@ -257,7 +270,10 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
       <div class="outreach-subpanel" id="outreach-sub-later">
         <div class="section">
           <div class="section-header">
-            <div class="section-title" id="outreach-later-title">Contact later</div>
+            <div style="display:flex;align-items:center">
+              <div class="section-title" id="outreach-later-title">Contact later</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Not right now - parked with a future follow-up date instead of being actively worked.</span></span>
+            </div>
           </div>
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:700px">
@@ -280,7 +296,10 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
       <div class="outreach-subpanel" id="outreach-sub-important">
         <div class="section">
           <div class="section-header">
-            <div class="section-title" id="outreach-important-title">VIP</div>
+            <div style="display:flex;align-items:center">
+              <div class="section-title" id="outreach-important-title">VIP</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">A large, high-visibility company or publication - multiple employees, major brand recognition (think Forbes, national newspapers, established startups) - worth a more tailored outreach approach than a standard blog.</span></span>
+            </div>
           </div>
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:600px">
@@ -302,7 +321,10 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
       <div class="outreach-subpanel" id="outreach-sub-partner">
         <div class="section">
           <div class="section-header">
-            <div class="section-title" id="outreach-partner-title">IntroLinq partners</div>
+            <div style="display:flex;align-items:center">
+              <div class="section-title" id="outreach-partner-title">IntroLinq partners</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">A platform that could supply something new for the widget to recommend - expert introductions, online courses, bookable consultations (therapists, designers), or service marketplaces like PeoplePerHour or Upwork. A potential new supply source alongside OpenIntro.</span></span>
+            </div>
           </div>
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:600px">
@@ -324,7 +346,10 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
       <div class="outreach-subpanel" id="outreach-sub-todo">
         <div class="section">
           <div class="section-header">
-            <div class="section-title" id="outreach-todo-title">Untouched</div>
+            <div style="display:flex;align-items:center">
+              <div class="section-title" id="outreach-todo-title">Untouched</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Brand new leads that haven't been contacted yet.</span></span>
+            </div>
           </div>
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:1000px">
@@ -352,7 +377,10 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
       <div class="outreach-subpanel" id="outreach-sub-discussion">
         <div class="section">
           <div class="section-header">
-            <div class="section-title" id="outreach-discussion-title">In discussion</div>
+            <div style="display:flex;align-items:center">
+              <div class="section-title" id="outreach-discussion-title">In discussion</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">They replied and are actively considering it.</span></span>
+            </div>
           </div>
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:600px">
@@ -374,7 +402,10 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
       <div class="outreach-subpanel" id="outreach-sub-onboarded">
         <div class="section">
           <div class="section-header">
-            <div class="section-title" id="outreach-onboarded-title">Onboarded</div>
+            <div style="display:flex;align-items:center">
+              <div class="section-title" id="outreach-onboarded-title">Onboarded</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">They've signed up and installed the widget - fully converted.</span></span>
+            </div>
           </div>
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:600px">
@@ -396,7 +427,10 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
       <div class="outreach-subpanel" id="outreach-sub-notfit">
         <div class="section">
           <div class="section-header">
-            <div class="section-title" id="outreach-notfit-title">Not a fit</div>
+            <div style="display:flex;align-items:center">
+              <div class="section-title" id="outreach-notfit-title">Not a fit</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Screened out - wrong audience, no relevant content, or otherwise not a good match, whether or not they were ever contacted.</span></span>
+            </div>
           </div>
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:600px">
@@ -418,7 +452,10 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
       <div class="outreach-subpanel" id="outreach-sub-notinterested">
         <div class="section">
           <div class="section-header">
-            <div class="section-title" id="outreach-notinterested-title">Not interested</div>
+            <div style="display:flex;align-items:center">
+              <div class="section-title" id="outreach-notinterested-title">Not interested</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Contacted, and they explicitly said no.</span></span>
+            </div>
           </div>
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:600px">
@@ -440,7 +477,10 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
       <div class="outreach-subpanel" id="outreach-sub-openintro">
         <div class="section">
           <div class="section-header">
-            <div class="section-title" id="outreach-openintro-title">OpenIntro partners</div>
+            <div style="display:flex;align-items:center">
+              <div class="section-title" id="outreach-openintro-title">OpenIntro partners</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">A platform with a large roster of experts or an active community - speaker agencies, large conferences, incubators/accelerators - where OpenIntro could build them a dedicated page, giving their experts bookable visibility and OpenIntro more experts to offer.</span></span>
+            </div>
           </div>
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:600px">
@@ -462,7 +502,10 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
       <div class="outreach-subpanel" id="outreach-sub-products">
         <div class="section">
           <div class="section-header">
-            <div class="section-title" id="outreach-products-title">Products partners</div>
+            <div style="display:flex;align-items:center">
+              <div class="section-title" id="outreach-products-title">Products partners</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">A company selling an online product - SaaS, a CRM, and similar - that could potentially be featured on the platform down the line. Digital products only, not physical goods.</span></span>
+            </div>
           </div>
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:600px">
