@@ -44,7 +44,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .header-user{font-size:0.8125rem;color:rgba(255,255,255,0.7)}
 .logout-btn{background:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);font-size:0.75rem;padding:0.25rem 0.75rem;border-radius:100px;cursor:pointer;font-family:'Inter',sans-serif;transition:border-color 0.15s}
 .logout-btn:hover{border-color:rgba(255,255,255,0.5);color:var(--white)}
-.admin-body{max-width:1280px;margin:0 auto;padding:2.5rem 2rem 5rem}
+.admin-body{max-width:1800px;margin:0 auto;padding:2.5rem 2rem 5rem}
 
 /* Outreach sub-tabs */
 .outreach-subtab-bar{display:flex;align-items:center;flex-wrap:nowrap;gap:0.125rem;overflow-x:auto;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
@@ -112,7 +112,21 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 /* Assign-to + manage-users (owner-only additions) */
 .assign-th,.assign-td{display:none}
 body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
-.assign-select{padding:0.3rem 0.5rem;border:1.5px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--white)}
+.select-th,.select-td{display:none;width:36px}
+body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
+.lead-checkbox{width:15px;height:15px;cursor:pointer;accent-color:var(--sage)}
+.assigned-name{font-size:0.8125rem;color:var(--ink-soft)}
+.assigned-name.unassigned{color:var(--ink-muted);font-style:italic}
+
+/* Bulk-action toolbar (owner only) - mirrors the Apollo/HubSpot pattern:
+   appears once 1+ rows are checked, operates only on the currently visible
+   section (selection is cleared on subtab switch - see switchOutreachSubtab). */
+.bulk-toolbar{display:none;align-items:center;gap:0.75rem;background:var(--ink);color:var(--white);border-radius:var(--radius);padding:0.75rem 1.25rem;margin-bottom:1rem}
+.bulk-toolbar.show{display:flex}
+.bulk-toolbar-count{font-size:0.8125rem;font-weight:600;flex-shrink:0}
+.bulk-toolbar select{padding:0.4rem 0.75rem;border:1.5px solid rgba(255,255,255,0.25);border-radius:8px;font-size:0.8125rem;font-family:'Inter',sans-serif;color:var(--ink);background:var(--white)}
+.bulk-toolbar-clear{background:none;border:none;color:rgba(255,255,255,0.6);font-size:0.8125rem;cursor:pointer;font-family:'Inter',sans-serif;margin-left:auto}
+.bulk-toolbar-clear:hover{color:var(--white)}
 </style>
 </head>
 <body>
@@ -171,6 +185,13 @@ body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
         <input type="text" id="outreach-search-input" class="form-input" placeholder="Search by website or company name..." style="width:280px;padding:0.35rem 0.6rem;font-size:0.8125rem;margin-left:0.5rem" oninput="outreachSearch(this.value)">
       </div>
 
+      <div class="bulk-toolbar" id="bulk-toolbar">
+        <span class="bulk-toolbar-count" id="bulk-toolbar-count"></span>
+        <select id="bulk-assign-select"><option value="">Unassigned</option></select>
+        <button class="btn btn-primary btn-sm" onclick="applyBulkAssign()">Assign</button>
+        <button class="bulk-toolbar-clear" onclick="clearLeadSelection()">Clear selection</button>
+      </div>
+
       <div class="outreach-subpanel active" id="outreach-sub-due">
         <div class="section">
           <div class="section-header">
@@ -179,6 +200,7 @@ body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:1000px">
               <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
                 <th style="width:220px">Blog</th>
                 <th style="width:180px">Contact</th>
                 <th style="width:150px">Status</th>
@@ -203,6 +225,7 @@ body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:1000px">
               <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
                 <th style="width:220px">Blog</th>
                 <th style="width:180px">Contact</th>
                 <th style="width:150px">Status</th>
@@ -227,6 +250,7 @@ body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:1000px">
               <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
                 <th style="width:220px">Blog</th>
                 <th style="width:180px">Contact</th>
                 <th style="width:150px">Status</th>
@@ -251,6 +275,7 @@ body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:700px">
               <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
                 <th style="width:220px">Blog</th>
                 <th style="width:180px">Contact</th>
                 <th style="width:150px">Status</th>
@@ -273,6 +298,7 @@ body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:600px">
               <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
                 <th style="width:220px">Blog</th>
                 <th style="width:180px">Contact</th>
                 <th style="width:150px">Status</th>
@@ -294,6 +320,7 @@ body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:600px">
               <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
                 <th style="width:220px">Blog</th>
                 <th style="width:180px">Contact</th>
                 <th style="width:150px">Status</th>
@@ -315,6 +342,7 @@ body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:600px">
               <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
                 <th style="width:220px">Blog</th>
                 <th style="width:180px">Contact</th>
                 <th style="width:150px">Status</th>
@@ -336,6 +364,7 @@ body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:1000px">
               <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
                 <th style="width:220px">Blog</th>
                 <th style="width:180px">Contact</th>
                 <th style="width:150px">Status</th>
@@ -363,6 +392,7 @@ body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:600px">
               <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
                 <th style="width:220px">Blog</th>
                 <th style="width:180px">Contact</th>
                 <th style="width:150px">Status</th>
@@ -384,6 +414,7 @@ body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:600px">
               <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
                 <th style="width:220px">Blog</th>
                 <th style="width:180px">Contact</th>
                 <th style="width:150px">Status</th>
@@ -405,6 +436,7 @@ body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:600px">
               <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
                 <th style="width:220px">Blog</th>
                 <th style="width:180px">Contact</th>
                 <th style="width:150px">Status</th>
@@ -426,6 +458,7 @@ body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:600px">
               <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
                 <th style="width:220px">Blog</th>
                 <th style="width:180px">Contact</th>
                 <th style="width:150px">Status</th>
@@ -447,6 +480,7 @@ body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
           <div class="section-body" style="overflow-x:auto">
             <table style="min-width:1000px">
               <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
                 <th style="width:220px">Blog</th>
                 <th style="width:180px">Contact</th>
                 <th style="width:150px">Status</th>
@@ -756,6 +790,7 @@ function switchOutreachSubtab(name, btn) {
     const input = document.getElementById('outreach-search-input');
     if (input) input.value = '';
   }
+  clearLeadSelection();
   document.querySelectorAll('.outreach-subtab').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.outreach-subpanel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
@@ -940,10 +975,12 @@ function outreachRow(c, mode) {
   const actionEmailCells = mode === 'full'
     ? `<td>${outreachActionButton(c)}</td><td>${outreachEmailButton(c)}</td>`
     : '';
-  const assignCell = `<td class="assign-td">${outreachAssignSelect(c)}</td>`;
+  const assignCell = `<td class="assign-td">${outreachAssignedName(c)}</td>`;
+  const selectCell = `<td class="select-td"><input type="checkbox" class="lead-checkbox" ${_outreachSelectedIds.has(c.id) ? 'checked' : ''} onchange="toggleLeadSelection(${c.id}, this.checked)"></td>`;
 
   return `
-    <tr>
+    <tr data-lead-id="${c.id}">
+      ${selectCell}
       <td>
         <a href="${esc(c.homepage_url)}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:600;font-size:0.8125rem;text-decoration:none">${esc(c.domain)}</a>${categorySelect}
         ${title ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px">${title}</div>` : ''}
@@ -1105,6 +1142,9 @@ async function verifyEmailInto(iconElId, email) {
 }
 
 // ── Assign-to (owner only) ──────────────────────────────────────────────
+// Assignment itself happens through the checkbox + bulk-toolbar below
+// (Apollo/HubSpot-style) rather than a per-row control - this section just
+// renders who a lead is currently assigned to.
 
 let _outreachHelpers = null; // [{id, name, role, active}] once loaded
 
@@ -1113,26 +1153,78 @@ async function loadOutreachHelpersForAssignSelects() {
     const res = await fetch('/api/admin?resource=outreach-users', { credentials: 'include' });
     if (!res.ok) return;
     _outreachHelpers = await res.json();
-    renderOutreach(); // re-render so the now-populated helper list shows in assign selects
+    populateBulkAssignSelect();
+    renderOutreach(); // re-render so the now-populated helper names show up
   } catch {}
 }
 
-function outreachAssignSelect(c) {
-  if (!_outreachHelpers) return '';
-  const options = _outreachHelpers
-    .filter(u => u.active)
-    .map(u => `<option value="${u.id}" ${c.assigned_to === u.id ? 'selected' : ''}>${esc(u.name)}</option>`).join('');
-  return `<select class="assign-select" onchange="assignLead(${c.id}, this.value)">
-    <option value="">Unassigned</option>
-    ${options}
-  </select>`;
+function populateBulkAssignSelect() {
+  const el = document.getElementById('bulk-assign-select');
+  if (!el || !_outreachHelpers) return;
+  const options = _outreachHelpers.filter(u => u.active).map(u => `<option value="${u.id}">${esc(u.name)}</option>`).join('');
+  el.innerHTML = '<option value="">Unassigned</option>' + options;
 }
 
-async function assignLead(id, value) {
-  if (await outreachPatch({ id, action: 'assign_lead', value: value || null })) {
-    const c = _outreach.find(x => x.id === id);
-    if (c) c.assigned_to = value ? Number(value) : null;
-  }
+function outreachAssignedName(c) {
+  if (!c.assigned_to) return '<span class="assigned-name unassigned">Unassigned</span>';
+  const u = _outreachHelpers && _outreachHelpers.find(x => x.id === c.assigned_to);
+  return `<span class="assigned-name">${esc(u ? u.name : '—')}</span>`;
+}
+
+// ── Bulk selection + assign (owner only) ────────────────────────────────
+// Selection is intentionally scoped to whatever section is currently
+// visible - switchOutreachSubtab clears it on every tab change, so a
+// bulk-assign can never silently apply to leads in a bucket you're not
+// even looking at.
+
+let _outreachSelectedIds = new Set();
+
+function toggleLeadSelection(id, checked) {
+  if (checked) _outreachSelectedIds.add(id);
+  else _outreachSelectedIds.delete(id);
+  updateBulkToolbar();
+}
+
+// Header checkbox selects/deselects every row currently rendered in that
+// same table's tbody - found via DOM traversal (not a per-table section
+// name) so every table's header checkbox can share identical markup.
+function toggleSelectAllInHeader(headerCheckbox) {
+  const table = headerCheckbox.closest('table');
+  table.querySelectorAll('tbody .lead-checkbox').forEach(box => { box.checked = headerCheckbox.checked; });
+  syncSelectionFromDom();
+}
+
+function syncSelectionFromDom() {
+  _outreachSelectedIds = new Set(
+    Array.from(document.querySelectorAll('.lead-checkbox:checked'))
+      .map(box => Number(box.closest('tr').dataset.leadId))
+      .filter(Boolean)
+  );
+  updateBulkToolbar();
+}
+
+function clearLeadSelection() {
+  _outreachSelectedIds = new Set();
+  document.querySelectorAll('.lead-checkbox').forEach(box => { box.checked = false; });
+  updateBulkToolbar();
+}
+
+function updateBulkToolbar() {
+  const bar = document.getElementById('bulk-toolbar');
+  const count = _outreachSelectedIds.size;
+  bar.classList.toggle('show', count > 0);
+  document.getElementById('bulk-toolbar-count').textContent = `${count} selected`;
+}
+
+async function applyBulkAssign() {
+  const value = document.getElementById('bulk-assign-select').value;
+  const ids = [..._outreachSelectedIds];
+  if (!ids.length) return;
+  const results = await Promise.all(ids.map(id => outreachPatch({ id, action: 'assign_lead', value: value || null })));
+  const failed = results.filter(ok => !ok).length;
+  if (failed) toast(`Assigned ${ids.length - failed} of ${ids.length} - ${failed} failed`, true);
+  clearLeadSelection();
+  await loadOutreach();
 }
 
 </script>
