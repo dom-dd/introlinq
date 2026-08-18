@@ -128,9 +128,25 @@ export async function isBurstTraffic(sql, table, { ip, publisher, page_url }) {
 const SITEWIDE_WINDOW_INTERVAL = '24 hours';
 const SITEWIDE_THRESHOLD = 10;
 
-export async function isSitewideBurst(sql, table, { ip, publisher }) {
+// Countries where a large share of real mobile traffic exits through a
+// small number of carrier-grade NAT gateways, so hundreds of distinct real
+// readers can share one public IP. isSitewideBurst's flat per-IP count
+// can't tell "one bot IP" from "one CGNAT gateway serving a national news
+// site's real audience" - confirmed 2026-08-18 on challenges-tn (Tunisia):
+// a single IP logged 30k+ hits over 18 days, comfortably real audience
+// volume, not a bot, which flipped ~75% of the publisher's real traffic to
+// is_bot=true and made the widget look dead on their dashboard until they
+// removed it. isBurstTraffic (same-page, 2-minute window) still applies
+// regardless of country and catches genuine same-page hammering - only
+// this cross-page check is skipped, since it's the one that specifically
+// can't distinguish "many pages hit by one bot" from "many pages read by
+// many real people behind the same gateway."
+const SITEWIDE_BURST_EXEMPT_COUNTRIES = ['TN'];
+
+export async function isSitewideBurst(sql, table, { ip, publisher, country }) {
   if (!TABLE_URL_COLUMNS[table]) throw new Error('isSitewideBurst: invalid table ' + table);
   if (!ip) return false;
+  if (country && SITEWIDE_BURST_EXEMPT_COUNTRIES.includes(country.toUpperCase())) return false;
   const rows = await sql.query(
     `SELECT COUNT(*)::int AS n FROM ${table} WHERE ip = $1 AND publisher = $2 AND created_at > NOW() - INTERVAL '${SITEWIDE_WINDOW_INTERVAL}'`,
     [ip, publisher || '']
@@ -152,7 +168,8 @@ export async function isSitewideBurst(sql, table, { ip, publisher }) {
 export async function isBotHit(req, sql, table, { ip, publisher, page_url }) {
   if (isKnownCrawlerIp(ip) || isAllowlistedCrawler(req)) return true;
   if (await isBurstTraffic(sql, table, { ip, publisher, page_url })) return true;
-  return isSitewideBurst(sql, table, { ip, publisher });
+  const country = req.headers['x-vercel-ip-country'];
+  return isSitewideBurst(sql, table, { ip, publisher, country });
 }
 
 export async function ensureBotColumns(sql, table) {
