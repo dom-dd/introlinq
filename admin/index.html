@@ -547,10 +547,14 @@ tr:hover td{background:rgba(0,0,0,0.01)}
           <div class="section-title">Create a user</div>
         </div>
         <div style="padding:1.25rem 1.5rem">
-          <div class="form-row" style="grid-template-columns:1fr 1fr auto;align-items:end">
+          <div class="form-row" style="grid-template-columns:1fr 1fr 1fr auto;align-items:end">
             <div class="form-group">
               <label class="form-label">Name</label>
-              <input class="form-input" id="ou-new-name" placeholder="Bob">
+              <input class="form-input" id="ou-new-name" placeholder="Monika">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Title (optional)</label>
+              <input class="form-input" id="ou-new-title" placeholder="Head of Partnerships">
             </div>
             <div class="form-group">
               <label class="form-label">Password</label>
@@ -570,6 +574,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
           <table>
             <thead><tr>
               <th>Name</th>
+              <th>Title</th>
               <th>Role</th>
               <th>Status</th>
               <th>Created</th>
@@ -2193,7 +2198,8 @@ function renderOutreachUsersList() {
   emptyEl.style.display = 'none';
   tbody.innerHTML = _outreachUsers.map(u => `
     <tr>
-      <td class="td-name">${esc(u.name)}</td>
+      <td><input class="form-input" style="padding:0.3rem 0.5rem;font-size:0.8125rem" value="${esc(u.name)}" onblur="updateOutreachUserField(${u.id}, 'name', this.value)"></td>
+      <td><input class="form-input" style="padding:0.3rem 0.5rem;font-size:0.8125rem" value="${esc(u.title || '')}" placeholder="e.g. Head of Partnerships" onblur="updateOutreachUserField(${u.id}, 'title', this.value)"></td>
       <td>${esc(u.role)}</td>
       <td><span class="badge ${u.active ? 'badge-active' : 'badge-inactive'}">${u.active ? 'Active' : 'Inactive'}</span></td>
       <td>${new Date(u.created_at).toLocaleDateString()}</td>
@@ -2205,10 +2211,33 @@ function renderOutreachUsersList() {
   `).join('');
 }
 
+// Deliberately doesn't re-render the whole table on success - onblur fires
+// when tabbing from Name to Title on the same row, and rebuilding every
+// input mid-tab would yank focus away from the field the user just moved
+// into. Only re-renders (via loadOutreachUsers) on failure, to reliably
+// snap the input back to its last saved value.
+async function updateOutreachUserField(id, field, value) {
+  const res = await fetch('/api/admin?resource=outreach-users', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, [field]: value }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.ok) {
+    const u = _outreachUsers.find(x => x.id === id);
+    if (u) u[field] = value.trim() || (field === 'title' ? null : u[field]);
+    toast('Saved');
+  } else {
+    toast(data.error || 'Failed to save', true);
+    await loadOutreachUsers();
+  }
+}
+
 async function submitCreateOutreachUser() {
   const errEl = document.getElementById('ou-error');
   errEl.style.display = 'none';
   const name = document.getElementById('ou-new-name').value.trim();
+  const title = document.getElementById('ou-new-title').value.trim();
   const password = document.getElementById('ou-new-password').value;
   if (!name || !password) {
     errEl.textContent = 'Name and password are required.';
@@ -2220,7 +2249,7 @@ async function submitCreateOutreachUser() {
     const res = await fetch('/api/admin?resource=outreach-users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, password }),
+      body: JSON.stringify({ name, title, password }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -2229,6 +2258,7 @@ async function submitCreateOutreachUser() {
       return;
     }
     document.getElementById('ou-new-name').value = '';
+    document.getElementById('ou-new-title').value = '';
     document.getElementById('ou-new-password').value = '';
     await loadOutreachUsers();
     toast('User created');

@@ -161,6 +161,7 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
     <div class="login-sub" id="login-sub">Outreach</div>
     <div id="bootstrap-fields" style="display:none">
       <input type="text" class="login-input" id="bootstrap-name" placeholder="Your name" autocomplete="name">
+      <input type="text" class="login-input" id="bootstrap-title" placeholder="Your title (e.g. Founder & CEO) - optional" autocomplete="organization-title">
     </div>
     <input type="password" class="login-input" id="login-password" placeholder="Password" autocomplete="current-password">
     <button class="login-btn" id="login-submit-btn" onclick="submitLogin()">Log in</button>
@@ -680,10 +681,11 @@ async function submitLogin() {
     let res;
     if (_needsBootstrap) {
       const name = document.getElementById('bootstrap-name').value.trim();
+      const title = document.getElementById('bootstrap-title').value.trim();
       if (!name) { errEl.textContent = 'Enter your name'; errEl.style.display = 'block'; return; }
       res = await fetch('/api/admin?resource=outreach-bootstrap', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ name, password }),
+        body: JSON.stringify({ name, title, password }),
       });
     } else {
       res = await fetch('/api/admin?resource=outreach-login', {
@@ -991,25 +993,40 @@ async function submitCreateLead() {
   if (btn) switchOutreachSubtab(bucket, btn);
 }
 
+// Sender identity comes from whoever's actually logged in (_outreachUser,
+// set by outreach-me) - not hardcoded, so every account's outreach reads as
+// genuinely coming from them, title included when they've set one.
+function outreachSenderIntro() {
+  const name = _outreachUser?.name || 'the IntroLinq team';
+  const title = _outreachUser?.title;
+  return title ? `${name}, ${title} at IntroLinq` : `${name}, from the IntroLinq team`;
+}
+
+function outreachSenderSignoff() {
+  return _outreachUser?.name || 'The IntroLinq team';
+}
+
 function outreachEmailTemplates(c) {
   const firstName = (c.contact_name || '').trim().split(' ')[0] || 'there';
   const company = (c.company_name || '').trim() || prettifyDomain(c.domain);
+  const sender = outreachSenderIntro();
+  const signoff = outreachSenderSignoff();
   return {
     intro: {
       subject: `Affiliation proposal - IntroLinq x ${company}`,
-      body: `Hi ${firstName},\n\nI am Dom - founder of Introlinq.com. We are a new company enabling publishers and bloggers to generate a new revenue stream from their content.\nI came across ${company} and think it would be a great fit if you would like to monetise your blog effortlessly.\n\nOur widget automatically scans your pages (old and new), matching keywords and topics - and creating affiliate links to bookable, vetted industry experts on our partners sites.\nIf a reader books - within a 90 day cookie period - we split the commission 50/50 with you.\n\nIt's 100% free, no maintenance required, and setup takes a couple of minutes.\n\nHere's the platform: https://introlinq.com/\nOur current partner is OpenIntro (https://open-intro.com/), with more partners joining soon.\n\nFeel free to register or I'd be happy to send more details or hop on a call if you'd prefer.\nLooking forward to hearing your thoughts.\n\nBest,\nDom`,
+      body: `Hi ${firstName},\n\nI am ${sender}. We are a new company enabling publishers and bloggers to generate a new revenue stream from their content.\nI came across ${company} and think it would be a great fit if you would like to monetise your blog effortlessly.\n\nOur widget automatically scans your pages (old and new), matching keywords and topics - and creating affiliate links to bookable, vetted industry experts on our partners sites.\nIf a reader books - within a 90 day cookie period - we split the commission 50/50 with you.\n\nIt's 100% free, no maintenance required, and setup takes a couple of minutes.\n\nHere's the platform: https://introlinq.com/\nOur current partner is OpenIntro (https://open-intro.com/), with more partners joining soon.\n\nFeel free to register or I'd be happy to send more details or hop on a call if you'd prefer.\nLooking forward to hearing your thoughts.\n\nBest,\n${signoff}`,
     },
     followup1: {
       subject: `Re: Quick idea for ${company}`,
-      body: `Hi ${firstName},\n\nJust wanted to bump this in case it got buried - I reached out about IntroLinq, a way to turn ${company}'s existing articles into a new revenue stream (readers get matched with experts to book calls with, you earn 50% commission, zero extra work).\n\nNo pressure at all if it's not a fit - just didn't want it to slip through the cracks. Happy to answer any questions.\n\nBest,\nDom`,
+      body: `Hi ${firstName},\n\nJust wanted to bump this in case it got buried - I reached out about IntroLinq, a way to turn ${company}'s existing articles into a new revenue stream (readers get matched with experts to book calls with, you earn 50% commission, zero extra work).\n\nNo pressure at all if it's not a fit - just didn't want it to slip through the cracks. Happy to answer any questions.\n\nBest,\n${signoff}`,
     },
     followup2: {
       subject: `Re: Quick idea for ${company}`,
-      body: `Hi ${firstName},\n\nStill think this could be a good fit for ${company} - turning existing articles into a passive revenue stream, zero extra work on your side.\n\nHappy to answer any questions, or just say the word and I'll set you up.\n\nBest,\nDom`,
+      body: `Hi ${firstName},\n\nStill think this could be a good fit for ${company} - turning existing articles into a passive revenue stream, zero extra work on your side.\n\nHappy to answer any questions, or just say the word and I'll set you up.\n\nBest,\n${signoff}`,
     },
     followup3: {
       subject: `Re: Quick idea for ${company}`,
-      body: `Hi ${firstName},\n\nLast note from me on this one - I don't want to keep cluttering your inbox.\n\nIf turning ${company}'s content into a passive revenue stream is ever something you'd want to explore, the door's always open. Either way, wishing you all the best with the site.\n\nBest,\nDom`,
+      body: `Hi ${firstName},\n\nLast note from me on this one - I don't want to keep cluttering your inbox.\n\nIf turning ${company}'s content into a passive revenue stream is ever something you'd want to explore, the door's always open. Either way, wishing you all the best with the site.\n\nBest,\n${signoff}`,
     },
   };
 }

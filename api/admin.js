@@ -30,6 +30,10 @@ async function ensureOutreachTables(sql) {
     active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT NOW()
   )`.catch(() => {});
+  // Shown as the sender identity in outreach email templates (e.g. "Head of
+  // Partnerships") - nullable, since it's optional at signup and every
+  // template already falls back to just the name if it's not set.
+  await sql`ALTER TABLE outreach_users ADD COLUMN IF NOT EXISTS title TEXT`.catch(() => {});
   // Case-insensitive - names are the only human-readable way to tell
   // accounts apart (login itself is password-only, never by name), so two
   // people/accounts sharing a display name is confusing in the assign
@@ -63,7 +67,7 @@ async function getOutreachSession(req, sql) {
   const token = getOutreachSessionToken(req);
   if (!token) return null;
   const [row] = await sql`
-    SELECT u.id, u.name, u.role
+    SELECT u.id, u.name, u.title, u.role
     FROM outreach_sessions s JOIN outreach_users u ON u.id = s.outreach_user_id
     WHERE s.token = ${token} AND s.expires_at > NOW() AND u.active = true
   `;
@@ -359,12 +363,12 @@ export default async function handler(req, res) {
     const [existingOwner] = await sql`SELECT id FROM outreach_users WHERE role = 'owner' LIMIT 1`;
     if (existingOwner) return res.status(409).json({ error: 'An owner account already exists' });
 
-    const { name, password } = req.body || {};
+    const { name, title, password } = req.body || {};
     if (!name || !password || String(password).length < 4) {
       return res.status(400).json({ error: 'Name and a password (4+ characters) are required' });
     }
     const passwordHash = await bcrypt.hash(password, 10);
-    const [user] = await sql`INSERT INTO outreach_users (name, password_hash, role) VALUES (${name.trim()}, ${passwordHash}, 'owner') RETURNING id`;
+    const [user] = await sql`INSERT INTO outreach_users (name, title, password_hash, role) VALUES (${name.trim()}, ${title?.trim() || null}, ${passwordHash}, 'owner') RETURNING id`;
     await issueOutreachSession(sql, res, user.id);
     return res.status(201).json({ ok: true });
   }
@@ -430,11 +434,11 @@ export default async function handler(req, res) {
     if (!(await isOutreachOwner(req, sql))) return res.status(403).json({ error: 'Forbidden' });
 
     if (req.method === 'GET') {
-      const users = await sql`SELECT id, name, role, active, created_at FROM outreach_users ORDER BY role DESC, name ASC`;
+      const users = await sql`SELECT id, name, title, role, active, created_at FROM outreach_users ORDER BY role DESC, name ASC`;
       return res.status(200).json(users);
     }
     if (req.method === 'POST') {
-      const { name, password } = req.body || {};
+      const { name, title, password } = req.body || {};
       if (!name || !password || String(password).length < 4) {
         return res.status(400).json({ error: 'Name and a password (4+ characters) are required' });
       }
@@ -443,13 +447,33 @@ export default async function handler(req, res) {
       if (existing) return res.status(409).json({ error: `A user named "${trimmedName}" already exists - pick a different name` });
 
       const passwordHash = await bcrypt.hash(password, 10);
-      const [user] = await sql`INSERT INTO outreach_users (name, password_hash, role) VALUES (${trimmedName}, ${passwordHash}, 'helper') RETURNING id`;
+      const [user] = await sql`INSERT INTO outreach_users (name, title, password_hash, role) VALUES (${trimmedName}, ${title?.trim() || null}, ${passwordHash}, 'helper') RETURNING id`;
       return res.status(201).json({ ok: true, id: user.id });
     }
     if (req.method === 'PATCH') {
-      const { id, active } = req.body || {};
+      const { id, active, name, title } = req.body || {};
       if (!id) return res.status(400).json({ error: 'id required' });
-      await sql`UPDATE outreach_users SET active = ${!!active} WHERE id = ${id} AND role != 'owner'`;
+
+      // active is owner-restricted (deactivating an owner would be a
+      // lockout risk) - name/title are harmless, and an owner needs to be
+      // able to edit their own, so those apply to any account including
+      // the owner's.
+      if (active !== undefined) {
+        await sql`UPDATE outreach_users SET active = ${!!active} WHERE id = ${id} AND role != 'owner'`;
+      }
+      if (name !== undefined || title !== undefined) {
+        const trimmedName = name !== undefined ? String(name).trim() : undefined;
+        if (trimmedName !== undefined && !trimmedName) return res.status(400).json({ error: 'Name cannot be empty' });
+        if (trimmedName !== undefined) {
+          const [dupe] = await sql`SELECT id FROM outreach_users WHERE LOWER(name) = LOWER(${trimmedName}) AND id != ${id}`;
+          if (dupe) return res.status(409).json({ error: `A user named "${trimmedName}" already exists - pick a different name` });
+        }
+        const [existing] = await sql`SELECT name, title FROM outreach_users WHERE id = ${id}`;
+        if (!existing) return res.status(404).json({ error: 'User not found' });
+        const newName = trimmedName !== undefined ? trimmedName : existing.name;
+        const newTitle = title !== undefined ? (String(title).trim() || null) : existing.title;
+        await sql`UPDATE outreach_users SET name = ${newName}, title = ${newTitle} WHERE id = ${id}`;
+      }
       return res.status(200).json({ ok: true });
     }
     // Permanent delete (deactivate above is the soft version). Their leads
