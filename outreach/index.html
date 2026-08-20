@@ -128,6 +128,8 @@ tr:hover td{background:rgba(0,0,0,0.01)}
 /* Assign-to + manage-users (owner-only additions) */
 .assign-th,.assign-td{display:none}
 body.is-owner .assign-th,body.is-owner .assign-td{display:table-cell}
+.owner-only{display:none}
+body.is-owner .owner-only{display:inline-block}
 .select-th,.select-td{display:none;width:36px}
 body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
 .lead-checkbox{width:15px;height:15px;cursor:pointer;accent-color:var(--sage)}
@@ -205,6 +207,11 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
         <label class="form-label" style="margin:0">Filter by category</label>
         <select id="outreach-category-filter" class="form-input" style="width:auto;padding:0.35rem 0.6rem;font-size:0.8125rem" onchange="_outreachCategoryFilter=this.value;renderOutreach()">
           <option value="">All categories</option>
+        </select>
+        <label class="form-label owner-only" style="margin:0">Filter by assignee</label>
+        <select id="outreach-assignee-filter" class="form-input owner-only" style="width:auto;padding:0.35rem 0.6rem;font-size:0.8125rem" onchange="_outreachAssigneeFilter=this.value;renderOutreach()">
+          <option value="">Everyone</option>
+          <option value="unassigned">Unassigned</option>
         </select>
         <input type="text" id="outreach-search-input" class="form-input" placeholder="Search by website or company name..." style="width:280px;padding:0.35rem 0.6rem;font-size:0.8125rem;margin-left:0.5rem" oninput="outreachSearch(this.value)">
       </div>
@@ -740,6 +747,7 @@ const OUTREACH_CATEGORIES = [
   'Real Estate', 'Other',
 ];
 let _outreachCategoryFilter = '';
+let _outreachAssigneeFilter = ''; // '' = everyone, 'unassigned', or a helper's id as a string
 let _outreachSearchQuery = '';
 // Three groups, matching the subtab bar's grouping/coloring below:
 // Status (the outreach pipeline itself), Partner (which partner track a
@@ -849,7 +857,9 @@ function renderOutreachSection(name, titleText, items, emptyMessage, rowMode) {
 function renderOutreach() {
   const today = new Date().toISOString().slice(0, 10);
   const buckets = { due: [], todo: [], tocontact: [], waiting: [], discussion: [], onboarded: [], later: [], partner: [], openintro: [], products: [], important: [], notfit: [], notinterested: [] };
-  const visible = _outreachCategoryFilter ? _outreach.filter((c) => c.category === _outreachCategoryFilter) : _outreach;
+  let visible = _outreachCategoryFilter ? _outreach.filter((c) => c.category === _outreachCategoryFilter) : _outreach;
+  if (_outreachAssigneeFilter === 'unassigned') visible = visible.filter((c) => !c.assigned_to);
+  else if (_outreachAssigneeFilter) visible = visible.filter((c) => c.assigned_to === Number(_outreachAssigneeFilter));
   for (const c of visible) buckets[outreachBucket(c, today)].push(c);
 
   buckets.due.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
@@ -1295,6 +1305,11 @@ function populateBulkAssignSelect() {
   if (!el || !_outreachHelpers) return;
   const options = _outreachHelpers.filter(u => u.active).map(u => `<option value="${u.id}">${esc(u.name)}</option>`).join('');
   el.innerHTML = '<option value="">Unassigned</option>' + options;
+
+  const filterEl = document.getElementById('outreach-assignee-filter');
+  if (filterEl) {
+    filterEl.innerHTML = '<option value="">Everyone</option><option value="unassigned">Unassigned</option>' + options;
+  }
 }
 
 function outreachAssignedName(c) {
