@@ -232,6 +232,18 @@
       return;
     }
 
+    // Was previously only checked below to gate the no-match fallback line -
+    // the scan/highlight flow itself ran unconditionally regardless. That let
+    // listing/archive pages (a blog index, a category page) get scanned as if
+    // their whole card grid were one article, mashing together snippets from
+    // several unrelated posts - confirmed on onlinebizoffers.com/blog, where
+    // a highlight landed inside a post-preview card and hijacked its link
+    // (clicking it opened the IntroLinq popup instead of navigating to the
+    // other post), and the blended text also threw off language detection.
+    // A real article page always passes this check already, so this can only
+    // ever skip pages already confidently identified as non-articles.
+    if (!isLikelyArticlePage()) return;
+
     var sharedCfg = null;
     var sharedPopup = null;
     var usedRanges = [];
@@ -317,19 +329,12 @@
           // to have nothing relevant - the server sets noMatch:true
           // specifically for this case (see tryServeFromCache in
           // api/match.js), distinct from "not scanned yet" (which has no
-          // `cached` field at all and was already returned above).
-          // isLikelyArticlePage() gates the fallback line specifically, not
-          // the scan itself above - a category/tag/author archive page can
-          // still clear the 150-char bar and get scanned/matched normally
-          // (a real MATCH only ever shows if the AI found something
-          // genuinely relevant), but the fallback's generic "talk to an
-          // expert" line has no business appearing on a listing, homepage,
-          // or login page just because that page also came back no-match.
+          // `cached` field at all and was already returned above). No need
+          // to re-check isLikelyArticlePage() here - tryRun already returned
+          // before reaching postScan() at all if this wasn't one.
           if (data.noMatch) {
-            if (isLikelyArticlePage()) {
-              injectStyles(data.config || {});
-              showNoMatchFallback(el, data.config || {}, data.randomExperts, data.randomExpertsTotal);
-            }
+            injectStyles(data.config || {});
+            showNoMatchFallback(el, data.config || {}, data.randomExperts, data.randomExpertsTotal);
             return;
           }
           var shown = applyMatches(data);
@@ -367,6 +372,14 @@
   function isLikelyArticlePage() {
     var path = window.location.pathname.toLowerCase();
     if (path === '' || path === '/') return false;
+    // Bare blog index only (/blog, optionally trailing slash) - NOT part of
+    // the shared alternation below, since that group's trailing (\/|$)
+    // would also match /blog/an-actual-post-slug, which is how a huge
+    // number of real articles are structured. Confirmed on
+    // onlinebizoffers.com/blog: a listing page's whole card grid got
+    // scanned as one article, and a highlight landed inside a post-preview
+    // card and hijacked its link.
+    if (/^\/blog\/?$/.test(path)) return false;
     if (/\/(category|categories|tag|tags|author|page\/\d+|search|login|signin|sign-in|signup|sign-up|register|cart|checkout|account|wp-admin)(\/|$)/.test(path)) return false;
 
     var ogType = document.querySelector('meta[property="og:type"]');
