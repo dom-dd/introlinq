@@ -200,6 +200,7 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
         <button class="outreach-subtab grp-others" data-name="important" onclick="switchOutreachSubtab('important',this)">VIP</button>
         <button class="outreach-subtab grp-others" data-name="notfit" onclick="switchOutreachSubtab('notfit',this)">Not a fit</button>
         <button class="outreach-subtab grp-others" data-name="notinterested" onclick="switchOutreachSubtab('notinterested',this)">Not interested</button>
+        <button class="outreach-subtab grp-others" data-name="noemail" onclick="switchOutreachSubtab('noemail',this)">No email found</button>
         <button class="btn btn-primary btn-sm" style="flex-shrink:0;margin:0.4rem 0 0.4rem auto;padding-left:0.75rem;padding-right:0.75rem" onclick="openCreateLeadModal()">+ Create a lead</button>
       </div>
 
@@ -514,6 +515,31 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
         </div>
       </div>
 
+      <div class="outreach-subpanel" id="outreach-sub-noemail">
+        <div class="section">
+          <div class="section-header">
+            <div style="display:flex;align-items:center">
+              <div class="section-title" id="outreach-noemail-title">No email found</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Worth pursuing, but no contact email could be found for this blog/company.</span></span>
+            </div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:600px">
+              <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
+                <th style="width:220px">1. Blog</th>
+                <th style="width:180px">2. Contact</th>
+                <th style="width:150px">3. Status</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th>4. Notes</th>
+              </tr></thead>
+              <tbody id="outreach-noemail-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-noemail-empty">Loading...</div>
+        </div>
+      </div>
+
       <div class="outreach-subpanel" id="outreach-sub-openintro">
         <div class="section">
           <div class="section-header">
@@ -770,6 +796,7 @@ const OUTREACH_STATUS_LABELS = {
   important: 'VIP',
   not_a_fit: 'Not a fit',
   replied_not_interested: 'Not interested',
+  no_email_found: 'No email found',
 };
 const OUTREACH_STATUS_COLORS = {
   discovered: 'var(--ink-muted)',
@@ -787,12 +814,13 @@ const OUTREACH_STATUS_COLORS = {
   important: '#e6a820',
   not_a_fit: 'var(--ink-muted)',
   replied_not_interested: 'var(--red, #dc2626)',
+  no_email_found: '#94a3b8',
 };
 // Terminal-ish statuses that take priority over "Due" even if a stale
 // next_followup_at is somehow still set - once a lead is in discussion,
 // onboarded, not a fit, or not interested, it belongs in its own section,
 // not cluttering the Due list.
-const OUTREACH_RESOLVED = ['replied_interested', 'signed_up', 'replied_not_interested', 'not_a_fit'];
+const OUTREACH_RESOLVED = ['replied_interested', 'signed_up', 'replied_not_interested', 'not_a_fit', 'no_email_found'];
 
 // Same 3 groups as the subtab bar's coloring, rendered as <optgroup>s so
 // every Status <select> in the page (the row dropdown and the Create-a-lead
@@ -801,7 +829,7 @@ const OUTREACH_RESOLVED = ['replied_interested', 'signed_up', 'replied_not_inter
 const OUTREACH_STATUS_GROUPS = [
   { label: 'Status', keys: ['discovered', 'to_contact', 'emailed', 'followed_up_1', 'followed_up_2', 'followed_up_3', 'replied_interested', 'signed_up', 'contact_later'] },
   { label: 'Partner', keys: ['partner', 'openintro_partner', 'products_partner'] },
-  { label: 'Others', keys: ['important', 'not_a_fit', 'replied_not_interested'] },
+  { label: 'Others', keys: ['important', 'not_a_fit', 'replied_not_interested', 'no_email_found'] },
 ];
 
 function outreachStatusOptionsHTML(selectedValue) {
@@ -829,6 +857,7 @@ function outreachBucket(c, today) {
   if (c.status === 'signed_up') return 'onboarded';
   if (c.status === 'not_a_fit') return 'notfit';
   if (c.status === 'replied_not_interested') return 'notinterested';
+  if (c.status === 'no_email_found') return 'noemail';
   if (c.next_followup_at && c.next_followup_at.slice(0, 10) <= today) return 'due';
   if (c.status === 'important') return 'important';
   if (c.status === 'contact_later') return 'later';
@@ -856,7 +885,7 @@ function renderOutreachSection(name, titleText, items, emptyMessage, rowMode) {
 
 function renderOutreach() {
   const today = new Date().toISOString().slice(0, 10);
-  const buckets = { due: [], todo: [], tocontact: [], waiting: [], discussion: [], onboarded: [], later: [], partner: [], openintro: [], products: [], important: [], notfit: [], notinterested: [] };
+  const buckets = { due: [], todo: [], tocontact: [], waiting: [], discussion: [], onboarded: [], later: [], partner: [], openintro: [], products: [], important: [], notfit: [], notinterested: [], noemail: [] };
   let visible = _outreachCategoryFilter ? _outreach.filter((c) => c.category === _outreachCategoryFilter) : _outreach;
   if (_outreachAssigneeFilter === 'unassigned') visible = visible.filter((c) => !c.assigned_to);
   else if (_outreachAssigneeFilter) visible = visible.filter((c) => c.assigned_to === Number(_outreachAssigneeFilter));
@@ -875,6 +904,7 @@ function renderOutreach() {
   buckets.onboarded.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.notfit.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.notinterested.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.noemail.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   renderOutreachSection('due', 'Due for follow-up', buckets.due, 'Nothing due right now.', 'full');
   renderOutreachSection('todo', 'Untouched', buckets.todo.slice(0, _outreachTodoLimit), 'Nothing left to contact.', 'full');
@@ -889,6 +919,7 @@ function renderOutreach() {
   renderOutreachSection('important', 'VIP', buckets.important, 'Nothing flagged as VIP.', 'simple');
   renderOutreachSection('notfit', 'Not a fit', buckets.notfit, 'Nothing here yet.', 'simple');
   renderOutreachSection('notinterested', 'Not interested', buckets.notinterested, 'No one has replied not interested yet.', 'simple');
+  renderOutreachSection('noemail', 'No email found', buckets.noemail, 'Nothing here yet.', 'simple');
 
   document.getElementById('outreach-todo-title').textContent = `Untouched (${buckets.todo.length})`;
   document.getElementById('outreach-todo-more').style.display = buckets.todo.length > _outreachTodoLimit ? 'inline-block' : 'none';
