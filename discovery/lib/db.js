@@ -39,6 +39,13 @@ export async function ensureSchema() {
     run_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW()
   )`;
+  // Lets the pending-query picker prioritize a specific category (see
+  // PRIORITY_CATEGORY in lib/queries.js) instead of pure FIFO across every
+  // category combined - added 2026-08-25 after Business & Entrepreneurship
+  // silently exhausted its entire query pool while every other category
+  // still had plenty pending.
+  await sql`ALTER TABLE discovery_queries ADD COLUMN IF NOT EXISTS category TEXT`;
   await sql`CREATE INDEX IF NOT EXISTS idx_candidate_publishers_status ON candidate_publishers(status)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_discovery_queries_status ON discovery_queries(status)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_discovery_queries_category ON discovery_queries(category)`;
 }

@@ -12,7 +12,7 @@
 
 import { sql, ensureSchema } from './lib/db.js';
 import { serpSearch, extractCandidates } from './lib/serpapi.js';
-import { generateQueriesByCategory } from './lib/queries.js';
+import { generateQueriesByCategory, categoryForQuery, PRIORITY_CATEGORY } from './lib/queries.js';
 
 function parseArgs(argv) {
   const args = { target: 500 };
@@ -34,7 +34,7 @@ async function seedQueryPool() {
   let inserted = 0;
   for (const query of queries) {
     const result = await sql`
-      INSERT INTO discovery_queries (query) VALUES (${query})
+      INSERT INTO discovery_queries (query, category) VALUES (${query}, ${categoryForQuery(query)})
       ON CONFLICT (query) DO NOTHING
       RETURNING id
     `;
@@ -43,11 +43,15 @@ async function seedQueryPool() {
   return { total: queries.length, inserted };
 }
 
+// PRIORITY_CATEGORY's pending queries are pulled first (see lib/queries.js
+// for why - it ran out of query volume entirely before any other category
+// made a dent in theirs), then plain id order as before for everything
+// else/once it's exhausted again.
 async function nextPendingQuery() {
   const [row] = await sql`
     SELECT id, query FROM discovery_queries
     WHERE status = 'pending'
-    ORDER BY id ASC
+    ORDER BY (category = ${PRIORITY_CATEGORY}) DESC, id ASC
     LIMIT 1
   `;
   return row || null;

@@ -42,6 +42,23 @@ export const TOPICS_BY_CATEGORY = {
     'startup finance', 'cap table', 'startup pitch deck', 'startup exit',
     'scaling a startup', 'founder wellbeing', 'startup community',
     'small business growth', 'small business owner',
+    // Added 2026-08-25 - the original 34 topics above had their entire
+    // topic x intent combination space (384 queries) fully exhausted (365
+    // done, 55 failed, 0 pending), while every other category still had
+    // 56-151 untapped queries sitting in the pool. Business wasn't being
+    // deprioritized anywhere in the pipeline - it just ran out of distinct
+    // search terms first, since it's the first category defined here and
+    // the daily cron processes queries in a single FIFO queue. These are
+    // new long-tail terms, chosen to avoid re-treading the ones above.
+    'startup mvp', 'startup validation', 'startup accelerator', 'startup incubator',
+    'startup co-founder', 'startup equity', 'startup vesting', 'down round',
+    'bridge round', 'startup unit economics', 'startup burn rate', 'startup runway',
+    'startup churn', 'startup retention', 'startup board meeting', 'startup demo day',
+    'startup pitch competition', 'bootstrapped SaaS', 'micro SaaS', 'side hustle to startup',
+    'freelance to founder', 'startup pricing strategy', 'startup positioning',
+    'startup customer discovery', 'first startup job', 'women in startups',
+    'startup work-life balance', 'startup networking', 'startup mentorship',
+    'startup failure lessons',
   ],
   'Marketing & Sales': [
     'content marketing', 'email marketing tips', 'social media marketing',
@@ -173,3 +190,36 @@ export function generateQueriesByCategory(categories = CATEGORIES) {
   }
   return result;
 }
+
+// Reverse lookup (topic -> category) built once at module load, used to tag
+// each discovery_queries row with its category on insert and to backfill
+// existing rows. Every topic string is unique across categories (verified
+// deterministically - no two categories share a topic), so an exact prefix
+// match (query === topic, or query starts with "topic ") always resolves to
+// exactly one category, never ambiguous.
+const TOPIC_TO_CATEGORY = new Map();
+for (const [cat, topics] of Object.entries(TOPICS_BY_CATEGORY)) {
+  for (const topic of topics) TOPIC_TO_CATEGORY.set(topic, cat);
+}
+
+export function categoryForQuery(query) {
+  let best = null;
+  for (const [topic, cat] of TOPIC_TO_CATEGORY) {
+    if (query === topic || query.startsWith(topic + ' ')) {
+      // Longest-topic-wins in case one topic is itself a prefix of another
+      // (e.g. "startup" vs "startup founder") - picks the more specific match.
+      if (!best || topic.length > best.topic.length) best = { topic, cat };
+    }
+  }
+  return best ? best.cat : null;
+}
+
+// Business & Entrepreneurship exhausted its entire original query pool (384
+// combinations, 0 left pending) well before any other category made a dent
+// in theirs (56-151 still pending each as of 2026-08-25) - not from any
+// pull-order bias, just from being first in TOPICS_BY_CATEGORY above and
+// getting fully burned through first. This is the category the daily cron
+// now prioritizes pulling from first (see run-discovery in api/admin.js and
+// nextPendingQuery in discover.js) - change this constant to shift focus
+// elsewhere later instead of editing the SQL in either place.
+export const PRIORITY_CATEGORY = 'Business & Entrepreneurship';

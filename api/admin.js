@@ -244,7 +244,7 @@ export default async function handler(req, res) {
     if (req.headers['authorization'] !== `Bearer ${process.env.CRON_SECRET}`) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-    const { generateQueries } = await import('../discovery/lib/queries.js');
+    const { generateQueries, categoryForQuery, PRIORITY_CATEGORY } = await import('../discovery/lib/queries.js');
     const { serpSearch, extractCandidates } = await import('../discovery/lib/serpapi.js');
 
     const sql = neon(process.env.DATABASE_URL);
@@ -282,6 +282,13 @@ export default async function handler(req, res) {
       run_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ DEFAULT NOW()
     )`;
+    // Lets the pending-query picker below prioritize PRIORITY_CATEGORY
+    // instead of pure FIFO across every category combined - added
+    // 2026-08-25 after Business & Entrepreneurship silently exhausted its
+    // entire query pool (0 pending left) while every other category still
+    // had 56-151 queries untouched, entirely because it's listed first in
+    // TOPICS_BY_CATEGORY and this FIFO queue burned through it first.
+    await sql`ALTER TABLE discovery_queries ADD COLUMN IF NOT EXISTS category TEXT`;
 
     const queries = generateQueries();
     const [{ count: seededCount }] = await sql`SELECT COUNT(*)::int AS count FROM discovery_queries`;
@@ -291,7 +298,7 @@ export default async function handler(req, res) {
         // TOPICS growing) shouldn't be able to eat the whole time budget itself
         // and leave nothing for the actual discovery loop below.
         if (Date.now() - started > TIME_BUDGET_MS) break;
-        await sql`INSERT INTO discovery_queries (query) VALUES (${q}) ON CONFLICT (query) DO NOTHING`;
+        await sql`INSERT INTO discovery_queries (query, category) VALUES (${q}, ${categoryForQuery(q)}) ON CONFLICT (query) DO NOTHING`;
       }
     }
 
@@ -305,7 +312,7 @@ export default async function handler(req, res) {
       const [query] = await sql`
         SELECT id, query FROM discovery_queries
         WHERE status = 'pending'
-        ORDER BY id ASC
+        ORDER BY (category = ${PRIORITY_CATEGORY}) DESC, id ASC
         LIMIT 1
       `;
       if (!query) { stopReason = 'query pool exhausted'; break; }
