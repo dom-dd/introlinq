@@ -76,6 +76,17 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .platform-card.unsupported{border-style:dashed;opacity:0.8}
 .platform-card.unsupported .platform-card-label{color:var(--ink-soft)}
 .platform-badge{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:1rem;color:#fff}
+.widget-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem}
+.widget-card{display:flex;flex-direction:column;align-items:flex-start;gap:0.5rem;padding:1rem 1.1rem;border:2px solid var(--border);border-radius:12px;background:var(--white);cursor:pointer;transition:border-color .15s,transform .1s;font-family:'Inter',sans-serif;text-align:left}
+.widget-card:hover{border-color:var(--sage);transform:translateY(-1px)}
+.widget-card-top{display:flex;align-items:center;gap:0.625rem}
+.widget-card-label{font-size:0.875rem;font-weight:600;color:var(--ink)}
+.widget-card-desc{font-size:0.75rem;color:var(--ink-soft);line-height:1.5}
+.widget-card.disabled{opacity:0.55;cursor:default}
+.widget-card.disabled:hover{border-color:var(--border);transform:none}
+.widget-card.recommended{border-color:var(--sage);background:var(--sage-light)}
+.widget-card-tag{font-size:0.625rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--sage);padding:0.15rem 0.55rem;border-radius:100px;align-self:flex-start}
+.widget-card-tag.unavailable{background:var(--ink-muted)}
 .onboarding-back{background:none;border:none;color:var(--ink-muted);font-size:0.8125rem;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:0.35rem;margin-bottom:1rem;padding:0}
 .onboarding-back:hover{color:var(--ink)}
 .onboarding-platform-header{display:flex;align-items:center;gap:0.625rem;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
@@ -103,8 +114,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .onboarding-download-btn:hover{opacity:0.88}
 .onboarding-later{background:none;border:none;color:var(--ink-muted);font-size:0.8rem;cursor:pointer;font-family:'Inter',sans-serif;text-decoration:underline;padding:0}
 .onboarding-later:hover{color:var(--ink)}
-.onboarding-unsupported-box{background:var(--cream);border-radius:10px;padding:1.25rem;font-size:0.8375rem;color:var(--ink-soft);line-height:1.6}
-.onboarding-unsupported-box strong{color:var(--ink)}
 
 /* ── Step visual ──────────────────────────────────────────────────────────
    Illustrated mockup, not a real screenshot - we don't have accounts on
@@ -520,7 +529,7 @@ tr:last-child td{border-bottom:none}
   <div class="tab-bar">
     <button class="tab-btn install-tab-btn" id="install-tab-btn" style="display:none" onclick="switchTab('install',this)">● Get started</button>
     <button class="tab-btn active" id="overview-tab-btn" onclick="switchTab('overview',this)">Overview</button>
-    <button class="tab-btn" onclick="switchTab('widget',this)">Widgets</button>
+    <button class="tab-btn" id="widget-tab-btn" onclick="switchTab('widget',this)">Widgets</button>
     <button class="tab-btn" onclick="switchTab('payouts',this)">Payouts</button>
     <button class="tab-btn" onclick="switchTab('matches',this)">Logs</button>
     <button class="tab-btn" onclick="switchTab('account',this)">Account settings</button>
@@ -640,7 +649,7 @@ tr:last-child td{border-bottom:none}
         <button class="wtab-btn active" onclick="switchWidgetTab('text',this)">Text Widget</button>
         <button class="wtab-btn" onclick="switchWidgetTab('carousel',this)">Expert Carousel</button>
         <button class="wtab-btn" onclick="switchWidgetTab('board',this)">Expert Board</button>
-        <button class="wtab-btn" onclick="switchWidgetTab('newsletter',this)">Newsletter Links</button>
+        <button class="wtab-btn" id="wtab-newsletter-btn" onclick="switchWidgetTab('newsletter',this)">Newsletter Links</button>
       </div>
 
       <!-- TEXT WIDGET -->
@@ -2555,13 +2564,31 @@ const ONBOARDING_PLATFORMS = {
   },
 };
 
-// Substack/Medium can't run the widget today (Substack blocklists Custom
-// HTML via GTM, Medium has no code support at all) - shown anyway so we
-// capture who's asking and can reach out the moment either becomes
-// possible, instead of starting a partner conversation from zero.
+// Substack/Medium can't run any of the three script-embed widgets
+// (Substack blocklists Custom HTML via GTM, Medium has no code support at
+// all) - but Newsletter Links (manual tracked-link copy/paste, see
+// switchWidgetTab) works fine on both today, so the widget-type picker
+// routes people there instead of treating the platform choice as a dead
+// end. Previously implied the manual option was still hypothetical
+// ("exploring") when it was actually already shipped - fixed 2026-08-25,
+// was costing us onboarding drop-off for no reason.
 const ONBOARDING_UNSUPPORTED = {
   substack: { label: 'Substack', badge: '#FF6719', letter: 'S' },
   medium: { label: 'Medium', badge: '#000000', letter: 'M' },
+};
+
+// Widget-type picker shown after platform choice - added 2026-08-25 (was
+// previously skipped entirely, onboarding only ever installed the Text
+// Widget). `file` is null for manual since there's nothing to embed -
+// selectOnboardingWidget() routes that straight into the Newsletter Links
+// tab instead of the step-by-step install screen. Descriptions copied
+// verbatim from the Widgets tab's own wpreview-desc-text copy (see
+// switchWidgetTab) so the two don't drift apart.
+const ONBOARDING_WIDGETS = {
+  text: { label: 'Text Widget', file: 'widget.js', badge: '#3d7a5f', letter: 'T', desc: 'Highlights phrases in your articles and shows a matching expert popup when readers hover.' },
+  carousel: { label: 'Expert Carousel', file: 'carousel.js', badge: '#e6a820', letter: 'C', desc: 'A scrollable row of expert cards - drop it at the end of any article or page.' },
+  board: { label: 'Expert Board', file: 'expertboard.js', badge: '#4a4a6a', letter: 'B', desc: 'A full browsable expert directory with search and topic filters.' },
+  manual: { label: 'Manual Entry', file: null, badge: '#21759b', letter: 'M', desc: 'Search your available experts and copy a tracked link to paste into a newsletter by hand. No install needed - works on Substack and Medium too.' },
 };
 
 let _onboardingPub = null;
@@ -2574,10 +2601,8 @@ function goToOverviewTab() {
 function initInstallTab(pub, savedPlatform, wasDetected) {
   _onboardingPub = pub;
   _onboardingPlatformDetected = !!wasDetected;
-  if (savedPlatform && ONBOARDING_PLATFORMS[savedPlatform]) {
-    renderOnboardingSteps(savedPlatform);
-  } else if (savedPlatform && ONBOARDING_UNSUPPORTED[savedPlatform]) {
-    renderOnboardingUnsupported(savedPlatform);
+  if (savedPlatform && (ONBOARDING_PLATFORMS[savedPlatform] || ONBOARDING_UNSUPPORTED[savedPlatform])) {
+    renderOnboardingWidgetPicker(savedPlatform);
   } else {
     renderOnboardingPicker();
   }
@@ -2608,11 +2633,48 @@ function selectOnboardingPlatform(id) {
     method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ platform: id }),
   }).catch(() => {});
-  if (ONBOARDING_UNSUPPORTED[id]) {
-    renderOnboardingUnsupported(id);
-  } else {
-    renderOnboardingSteps(id);
+  renderOnboardingWidgetPicker(id);
+}
+
+// Step 2: which of the three script-embed widgets (or Manual Entry) to
+// install first. On Substack/Medium the three script-embed cards are shown
+// disabled rather than hidden entirely - being upfront about WHY (same
+// explanation as the old dead-end screen) reads as more trustworthy than
+// silently only offering one option, and Manual Entry is flagged as the
+// one that actually works for them.
+function renderOnboardingWidgetPicker(platformId) {
+  const isUnsupported = !!ONBOARDING_UNSUPPORTED[platformId];
+  const platformLabel = isUnsupported ? ONBOARDING_UNSUPPORTED[platformId].label : ONBOARDING_PLATFORMS[platformId].label;
+  const cards = Object.entries(ONBOARDING_WIDGETS).map(([id, w]) => {
+    const disabled = isUnsupported && id !== 'manual';
+    const recommended = isUnsupported && id === 'manual';
+    return `
+    <button class="widget-card${disabled ? ' disabled' : ''}${recommended ? ' recommended' : ''}" ${disabled ? 'disabled' : `onclick="selectOnboardingWidget('${platformId}','${id}')"`}>
+      <div class="widget-card-top">
+        <div class="platform-badge" style="background:${w.badge};width:28px;height:28px;font-size:0.75rem">${w.letter}</div>
+        <div class="widget-card-label">${esc(w.label)}</div>
+      </div>
+      <div class="widget-card-desc">${esc(w.desc)}</div>
+      ${disabled ? `<span class="widget-card-tag unavailable">Not available on ${esc(platformLabel)}</span>` : ''}
+      ${recommended ? `<span class="widget-card-tag">Recommended for ${esc(platformLabel)}</span>` : ''}
+    </button>
+  `;
+  }).join('');
+  document.getElementById('install-tab-body').innerHTML = `
+    <button class="onboarding-back" onclick="renderOnboardingPicker()">← Choose a different platform</button>
+    ${isUnsupported ? `<div class="onboarding-note">${esc(platformLabel)} doesn't allow the kind of embed the Text Widget, Carousel, or Expert Board need (${platformId === 'substack' ? 'Substack blocks custom HTML/scripts' : 'Medium has no support for custom code at all'}) - but Manual Entry works today, no install required. We've noted you're on ${esc(platformLabel)}, so you'll be first to hear if official platform support happens.</div>` : ''}
+    <div class="onboarding-lede">What would you like to install first? You can add the others later from the Widgets tab.</div>
+    <div class="widget-grid">${cards}</div>
+    <div style="text-align:center;margin-top:1.5rem"><button class="onboarding-later" onclick="goToOverviewTab()">I'll do this later</button></div>
+  `;
+}
+
+function selectOnboardingWidget(platformId, widgetId) {
+  if (widgetId === 'manual') {
+    goToNewsletterLinks();
+    return;
   }
+  renderOnboardingSteps(platformId, 0, widgetId);
 }
 
 // Illustrated step visual - a browser-chrome mockup with the relevant nav
@@ -2704,21 +2766,23 @@ function renderStepVisual(spec, color, url, realCode, realId) {
 // the point. The embed code box stays pinned above the step itself since
 // almost every step's instruction is "paste it here", not shown once and
 // scrolled away.
-function renderOnboardingSteps(id, stepIndex) {
+function renderOnboardingSteps(id, stepIndex, widgetType) {
   stepIndex = stepIndex || 0;
+  widgetType = widgetType || 'text';
   const p = ONBOARDING_PLATFORMS[id];
+  const w = ONBOARDING_WIDGETS[widgetType];
   const total = p.steps.length;
   const isLast = stepIndex === total - 1;
   const step = p.steps[stepIndex];
-  const embedCode = `<script src="https://www.introlinq.com/widget.js" data-publisher="${esc(_onboardingPub)}"><\/script>`;
-  const backAction = stepIndex === 0 ? `renderOnboardingPicker()` : `renderOnboardingSteps('${id}', ${stepIndex - 1})`;
-  const backLabel = stepIndex === 0 ? '← Choose a different platform' : '← Back';
+  const embedCode = `<script src="https://www.introlinq.com/${w.file}" data-publisher="${esc(_onboardingPub)}"><\/script>`;
+  const backAction = stepIndex === 0 ? `renderOnboardingWidgetPicker('${id}')` : `renderOnboardingSteps('${id}', ${stepIndex - 1}, '${widgetType}')`;
+  const backLabel = stepIndex === 0 ? '← Choose a different widget' : '← Back';
   document.getElementById('install-tab-body').innerHTML = `
     <button class="onboarding-back" onclick="${backAction}">${backLabel}</button>
     <div class="onboarding-platform-header" style="--sv-color:${p.color}">
       <div class="onboarding-platform-icon">${p.icon}</div>
       <div class="onboarding-platform-name">${esc(p.label)}</div>
-      <span class="onboarding-platform-tag">Steps for ${esc(p.label)}</span>
+      <span class="onboarding-platform-tag">${esc(w.label)}</span>
     </div>
     ${stepIndex === 0 && _onboardingPlatformDetected ? `<div class="onboarding-note">We spotted this automatically from your site - not right? Use "Choose a different platform" above.</div>` : ''}
     <div class="setup-embed" style="margin-bottom:1.5rem">
@@ -2741,7 +2805,7 @@ function renderOnboardingSteps(id, stepIndex) {
     <div style="text-align:right">
       ${isLast
         ? `<button class="onboarding-test-btn" id="onboarding-test-btn" onclick="testOnboardingWidget()">Test my install</button>`
-        : `<button class="onboarding-test-btn" onclick="renderOnboardingSteps('${id}', ${stepIndex + 1})">Continue →</button>`
+        : `<button class="onboarding-test-btn" onclick="renderOnboardingSteps('${id}', ${stepIndex + 1}, '${widgetType}')">Continue →</button>`
       }
     </div>
     ${isLast ? `<div class="onboarding-test-result" id="onboarding-test-result" style="text-align:right;margin-top:0.75rem"></div>` : ''}
@@ -2753,22 +2817,9 @@ function copyOnboardingCode() {
   toast('Embed code copied!');
 }
 
-function renderOnboardingUnsupported(id) {
-  const p = ONBOARDING_UNSUPPORTED[id];
-  document.getElementById('install-tab-body').innerHTML = `
-    <button class="onboarding-back" onclick="renderOnboardingPicker()">← Choose a different platform</button>
-    <div class="onboarding-platform-header">
-      <div class="platform-badge" style="background:${p.badge};width:26px;height:26px;font-size:0.8125rem">${p.letter}</div>
-      <div class="onboarding-platform-name">${esc(p.label)}</div>
-    </div>
-    <div class="onboarding-unsupported-box">
-      <strong>${esc(p.label)} isn't supported yet.</strong><br><br>
-      ${p.label} doesn't currently allow the kind of embed our widget needs (${id === 'substack' ? 'Substack blocks custom HTML/scripts' : 'Medium has no support for custom code at all'}), so there's no install we can walk you through today.
-      <br><br>
-      We've noted that you're on ${esc(p.label)} - if we manage to get official support (or a partnership) sorted, you'll be one of the first people we reach out to. In the meantime, drop us a line at <a href="mailto:hello@introlinq.com">hello@introlinq.com</a> if you'd like to be added to a manual-link option we're exploring.
-    </div>
-    <div style="text-align:center;margin-top:1.5rem"><button class="onboarding-later" onclick="goToOverviewTab()">Got it, close this</button></div>
-  `;
+function goToNewsletterLinks() {
+  switchTab('widget', document.getElementById('widget-tab-btn'));
+  switchWidgetTab('newsletter', document.getElementById('wtab-newsletter-btn'));
 }
 
 async function testOnboardingWidget() {
