@@ -582,7 +582,11 @@ export default async function handler(req, res) {
     // 'substack' and 'confirmed_fit' were removed (Aug 2026) - any existing
     // rows were migrated to 'discovered' via a one-off script, not here, so
     // this list intentionally no longer accepts either as a set_status value.
-    const ALLOWED_STATUSES = ['discovered', 'to_contact', 'emailed', 'followed_up_1', 'followed_up_2', 'followed_up_3', 'important', 'contact_later', 'partner', 'openintro_partner', 'products_partner', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit', 'no_email_found'];
+    // 'large_publisher' added 2026-08-25 (see reject-unfit-todo.js) - a
+    // genuine blog/publication that's just too large/well-known to be a
+    // near-term outreach target, kept visible in its own bucket rather than
+    // getting silently lumped into 'not_a_fit' with actual junk.
+    const ALLOWED_STATUSES = ['discovered', 'to_contact', 'emailed', 'followed_up_1', 'followed_up_2', 'followed_up_3', 'important', 'contact_later', 'partner', 'openintro_partner', 'products_partner', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit', 'no_email_found', 'large_publisher'];
 
     // Manually-added leads (the "Create a lead" button). A helper's own
     // manually-added lead is auto-assigned to them (otherwise they'd
@@ -635,7 +639,7 @@ export default async function handler(req, res) {
         await sql`UPDATE candidate_publishers SET next_followup_at = ${value || null} WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
       } else if (action === 'set_status') {
         if (!ALLOWED_STATUSES.includes(value)) return res.status(400).json({ error: 'invalid status' });
-        const resolved = ['replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit', 'no_email_found'].includes(value);
+        const resolved = ['replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit', 'no_email_found', 'large_publisher'].includes(value);
         if (resolved) {
           await sql`UPDATE candidate_publishers SET status = ${value}, next_followup_at = NULL WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
         } else {

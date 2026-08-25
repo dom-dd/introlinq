@@ -67,13 +67,27 @@ async function main() {
   const idx = Object.fromEntries(header.map((h, i) => [h, i]));
   const dataRows = rows.slice(1).filter((r) => r.length === header.length);
 
-  const seen = new Map(); // domain -> row (first occurrence wins within this CSV)
+  // When multiple rows share a domain (e.g. two contacts at the same company),
+  // keep the one with a usable email over one without, and among those the
+  // most complete contact (LinkedIn/social/name filled in) rather than
+  // whichever happened to appear first in the file.
+  function contactScore(r) {
+    const has = (col) => (r[idx[col]] || '').trim() ? 1 : 0;
+    return has('Email') * 2 + has('Person Linkedin Url') + has('Company Linkedin Url') +
+      has('Twitter Url') + has('Facebook Url') + (has('First Name') || has('Last Name'));
+  }
+
+  const seen = new Map(); // domain -> row (best contact for this domain within this CSV)
   let noDomain = 0, dupesInFile = 0;
 
   for (const r of dataRows) {
     const domain = domainFromUrl(r[idx['Website']]);
     if (!domain) { noDomain++; continue; }
-    if (seen.has(domain)) { dupesInFile++; continue; }
+    if (seen.has(domain)) {
+      dupesInFile++;
+      if (contactScore(r) > contactScore(seen.get(domain))) seen.set(domain, r);
+      continue;
+    }
     seen.set(domain, r);
   }
 
