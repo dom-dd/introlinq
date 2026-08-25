@@ -109,7 +109,7 @@ Use "reject" only when you have real, specific evidence from the homepage text. 
       },
       body: JSON.stringify({
         model: 'claude-sonnet-5',
-        max_tokens: 300,
+        max_tokens: 1024,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
@@ -118,7 +118,11 @@ Use "reject" only when you have real, specific evidence from the homepage text. 
       throw new Error(`Anthropic API error ${response.status}: ${body.slice(0, 200)}`);
     }
     const data = await response.json();
-    const text = data.content?.[0]?.text || '';
+    // Extended thinking means content[0] may be a {type:"thinking"} block
+    // rather than the text answer - find the actual text block instead of
+    // assuming index 0.
+    const textBlock = (data.content || []).find((b) => b.type === 'text');
+    const text = textBlock?.text || '';
     if (!text) return null; // empty response - caller retries or gives up
     let parsed;
     try {
