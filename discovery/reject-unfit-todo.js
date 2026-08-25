@@ -3,16 +3,24 @@
 // vendors, directories, and dead sites accumulate there forever alongside
 // genuine publisher leads. Runs across ALL discovered leads regardless of
 // lead_type/team_size, checking real homepage content (a domain/snippet
-// alone isn't enough to judge this reliably), and acts in three directions:
+// alone isn't enough to judge this reliably), and acts in four directions:
 //
-//   - Not a publication at all (vendor, directory, competitor marketplace,
-//     dead/parked, wrong language) -> status='not_a_fit'.
+//   - Not a publication at all (vendor, directory, dead/parked, wrong
+//     language) -> status='not_a_fit'.
 //   - A genuine blog/publication, but a large or well-known outfit that
 //     would never embed a third-party widget today -> status=
 //     'large_publisher'. Previously these were rejected into 'not_a_fit'
 //     alongside actual junk, which just lost them - splitting this out
 //     keeps them visible in their own "Larger publishers" section instead,
 //     in case that ever changes. (2026-08-25)
+//   - Not a blog at all, but a marketplace/platform booking MULTIPLE
+//     outside experts (a Clarity.fm/GrowthMentor-style advisor marketplace,
+//     a yoga-teacher booking platform, a wedding vendor marketplace) ->
+//     status='partner' ("IntroLinq partners"). Originally lumped in with
+//     'not_a_fit' as a "competing marketplace" - but these aren't
+//     competitors to reject, they're potential commission partners whose
+//     experts IntroLinq could list too. (2026-08-26, after wedmegood.com
+//     and liveyogateachers.com were caught misclassified as rejects)
 //   - A genuine small/solo publication -> left in 'discovered' ("Untouched"),
 //     same as before, just with category refined from real page content
 //     instead of the original search snippet.
@@ -67,15 +75,17 @@ async function judgeOne(row) {
 
   const prompt = `Judge whether this lead is worth outreach for IntroLinq - a widget that scans a blog's articles and inserts links to bookable, vetted experts (any field: business, finance, health, music, art, real estate, etc.), splitting the booking commission 50/50 with the site. The site needs to be willing and able to embed a third-party widget on its own pages.
 
-Three possible verdicts:
+Four possible verdicts:
 
 "fit_small" - a genuinely independent blog/publication (solo or small team) that publishes real articles for readers, where the content itself is the product. This is who we actually reach out to.
 
 "fit_large" - ALSO a genuine blog/publication with real articles for readers, but a large, recognizable, or well-known outfit (big media company, large editorial team, a brand whose blog exists alongside serious other business). Still real content, just not a plausible near-term outreach target - don't lump this in with "reject" below, it's a different thing entirely from junk.
 
-"reject" - not actually a fit at all, for reasons that have nothing to do with size:
+"partner" - NOT a blog at all, but a marketplace/platform whose core product connects people with MULTIPLE outside experts/professionals they can book (e.g. a Clarity.fm/GrowthMentor-style advisor marketplace, a booking platform for yoga teachers, a wedding vendor marketplace). This is a potential business partner, not a competitor or junk - IntroLinq could list their experts too, on commission - so it must NOT be rejected. Only use this when the site itself is the marketplace/aggregator of multiple bookable providers, not a single person/company selling their own services.
+
+"reject" - not actually a fit at all, for reasons that have nothing to do with size, and not a multi-expert marketplace either:
 - A company selling a specific product/service (SaaS, agency, consultancy, e-commerce) where any blog content exists to market that product - "our platform", pricing, a product demo, a company "about us" rather than a person/small collective.
-- A competing expert/advisor marketplace or booking product (e.g. a Clarity.fm/GrowthMentor-style site).
+- A single person or company's own service/coaching/consulting business (even if they call themselves a "partnership" or take bookings) - this is a solo provider marketing themselves, not a marketplace of multiple providers, so it's "reject" not "partner".
 - Not actually a blog/publication at all: directory, job board, forum, e-commerce store, SaaS landing page with no articles, parked/expired domain, or a page that's broken/unreachable/redirects somewhere unrelated.
 - Not in a language or region where this would plausibly work (adult content, spam, unrelated to any legitimate niche).
 
@@ -85,9 +95,9 @@ Domain: ${row.domain}
 Homepage text: "${pageText}"
 
 Respond with ONLY valid JSON, no other text:
-{"verdict": "fit_small"|"fit_large"|"reject"|"unsure", "confidence": "high"|"low", "category": "one of: ${CATEGORIES.map((c) => `"${c}"`).join(', ')}"|null, "reason": "one short sentence"}
+{"verdict": "fit_small"|"fit_large"|"partner"|"reject"|"unsure", "confidence": "high"|"low", "category": "one of: ${CATEGORIES.map((c) => `"${c}"`).join(', ')}"|null, "reason": "one short sentence"}
 
-Use "reject" only when you have real, specific evidence from the homepage text. Use "fit_small"/"fit_large" only when you have real, specific evidence this is a genuine publication, and pick "category" (best single guess, required whenever verdict is fit_small or fit_large, otherwise null) based on what the content is actually about. Otherwise "unsure" - a lead left alone costs nothing, a good lead wrongly closed or a bad one wrongly contacted both cost real time.`;
+Use "reject" only when you have real, specific evidence from the homepage text. Use "fit_small"/"fit_large" only when you have real, specific evidence this is a genuine publication, and pick "category" (best single guess, required whenever verdict is fit_small or fit_large, otherwise null) based on what the content is actually about. Use "partner" only when the site is clearly a marketplace of multiple bookable providers, not a single business. Otherwise "unsure" - a lead left alone costs nothing, a good lead wrongly closed or a bad one wrongly contacted both cost real time.`;
 
   // Root-caused during dry-run testing 2026-08-25: some leads (avc.com,
   // paulgraham.com, etc.) deterministically came back with content=[{type:
@@ -143,7 +153,7 @@ Use "reject" only when you have real, specific evidence from the homepage text. 
     if (!parsed) {
       return { verdict: 'unsure', confidence: 'low', reason: 'empty/unparseable model response after retry' };
     }
-    const verdict = ['fit_small', 'fit_large', 'reject', 'unsure'].includes(parsed.verdict) ? parsed.verdict : 'unsure';
+    const verdict = ['fit_small', 'fit_large', 'partner', 'reject', 'unsure'].includes(parsed.verdict) ? parsed.verdict : 'unsure';
     const confidence = ['high', 'low'].includes(parsed.confidence) ? parsed.confidence : 'low';
     const category = CATEGORIES.includes(parsed.category) ? parsed.category : null;
     return { verdict, confidence, category, reason: parsed.reason || '' };
@@ -177,7 +187,7 @@ async function main() {
   if (LIMIT) rows = rows.slice(0, LIMIT);
   console.log(`Reviewing ${rows.length} "Not yet contacted" lead(s), concurrency ${CONCURRENCY}${DRY_RUN ? ' [DRY RUN]' : ''}...`);
 
-  let rejected = 0, confirmedSmall = 0, confirmedLarge = 0, unsure = 0, processedCount = 0;
+  let rejected = 0, confirmedSmall = 0, confirmedLarge = 0, confirmedPartner = 0, unsure = 0, processedCount = 0;
 
   await runPool(rows, async (row) => {
     const result = await judgeOne(row);
@@ -191,6 +201,16 @@ async function main() {
         await sql`
           UPDATE candidate_publishers
           SET status = 'not_a_fit', outreach_notes = COALESCE(NULLIF(outreach_notes, ''), ${'Auto-reviewed: ' + result.reason})
+          WHERE id = ${row.id}
+        `;
+      }
+    } else if (result.verdict === 'partner' && actOnIt) {
+      confirmedPartner++;
+      console.log(`[${processedCount}/${rows.length}] ${row.domain}: PARTNER - ${result.reason}`);
+      if (!DRY_RUN) {
+        await sql`
+          UPDATE candidate_publishers
+          SET status = 'partner', outreach_notes = COALESCE(NULLIF(outreach_notes, ''), ${'Auto-reviewed: ' + result.reason})
           WHERE id = ${row.id}
         `;
       }
@@ -215,7 +235,7 @@ async function main() {
     }
   }, CONCURRENCY);
 
-  console.log(`\nDone. ${rejected} rejected as not a fit, ${confirmedSmall} confirmed small/independent fits (left in Untouched), ${confirmedLarge} confirmed genuine but large (-> Larger publishers), ${unsure} left as-is (unsure/unreachable).`);
+  console.log(`\nDone. ${rejected} rejected as not a fit, ${confirmedSmall} confirmed small/independent fits (left in Untouched), ${confirmedLarge} confirmed genuine but large (-> Larger publishers), ${confirmedPartner} confirmed multi-expert marketplaces (-> IntroLinq partners), ${unsure} left as-is (unsure/unreachable).`);
 }
 
 main().catch((err) => {
