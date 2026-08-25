@@ -249,12 +249,24 @@ export default async function handler(req, res) {
 
     const sql = neon(process.env.DATABASE_URL);
     const started = Date.now();
-    const DAILY_TARGET = 50;
-    // api/admin.js is capped at maxDuration:60 (vercel.json). Each SerpAPI call
-    // now times out at 10s (see serpapi.js), so budget stays low enough that
-    // one more in-flight query after the check trips still finishes with
-    // margin to spare before Vercel kills the function.
-    const TIME_BUDGET_MS = 35000;
+    // Raised from 50 (2026-08-25) - was never actually the binding
+    // constraint (the sequential loop below hit TIME_BUDGET_MS first every
+    // day, per real observed daily counts of 16-54), but now that queries
+    // run CONCURRENCY-wide instead of one at a time, a run can plausibly
+    // get here first. Kept as a backstop, not the expected limiter.
+    const DAILY_TARGET = 200;
+    // api/admin.js is capped at maxDuration:60 (vercel.json). Raised from
+    // 35000 now that queries run concurrently rather than serially - still
+    // leaves a full SerpAPI timeout (10s, see serpapi.js) of margin below
+    // the hard 60s cap for in-flight work to finish after the check trips.
+    const TIME_BUDGET_MS = 50000;
+    // No SerpAPI cost concern (2026-08-25) - queries are I/O-bound
+    // (waiting on SerpAPI + DB round-trips), so running several at once
+    // multiplies real throughput within the same wall-clock budget instead
+    // of just doing the same handful of queries faster. This was the
+    // actual bottleneck behind the ~4-6 queries/day observed previously,
+    // not DAILY_TARGET or SerpAPI spend.
+    const CONCURRENCY = 8;
 
     await sql`CREATE TABLE IF NOT EXISTS candidate_publishers (
       id SERIAL PRIMARY KEY,
@@ -302,21 +314,39 @@ export default async function handler(req, res) {
       }
     }
 
+    // Self-heals any rows a crashed/timed-out previous invocation left
+    // stuck in 'running' (claimed but never resolved to done/failed) -
+    // without this, a mid-batch crash would permanently strand those
+    // queries, since only 'pending' rows are ever eligible to be claimed.
+    await sql`UPDATE discovery_queries SET status = 'pending' WHERE status = 'running' AND run_at < NOW() - INTERVAL '10 minutes'`;
+
     let added = 0;
     let queriesRun = 0;
     let stopReason = 'daily target reached';
+    let poolExhausted = false;
 
-    while (added < DAILY_TARGET) {
-      if (Date.now() - started > TIME_BUDGET_MS) { stopReason = 'time budget reached'; break; }
-
-      const [query] = await sql`
-        SELECT id, query FROM discovery_queries
-        WHERE status = 'pending'
-        ORDER BY (category = ${PRIORITY_CATEGORY}) DESC, id ASC
-        LIMIT 1
+    // Atomically claims and marks ONE pending query as 'running' in a
+    // single statement - FOR UPDATE SKIP LOCKED means concurrent workers
+    // calling this at the same time each get a DIFFERENT row instead of
+    // racing to grab the same one, without needing an explicit transaction
+    // block (this whole claim is one compound statement).
+    async function claimNextQuery() {
+      const [row] = await sql`
+        UPDATE discovery_queries
+        SET status = 'running', run_at = NOW()
+        WHERE id = (
+          SELECT id FROM discovery_queries
+          WHERE status = 'pending'
+          ORDER BY (category = ${PRIORITY_CATEGORY}) DESC, id ASC
+          FOR UPDATE SKIP LOCKED
+          LIMIT 1
+        )
+        RETURNING id, query
       `;
-      if (!query) { stopReason = 'query pool exhausted'; break; }
+      return row || null;
+    }
 
+    async function processQuery(query) {
       try {
         const results = await serpSearch(query.query);
         const candidates = extractCandidates(results);
@@ -335,17 +365,34 @@ export default async function handler(req, res) {
           SET status = 'done', results_count = ${results.length}, new_domains_count = ${newCount}, run_at = NOW()
           WHERE id = ${query.id}
         `;
-        added += newCount;
+        return newCount;
       } catch (err) {
         await sql`
           UPDATE discovery_queries
           SET status = 'failed', error = ${String(err.message || err).slice(0, 500)}, run_at = NOW()
           WHERE id = ${query.id}
         `;
+        return 0;
       }
-      queriesRun++;
-      await new Promise((resolve) => setTimeout(resolve, 500));
     }
+
+    // CONCURRENCY workers each loop independently, claiming and processing
+    // one query at a time, until the time budget/DAILY_TARGET trips or the
+    // pool empties out. `added`/`queriesRun` are safe to mutate from
+    // multiple workers without a lock - JS is single-threaded, so each
+    // `added += newCount` runs to completion before the next `await` ever
+    // yields control elsewhere.
+    async function worker() {
+      while (added < DAILY_TARGET && !poolExhausted) {
+        if (Date.now() - started > TIME_BUDGET_MS) { stopReason = 'time budget reached'; return; }
+        const query = await claimNextQuery();
+        if (!query) { poolExhausted = true; stopReason = 'query pool exhausted'; return; }
+        added += await processQuery(query);
+        queriesRun++;
+      }
+    }
+
+    await Promise.all(Array.from({ length: CONCURRENCY }, worker));
 
     return res.status(200).json({ ok: true, added, queriesRun, stopReason, elapsedMs: Date.now() - started });
   }

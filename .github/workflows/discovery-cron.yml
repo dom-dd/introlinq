@@ -7,10 +7,12 @@ name: Daily publisher discovery
 # api/admin.js function (resource=run-discovery) rather than a new file,
 # triggered by GitHub Actions' free scheduler rather than Vercel's own cron.
 #
-# Two schedules: 06:00 UTC is the real daily run. 12:00 UTC is a same-day
-# retry slot - it only calls the endpoint if the 06:00 run didn't already
-# succeed today, so a normal day makes exactly one SerpAPI-spending request,
-# not two.
+# Two real daily runs, both unconditional - 06:00 and 12:00 UTC. Previously
+# 12:00 only fired as a same-day retry if 06:00 had failed (kept SerpAPI
+# spend to one run/day), but with no SerpAPI budget concern (2026-08-25) and
+# run-discovery now processing queries CONCURRENCY-wide instead of one at a
+# time (see api/admin.js), a genuine second run is worth more than holding
+# it in reserve as a failure backstop.
 #
 # After discovery, this also runs discovery/classify.js directly on the
 # runner (not through api/admin.js - that function is already at Vercel's
@@ -29,33 +31,8 @@ on:
 jobs:
   trigger-discovery:
     runs-on: ubuntu-latest
-    permissions:
-      actions: read
     steps:
-      - name: Decide whether this slot needs to run
-        id: gate
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ "${{ github.event.schedule }}" != "0 12 * * *" ]; then
-            echo "Primary slot (or manual trigger) - always runs."
-            echo "should_run=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          today=$(date -u +%Y-%m-%d)
-          already_ok=$(gh run list --repo "${{ github.repository }}" --workflow "${{ github.workflow }}" \
-            --json conclusion,createdAt,event \
-            --jq "[.[] | select(.event==\"schedule\" and (.createdAt | startswith(\"$today\")) and .conclusion==\"success\")] | length")
-          if [ "${already_ok:-0}" -gt 0 ]; then
-            echo "06:00 run already succeeded today - skipping retry slot."
-            echo "should_run=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "06:00 run did not succeed today - using the retry slot."
-            echo "should_run=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Call discovery endpoint
-        if: steps.gate.outputs.should_run == 'true'
         run: |
           status=$(curl -s -o response.json -w "%{http_code}" --max-time 75 \
             -X GET "https://www.introlinq.com/api/admin?resource=run-discovery" \
@@ -71,21 +48,21 @@ jobs:
       # directly to Neon/Anthropic/Apollo, not through Vercel, so a Vercel-side
       # failure has no bearing on whether there's a backlog worth processing.
       - name: Checkout
-        if: always() && steps.gate.outputs.should_run == 'true'
+        if: always()
         uses: actions/checkout@v4
 
       - name: Set up Node
-        if: always() && steps.gate.outputs.should_run == 'true'
+        if: always()
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Install dependencies
-        if: always() && steps.gate.outputs.should_run == 'true'
+        if: always()
         run: npm ci
 
       - name: Classify + enrich publisher leads
-        if: always() && steps.gate.outputs.should_run == 'true'
+        if: always()
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
