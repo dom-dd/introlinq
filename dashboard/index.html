@@ -661,7 +661,7 @@ tr:last-child td{border-bottom:none}
     <div class="tab-panel" id="tab-widget">
 
       <div class="wtab-nav">
-        <button class="wtab-btn active" onclick="switchWidgetTab('text',this)">Text Widget</button>
+        <button class="wtab-btn active" onclick="switchWidgetTab('text',this)">AI Text Widget</button>
         <button class="wtab-btn" onclick="switchWidgetTab('carousel',this)">Expert Carousel</button>
         <button class="wtab-btn" onclick="switchWidgetTab('board',this)">Expert Board</button>
         <button class="wtab-btn" id="wtab-newsletter-btn" onclick="switchWidgetTab('newsletter',this)">Newsletter Links</button>
@@ -671,7 +671,7 @@ tr:last-child td{border-bottom:none}
       <div class="wtab-panel active" id="wtab-text">
         <div class="wpreview">
           <div class="wpreview-desc">
-            <div class="wpreview-desc-label">Text Widget</div>
+            <div class="wpreview-desc-label">AI Text Widget</div>
             <div class="wpreview-desc-text">Highlights phrases in your articles and shows a matching expert popup when readers hover.</div>
             <div class="wpreview-desc-sub">Works automatically - no article edits needed. One snippet in your blog template is all it takes.</div>
           </div>
@@ -702,7 +702,7 @@ tr:last-child td{border-bottom:none}
         <!-- Install -->
         <div class="section">
           <div class="section-header">
-            <div class="section-title">Install Text Widget</div>
+            <div class="section-title">Install AI Text Widget</div>
             <div class="section-sub">Add to your blog template once - works on every article automatically</div>
           </div>
           <div class="etab-group">
@@ -2600,7 +2600,7 @@ const ONBOARDING_UNSUPPORTED = {
 // verbatim from the Widgets tab's own wpreview-desc-text copy (see
 // switchWidgetTab) so the two don't drift apart.
 const ONBOARDING_WIDGETS = {
-  text: { label: 'Text Widget', file: 'widget.js', badge: '#3d7a5f', letter: 'T', desc: 'Highlights phrases in your articles and shows a matching expert popup when readers hover.' },
+  text: { label: 'AI Text Widget', file: 'widget.js', badge: '#3d7a5f', letter: 'T', desc: 'Highlights phrases in your articles and shows a matching expert popup when readers hover.' },
   carousel: { label: 'Expert Carousel', file: 'carousel.js', badge: '#e6a820', letter: 'C', desc: 'A scrollable row of expert cards - drop it at the end of any article or page.' },
   board: { label: 'Expert Board', file: 'expertboard.js', badge: '#4a4a6a', letter: 'B', desc: 'A full browsable expert directory with search and topic filters.' },
   manual: { label: 'Manual Entry', file: null, badge: '#21759b', letter: 'M', desc: 'Search your available experts and copy a tracked link to paste into a newsletter by hand. No install needed - works on Substack and Medium too.' },
@@ -2663,7 +2663,14 @@ const ONBOARDING_WIDGET_PREVIEWS = {
     </div>
   `,
   manual: `
-    <div class="prev-nl-row" style="margin-bottom:6px"><div class="prev-board-avatar"></div><div style="flex:1"><div class="prev-board-name" style="width:40%"></div><div class="prev-board-bio" style="width:70%;margin-top:3px"></div></div><div class="prev-nl-linkbtn"><svg class="prev-nl-icon-link" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><svg class="prev-nl-icon-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+    <a class="prev-nl-row" href="https://open-intro.com/expert/ben-brabyn" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="margin-bottom:6px;pointer-events:auto;text-decoration:none;color:inherit;cursor:pointer">
+      <img src="https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/f1733228194839x616100261245259900/BenBrabyn.png" style="width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0" alt="">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:8px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Ben Brabyn</div>
+        <div class="prev-board-bio" style="width:70%;margin-top:3px"></div>
+      </div>
+      <div class="prev-nl-linkbtn"><svg class="prev-nl-icon-link" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><svg class="prev-nl-icon-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+    </a>
     <div class="prev-nl-row" style="margin-bottom:0"><div class="prev-board-avatar"></div><div style="flex:1"><div class="prev-board-name" style="width:32%"></div><div class="prev-board-bio" style="width:58%;margin-top:3px"></div></div><div class="prev-nl-linkbtn"><svg class="prev-nl-icon-link" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><svg class="prev-nl-icon-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
   `,
 };
@@ -2733,14 +2740,14 @@ function renderOnboardingWidgetPicker(platformId) {
       </div>
       <div class="widget-card-desc">${esc(w.desc)}</div>
       <div class="widget-card-preview">${ONBOARDING_WIDGET_PREVIEWS[id]}</div>
-      ${disabled ? `<span class="widget-card-tag unavailable">Not available on ${esc(platformLabel)}</span>` : `<button class="widget-card-example-link" onclick="openWidgetExample('${platformId}','${id}',event)">See example →</button>`}
+      ${disabled ? `<span class="widget-card-tag unavailable">Not available on ${esc(platformLabel)}</span>` : (id === 'manual' ? '' : `<button class="widget-card-example-link" onclick="openWidgetExample('${platformId}','${id}',event)">See example →</button>`)}
       ${recommended ? `<span class="widget-card-tag">Recommended for ${esc(platformLabel)}</span>` : ''}
     </div>
   `;
   }).join('');
   document.getElementById('install-tab-body').innerHTML = `
     <button class="onboarding-back" onclick="renderOnboardingPicker()">← Choose a different platform</button>
-    ${isUnsupported ? `<div class="onboarding-note">${esc(platformLabel)} doesn't allow the kind of embed the Text Widget, Carousel, or Expert Board need (${platformId === 'substack' ? 'Substack blocks custom HTML/scripts' : 'Medium has no support for custom code at all'}) - but Manual Entry works today, no install required. We've noted you're on ${esc(platformLabel)}, so you'll be first to hear if official platform support happens.</div>` : ''}
+    ${isUnsupported ? `<div class="onboarding-note">${esc(platformLabel)} doesn't allow the kind of embed the AI Text Widget, Carousel, or Expert Board need (${platformId === 'substack' ? 'Substack blocks custom HTML/scripts' : 'Medium has no support for custom code at all'}) - but Manual Entry works today, no install required. We've noted you're on ${esc(platformLabel)}, so you'll be first to hear if official platform support happens.</div>` : ''}
     <div class="onboarding-lede">What would you like to install first? You can add the others later from the Widgets tab.</div>
     <div class="widget-grid">${cards}</div>
     <div style="text-align:center;margin-top:1.5rem"><button class="onboarding-later" onclick="goToOverviewTab()">I'll do this later</button></div>
@@ -2936,15 +2943,15 @@ async function testOnboardingWidget() {
 // running live against 'demo-homepage' (IntroLinq's own public demo
 // publisher, 92 real vetted experts, already used on introlinq.com's own
 // site - see demo/introlinq-experts.html), not a mockup or screenshot.
-// Text Widget can't just run live on this arbitrary dashboard page though -
+// AI Text Widget can't just run live on this arbitrary dashboard page though -
 // match.js's cache is keyed by page_url, and this page was never scanned,
 // so a genuine live run would show nothing on this first "visit" (see the
 // whole onboarding conversation this was built from). widget.js has a
 // built-in hook for exactly this - window.IL_PRELOADED_MATCHES - documented
-// in its own source as "Demo/testing path only". Uses hand-written
-// placeholder content (Jane Doe/Startup Mentor, matching this same file's
-// own step-visual mockup a few hundred lines up), not a real customer's
-// article or a real expert's identity pulled out of context.
+// in its own source as "Demo/testing path only". Article text is
+// hand-written placeholder copy, but the matched expert (Ben Brabyn) is a
+// real OpenIntro expert with his real photo/bio/booking link - Dom asked
+// for a genuine expert here rather than an invented name (2026-08-26).
 const WIDGET_EXAMPLE_INFO = {
   text: {
     points: [
@@ -2967,36 +2974,29 @@ const WIDGET_EXAMPLE_INFO = {
       "Works great as a dedicated \"Meet our experts\" page",
     ],
   },
-  manual: {
-    points: [
-      'No install needed - works on Substack, Medium, or anywhere script embeds are blocked',
-      'Every link is tracked the same way as your other widgets',
-      'Search by name, topic, or role to find the right expert fast',
-    ],
-  },
 };
 
+// Manual Entry has no separate "See example" trigger - its own card preview
+// (see ONBOARDING_WIDGET_PREVIEWS.manual) IS the example: the first row is a
+// real, clickable link straight to a real OpenIntro expert page, not a
+// mockup someone has to open a modal to understand. So this only ever
+// fires for the three script-embed widgets.
 function openWidgetExample(platformId, widgetId, ev) {
   ev.stopPropagation();
   const w = ONBOARDING_WIDGETS[widgetId];
   const info = WIDGET_EXAMPLE_INFO[widgetId];
+  const demoHeight = widgetId === 'text' ? 'min-height:220px' : 'min-height:170px';
 
   document.getElementById('widget-example-title').textContent = w.label + ' - see it in action';
-
-  const demoHeight = widgetId === 'text' ? 'min-height:220px' : widgetId === 'manual' ? 'height:150px' : 'min-height:170px';
-  const demoInner = widgetId === 'manual'
-    ? `<div style="padding:1rem">${ONBOARDING_WIDGET_PREVIEWS.manual}</div>`
-    : `<div id="widget-example-live" style="padding:1.25rem"></div>`;
-
   document.getElementById('widget-example-modal-body').innerHTML = `
     <p style="font-size:0.85rem;color:var(--ink-soft);margin-bottom:1rem">${esc(w.desc)}</p>
-    <div class="widget-example-demo" style="${demoHeight}">${demoInner}</div>
+    <div class="widget-example-demo" style="${demoHeight}"><div id="widget-example-live" style="padding:1.25rem"></div></div>
     <div class="widget-example-points-label">What you can customize</div>
     <ul class="widget-example-points">${info.points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>
   `;
 
   const ctaBtn = document.getElementById('widget-example-cta');
-  ctaBtn.textContent = widgetId === 'manual' ? 'Use Manual Entry' : `I want to install ${w.label} on my site`;
+  ctaBtn.textContent = `I want to install ${w.label} on my site`;
   ctaBtn.onclick = function () {
     closeWidgetExampleModal();
     selectOnboardingWidget(platformId, widgetId);
@@ -3004,10 +3004,10 @@ function openWidgetExample(platformId, widgetId, ev) {
 
   document.getElementById('widget-example-modal').classList.add('open');
 
-  if (widgetId === 'carousel' || widgetId === 'board') {
-    injectLiveWidgetScript(widgetId === 'carousel' ? 'carousel.js' : 'expertboard.js');
-  } else if (widgetId === 'text') {
+  if (widgetId === 'text') {
     injectLiveTextWidgetDemo();
+  } else {
+    injectLiveWidgetScript(widgetId === 'carousel' ? 'carousel.js' : 'expertboard.js');
   }
 }
 
@@ -3050,8 +3050,8 @@ function injectLiveTextWidgetDemo() {
       hook: 'Raising a seed round?',
       cta: 'Get funding advice →',
       options: [{
-        expert: { id: 0, name: 'Jane Doe', position: 'Startup Mentor', photo_url: '', booking_url: 'https://www.introlinq.com' },
-        reason: 'Has raised three rounds herself and can walk you through exactly what investors look for.',
+        expert: { id: 11, name: 'Ben Brabyn', position: 'Director', company: 'Amitypath', photo_url: 'https://c82085ea20c0850da1ca0fcc4a1b76ec.cdn.bubble.io/f1733228194839x616100261245259900/BenBrabyn.png', booking_url: 'https://open-intro.com/expert/ben-brabyn' },
+        reason: 'Founded and sold an online payments business, then built the world’s largest fintech cluster at Level39 - he knows exactly what investors look for.',
       }],
     }],
     config: { color: '#e6a820', accent: '#e6a820', size: 'medium', highlightStyle: 'fill', discoveryCue: false },
@@ -3073,7 +3073,7 @@ function injectLiveTextWidgetDemo() {
 
 <!-- Widget example modal (onboarding "See example") -->
 <div class="modal-overlay" id="widget-example-modal" onclick="if(event.target===this)closeWidgetExampleModal()">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="widget-example-title" style="width:min(560px,90vw);max-height:88vh">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="widget-example-title" style="width:min(860px,92vw);max-height:88vh">
     <div class="modal-head">
       <div class="modal-title" id="widget-example-title">See it in action</div>
       <button class="modal-close" onclick="closeWidgetExampleModal()" aria-label="Close">✕</button>
