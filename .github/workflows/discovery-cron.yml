@@ -61,6 +61,22 @@ jobs:
         if: always()
         run: npm ci
 
+      # Added 2026-08-26 - SerpAPI's free keyword search plateaus in the low
+      # thousands (bounded by our finite topic list + what Google indexes for
+      # those exact phrases); Apollo's own database is a much larger pool of
+      # real companies, so it's the actual scale lever for volume, at a real
+      # per-lead cost. 25 credits x 2 runs/day (~1500/month) is deliberately
+      # conservative - this shares a 3.1k/month credit pool with OpenIntro's
+      # own usage and classify.js's enrichment cascade below, so it's sized
+      # to sustain daily volume without crowding either out. Tune --credits
+      # here (or drop this step) if the monthly balance runs tight.
+      - name: Discover via Apollo search
+        if: always()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          APOLLO_API_KEY: ${{ secrets.APOLLO_API_KEY }}
+        run: node discovery/apollo-search.js --category "Business & Entrepreneurship" --credits 25
+
       - name: Classify + enrich publisher leads
         if: always()
         env:
