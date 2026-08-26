@@ -87,6 +87,15 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .widget-card.recommended{border-color:var(--sage);background:var(--sage-light)}
 .widget-card-tag{font-size:0.625rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--sage);padding:0.15rem 0.55rem;border-radius:100px;align-self:flex-start}
 .widget-card-tag.unavailable{background:var(--ink-muted)}
+.widget-card-example-link{background:none;border:none;color:var(--sage);font-size:0.75rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;padding:0;text-align:left;text-decoration:underline;margin-top:0.125rem}
+.widget-card-example-link:hover{color:var(--ink)}
+.widget-example-demo{background:var(--cream);border:1px solid var(--border);border-radius:10px;margin-bottom:1.25rem;overflow:auto}
+.widget-example-points-label{font-size:0.7rem;font-weight:700;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:0.5rem}
+.widget-example-points{list-style:none;display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1.5rem}
+.widget-example-points li{font-size:0.8125rem;color:var(--ink-soft);line-height:1.5;padding-left:1.25rem;position:relative}
+.widget-example-points li::before{content:"✓";position:absolute;left:0;color:var(--sage);font-weight:700}
+.widget-example-cta{display:block;width:100%;background:var(--ink);color:#fff;border:none;padding:0.8rem 1.5rem;border-radius:100px;font-size:0.875rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;text-align:center;transition:opacity .15s}
+.widget-example-cta:hover{opacity:0.85}
 /* Compact reuse of the Widgets tab's own .prev-* preview mockups (same
    markup/classes, see #wtab-text etc.) - a fixed height rather than
    .wpreview's min-height:148px since these sit inside an already-bordered
@@ -2717,16 +2726,16 @@ function renderOnboardingWidgetPicker(platformId) {
     const disabled = isUnsupported && id !== 'manual';
     const recommended = isUnsupported && id === 'manual';
     return `
-    <button class="widget-card${disabled ? ' disabled' : ''}${recommended ? ' recommended' : ''}" ${disabled ? 'disabled' : `onclick="selectOnboardingWidget('${platformId}','${id}')"`}>
+    <div class="widget-card${disabled ? ' disabled' : ''}${recommended ? ' recommended' : ''}" ${disabled ? '' : `role="button" tabindex="0" onclick="selectOnboardingWidget('${platformId}','${id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectOnboardingWidget('${platformId}','${id}')}"`}>
       <div class="widget-card-top">
         <div class="platform-badge" style="background:${w.badge};width:28px;height:28px;font-size:0.75rem">${w.letter}</div>
         <div class="widget-card-label">${esc(w.label)}</div>
       </div>
       <div class="widget-card-desc">${esc(w.desc)}</div>
       <div class="widget-card-preview">${ONBOARDING_WIDGET_PREVIEWS[id]}</div>
-      ${disabled ? `<span class="widget-card-tag unavailable">Not available on ${esc(platformLabel)}</span>` : ''}
+      ${disabled ? `<span class="widget-card-tag unavailable">Not available on ${esc(platformLabel)}</span>` : `<button class="widget-card-example-link" onclick="openWidgetExample('${platformId}','${id}',event)">See example →</button>`}
       ${recommended ? `<span class="widget-card-tag">Recommended for ${esc(platformLabel)}</span>` : ''}
-    </button>
+    </div>
   `;
   }).join('');
   document.getElementById('install-tab-body').innerHTML = `
@@ -2922,6 +2931,133 @@ async function testOnboardingWidget() {
     result.innerHTML = `Couldn't verify - make sure your site has a homepage domain on file, or email <a href="mailto:hello@introlinq.com">hello@introlinq.com</a>.`;
   }
 }
+
+// "See example" modal - shows the REAL widget.js/carousel.js/expertboard.js
+// running live against 'demo-homepage' (IntroLinq's own public demo
+// publisher, 92 real vetted experts, already used on introlinq.com's own
+// site - see demo/introlinq-experts.html), not a mockup or screenshot.
+// Text Widget can't just run live on this arbitrary dashboard page though -
+// match.js's cache is keyed by page_url, and this page was never scanned,
+// so a genuine live run would show nothing on this first "visit" (see the
+// whole onboarding conversation this was built from). widget.js has a
+// built-in hook for exactly this - window.IL_PRELOADED_MATCHES - documented
+// in its own source as "Demo/testing path only". Uses hand-written
+// placeholder content (Jane Doe/Startup Mentor, matching this same file's
+// own step-visual mockup a few hundred lines up), not a real customer's
+// article or a real expert's identity pulled out of context.
+const WIDGET_EXAMPLE_INFO = {
+  text: {
+    points: [
+      'Choose how many experts can appear per article, and how closely a phrase needs to match',
+      'Pick a highlight style (tinted, dotted underline, or solid underline) and match the colors to your site',
+      'Turn the discovery-cue animation on or off',
+    ],
+  },
+  carousel: {
+    points: [
+      'Set your own heading above the carousel',
+      'Match the button color to your brand',
+      'Place it anywhere - end of an article, a sidebar, a footer',
+    ],
+  },
+  board: {
+    points: [
+      'Built-in search and topic filters for readers',
+      'Match link, button, and heading colors to your site',
+      "Works great as a dedicated \"Meet our experts\" page",
+    ],
+  },
+  manual: {
+    points: [
+      'No install needed - works on Substack, Medium, or anywhere script embeds are blocked',
+      'Every link is tracked the same way as your other widgets',
+      'Search by name, topic, or role to find the right expert fast',
+    ],
+  },
+};
+
+function openWidgetExample(platformId, widgetId, ev) {
+  ev.stopPropagation();
+  const w = ONBOARDING_WIDGETS[widgetId];
+  const info = WIDGET_EXAMPLE_INFO[widgetId];
+
+  document.getElementById('widget-example-title').textContent = w.label + ' - see it in action';
+
+  const demoHeight = widgetId === 'text' ? 'min-height:220px' : widgetId === 'manual' ? 'height:150px' : 'min-height:170px';
+  const demoInner = widgetId === 'manual'
+    ? `<div style="padding:1rem">${ONBOARDING_WIDGET_PREVIEWS.manual}</div>`
+    : `<div id="widget-example-live" style="padding:1.25rem"></div>`;
+
+  document.getElementById('widget-example-modal-body').innerHTML = `
+    <p style="font-size:0.85rem;color:var(--ink-soft);margin-bottom:1rem">${esc(w.desc)}</p>
+    <div class="widget-example-demo" style="${demoHeight}">${demoInner}</div>
+    <div class="widget-example-points-label">What you can customize</div>
+    <ul class="widget-example-points">${info.points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>
+  `;
+
+  const ctaBtn = document.getElementById('widget-example-cta');
+  ctaBtn.textContent = widgetId === 'manual' ? 'Use Manual Entry' : `I want to install ${w.label} on my site`;
+  ctaBtn.onclick = function () {
+    closeWidgetExampleModal();
+    selectOnboardingWidget(platformId, widgetId);
+  };
+
+  document.getElementById('widget-example-modal').classList.add('open');
+
+  if (widgetId === 'carousel' || widgetId === 'board') {
+    injectLiveWidgetScript(widgetId === 'carousel' ? 'carousel.js' : 'expertboard.js');
+  } else if (widgetId === 'text') {
+    injectLiveTextWidgetDemo();
+  }
+}
+
+function closeWidgetExampleModal() {
+  document.getElementById('widget-example-modal').classList.remove('open');
+  const live = document.getElementById('widget-example-live');
+  if (live) live.innerHTML = '';
+  // Every widget file's IIFE guards against double-init via a window-level
+  // flag (see the "Guards against the widget tag being pasted twice"
+  // comment in widget.js) - resetting it here is what lets closing and
+  // re-opening this modal inject a fresh working copy instead of the
+  // second load silently no-op'ing.
+  window.__ilWidgetInit = false;
+}
+
+function injectLiveWidgetScript(file) {
+  const container = document.getElementById('widget-example-live');
+  const script = document.createElement('script');
+  script.src = 'https://www.introlinq.com/' + file;
+  script.setAttribute('data-publisher', 'demo-homepage');
+  container.appendChild(script);
+}
+
+function injectLiveTextWidgetDemo() {
+  const container = document.getElementById('widget-example-live');
+  const phrase = "talk to people who'd actually raised before";
+  container.innerHTML = `
+    <div class="entry-content" style="max-width:460px;margin:0 auto">
+      <p style="font-size:0.875rem;line-height:1.7;color:var(--ink);margin:0">Six months ago we closed a seed round for our SaaS product, and looking back, the hardest part wasn't the idea - it was figuring out how to approach investors. My best advice: ${phrase} you start pitching, since investors can tell within minutes whether you understand your own numbers.</p>
+    </div>
+  `;
+  // findArticle() needs a real container match (.entry-content, above) with
+  // >200 chars of innerText, and extractParagraphText() needs >=150 real
+  // characters - both comfortably cleared here so tryRun() proceeds
+  // straight to the IL_PRELOADED_MATCHES branch without ever needing
+  // isLikelyArticlePage() (that check only runs in the live-scan path).
+  window.IL_PRELOADED_MATCHES = {
+    matches: [{
+      phrase: phrase,
+      hook: 'Raising a seed round?',
+      cta: 'Get funding advice →',
+      options: [{
+        expert: { id: 0, name: 'Jane Doe', position: 'Startup Mentor', photo_url: '', booking_url: 'https://www.introlinq.com' },
+        reason: 'Has raised three rounds herself and can walk you through exactly what investors look for.',
+      }],
+    }],
+    config: { color: '#e6a820', accent: '#e6a820', size: 'medium', highlightStyle: 'fill', discoveryCue: false },
+  };
+  injectLiveWidgetScript('widget.js');
+}
 </script>
 
 <!-- Pages modal -->
@@ -2932,6 +3068,18 @@ async function testOnboardingWidget() {
       <button class="modal-close" onclick="closePagesModal()">✕</button>
     </div>
     <div class="modal-list" id="modal-page-list"></div>
+  </div>
+</div>
+
+<!-- Widget example modal (onboarding "See example") -->
+<div class="modal-overlay" id="widget-example-modal" onclick="if(event.target===this)closeWidgetExampleModal()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="widget-example-title" style="width:min(560px,90vw);max-height:88vh">
+    <div class="modal-head">
+      <div class="modal-title" id="widget-example-title">See it in action</div>
+      <button class="modal-close" onclick="closeWidgetExampleModal()" aria-label="Close">✕</button>
+    </div>
+    <div id="widget-example-modal-body" style="overflow-y:auto"></div>
+    <button class="widget-example-cta" id="widget-example-cta"></button>
   </div>
 </div>
 
