@@ -59,6 +59,33 @@ export const TOPICS_BY_CATEGORY = {
     'startup customer discovery', 'first startup job', 'women in startups',
     'startup work-life balance', 'startup networking', 'startup mentorship',
     'startup failure lessons',
+    // Added 2026-08-26 - same reason as the 2026-08-25 batch (Business
+    // exhausts its query pool faster than every other category), but this
+    // time driven by a concrete volume need: 7 outreach inboxes need
+    // ~200-350 new qualified leads/day to stay fed, far more than the
+    // existing 65 topics x intents can sustain once their pool runs dry
+    // again. These lean into adjacent long-tail angles the earlier two
+    // batches didn't cover (small-business finance/legal/ownership
+    // transitions, funding-instrument specifics, solo-founder identity
+    // topics) rather than more startup-funding-stage variations, which
+    // were already well covered.
+    'family business succession', 'buying a small business', 'selling a small business',
+    'business broker advice', 'franchise ownership', 'business partnership agreement',
+    'co-founder breakup', 'non-dilutive funding', 'revenue-based financing',
+    'angel investing for founders', 'pre-seed funding', 'convertible note',
+    'SAFE note funding', 'startup valuation', 'term sheet negotiation',
+    'startup legal structure', 'LLC vs C-corp startup', 'startup bookkeeping',
+    'cash flow management small business', 'minority business owner',
+    'immigrant entrepreneur story', 'veteran-owned business', 'women-owned small business',
+    'one-person business', 'lifestyle business', 'newsletter as a business',
+    'creator economy business', 'productized service business', 'agency owner advice',
+    'consulting business growth', 'startup advisory board', 'startup OKRs',
+    'distributed team management', 'startup employer branding', 'startup diversity hiring',
+    'startup investor updates', 'employee stock options startup', 'vesting cliff',
+    'solo founder burnout', 'founder imposter syndrome', 'async work startup',
+    'product-led growth', 'subscription business model', 'churn reduction SaaS',
+    'customer success startup', 'cold email for startups', 'founder personal brand',
+    'niche business ideas', 'profitable side project', 'startup post mortem',
   ],
   'Marketing & Sales': [
     'content marketing', 'email marketing tips', 'social media marketing',
