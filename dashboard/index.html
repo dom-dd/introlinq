@@ -87,6 +87,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .widget-card.recommended{border-color:var(--sage);background:var(--sage-light)}
 .widget-card-tag{font-size:0.625rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--sage);padding:0.15rem 0.55rem;border-radius:100px;align-self:flex-start}
 .widget-card-tag.unavailable{background:var(--ink-muted)}
+/* Compact reuse of the Widgets tab's own .prev-* preview mockups (same
+   markup/classes, see #wtab-text etc.) - a fixed height rather than
+   .wpreview's min-height:148px since these sit inside an already-bordered
+   card instead of their own standalone box, and .prev-popup's top:50%
+   centers against THIS wrapper's height, not the whole card's. */
+.widget-card-preview{position:relative;background:var(--cream);border-radius:8px;padding:0.625rem 0.75rem;margin-top:0.125rem;height:110px;overflow:hidden;pointer-events:none;user-select:none;width:100%;box-sizing:border-box}
 .onboarding-back{background:none;border:none;color:var(--ink-muted);font-size:0.8125rem;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:0.35rem;margin-bottom:1rem;padding:0}
 .onboarding-back:hover{color:var(--ink)}
 .onboarding-platform-header{display:flex;align-items:center;gap:0.625rem;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
@@ -2591,6 +2597,68 @@ const ONBOARDING_WIDGETS = {
   manual: { label: 'Manual Entry', file: null, badge: '#21759b', letter: 'M', desc: 'Search your available experts and copy a tracked link to paste into a newsletter by hand. No install needed - works on Substack and Medium too.' },
 };
 
+// Compact reuse of the Widgets tab's own preview mockups (same .prev-*
+// classes/animations as #wtab-text/#wtab-carousel/#wtab-board/#wtab-newsletter
+// - see switchWidgetTab) so someone picking a widget for the first time can
+// actually see what each one looks like, not just read a description.
+// Trimmed to fewer repeated items than the full versions (e.g. 4 carousel
+// cards instead of 12) since these sit in a ~100px-tall card, not a
+// standalone 148px box.
+const ONBOARDING_WIDGET_PREVIEWS = {
+  text: `
+    <div style="display:flex;gap:0.75rem;align-items:center;height:100%">
+      <div style="flex:1;min-width:0">
+        <div class="prev-line" style="width:92%"></div>
+        <div class="prev-line" style="width:78%"></div>
+        <div style="margin-bottom:7px;font-size:0.62rem;color:var(--ink-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Advice on <span class="prev-highlight">fundraising strategy</span> for your round</div>
+        <div class="prev-line" style="width:60%"></div>
+      </div>
+      <div class="prev-popup" style="position:relative;right:auto;top:auto;transform:none;animation:none;opacity:1;flex-shrink:0;width:110px">
+        <div class="prev-popup-row">
+          <div class="prev-avatar" style="width:22px;height:22px"></div>
+          <div class="prev-name-block">
+            <div class="prev-name-line"></div>
+            <div class="prev-role-line"></div>
+          </div>
+        </div>
+        <div class="prev-book-btn"></div>
+      </div>
+    </div>
+  `,
+  carousel: `
+    <div class="prev-carousel-header">
+      <div class="prev-carousel-label">Suggested experts to speak to</div>
+      <div class="prev-carousel-arrows">
+        <div class="prev-arrow"><svg width="5" height="8" viewBox="0 0 6 10" fill="none" stroke="#aaa" stroke-width="1.5" stroke-linecap="round"><polyline points="5 1 1 5 5 9"/></svg></div>
+        <div class="prev-arrow"><svg width="5" height="8" viewBox="0 0 6 10" fill="none" stroke="#aaa" stroke-width="1.5" stroke-linecap="round"><polyline points="1 1 5 5 1 9"/></svg></div>
+      </div>
+    </div>
+    <div class="prev-track-wrap">
+      <div class="prev-track">
+        <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
+        <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
+        <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
+        <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
+      </div>
+    </div>
+  `,
+  board: `
+    <div class="prev-board-search">
+      <div class="prev-board-search-icon"></div>
+      <div class="prev-board-search-bar"></div>
+    </div>
+    <div class="prev-board-grid">
+      <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-btn"></div></div>
+      <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-btn"></div></div>
+      <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-btn"></div></div>
+    </div>
+  `,
+  manual: `
+    <div class="prev-nl-row" style="margin-bottom:6px"><div class="prev-board-avatar"></div><div style="flex:1"><div class="prev-board-name" style="width:40%"></div><div class="prev-board-bio" style="width:70%;margin-top:3px"></div></div><div class="prev-nl-linkbtn"><svg class="prev-nl-icon-link" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><svg class="prev-nl-icon-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+    <div class="prev-nl-row" style="margin-bottom:0"><div class="prev-board-avatar"></div><div style="flex:1"><div class="prev-board-name" style="width:32%"></div><div class="prev-board-bio" style="width:58%;margin-top:3px"></div></div><div class="prev-nl-linkbtn"><svg class="prev-nl-icon-link" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><svg class="prev-nl-icon-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+  `,
+};
+
 let _onboardingPub = null;
 let _onboardingPlatformDetected = false;
 
@@ -2655,6 +2723,7 @@ function renderOnboardingWidgetPicker(platformId) {
         <div class="widget-card-label">${esc(w.label)}</div>
       </div>
       <div class="widget-card-desc">${esc(w.desc)}</div>
+      <div class="widget-card-preview">${ONBOARDING_WIDGET_PREVIEWS[id]}</div>
       ${disabled ? `<span class="widget-card-tag unavailable">Not available on ${esc(platformLabel)}</span>` : ''}
       ${recommended ? `<span class="widget-card-tag">Recommended for ${esc(platformLabel)}</span>` : ''}
     </button>
