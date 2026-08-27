@@ -139,6 +139,14 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .onboarding-test-result.fail{color:#b91c1c}
 .onboarding-download-btn{display:inline-flex;align-items:center;gap:0.5rem;background:var(--sage);color:#fff;text-decoration:none;padding:0.75rem 1.5rem;border-radius:100px;font-size:0.8125rem;font-weight:700}
 .onboarding-download-btn:hover{opacity:0.88}
+/* Replaces the old inline embed-code/GTM-tabs/guide-icons block in the
+   Widgets tab (2026-08-27) - that dump of raw code plus links out to
+   separate /install?tab=... pages was the actual complaint ("complicated
+   to understand"), not any single piece of it. Routes into the same
+   guided step-by-step flow Get Started already uses instead of
+   duplicating a second, messier install UI - see startWidgetInstall(). */
+.widget-install-cta{display:inline-flex;align-items:center;gap:0.5rem;background:var(--ink);color:#fff;border:none;text-decoration:none;padding:0.75rem 1.5rem;border-radius:100px;font-size:0.8125rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .15s}
+.widget-install-cta:hover{opacity:0.85}
 
 /* ── Step visual ──────────────────────────────────────────────────────────
    Illustrated mockup, not a real screenshot - we don't have accounts on
@@ -221,8 +229,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .section-sub{font-size:0.8125rem;color:var(--ink-muted);margin-top:0.2rem}
 
 /* ── Embed ── */
-.embed-box{padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1rem}
-.embed-code{font-family:monospace;font-size:0.8125rem;color:var(--sage);background:var(--sage-light);padding:0.625rem 1rem;border-radius:8px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:1px solid rgba(61,122,95,0.2)}
 .copy-btn{background:var(--sage);color:var(--white);border:none;padding:0.6rem 1.25rem;border-radius:100px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:opacity .15s;flex-shrink:0}
 .copy-btn:hover{opacity:0.85}
 
@@ -408,26 +414,6 @@ tr:last-child td{border-bottom:none}
 .wpreview-desc-sub{font-size:0.72rem;color:var(--ink-muted);line-height:1.5}
 .wpreview-anim{flex:1;min-width:0;pointer-events:none;user-select:none}
 .wpreview-inner{pointer-events:none;user-select:none;width:100%}
-
-/* ── Embed tabs ── */
-.etab-group{padding:0 1.5rem 1.25rem}
-.etab-nav{display:flex;border:1px solid var(--border);border-radius:8px 8px 0 0;overflow:hidden;border-bottom:none}
-.etab-btn{flex:1;padding:0.55rem 1rem;font-size:0.8rem;font-weight:500;color:var(--ink-muted);border:none;background:var(--cream);cursor:pointer;font-family:'Inter',sans-serif;border-bottom:2px solid transparent;transition:all .15s;text-align:center}
-.etab-btn+.etab-btn{border-left:1px solid var(--border)}
-.etab-btn:hover{color:var(--ink);background:#fff}
-.etab-btn.active{color:var(--ink);background:var(--white);border-bottom-color:var(--gold);font-weight:600}
-.etab-panel{display:none;border:1px solid var(--border);border-radius:0 0 8px 8px;padding:0.875rem 1rem}
-.etab-panel.active{display:block}
-.etab-panel .embed-box{background:none;border:none;padding:0;box-shadow:none}
-.etab-panel .embed-code{background:#f6f6fa;border:1px solid var(--border);border-radius:6px;padding:0.625rem 0.75rem;font-size:0.72rem;color:var(--ink);white-space:pre-wrap;word-break:break-all;font-family:'Courier New',monospace;margin-bottom:0.5rem;line-height:1.5}
-.etab-panel .copy-btn{margin:0}
-
-/* ── Install guide row ── */
-.install-guide-row{display:flex;align-items:center;gap:0.875rem;padding:0.625rem 1.5rem 1.25rem;flex-wrap:wrap}
-.install-guide-label{font-size:0.72rem;color:var(--ink-muted);flex-shrink:0}
-.install-guide-icons{display:flex;gap:0.375rem;flex-wrap:wrap;align-items:center}
-.install-guide-icon{display:flex;align-items:center;gap:0.3rem;font-size:0.72rem;color:var(--ink-muted);text-decoration:none;padding:0.25rem 0.5rem;border-radius:6px;border:1px solid var(--border);background:var(--white);transition:all .15s;line-height:1}
-.install-guide-icon:hover{color:var(--ink);border-color:#ccc;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 
 /* Text widget preview */
 .prev-line{height:8px;border-radius:4px;background:#e4e4ee;margin-bottom:7px}
@@ -674,7 +660,7 @@ tr:last-child td{border-bottom:none}
         <button class="wtab-btn active" onclick="switchWidgetTab('text',this)">AI Text Widget</button>
         <button class="wtab-btn" onclick="switchWidgetTab('carousel',this)">Expert Carousel</button>
         <button class="wtab-btn" onclick="switchWidgetTab('board',this)">Expert Board</button>
-        <button class="wtab-btn" id="wtab-newsletter-btn" onclick="switchWidgetTab('newsletter',this)">Newsletter Links</button>
+        <button class="wtab-btn" id="wtab-newsletter-btn" onclick="switchWidgetTab('newsletter',this)">Manual Entry & Newsletters</button>
       </div>
 
       <!-- TEXT WIDGET -->
@@ -713,35 +699,10 @@ tr:last-child td{border-bottom:none}
         <div class="section">
           <div class="section-header">
             <div class="section-title">Install AI Text Widget</div>
-            <div class="section-sub">Add to your blog template once - works on every article automatically</div>
+            <div class="section-sub">A guided, step-by-step walkthrough for your platform</div>
           </div>
-          <div class="etab-group">
-            <div class="etab-nav">
-              <button class="etab-btn active" onclick="switchEmbedTab('your-site',this)">Your site</button>
-              <button class="etab-btn" onclick="switchEmbedTab('tag-manager',this)">Google Tag Manager</button>
-            </div>
-            <div class="etab-panel active" data-etab="your-site">
-              <div class="section-sub" style="margin-bottom:0.625rem">Add once to your site's shared template, right before the <code style="font-size:0.75rem;background:#f0f0f8;padding:1px 4px;border-radius:3px">&lt;/body&gt;</code> tag - it'll then run on every page automatically</div>
-              <div class="embed-code" id="embed-display"></div>
-              <button class="copy-btn" onclick="copyEmbed()">Copy</button>
-            </div>
-            <div class="etab-panel" data-etab="tag-manager">
-              <div class="section-sub" style="margin-bottom:0.625rem">Add a Custom HTML tag in GTM - fire on All Pages</div>
-              <div class="embed-code" id="gtm-embed-display"></div>
-              <button class="copy-btn" onclick="copyGtmEmbed()">Copy</button>
-            </div>
-          </div>
-          <div class="install-guide-row">
-            <span class="install-guide-label">Guides:</span>
-            <div class="install-guide-icons">
-              <a class="install-guide-icon" id="install-guide-link" href="/install?tab=wordpress"><svg width="14" height="14" viewBox="0 0 24 24" fill="#21759b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 14.5l-3-8.5h1.5l1.8 5.1 1.7-5.1h1.5l-3 8.5zm6.3 0h-1.5l-1.8-5.1-1.2 3.6.9 2.5H13l-1.2-3.3L13 9h1.5l1.8 5.1 1.5-5.1h1.5l-2.5 7.5z"/></svg> WordPress</a>
-              <a class="install-guide-icon" href="/install?tab=ghost"><svg width="14" height="14" viewBox="0 0 24 24" fill="#15171a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg> Ghost</a>
-              <a class="install-guide-icon" href="/install?tab=webflow"><svg width="14" height="14" viewBox="0 0 24 24" fill="#4353ff"><path d="M17.5 3h-11C4.67 3 3 4.67 3 6.5v11C3 19.33 4.67 21 6.5 21h11c1.83 0 3.5-1.67 3.5-3.5v-11C21 4.67 19.33 3 17.5 3zm-2.1 10.5l-2.4-4-1.6 2.7L10 10.5l-2.5 4.5h9.9l-2-1.5z"/></svg> Webflow</a>
-              <a class="install-guide-icon" href="/install?tab=squarespace"><svg width="14" height="14" viewBox="0 0 24 24" fill="#000"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Squarespace</a>
-              <a class="install-guide-icon" href="/install?tab=wix"><svg width="14" height="14" viewBox="0 0 24 24" fill="#FAAD4D"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg> Wix</a>
-              <a class="install-guide-icon" href="/install?tab=framer"><svg width="14" height="14" viewBox="0 0 24 24" fill="#0055FF"><path d="M5 3h14v6h-7zm0 6h7l7 6H5zm0 6h7v6z"/></svg> Framer</a>
-              <a class="install-guide-icon" href="/install?tab=html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Any website</a>
-            </div>
+          <div style="padding:0 1.5rem 1.25rem">
+            <button class="widget-install-cta" onclick="startWidgetInstall('text')">Install this widget →</button>
           </div>
         </div>
         <!-- Settings -->
@@ -877,40 +838,12 @@ tr:last-child td{border-bottom:none}
         </div>
         <!-- Install -->
         <div class="section">
-          <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
-            <div>
-              <div class="section-title">Install Expert Carousel</div>
-              <div class="section-sub">Paste once where you want the carousel to appear</div>
-            </div>
-            <a id="carousel-preview-link" href="#" target="_blank" rel="noopener" style="font-size:0.8rem;font-weight:600;color:var(--sage);text-decoration:none;white-space:nowrap;flex-shrink:0">Preview live →</a>
+          <div class="section-header">
+            <div class="section-title">Install Expert Carousel</div>
+            <div class="section-sub">A guided, step-by-step walkthrough for your platform</div>
           </div>
-          <div class="etab-group">
-            <div class="etab-nav">
-              <button class="etab-btn active" onclick="switchEmbedTab('your-site',this)">Your site</button>
-              <button class="etab-btn" onclick="switchEmbedTab('tag-manager',this)">Google Tag Manager</button>
-            </div>
-            <div class="etab-panel active" data-etab="your-site">
-              <div class="section-sub" style="margin-bottom:0.625rem">Paste in your HTML where you want the carousel to appear</div>
-              <div class="embed-code" id="carousel-embed-display"></div>
-              <button class="copy-btn" onclick="copyCarouselEmbed()">Copy</button>
-            </div>
-            <div class="etab-panel" data-etab="tag-manager">
-              <div class="section-sub" style="margin-bottom:0.625rem">Add a Custom HTML tag in GTM - fire on the pages where you want the carousel</div>
-              <div class="embed-code" id="carousel-gtm-display"></div>
-              <button class="copy-btn" onclick="copyCarouselGtm()">Copy</button>
-            </div>
-          </div>
-          <div class="install-guide-row">
-            <span class="install-guide-label">Guides:</span>
-            <div class="install-guide-icons">
-              <a class="install-guide-icon" href="/install?tab=wordpress"><svg width="14" height="14" viewBox="0 0 24 24" fill="#21759b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 14.5l-3-8.5h1.5l1.8 5.1 1.7-5.1h1.5l-3 8.5zm6.3 0h-1.5l-1.8-5.1-1.2 3.6.9 2.5H13l-1.2-3.3L13 9h1.5l1.8 5.1 1.5-5.1h1.5l-2.5 7.5z"/></svg> WordPress</a>
-              <a class="install-guide-icon" href="/install?tab=ghost"><svg width="14" height="14" viewBox="0 0 24 24" fill="#15171a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg> Ghost</a>
-              <a class="install-guide-icon" href="/install?tab=webflow"><svg width="14" height="14" viewBox="0 0 24 24" fill="#4353ff"><path d="M17.5 3h-11C4.67 3 3 4.67 3 6.5v11C3 19.33 4.67 21 6.5 21h11c1.83 0 3.5-1.67 3.5-3.5v-11C21 4.67 19.33 3 17.5 3zm-2.1 10.5l-2.4-4-1.6 2.7L10 10.5l-2.5 4.5h9.9l-2-1.5z"/></svg> Webflow</a>
-              <a class="install-guide-icon" href="/install?tab=squarespace"><svg width="14" height="14" viewBox="0 0 24 24" fill="#000"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Squarespace</a>
-              <a class="install-guide-icon" href="/install?tab=wix"><svg width="14" height="14" viewBox="0 0 24 24" fill="#FAAD4D"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg> Wix</a>
-              <a class="install-guide-icon" href="/install?tab=framer"><svg width="14" height="14" viewBox="0 0 24 24" fill="#0055FF"><path d="M5 3h14v6h-7zm0 6h7l7 6H5zm0 6h7v6z"/></svg> Framer</a>
-              <a class="install-guide-icon" href="/install?tab=html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Any website</a>
-            </div>
+          <div style="padding:0 1.5rem 1.25rem">
+            <button class="widget-install-cta" onclick="startWidgetInstall('carousel')">Install this widget →</button>
           </div>
         </div>
         <!-- Settings -->
@@ -978,40 +911,12 @@ tr:last-child td{border-bottom:none}
         </div>
         <!-- Install -->
         <div class="section">
-          <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
-            <div>
-              <div class="section-title">Install Expert Board</div>
-              <div class="section-sub">Best placed on a dedicated page - gives visitors a full browsable expert directory</div>
-            </div>
-            <a id="board-preview-link" href="#" target="_blank" rel="noopener" style="font-size:0.8rem;font-weight:600;color:var(--sage);text-decoration:none;white-space:nowrap;flex-shrink:0">Preview live →</a>
+          <div class="section-header">
+            <div class="section-title">Install Expert Board</div>
+            <div class="section-sub">A guided, step-by-step walkthrough for your platform</div>
           </div>
-          <div class="etab-group">
-            <div class="etab-nav">
-              <button class="etab-btn active" onclick="switchEmbedTab('your-site',this)">Your site</button>
-              <button class="etab-btn" onclick="switchEmbedTab('tag-manager',this)">Google Tag Manager</button>
-            </div>
-            <div class="etab-panel active" data-etab="your-site">
-              <div class="section-sub" style="margin-bottom:0.625rem">Paste in the page where you want the expert directory to appear</div>
-              <div class="embed-code" id="board-embed-display"></div>
-              <button class="copy-btn" onclick="copyBoardEmbed()">Copy</button>
-            </div>
-            <div class="etab-panel" data-etab="tag-manager">
-              <div class="section-sub" style="margin-bottom:0.625rem">Add a Custom HTML tag in GTM - fire on the page where you want the directory</div>
-              <div class="embed-code" id="board-gtm-display"></div>
-              <button class="copy-btn" onclick="copyBoardGtm()">Copy</button>
-            </div>
-          </div>
-          <div class="install-guide-row">
-            <span class="install-guide-label">Guides:</span>
-            <div class="install-guide-icons">
-              <a class="install-guide-icon" href="/install?tab=wordpress"><svg width="14" height="14" viewBox="0 0 24 24" fill="#21759b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 14.5l-3-8.5h1.5l1.8 5.1 1.7-5.1h1.5l-3 8.5zm6.3 0h-1.5l-1.8-5.1-1.2 3.6.9 2.5H13l-1.2-3.3L13 9h1.5l1.8 5.1 1.5-5.1h1.5l-2.5 7.5z"/></svg> WordPress</a>
-              <a class="install-guide-icon" href="/install?tab=ghost"><svg width="14" height="14" viewBox="0 0 24 24" fill="#15171a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg> Ghost</a>
-              <a class="install-guide-icon" href="/install?tab=webflow"><svg width="14" height="14" viewBox="0 0 24 24" fill="#4353ff"><path d="M17.5 3h-11C4.67 3 3 4.67 3 6.5v11C3 19.33 4.67 21 6.5 21h11c1.83 0 3.5-1.67 3.5-3.5v-11C21 4.67 19.33 3 17.5 3zm-2.1 10.5l-2.4-4-1.6 2.7L10 10.5l-2.5 4.5h9.9l-2-1.5z"/></svg> Webflow</a>
-              <a class="install-guide-icon" href="/install?tab=squarespace"><svg width="14" height="14" viewBox="0 0 24 24" fill="#000"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Squarespace</a>
-              <a class="install-guide-icon" href="/install?tab=wix"><svg width="14" height="14" viewBox="0 0 24 24" fill="#FAAD4D"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg> Wix</a>
-              <a class="install-guide-icon" href="/install?tab=framer"><svg width="14" height="14" viewBox="0 0 24 24" fill="#0055FF"><path d="M5 3h14v6h-7zm0 6h7l7 6H5zm0 6h7v6z"/></svg> Framer</a>
-              <a class="install-guide-icon" href="/install?tab=html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Any website</a>
-            </div>
+          <div style="padding:0 1.5rem 1.25rem">
+            <button class="widget-install-cta" onclick="startWidgetInstall('board')">Install this widget →</button>
           </div>
         </div>
         <!-- Settings -->
@@ -1062,7 +967,7 @@ tr:last-child td{border-bottom:none}
       <div class="wtab-panel" id="wtab-newsletter">
         <div class="wpreview">
           <div class="wpreview-desc">
-            <div class="wpreview-desc-label">Newsletter Links</div>
+            <div class="wpreview-desc-label">Manual Entry & Newsletters</div>
             <div class="wpreview-desc-text">Search your available experts and copy a tracked link to paste into a newsletter by hand.</div>
             <div class="wpreview-desc-sub">For Substack, Medium, or any newsletter where the widget can't run - clicks are tracked the same way as your other widgets.</div>
           </div>
@@ -1391,7 +1296,6 @@ async function loadDashboard() {
   // those are additionally filtered by STATS_RESET_AT/is_bot/page_url, so
   // an early or bot-flagged fire could under-report "ever installed" if
   // reconstructed from them instead.
-  const embedCode = `<script src="https://www.introlinq.com/widget.js" data-publisher="${esc(d.publisher.slug)}"><\/script>`;
   if (!d.publisher.first_widget_fire_at) {
     // Not live yet - the "Get started" tab is the entry point (not a modal,
     // not a banner sitting oddly above the tab bar). It stays in the tab
@@ -1431,25 +1335,6 @@ async function loadDashboard() {
   }
 
   // Widget tab
-  const pubSlug = esc(d.publisher.slug);
-  document.getElementById('embed-display').textContent = embedCode;
-  const gtmCode = `<script>window.IL_PUBLISHER_ID = '${pubSlug}';<\/script>\n<script src="https://www.introlinq.com/widget.js"><\/script>`;
-  document.getElementById('gtm-embed-display').textContent = gtmCode;
-  const carouselCode = `<script src="https://www.introlinq.com/carousel.js" data-publisher="${pubSlug}"><\/script>`;
-  document.getElementById('carousel-embed-display').textContent = carouselCode;
-  const carouselGtmCode = `<script>window.IL_CAROUSEL_PUBLISHER = '${pubSlug}';<\/script>\n<script src="https://www.introlinq.com/carousel.js"><\/script>`;
-  document.getElementById('carousel-gtm-display').textContent = carouselGtmCode;
-  const boardCode = `<script src="https://www.introlinq.com/expertboard.js" data-publisher="${pubSlug}"><\/script>`;
-  document.getElementById('board-embed-display').textContent = boardCode;
-  const boardGtmCode = `<script>window.IL_BOARD_PUBLISHER = '${pubSlug}';<\/script>\n<script src="https://www.introlinq.com/expertboard.js"><\/script>`;
-  document.getElementById('board-gtm-display').textContent = boardGtmCode;
-  const installUrl = `/install?pub=${encodeURIComponent(d.publisher.slug)}`;
-  document.querySelectorAll('.install-guide-icon, #install-guide-link').forEach(function(a) {
-    if ((a.getAttribute('href') || '').includes('/install')) a.href = installUrl;
-  });
-  const previewUrl = `/expertboard?pub=${encodeURIComponent(d.publisher.slug)}`;
-  document.getElementById('carousel-preview-link').href = previewUrl;
-  document.getElementById('board-preview-link').href = previewUrl;
   const p = d.publisher;
   settings.color = p.widget_color || '#e6a820';
   settings.accent = p.accent_color || '#e6a820';
@@ -1687,23 +1572,6 @@ function switchWidgetTab(name, btn) {
   if (name === 'newsletter' && _nlExperts === null) loadNewsletterExperts();
 }
 
-function switchEmbedTab(name, btn) {
-  var group = btn.closest('.etab-group');
-  group.querySelectorAll('.etab-btn').forEach(function(b) { b.classList.remove('active'); });
-  group.querySelectorAll('.etab-panel').forEach(function(p) { p.classList.remove('active'); });
-  btn.classList.add('active');
-  group.querySelector('[data-etab="' + name + '"]').classList.add('active');
-}
-
-function copyCarouselGtm() {
-  navigator.clipboard.writeText(document.getElementById('carousel-gtm-display').textContent.trim());
-  toast('Carousel GTM code copied!');
-}
-
-function copyBoardGtm() {
-  navigator.clipboard.writeText(document.getElementById('board-gtm-display').textContent.trim());
-  toast('Expert Board GTM code copied!');
-}
 
 async function savePaymentEmail() {
   const email = document.getElementById('payment-email-input').value.trim();
@@ -1808,26 +1676,6 @@ async function saveEmail() {
     msgEl.style.color = 'var(--red)';
     msgEl.textContent = body.error || 'Could not update email';
   }
-}
-
-function copyEmbed() {
-  navigator.clipboard.writeText(document.getElementById('embed-display').textContent.trim());
-  toast('Embed code copied!');
-}
-
-function copyGtmEmbed() {
-  navigator.clipboard.writeText(document.getElementById('gtm-embed-display').textContent.trim());
-  toast('GTM code copied!');
-}
-
-function copyCarouselEmbed() {
-  navigator.clipboard.writeText(document.getElementById('carousel-embed-display').textContent.trim());
-  toast('Carousel code copied!');
-}
-
-function copyBoardEmbed() {
-  navigator.clipboard.writeText(document.getElementById('board-embed-display').textContent.trim());
-  toast('Expert Board code copied!');
 }
 
 // ── Newsletter Links ────────────────────────────────────────────────────────
@@ -2705,6 +2553,11 @@ const ONBOARDING_WIDGET_PREVIEWS = {
 
 let _onboardingPub = null;
 let _onboardingPlatformDetected = false;
+// Set by startWidgetInstall() when the platform isn't known yet and the
+// platform picker needs to be shown first - once picked,
+// selectOnboardingPlatform() checks this and skips straight to that
+// widget's install steps instead of the normal widget-type picker.
+let _pendingTargetWidget = null;
 
 function goToOverviewTab() {
   switchTab('overview', document.getElementById('overview-tab-btn'));
@@ -2716,6 +2569,31 @@ function initInstallTab(pub, savedPlatform, wasDetected) {
   if (savedPlatform && (ONBOARDING_PLATFORMS[savedPlatform] || ONBOARDING_UNSUPPORTED[savedPlatform])) {
     renderOnboardingWidgetPicker(savedPlatform);
   } else {
+    renderOnboardingPicker();
+  }
+}
+
+// Entry point for the Widgets tab's "Install this widget" button (added
+// 2026-08-27, replacing the old inline embed-code/GTM-tabs/guide-links
+// block there) - routes into this same Get Started flow instead of a
+// second, separate install UI. Reuses window._cd (the already-fetched
+// dashboard payload from loadDashboard) rather than a fresh API call.
+function startWidgetInstall(widgetType) {
+  const pub = window._cd && window._cd.publisher;
+  if (!pub) return;
+  _onboardingPub = pub.slug;
+  _onboardingPlatformDetected = !!pub.platform_detected;
+  document.getElementById('install-tab-btn').style.display = '';
+  switchTab('install', document.getElementById('install-tab-btn'));
+  if (pub.platform && ONBOARDING_PLATFORMS[pub.platform]) {
+    renderOnboardingSteps(pub.platform, 0, widgetType);
+  } else if (pub.platform && ONBOARDING_UNSUPPORTED[pub.platform]) {
+    // Substack/Medium - let the normal widget-picker explain why a
+    // script-embed widget won't work there rather than forcing a broken
+    // install flow for it.
+    renderOnboardingWidgetPicker(pub.platform);
+  } else {
+    _pendingTargetWidget = widgetType;
     renderOnboardingPicker();
   }
 }
@@ -2744,6 +2622,16 @@ function selectOnboardingPlatform(id) {
     method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ platform: id }),
   }).catch(() => {});
+  if (_pendingTargetWidget) {
+    const target = _pendingTargetWidget;
+    _pendingTargetWidget = null;
+    if (ONBOARDING_UNSUPPORTED[id]) {
+      renderOnboardingWidgetPicker(id);
+    } else {
+      renderOnboardingSteps(id, 0, target);
+    }
+    return;
+  }
   renderOnboardingWidgetPicker(id);
 }
 
