@@ -139,8 +139,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .onboarding-test-result.fail{color:#b91c1c}
 .onboarding-download-btn{display:inline-flex;align-items:center;gap:0.5rem;background:var(--sage);color:#fff;text-decoration:none;padding:0.75rem 1.5rem;border-radius:100px;font-size:0.8125rem;font-weight:700}
 .onboarding-download-btn:hover{opacity:0.88}
-.onboarding-later{background:none;border:none;color:var(--ink-muted);font-size:0.8rem;cursor:pointer;font-family:'Inter',sans-serif;text-decoration:underline;padding:0}
-.onboarding-later:hover{color:var(--ink)}
 
 /* ── Step visual ──────────────────────────────────────────────────────────
    Illustrated mockup, not a real screenshot - we don't have accounts on
@@ -2738,7 +2736,6 @@ function renderOnboardingPicker() {
   document.getElementById('install-tab-body').innerHTML = `
     <div class="onboarding-lede">How is your blog built? Pick your platform and we'll walk you through installing the widget - it only takes a couple of minutes.</div>
     <div class="platform-grid">${cards}${unsupported}</div>
-    <div style="text-align:center;margin-top:1.5rem"><button class="onboarding-later" onclick="goToOverviewTab()">I'll do this later</button></div>
   `;
 }
 
@@ -2780,7 +2777,6 @@ function renderOnboardingWidgetPicker(platformId) {
     ${isUnsupported ? `<div class="onboarding-note">${esc(platformLabel)} doesn't allow the kind of embed the AI Text Widget, Carousel, or Expert Board need (${platformId === 'substack' ? 'Substack blocks custom HTML/scripts' : 'Medium has no support for custom code at all'}) - but Manual Entry works today, no install required. We've noted you're on ${esc(platformLabel)}, so you'll be first to hear if official platform support happens.</div>` : ''}
     <div class="onboarding-lede">What would you like to install first? You can add the others later from the Widgets tab.</div>
     <div class="widget-grid">${cards}</div>
-    <div style="text-align:center;margin-top:1.5rem"><button class="onboarding-later" onclick="goToOverviewTab()">I'll do this later</button></div>
   `;
 }
 
