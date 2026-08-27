@@ -196,7 +196,7 @@ export default async function handler(req, res) {
       await ensureBotColumns(sql, 'click_logs');
       clickBotColumnsReady = true;
     }
-    const isBot = await isBotHit(req, sql, 'click_logs', { ip, publisher: pub, page_url: article });
+    const isBot = await isBotHit(req, sql, 'click_logs', { ip, publisher: pub, page_url: article, expert_id: expert_id || null, expert_name: expert_name || null });
 
     // Build partner URL with full attribution params
     let destUrl;
@@ -282,7 +282,7 @@ export default async function handler(req, res) {
       await ensureBotColumns(sql, 'seen_logs');
       seenBotColumnsReady = true;
     }
-    const isBot = await isBotHit(req, sql, 'seen_logs', { ip, publisher: pub, page_url: article });
+    const isBot = await isBotHit(req, sql, 'seen_logs', { ip, publisher: pub, page_url: article, expert_id: expert_id || null, expert_name: expert_name || null });
     await sql`
       INSERT INTO seen_logs (publisher, expert_id, expert_name, phrase, article_url, device, ip, is_bot)
       VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${phrase || null}, ${article || null}, ${device || null}, ${ip || null}, ${isBot})
@@ -320,7 +320,7 @@ export default async function handler(req, res) {
       await ensureBotColumns(sql, 'hover_logs');
       hoverBotColumnsReady = true;
     }
-    const isBot = await isBotHit(req, sql, 'hover_logs', { ip, publisher: pub, page_url: article });
+    const isBot = await isBotHit(req, sql, 'hover_logs', { ip, publisher: pub, page_url: article, expert_id: expert_id || null, expert_name: expert_name || null });
     await sql`
       INSERT INTO hover_logs (publisher, expert_id, expert_name, phrase, article_url, device, ip, is_bot)
       VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${phrase || null}, ${article || null}, ${device || null}, ${ip || null}, ${isBot})

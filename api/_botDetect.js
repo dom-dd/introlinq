@@ -197,21 +197,63 @@ export async function isFanoutBurst(sql, table, { ip, publisher, page_url, count
   return n > 0 && n === pages && (n + 1) >= FAN_OUT_THRESHOLD;
 }
 
+// Catches a FOURTH bot shape, the inverse of isFanoutBurst: instead of one
+// IP spreading across many pages, MANY DIFFERENT IPs converge on the exact
+// same page+expert within a short window, then the whole cluster moves to
+// a different page+expert a minute or two later - a proxy pool (globally
+// diverse residential/mobile exit IPs, not one clean ASN, so isKnownCrawlerIp
+// and isFanoutBurst both miss it) mechanically walking the site's full
+// catalog. Found on tchelete 2026-08-27, the same day isFanoutBurst shipped
+// for a *different* tchelete bot wave: 89% of that day's "real" clicks
+// (5,445 of 6,126) were 2-3 distinct IPs hitting one identical
+// article+expert combo within under a minute, every single time, all day -
+// each individual IP only appears once or twice total, so none of the
+// per-IP checks above ever see enough volume from any single IP to trip.
+// Calibrated against 30 days of real is_bot=false traffic on every OTHER
+// publisher: only 2 cases of 2+ distinct IPs sharing an (article, expert)
+// combo turned up at all, one with a 5-day gap between them (not a burst)
+// and one with a null article_url (a test/demo artifact) - genuine
+// simultaneous cross-IP collisions on the same target are otherwise
+// nonexistent, so requiring just one other IP inside the same tight window
+// used by isBurstTraffic is safe. match_logs has no single expert per row
+// (it logs the whole set of matches on a page), so expert_id/expert_name
+// are only meaningful for click/hover/seen_logs and the check falls back to
+// page_url alone there - a page-level collision is already a strong signal
+// on its own for that table.
+export async function isCoordinatedBurst(sql, table, { ip, publisher, page_url, expert_id, expert_name }) {
+  const urlColumn = TABLE_URL_COLUMNS[table];
+  if (!urlColumn) throw new Error('isCoordinatedBurst: invalid table ' + table);
+  if (!ip || !page_url) return false;
+  const hasExpert = expert_id != null || expert_name != null;
+  const expertClause = hasExpert ? (expert_id != null ? `AND expert_id = $4` : `AND expert_name = $4`) : '';
+  const params = [publisher || '', page_url, ip];
+  if (hasExpert) params.push(expert_id != null ? expert_id : expert_name);
+  const rows = await sql.query(
+    `SELECT COUNT(DISTINCT ip)::int AS n FROM ${table}
+     WHERE publisher = $1 AND ${urlColumn} = $2 AND ip != $3
+       AND created_at > NOW() - INTERVAL '${BURST_WINDOW_INTERVAL}'
+       ${expertClause}`,
+    params
+  ).catch(() => [{ n: 0 }]);
+  return (rows[0]?.n || 0) >= 1;
+}
+
 // Single source of truth for "should this row count as a bot" - combines
 // every signal (known-crawler IP range, known-crawler User-Agent, same-page
-// burst, sitewide burst, distributed fan-out burst) so a signal added to
-// one call site is never accidentally missing from another. isAllowlistedCrawler
-// was previously wired only into the stale-cache-serve decision in match.js,
-// never into any is_bot tagging - which meant Googlebot/Bingbot/GPTBot/etc
-// traffic (identifiable by User-Agent even when its IP range isn't
-// hardcoded, e.g. Googlebot's 66.249.64.0/19) sailed through untagged into
-// match_logs, inflating Page visits for every publisher it crawled. A
-// crawler is never a genuine reader regardless of whether its purpose is
-// "good" (indexing) or "bad" (scraping), so all get the same is_bot=true
-// treatment here.
-export async function isBotHit(req, sql, table, { ip, publisher, page_url }) {
+// burst, sitewide burst, distributed fan-out burst, coordinated multi-IP
+// burst) so a signal added to one call site is never accidentally missing
+// from another. isAllowlistedCrawler was previously wired only into the
+// stale-cache-serve decision in match.js, never into any is_bot tagging -
+// which meant Googlebot/Bingbot/GPTBot/etc traffic (identifiable by
+// User-Agent even when its IP range isn't hardcoded, e.g. Googlebot's
+// 66.249.64.0/19) sailed through untagged into match_logs, inflating Page
+// visits for every publisher it crawled. A crawler is never a genuine
+// reader regardless of whether its purpose is "good" (indexing) or "bad"
+// (scraping), so all get the same is_bot=true treatment here.
+export async function isBotHit(req, sql, table, { ip, publisher, page_url, expert_id, expert_name }) {
   if (isKnownCrawlerIp(ip) || isAllowlistedCrawler(req)) return true;
   if (await isBurstTraffic(sql, table, { ip, publisher, page_url })) return true;
+  if (await isCoordinatedBurst(sql, table, { ip, publisher, page_url, expert_id, expert_name })) return true;
   const country = req.headers['x-vercel-ip-country'];
   if (await isFanoutBurst(sql, table, { ip, publisher, page_url, country })) return true;
   return isSitewideBurst(sql, table, { ip, publisher, country });
