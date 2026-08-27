@@ -24,6 +24,32 @@ function providerDisplayName(pub) {
   return String(pub || '').split('-').filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(' ') || pub;
 }
 
+// Temporary per-publisher Slack notification cooldown - a backstop on top of
+// is_bot classification, not a replacement for it. isCoordinatedBurst and
+// isFanoutBurst (see _botDetect.js) can only flag a hit once they've seen a
+// SECOND matching signal (another IP on the same target, or a repeat page
+// from the same IP) - the very first hit in a fresh bot cluster always
+// looks like a real click when it happens, so it still fires a Slack ping.
+// On tchelete (2026-08-27 proxy-pool incident) that first-hit-per-cluster
+// is still one notification roughly every minute, all day, even with both
+// detection rules working correctly - Dom confirmed this is still too
+// noisy. This does NOT touch is_bot/analytics at all, only whether a click
+// event's Slack ping is allowed to actually send - a publisher in this map
+// still gets accurately-tagged data, just throttled real-time noise while
+// under sustained automated traffic. Remove tchelete's entry once this
+// incident subsides; not applied to any other publisher.
+const NOTIFICATION_COOLDOWN_MINUTES = { tchelete: 15 };
+
+async function isNotificationCoolingDown(sql, pub) {
+  const minutes = NOTIFICATION_COOLDOWN_MINUTES[pub];
+  if (!minutes) return false;
+  const rows = await sql.query(
+    `SELECT 1 FROM click_logs WHERE publisher = $1 AND is_bot = false AND created_at > NOW() - INTERVAL '${minutes} minutes' LIMIT 1`,
+    [pub]
+  ).catch(() => []);
+  return rows.length > 0;
+}
+
 function getSessionToken(req) {
   const cookies = req.headers.cookie || '';
   const match = cookies.match(/il_session=([^;]+)/);
@@ -223,7 +249,8 @@ export default async function handler(req, res) {
     // concurrently with the click INSERT so the reader's added wait is
     // max(insert, slack) rather than their sum.
     const articleTitle = title ? String(title).slice(0, 80) : null;
-    const slackPromise = (process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL && !isBot)
+    const coolingDown = await isNotificationCoolingDown(sql, pub);
+    const slackPromise = (process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL && !isBot && !coolingDown)
       ? fetch(process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL, {
           method: 'POST',
           signal: AbortSignal.timeout(1500),
