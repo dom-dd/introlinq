@@ -63,7 +63,13 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .tab-btn.install-tab-btn{color:#b91c1c;font-weight:700}
 .tab-btn.install-tab-btn:hover{color:#b91c1c}
 .tab-btn.install-tab-btn.active{border-bottom-color:#b91c1c;color:#b91c1c}
-.install-tab-header{margin-bottom:1.75rem}
+/* Capped so the onboarding cards/previews don't stretch arbitrarily wide on
+   a big monitor - the carousel preview's seamless-loop animation depends on
+   a bounded number of cards fitting the visible width (see .prev-track's
+   card count), which an uncapped, screen-width-dependent container can't
+   guarantee no matter how many cards are added (2026-08-27). */
+#install-tab-body{max-width:760px}
+.install-tab-header{margin-bottom:1.75rem;max-width:760px}
 .install-tab-title{font-family:'DM Serif Display',serif;font-size:1.375rem;color:var(--ink);margin-bottom:0.375rem}
 .install-tab-sub{font-size:0.9375rem;color:var(--ink-soft);line-height:1.5}
 .onboarding-lede{font-size:0.875rem;color:var(--ink-soft);line-height:1.5;margin-bottom:1.5rem}
@@ -77,7 +83,13 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .platform-card.unsupported .platform-card-label{color:var(--ink-soft)}
 .platform-badge{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:1rem;color:#fff}
 .widget-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem}
-.widget-card{display:flex;flex-direction:column;align-items:flex-start;gap:0.5rem;padding:1rem 1.1rem;border:2px solid var(--border);border-radius:12px;background:var(--white);cursor:pointer;transition:border-color .15s,transform .1s;font-family:'Inter',sans-serif;text-align:left}
+/* min-width:0 overrides a CSS Grid item's default min-width:auto, which
+   otherwise lets it grow to fit its content's min-content size (here, the
+   carousel preview's non-wrapping flex row of cards) - without this, that
+   inner content dictates the grid track's width instead of the 1fr track
+   sizing, no matter what max-width is set on any ancestor (2026-08-27,
+   root cause of the carousel card overflowing off-screen on wide monitors). */
+.widget-card{display:flex;flex-direction:column;align-items:flex-start;gap:0.5rem;padding:1rem 1.1rem;border:2px solid var(--border);border-radius:12px;background:var(--white);cursor:pointer;transition:border-color .15s,transform .1s;font-family:'Inter',sans-serif;text-align:left;min-width:0}
 .widget-card:hover{border-color:var(--sage);transform:translateY(-1px)}
 .widget-card-top{display:flex;align-items:center;gap:0.625rem}
 .widget-card-label{font-size:0.875rem;font-weight:600;color:var(--ink)}
@@ -2644,16 +2656,24 @@ const ONBOARDING_WIDGET_PREVIEWS = {
     </div>
     <div class="prev-track-wrap">
       <div class="prev-track">
+        <!-- 12 cards (6 + 6 identical repeat), matching the full Widgets-tab
+             version exactly - carousel-slide animates translateX(0 -> -50%)
+             then jumps straight back to 0%, which only reads as seamless if
+             the FIRST half alone is wide enough to fill the visible viewport
+             at every point in the slide. An earlier attempt at 8 cards (4+4)
+             wasn't enough once this card width rendered ~5 visible at once
+             in the real onboarding layout - the track ran out of cards near
+             the end of the slide, which is the pop Dom was still seeing
+             (2026-08-27). 6 per half matches the proven original with room
+             to spare. -->
         <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
         <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
         <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
         <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
-        <!-- Same 4 cards repeated - carousel-slide animates translateX(0 -> -50%)
-             then jumps straight back to 0%, which only reads as a seamless loop
-             if the halfway point lines up with an identical repeat of the start.
-             The full Widgets-tab version has 12 cards for this exact reason;
-             trimming this compact copy to 4 non-duplicated cards broke that
-             math, causing the visible pop/reset Dom flagged (2026-08-27). -->
+        <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
+        <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
+        <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
+        <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
         <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
         <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
         <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
