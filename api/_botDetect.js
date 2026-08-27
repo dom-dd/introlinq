@@ -154,21 +154,66 @@ export async function isSitewideBurst(sql, table, { ip, publisher, country }) {
   return (rows[0]?.n || 0) >= SITEWIDE_THRESHOLD;
 }
 
+// Catches a THIRD bot shape, distinct from both isBurstTraffic (same IP,
+// same page, rapid-fire) and isSitewideBurst (same IP, 10+ hits/24h
+// regardless of page): a large ROTATING POOL of IPs, each making only a
+// handful of hits, so no single IP ever reaches the sitewide threshold -
+// but every one of those hits lands on a page/expert that IP has never
+// touched before. Found on tchelete 2026-08-27: 140+ distinct IPs across
+// three separate Asian cloud ASNs (Tencent 132203, Alibaba 45102, Byteplus/
+// ByteDance 150436 - confirmed via RIPEstat, not residential/mobile space)
+// in 3 days, each doing 4-8 clicks with zero repeated pages - the same
+// "one hit per distinct expert per page" signature as the 2026-07-30 Meta
+// incident, just spread across ~2,400 scattered cloud sub-ranges instead of
+// one clean /16, which makes hardcoding CIDRs (isKnownCrawlerIp's approach)
+// unmaintainable here - tomorrow's crawl uses fresh IPs from the same
+// clouds. Calibrated against 30 days of real traffic on every OTHER
+// publisher: no genuine reader IP ever produced a perfect no-repeat fan-out
+// this large, so FAN_OUT_THRESHOLD is set just above the largest real one
+// seen (a 5-page burst from what looks like internal testing traffic).
+// Shares isSitewideBurst's CGNAT country exemption for the same reason: a
+// shared gateway serving many real readers naturally produces "many
+// distinct pages, no repeats" from one IP, which this check can't tell
+// apart from one bot enumerating pages - isSitewideBurst already carries
+// that same blind spot and this is the same class of check.
+const FAN_OUT_THRESHOLD = 4;
+
+export async function isFanoutBurst(sql, table, { ip, publisher, page_url, country }) {
+  const urlColumn = TABLE_URL_COLUMNS[table];
+  if (!urlColumn) throw new Error('isFanoutBurst: invalid table ' + table);
+  if (!ip || !page_url) return false;
+  if (country && SITEWIDE_BURST_EXEMPT_COUNTRIES.includes(country.toUpperCase())) return false;
+  const rows = await sql.query(
+    `SELECT COUNT(*)::int AS n, COUNT(DISTINCT ${urlColumn})::int AS pages,
+            COUNT(*) FILTER (WHERE ${urlColumn} = $3)::int AS same_page
+     FROM ${table} WHERE ip = $1 AND publisher = $2 AND created_at > NOW() - INTERVAL '${SITEWIDE_WINDOW_INTERVAL}'`,
+    [ip, publisher || '', page_url]
+  ).catch(() => [{ n: 0, pages: 0, same_page: 0 }]);
+  const { n, pages, same_page } = rows[0] || { n: 0, pages: 0, same_page: 0 };
+  // same_page > 0 means this exact page was already hit by this IP - that's
+  // a repeat, breaking the no-repeat fan-out signature, so exempt it (it's
+  // isBurstTraffic/isSitewideBurst's job to catch same-page repeats instead).
+  if (same_page > 0) return false;
+  return n > 0 && n === pages && (n + 1) >= FAN_OUT_THRESHOLD;
+}
+
 // Single source of truth for "should this row count as a bot" - combines
 // every signal (known-crawler IP range, known-crawler User-Agent, same-page
-// burst, sitewide burst) so a signal added to one call site is never
-// accidentally missing from another. isAllowlistedCrawler was previously
-// wired only into the stale-cache-serve decision in match.js, never into
-// any is_bot tagging - which meant Googlebot/Bingbot/GPTBot/etc traffic
-// (identifiable by User-Agent even when its IP range isn't hardcoded, e.g.
-// Googlebot's 66.249.64.0/19) sailed through untagged into match_logs,
-// inflating Page visits for every publisher it crawled. A crawler is never
-// a genuine reader regardless of whether its purpose is "good" (indexing)
-// or "bad" (scraping), so all get the same is_bot=true treatment here.
+// burst, sitewide burst, distributed fan-out burst) so a signal added to
+// one call site is never accidentally missing from another. isAllowlistedCrawler
+// was previously wired only into the stale-cache-serve decision in match.js,
+// never into any is_bot tagging - which meant Googlebot/Bingbot/GPTBot/etc
+// traffic (identifiable by User-Agent even when its IP range isn't
+// hardcoded, e.g. Googlebot's 66.249.64.0/19) sailed through untagged into
+// match_logs, inflating Page visits for every publisher it crawled. A
+// crawler is never a genuine reader regardless of whether its purpose is
+// "good" (indexing) or "bad" (scraping), so all get the same is_bot=true
+// treatment here.
 export async function isBotHit(req, sql, table, { ip, publisher, page_url }) {
   if (isKnownCrawlerIp(ip) || isAllowlistedCrawler(req)) return true;
   if (await isBurstTraffic(sql, table, { ip, publisher, page_url })) return true;
   const country = req.headers['x-vercel-ip-country'];
+  if (await isFanoutBurst(sql, table, { ip, publisher, page_url, country })) return true;
   return isSitewideBurst(sql, table, { ip, publisher, country });
 }
 
