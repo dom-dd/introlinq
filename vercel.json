@@ -9,7 +9,9 @@
     { "source": "/short.html", "destination": "/", "permanent": true }
   ],
   "rewrites": [
-    { "source": "/brief", "destination": "/api/admin?resource=brief" }
+    { "source": "/brief", "destination": "/api/admin?resource=brief" },
+    { "source": "/blog", "destination": "/api/blog" },
+    { "source": "/blog/:slug", "destination": "/api/blog?slug=:slug" }
   ],
   "crons": [
     {
@@ -27,11 +29,17 @@
     {
       "path": "/api/cron/widget-removed-check",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/weekly-blog",
+      "schedule": "0 10 * * 3"
     }
   ],
   "functions": {
     "api/admin.js": { "maxDuration": 60 },
     "api/match.js": { "maxDuration": 60 },
-    "api/dashboard.js": { "maxDuration": 30 }
+    "api/dashboard.js": { "maxDuration": 30 },
+    "api/cron/weekly-blog.js": { "maxDuration": 60 },
+    "api/blog.js": { "maxDuration": 30 }
   }
 }
