@@ -99,8 +99,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .widget-card.recommended{border-color:var(--sage);background:var(--sage-light)}
 .widget-card-tag{font-size:0.625rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--sage);padding:0.15rem 0.55rem;border-radius:100px;align-self:flex-start}
 .widget-card-tag.unavailable{background:var(--ink-muted)}
-.widget-card-example-link{background:none;border:none;color:var(--sage);font-size:0.75rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;padding:0;text-align:left;text-decoration:underline;margin-top:0.125rem}
-.widget-card-example-link:hover{color:var(--ink)}
+.widget-card-example-link{background:var(--white);border:1.5px solid var(--sage);color:var(--sage);font-size:0.8125rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;padding:0.55rem 1.1rem;border-radius:100px;text-align:center;margin-top:0.375rem;align-self:flex-start;transition:background .15s,color .15s}
+.widget-card-example-link:hover{background:var(--sage);color:#fff}
 .widget-example-demo{background:var(--cream);border:1px solid var(--border);border-radius:10px;margin-bottom:1.25rem;overflow:auto}
 .widget-example-points-label{font-size:0.7rem;font-weight:700;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:0.5rem}
 .widget-example-points{list-style:none;display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1.5rem}
@@ -2615,7 +2615,7 @@ const ONBOARDING_WIDGETS = {
   text: { label: 'AI Text Widget', file: 'widget.js', badge: '#3d7a5f', letter: 'T', desc: 'Highlights phrases in your articles and shows a matching expert popup when readers hover.' },
   carousel: { label: 'Expert Carousel', file: 'carousel.js', badge: '#e6a820', letter: 'C', desc: 'A scrollable row of expert cards - drop it at the end of any article or page.' },
   board: { label: 'Expert Board', file: 'expertboard.js', badge: '#4a4a6a', letter: 'B', desc: 'A full browsable expert directory with search and topic filters.' },
-  manual: { label: 'Manual Entry', file: null, badge: '#21759b', letter: 'M', desc: 'Search your available experts and copy a tracked link to paste into a newsletter by hand. No install needed - works on Substack and Medium too.' },
+  manual: { label: 'Manual Entry & Newsletters', file: null, badge: '#21759b', letter: 'M', desc: 'Search your available experts and copy a tracked link to paste into a newsletter by hand. No install needed - works on Substack and Medium too.' },
 };
 
 // Compact reuse of the Widgets tab's own preview mockups (same .prev-*
@@ -2770,7 +2770,7 @@ function renderOnboardingWidgetPicker(platformId) {
       </div>
       <div class="widget-card-desc">${esc(w.desc)}</div>
       <div class="widget-card-preview">${ONBOARDING_WIDGET_PREVIEWS[id]}</div>
-      ${disabled ? `<span class="widget-card-tag unavailable">Not available on ${esc(platformLabel)}</span>` : (id === 'manual' ? '' : `<button class="widget-card-example-link" onclick="openWidgetExample('${platformId}','${id}',event)">See example →</button>`)}
+      ${disabled ? `<span class="widget-card-tag unavailable">Not available on ${esc(platformLabel)}</span>` : (id === 'manual' ? '' : `<button class="widget-card-example-link" onclick="openWidgetExample('${platformId}','${id}',event)">See live example →</button>`)}
       ${recommended ? `<span class="widget-card-tag">Recommended for ${esc(platformLabel)}</span>` : ''}
     </div>
   `;
