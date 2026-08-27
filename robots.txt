@@ -2,3 +2,5 @@ User-agent: *
 Disallow: /brief
 Disallow: /documentation
 Disallow: /onboarding
+
+Sitemap: https://www.introlinq.com/sitemap.xml
