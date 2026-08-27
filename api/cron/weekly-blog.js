@@ -102,10 +102,14 @@ Respond with ONLY a single valid JSON object (no markdown code fences, no commen
 // Keyless Wikimedia Commons search - real royalty-free images with usable
 // license metadata, no API key or third-party account required.
 const ALLOWED_LICENSES = ['cc0', 'public domain', 'cc by', 'cc-by', 'cc by-sa', 'cc-by-sa'];
+// Commons search matches document text too (PDFs, scanned reports), which
+// pass license/size checks fine but render as an irrelevant page-image, not
+// a photo. Restrict to actual photo/image MIME types.
+const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
 
 async function findCommonsImage(query) {
   try {
-    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=8&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=1600&format=json&origin=*`;
+    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=8&prop=imageinfo&iiprop=url|extmetadata|mime&iiurlwidth=1600&format=json&origin=*`;
     const res = await fetch(url);
     if (!res.ok) return null;
     const data = await res.json();
@@ -114,6 +118,7 @@ async function findCommonsImage(query) {
     for (const page of pages) {
       const info = page.imageinfo?.[0];
       if (!info) continue;
+      if (!ALLOWED_MIME.includes(info.mime)) continue;
       const license = (info.extmetadata?.LicenseShortName?.value || '').toLowerCase();
       const isAllowed = ALLOWED_LICENSES.some((l) => license.includes(l));
       if (!isAllowed) continue;
