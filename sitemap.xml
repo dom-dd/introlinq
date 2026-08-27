@@ -21,6 +21,26 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://www.introlinq.com/monetize-career-blog</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.introlinq.com/monetize-fashion-blog</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.introlinq.com/monetize-food-blog</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.introlinq.com/monetize-sport-blog</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://www.introlinq.com/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>

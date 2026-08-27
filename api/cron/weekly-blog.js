@@ -19,6 +19,21 @@ const TOPICS = [
   'How independent bloggers are earning commission without selling anything',
   'Blog monetization ideas for Ghost and Squarespace publishers',
   'How to monetize a small blog with under 10,000 monthly readers',
+  'How to monetize a finance or personal-money blog without selling products',
+  'How to monetize a health and wellness blog responsibly',
+  'Blog monetization ideas that do not require an email list',
+  'How to add a revenue stream to a blog you have not updated in years',
+  'The difference between affiliate marketing and expert referral commissions',
+  'How to monetize a blog on Webflow or Wix',
+  'Blog monetization ideas for bloggers who do not want to sell their own product',
+  'How to keep reader trust while monetizing a blog',
+  'Blog monetization ideas for hobby bloggers who never planned to earn from it',
+  'How to monetize evergreen content years after publishing',
+  'Common blog monetization mistakes that cost publishers money',
+  'How to diversify blog income beyond a single ad network',
+  'Blog monetization ideas for niche communities and forums',
+  'How much can a blog realistically earn from expert referrals',
+  'A blog monetization checklist for new publishers',
 ];
 
 // Everything the model is allowed to claim about the product. Written out

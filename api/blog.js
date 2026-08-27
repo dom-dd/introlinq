@@ -50,6 +50,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .article-cta{background:var(--ink);border-radius:20px;padding:2.5rem;text-align:center;margin-top:3rem}
 .article-cta-title{font-family:'DM Serif Display',serif;font-size:1.375rem;color:var(--white);margin-bottom:1.25rem}
 .btn-gold{background:var(--gold);color:var(--ink);border:none;padding:0.875rem 2rem;border-radius:100px;font-size:0.9375rem;font-weight:600;text-decoration:none;display:inline-block}
+.related-title{font-family:'DM Serif Display',serif;font-size:1.25rem;color:var(--ink);letter-spacing:-0.02em;margin:3rem 0 1rem}
+.related-guides{display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:1rem}
+.related-link{background:var(--white);border:1px solid var(--border);border-radius:100px;padding:0.625rem 1.25rem;font-size:0.875rem;font-weight:500;color:var(--sage);text-decoration:none}
+.related-link:hover{border-color:var(--sage)}
 footer{background:var(--ink);padding:3rem 2rem 2rem}
 .footer-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
 .footer-logo{font-family:'DM Serif Display',serif;font-size:1.25rem;color:var(--white);text-decoration:none}
@@ -171,6 +175,17 @@ ${nav()}
   <h1 class="article-title">${esc(post.title)}</h1>
   <p class="article-date">${formatDate(post.created_at)}</p>
   <div class="article-body">${post.body_html}</div>
+
+  <p class="related-title">More monetization guides</p>
+  <div class="related-guides">
+    <a class="related-link" href="/monetize-finance-blog">Finance blogs</a>
+    <a class="related-link" href="/monetize-health-blog">Health &amp; wellness blogs</a>
+    <a class="related-link" href="/monetize-career-blog">Career blogs</a>
+    <a class="related-link" href="/monetize-fashion-blog">Fashion &amp; style blogs</a>
+    <a class="related-link" href="/monetize-food-blog">Food &amp; nutrition blogs</a>
+    <a class="related-link" href="/monetize-sport-blog">Sport &amp; fitness blogs</a>
+  </div>
+
   <div class="article-cta">
     <p class="article-cta-title">Ready to turn your blog into a revenue stream?</p>
     <a class="btn-gold" href="/signup">Create your account →</a>
