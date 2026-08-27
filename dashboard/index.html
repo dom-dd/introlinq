@@ -81,6 +81,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .platform-card-label{font-size:0.8125rem;font-weight:600;color:var(--ink)}
 .platform-card.unsupported{border-style:dashed;opacity:0.8}
 .platform-card.unsupported .platform-card-label{color:var(--ink-soft)}
+.platform-card.suggested{border-color:var(--sage);background:var(--sage-light)}
+.platform-card .widget-card-tag{align-self:center}
 .platform-badge{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:1rem;color:#fff}
 .widget-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem}
 /* min-width:0 overrides a CSS Grid item's default min-width:auto, which
@@ -2558,6 +2560,15 @@ let _onboardingPlatformDetected = false;
 // selectOnboardingPlatform() checks this and skips straight to that
 // widget's install steps instead of the normal widget-type picker.
 let _pendingTargetWidget = null;
+// An unconfirmed prior platform click, offered as a one-click suggestion
+// on the picker rather than silently trusted - see isConfidentPlatform().
+let _suggestedPlatform = null;
+// Whatever platform was picked/confirmed THIS page session - the server
+// always resets platform_detected to false on any manual pick (see
+// api/dashboard.js's PATCH handler), so without this, confirming the
+// suggestion for one widget would still trigger "are you sure?" again on
+// the very next widget's install button in the same visit.
+let _sessionConfirmedPlatform = null;
 
 function goToOverviewTab() {
   switchTab('overview', document.getElementById('overview-tab-btn'));
@@ -2566,9 +2577,16 @@ function goToOverviewTab() {
 function initInstallTab(pub, savedPlatform, wasDetected) {
   _onboardingPub = pub;
   _onboardingPlatformDetected = !!wasDetected;
-  if (savedPlatform && (ONBOARDING_PLATFORMS[savedPlatform] || ONBOARDING_UNSUPPORTED[savedPlatform])) {
+  // Only called while first_widget_fire_at is still null (see loadDashboard),
+  // so that signal is always false here - platform_detected (a real site
+  // scan at signup) is the only thing that can make a stored platform
+  // confident at this entry point. Anything else is just a prior click,
+  // offered as a suggestion rather than skipped straight past - same
+  // reasoning as startWidgetInstall's isConfidentPlatform check.
+  if (savedPlatform && wasDetected && (ONBOARDING_PLATFORMS[savedPlatform] || ONBOARDING_UNSUPPORTED[savedPlatform])) {
     renderOnboardingWidgetPicker(savedPlatform);
   } else {
+    _suggestedPlatform = (savedPlatform && (ONBOARDING_PLATFORMS[savedPlatform] || ONBOARDING_UNSUPPORTED[savedPlatform])) ? savedPlatform : null;
     renderOnboardingPicker();
   }
 }
@@ -2578,6 +2596,23 @@ function initInstallTab(pub, savedPlatform, wasDetected) {
 // block there) - routes into this same Get Started flow instead of a
 // second, separate install UI. Reuses window._cd (the already-fetched
 // dashboard payload from loadDashboard) rather than a fresh API call.
+// A stored `platform` value is only trustworthy enough to skip straight to
+// install steps if it's either auto-detected (platform_detected=true, set
+// once from a real site scan at signup - see api/auth.js) or already
+// PROVEN correct by a real successful install (first_widget_fire_at set).
+// Any other stored platform is just whatever was last clicked - including
+// idle exploration of the picker, e.g. someone testing the Get Started
+// flow itself - and resets platform_detected to false the moment it's set
+// (see api/dashboard.js's PATCH handler), precisely so it can't be
+// confused with a confident answer. Found 2026-08-27: a test account with
+// platform='webflow' (never detected, never fired) was silently skipping
+// straight to Webflow's install steps for every widget, which is exactly
+// backwards - an unconfirmed guess should be offered as a suggestion, not
+// treated as settled.
+function isConfidentPlatform(pub) {
+  return !!(pub.platform && (pub.platform_detected || pub.first_widget_fire_at || pub.platform === _sessionConfirmedPlatform));
+}
+
 function startWidgetInstall(widgetType) {
   const pub = window._cd && window._cd.publisher;
   if (!pub) return;
@@ -2585,34 +2620,43 @@ function startWidgetInstall(widgetType) {
   _onboardingPlatformDetected = !!pub.platform_detected;
   document.getElementById('install-tab-btn').style.display = '';
   switchTab('install', document.getElementById('install-tab-btn'));
-  if (pub.platform && ONBOARDING_PLATFORMS[pub.platform]) {
+  if (isConfidentPlatform(pub) && ONBOARDING_PLATFORMS[pub.platform]) {
     renderOnboardingSteps(pub.platform, 0, widgetType);
-  } else if (pub.platform && ONBOARDING_UNSUPPORTED[pub.platform]) {
+  } else if (isConfidentPlatform(pub) && ONBOARDING_UNSUPPORTED[pub.platform]) {
     // Substack/Medium - let the normal widget-picker explain why a
     // script-embed widget won't work there rather than forcing a broken
     // install flow for it.
     renderOnboardingWidgetPicker(pub.platform);
   } else {
     _pendingTargetWidget = widgetType;
+    // Not confident, but an unconfirmed prior click is still worth
+    // offering as a one-click suggestion rather than making them hunt for
+    // it again from scratch - see renderOnboardingPicker.
+    _suggestedPlatform = (ONBOARDING_PLATFORMS[pub.platform] || ONBOARDING_UNSUPPORTED[pub.platform]) ? pub.platform : null;
     renderOnboardingPicker();
   }
 }
 
 function renderOnboardingPicker() {
+  const suggested = _suggestedPlatform;
+  const suggestedLabel = suggested ? (ONBOARDING_PLATFORMS[suggested] || ONBOARDING_UNSUPPORTED[suggested]).label : null;
   const cards = Object.entries(ONBOARDING_PLATFORMS).map(([id, p]) => `
-    <button class="platform-card" onclick="selectOnboardingPlatform('${id}')">
+    <button class="platform-card${id === suggested ? ' suggested' : ''}" onclick="selectOnboardingPlatform('${id}')">
       <div class="platform-card-icon">${p.icon}</div>
       <div class="platform-card-label">${esc(p.label)}</div>
+      ${id === suggested ? '<span class="widget-card-tag">Last selected</span>' : ''}
     </button>
   `).join('');
   const unsupported = Object.entries(ONBOARDING_UNSUPPORTED).map(([id, p]) => `
-    <button class="platform-card unsupported" onclick="selectOnboardingPlatform('${id}')">
+    <button class="platform-card unsupported${id === suggested ? ' suggested' : ''}" onclick="selectOnboardingPlatform('${id}')">
       <div class="platform-badge" style="background:${p.badge}">${p.letter}</div>
       <div class="platform-card-label">${esc(p.label)}</div>
+      ${id === suggested ? '<span class="widget-card-tag">Last selected</span>' : ''}
     </button>
   `).join('');
   document.getElementById('install-tab-body').innerHTML = `
     <div class="onboarding-lede">How is your blog built? Pick your platform and we'll walk you through installing the widget - it only takes a couple of minutes.</div>
+    ${suggested ? `<div class="onboarding-note">You picked <strong>${esc(suggestedLabel)}</strong> last time, but we're not fully sure yet - confirm it below, or pick a different platform if that's changed.</div>` : ''}
     <div class="platform-grid">${cards}${unsupported}</div>
   `;
 }
@@ -2622,6 +2666,12 @@ function selectOnboardingPlatform(id) {
     method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ platform: id }),
   }).catch(() => {});
+  // Picking (or confirming) a platform counts as knowing it for the rest
+  // of this page session, even though the server-side value alone won't
+  // look confident again until platform_detected or a real install proves
+  // it - see isConfidentPlatform().
+  _sessionConfirmedPlatform = id;
+  if (window._cd && window._cd.publisher) window._cd.publisher.platform = id;
   if (_pendingTargetWidget) {
     const target = _pendingTargetWidget;
     _pendingTargetWidget = null;
