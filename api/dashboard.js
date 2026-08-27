@@ -217,6 +217,14 @@ export default async function handler(req, res) {
       // making them otherwise indistinguishable in this table. Null for
       // every other widget/link type, which only ever has one click style.
       sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS click_source TEXT`.catch(() => {}),
+      // Records whether a Slack ping was actually attempted for this row -
+      // separate from is_bot, since the notification cooldown above (see
+      // isNotificationCoolingDown) can suppress a real (is_bot=false) row's
+      // notification without changing its bot classification. Without this,
+      // there was no way to verify from the data alone whether the cooldown
+      // was actually working, only whether Slack messages stopped arriving
+      // in practice (2026-08-27).
+      sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS notification_sent BOOLEAN`.catch(() => {}),
     ]);
     if (!clickBotColumnsReady) {
       await ensureBotColumns(sql, 'click_logs');
@@ -250,7 +258,8 @@ export default async function handler(req, res) {
     // max(insert, slack) rather than their sum.
     const articleTitle = title ? String(title).slice(0, 80) : null;
     const coolingDown = await isNotificationCoolingDown(sql, pub);
-    const slackPromise = (process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL && !isBot && !coolingDown)
+    const willNotify = !!(process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL && !isBot && !coolingDown);
+    const slackPromise = willNotify
       ? fetch(process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL, {
           method: 'POST',
           signal: AbortSignal.timeout(1500),
@@ -260,9 +269,9 @@ export default async function handler(req, res) {
       : Promise.resolve();
 
     await Promise.all([
-      sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, article_title, phrase, lang, timezone, device, traffic_source, ip, is_bot, click_source)
+      sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, article_title, phrase, lang, timezone, device, traffic_source, ip, is_bot, click_source, notification_sent)
         VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${click_id}, ${article || null},
-                ${title || null}, ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null}, ${ip || null}, ${isBot}, ${click_source || null})
+                ${title || null}, ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null}, ${ip || null}, ${isBot}, ${click_source || null}, ${willNotify})
       `.catch(() => {}),
       slackPromise,
     ]);
