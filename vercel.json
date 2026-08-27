@@ -1,5 +1,13 @@
 {
   "cleanUrls": true,
+  "redirects": [
+    { "source": "/detailed", "destination": "/", "permanent": true },
+    { "source": "/detailed.html", "destination": "/", "permanent": true },
+    { "source": "/landing", "destination": "/", "permanent": true },
+    { "source": "/landing.html", "destination": "/", "permanent": true },
+    { "source": "/short", "destination": "/", "permanent": true },
+    { "source": "/short.html", "destination": "/", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/brief", "destination": "/api/admin?resource=brief" }
   ],
