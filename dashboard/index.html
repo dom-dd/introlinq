@@ -2648,6 +2648,16 @@ const ONBOARDING_WIDGET_PREVIEWS = {
         <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
         <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
         <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
+        <!-- Same 4 cards repeated - carousel-slide animates translateX(0 -> -50%)
+             then jumps straight back to 0%, which only reads as a seamless loop
+             if the halfway point lines up with an identical repeat of the start.
+             The full Widgets-tab version has 12 cards for this exact reason;
+             trimming this compact copy to 4 non-duplicated cards broke that
+             math, causing the visible pop/reset Dom flagged (2026-08-27). -->
+        <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
+        <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
+        <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
+        <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-btn"></div></div>
       </div>
     </div>
   `,
