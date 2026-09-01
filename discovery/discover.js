@@ -11,7 +11,7 @@
 // are never duplicated.
 
 import { sql, ensureSchema } from './lib/db.js';
-import { serpSearch, extractCandidates, serpSearchesRemaining, MONTHLY_SEARCH_BUDGET } from './lib/serpapi.js';
+import { serpSearch, extractCandidates, serpPlanSearchesLeft, SEARCHES_PER_DAY, PLAN_SAFETY_FLOOR } from './lib/serpapi.js';
 import { generateQueriesByCategory, categoryForQuery, PRIORITY_CATEGORY } from './lib/queries.js';
 
 function parseArgs(argv) {
@@ -102,13 +102,20 @@ async function main() {
   const seed = await seedQueryPool();
   console.log(`  ${seed.total} queries generated, ${seed.inserted} new`);
 
-  // SerpAPI is a 250-searches/MONTH free plan - a big --target run would blow
-  // the whole month in one go, so cap this run at whatever's left under
-  // MONTHLY_SEARCH_BUDGET (read from SerpAPI directly; the /account call is free).
-  const budget = await serpSearchesRemaining();
-  console.log(`SerpAPI: ${budget.usedThisMonth} searches used this month, ${budget.remaining} left under the ${MONTHLY_SEARCH_BUDGET}/mo budget`);
-  if (budget.remaining <= 0) {
-    console.log('Monthly SerpAPI budget is spent - not running any searches. Wait for the monthly reset or raise MONTHLY_SEARCH_BUDGET in lib/serpapi.js.');
+  // SerpAPI is a SHARED key, so budget by our OWN usage today (searches run
+  // since UTC midnight, counted from discovery_queries) - a big --target run
+  // stops once we've hit SEARCHES_PER_DAY rather than eating into the shared
+  // plan. See discovery/lib/serpapi.js for the knobs.
+  const [{ count: usedToday }] = await sql`
+    SELECT COUNT(*)::int AS count FROM discovery_queries WHERE run_at >= date_trunc('day', NOW())`;
+  let searchBudget = SEARCHES_PER_DAY - usedToday;
+  try {
+    const planLeft = await serpPlanSearchesLeft();
+    searchBudget = Math.min(searchBudget, planLeft - PLAN_SAFETY_FLOOR);
+  } catch { /* account endpoint unreachable - daily budget still applies */ }
+  console.log(`SerpAPI: ${usedToday}/${SEARCHES_PER_DAY} searches used today; this run may make up to ${Math.max(0, searchBudget)} more`);
+  if (searchBudget <= 0) {
+    console.log('Daily SerpAPI budget is spent - stopping. Try again after UTC midnight, or raise SEARCHES_PER_DAY in lib/serpapi.js.');
     return;
   }
 
@@ -118,8 +125,8 @@ async function main() {
   let searchesMade = 0;
   let stopReason = 'target reached';
   while (domainCount < target) {
-    if (searchesMade >= budget.remaining) {
-      stopReason = `monthly SerpAPI budget reached (${searchesMade} searches this run)`;
+    if (searchesMade >= searchBudget) {
+      stopReason = `daily SerpAPI budget reached (${searchesMade} searches this run)`;
       break;
     }
     const query = await nextPendingQuery();
@@ -135,7 +142,7 @@ async function main() {
       const newDomains = await insertCandidates(candidates, query.query);
       await markQueryDone(query.id, { resultsCount: results.length, newDomainsCount: newDomains });
       domainCount += newDomains;
-      console.log(`[${query.query}] +${newDomains} new domains (total: ${domainCount}/${target}, ${searchesMade}/${budget.remaining} searches)`);
+      console.log(`[${query.query}] +${newDomains} new domains (total: ${domainCount}/${target}, ${searchesMade}/${searchBudget} searches)`);
     } catch (err) {
       searchesMade++; // a failed attempt may still have counted against the quota
       await markQueryFailed(query.id, err.message);

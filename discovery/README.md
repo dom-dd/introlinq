@@ -49,14 +49,21 @@ Try a small target first (e.g. `--target 50`) to confirm your SerpAPI key
 works and check the SERP account isn't over quota before committing to a
 larger run.
 
-**SerpAPI budget:** the key is on a 250-searches/**month** free plan. Both
-`discover.js` and the Vercel-side `run-discovery` endpoint call
-`serpSearchesRemaining()` (in `lib/serpapi.js`) first and stop once
-`MONTHLY_SEARCH_BUDGET` (240, a buffer under 250) is spent for the calendar
-month - so a large `--target` here can't blow the whole month in one run, it
-just stops early with `monthly SerpAPI budget reached`. The daily cron caps
-itself further at `PER_RUN_CAP` (4) searches per run x 2 runs/day ~= 8/day.
-Raise `MONTHLY_SEARCH_BUDGET` if the plan is upgraded.
+**SerpAPI budget:** the key is a **shared** account (`product@wearerival.com`,
+15k/mo Production plan), so discovery budgets by *our own* usage, not
+SerpAPI's account-wide monthly counter. Both `discover.js` and the
+Vercel-side `run-discovery` endpoint count how many searches we've run since
+UTC midnight (straight from `discovery_queries.run_at`) and stop at
+`SEARCHES_PER_DAY` (100). Knobs, all in `lib/serpapi.js`:
+
+- `SEARCHES_PER_DAY` (100) - the daily cap; turn discovery volume up/down here
+- `MAX_SEARCHES_PER_RUN` (120) - hard ceiling on a single `run-discovery` call
+- `PLAN_SAFETY_FLOOR` (250) - if a run would leave the shared plan with fewer
+  searches than this, back off (checked via SerpAPI's free `/account` call)
+
+A large `--target` on `discover.js` now stops at `daily SerpAPI budget
+reached` once the day's 100 are used. The cron runs 3x/day (06/12/18 UTC),
+each taking whatever's left of the 100.
 
 ## Resuming
 

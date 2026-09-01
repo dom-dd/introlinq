@@ -245,39 +245,19 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
     const { generateQueries, categoryForQuery, PRIORITY_CATEGORY } = await import('../discovery/lib/queries.js');
-    const { serpSearch, extractCandidates, serpSearchesRemaining, MONTHLY_SEARCH_BUDGET } = await import('../discovery/lib/serpapi.js');
+    const { serpSearch, extractCandidates, serpPlanSearchesLeft, SEARCHES_PER_DAY, MAX_SEARCHES_PER_RUN, PLAN_SAFETY_FLOOR } = await import('../discovery/lib/serpapi.js');
 
     const sql = neon(process.env.DATABASE_URL);
     const started = Date.now();
 
-    // SerpAPI is a 250-searches/MONTH free plan (2026-09-01, after the
-    // previously shared key was downgraded). That monthly pool - not
-    // wall-clock - is the binding constraint now. Ask SerpAPI directly how
-    // much is left this month (the /account call is free, doesn't count) and
-    // bail before touching the query pool if we're out.
-    let budget;
-    try {
-      budget = await serpSearchesRemaining();
-    } catch (err) {
-      return res.status(200).json({ ok: true, added: 0, queriesRun: 0, stopReason: `could not read SerpAPI budget: ${err.message}` });
-    }
-    // PER_RUN_CAP x 2 GitHub Actions runs/day => ~8 searches/day => ~240/month,
-    // just under the 250 cap even if the monthly gate never trips. runBudget
-    // is whichever of the two is tighter on this particular run.
-    const PER_RUN_CAP = 4;
-    const runBudget = Math.min(PER_RUN_CAP, budget.remaining);
-    if (runBudget <= 0) {
-      return res.status(200).json({ ok: true, added: 0, queriesRun: 0, stopReason: `monthly SerpAPI budget reached (${budget.usedThisMonth} used this month, cap ${MONTHLY_SEARCH_BUDGET})` });
-    }
-
     // Secondary guard only - api/admin.js is capped at maxDuration:60
-    // (vercel.json), so this stops a run hanging near the hard cap. With
-    // runBudget in single digits it rarely trips first anymore.
+    // (vercel.json), so this stops a run hanging near the hard cap. The
+    // SerpAPI daily budget (computed after the tables exist, below) is what
+    // normally ends a run.
     const TIME_BUDGET_MS = 50000;
     // Backstop only - runBudget stops the run long before this.
     const DAILY_TARGET = 200;
-    // No point spinning up more workers than searches we're allowed to make.
-    const CONCURRENCY = Math.min(4, runBudget);
+    const CONCURRENCY = 8;
 
     await sql`CREATE TABLE IF NOT EXISTS candidate_publishers (
       id SERIAL PRIMARY KEY,
@@ -312,6 +292,24 @@ export default async function handler(req, res) {
     // had 56-151 queries untouched, entirely because it's listed first in
     // TOPICS_BY_CATEGORY and this FIFO queue burned through it first.
     await sql`ALTER TABLE discovery_queries ADD COLUMN IF NOT EXISTS category TEXT`;
+
+    // ── SerpAPI daily budget ──────────────────────────────────────────────
+    // The key is a shared account (see discovery/README.md), so cap by OUR
+    // OWN usage: SerpAPI searches run since UTC midnight, counted straight
+    // from discovery_queries.run_at. SEARCHES_PER_DAY / MAX_SEARCHES_PER_RUN
+    // / PLAN_SAFETY_FLOOR live in discovery/lib/serpapi.js.
+    const [{ count: usedToday }] = await sql`
+      SELECT COUNT(*)::int AS count FROM discovery_queries WHERE run_at >= date_trunc('day', NOW())`;
+    let runBudget = Math.min(SEARCHES_PER_DAY - usedToday, MAX_SEARCHES_PER_RUN);
+    // Don't drain the last of the shared plan's quota. If the /account call
+    // fails, fall back to the daily budget alone rather than blocking.
+    try {
+      const planLeft = await serpPlanSearchesLeft();
+      runBudget = Math.min(runBudget, planLeft - PLAN_SAFETY_FLOOR);
+    } catch { /* account endpoint unreachable - daily budget still applies */ }
+    if (runBudget <= 0) {
+      return res.status(200).json({ ok: true, added: 0, queriesRun: 0, stopReason: `SerpAPI daily budget reached (${usedToday}/${SEARCHES_PER_DAY} today)` });
+    }
 
     const queries = generateQueries();
     const [{ count: seededCount }] = await sql`SELECT COUNT(*)::int AS count FROM discovery_queries`;
@@ -409,7 +407,7 @@ export default async function handler(req, res) {
 
     await Promise.all(Array.from({ length: CONCURRENCY }, worker));
 
-    return res.status(200).json({ ok: true, added, queriesRun, stopReason, monthlyUsedBefore: budget.usedThisMonth, monthlyBudget: MONTHLY_SEARCH_BUDGET, elapsedMs: Date.now() - started });
+    return res.status(200).json({ ok: true, added, queriesRun, stopReason, usedTodayBefore: usedToday, dailyBudget: SEARCHES_PER_DAY, elapsedMs: Date.now() - started });
   }
 
   // ── Outreach helper login (password-only) ──────────────────────────────

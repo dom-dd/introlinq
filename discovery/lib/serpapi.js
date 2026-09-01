@@ -1,12 +1,23 @@
 const SERPAPI_ENDPOINT = 'https://serpapi.com/search.json';
 const SERPAPI_ACCOUNT_ENDPOINT = 'https://serpapi.com/account.json';
 
-// SerpAPI is a 250-searches/MONTH free plan (2026-09-01, after the previously
-// shared key was downgraded). This is the real constraint on discovery now -
-// every serpSearch() below counts against a pool that has to last the whole
-// calendar month. Hold a small buffer under 250 so a miscount, a retry, or a
-// manual discover.js run can't tip us over into blocked/paid territory.
-export const MONTHLY_SEARCH_BUDGET = 240;
+// Our self-imposed cap on how many SerpAPI searches discovery may run per
+// calendar day (UTC). The key is a SHARED account (product@wearerival.com's
+// 15k/mo Production plan - see discovery/README.md), so we budget by OUR OWN
+// usage, counted from discovery_queries.run_at since UTC midnight, NOT
+// SerpAPI's this_month_usage (which also counts the other party's traffic).
+// This is the knob to turn discovery volume up or down.
+export const SEARCHES_PER_DAY = 100;
+
+// Hard ceiling on a single run, independent of the daily budget - keeps one
+// invocation (a stuck cron, a fat-fingered SEARCHES_PER_DAY) from running
+// away before the next daily-count check reins it in.
+export const MAX_SEARCHES_PER_RUN = 120;
+
+// Safety floor on the shared plan itself: if a run would leave the account
+// with fewer than this many searches, back off rather than drain the last of
+// someone else's quota.
+export const PLAN_SAFETY_FLOOR = 250;
 
 // Domains that show up constantly in searches but are never realistic
 // outreach targets - social platforms, marketplaces, reference sites, major
@@ -92,11 +103,12 @@ export async function serpSearch(query, { num = 10 } = {}) {
   return data.organic_results || [];
 }
 
-// Asks SerpAPI how much of the monthly quota is already spent and returns how
-// many more searches we can safely run this calendar month under
-// MONTHLY_SEARCH_BUDGET. The /account call itself is free and does NOT count
-// against the search quota. `remaining` is never negative.
-export async function serpSearchesRemaining() {
+// Reads plan_searches_left off SerpAPI's /account endpoint (that call is free
+// and does NOT count against the search quota). Used only for the shared-plan
+// safety floor - our real budget is the per-day count from discovery_queries.
+// Returns Infinity if the field is missing so a response-shape change can't
+// wedge discovery to a halt.
+export async function serpPlanSearchesLeft() {
   const apiKey = process.env.SERPAPI_KEY;
   if (!apiKey) throw new Error('SERPAPI_KEY is not set. Copy discovery/.env.local.example to discovery/.env.local and fill it in.');
 
@@ -109,16 +121,8 @@ export async function serpSearchesRemaining() {
     throw new Error(`SerpAPI account error ${res.status}: ${body.slice(0, 300)}`);
   }
   const data = await res.json();
-  // this_month_usage counts up; plan_searches_left counts down. Trust whichever
-  // is tighter, so we stop even if one field lags or the plan resets mid-run.
-  const usedThisMonth = Number(data.this_month_usage ?? 0);
-  const planLeft = Number(data.plan_searches_left ?? data.total_searches_left ?? Infinity);
-  const budgetLeft = MONTHLY_SEARCH_BUDGET - usedThisMonth;
-  return {
-    usedThisMonth,
-    planLeft,
-    remaining: Math.max(0, Math.min(budgetLeft, planLeft))
-  };
+  const left = Number(data.plan_searches_left ?? data.total_searches_left);
+  return Number.isFinite(left) ? left : Infinity;
 }
 
 // Extracts a clean, deduplicated-by-domain list of candidates from raw
