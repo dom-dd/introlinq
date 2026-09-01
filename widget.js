@@ -456,6 +456,25 @@
     return /adsbygoogle|google-auto-placed|goog-rentr|google-aiuf|google-anno-skip/i.test(cls) || /^aswift_/i.test(id);
   }
 
+  // Site chrome (nav menu, page header, footer) that only ends up inside the
+  // article container because findArticle() had to fall back to a broad
+  // wrapper - a bare <main>, or a page-builder <article> that wraps the
+  // whole template - instead of a tight post-body element. Menu labels,
+  // category pills, "Home / About / Shop", cookie notices and author-bio
+  // footers aren't article content: they skew language detection, churn the
+  // content hash so every load looks freshly edited, and - worst - a menu
+  // word can win an AI match and get a highlight wrapped around it.
+  // Confirmed on onlinebizoffers.com (Hostinger Website Builder): the nav's
+  // "Shop" dropdown is a <span> (so the A filter below doesn't catch it),
+  // it got matched, and the popup anchored up in the header. Matched by
+  // landmark - the semantic tag OR its ARIA role - so it works whether a
+  // builder emits <nav>/<header>/<footer> or <div role="navigation">.
+  function isChrome(p) {
+    if (/^(NAV|HEADER|FOOTER)$/.test(p.tagName)) return true;
+    var role = (p.getAttribute ? p.getAttribute('role') || '' : '').toLowerCase();
+    return role === 'navigation' || role === 'banner' || role === 'contentinfo';
+  }
+
   function extractParagraphText(el) {
     var walker = document.createTreeWalker(
       el,
@@ -466,6 +485,7 @@
           if (/^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA|INPUT|CODE|PRE|A|H1|H2|H3|H4|H5|H6)$/.test(p.tagName)) return NodeFilter.FILTER_REJECT;
           if (isOwnWidget(p)) return NodeFilter.FILTER_REJECT;
           if (isAdContainer(p)) return NodeFilter.FILTER_REJECT;
+          if (isChrome(p)) return NodeFilter.FILTER_REJECT;
           p = p.parentElement;
         }
         return NodeFilter.FILTER_ACCEPT;
@@ -1035,6 +1055,7 @@
               return NodeFilter.FILTER_REJECT;
             }
             if (isOwnWidget(el)) return NodeFilter.FILTER_REJECT;
+            if (isChrome(el)) return NodeFilter.FILTER_REJECT;
             el = el.parentElement;
           }
           return NodeFilter.FILTER_ACCEPT;
