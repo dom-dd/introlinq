@@ -245,28 +245,39 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
     const { generateQueries, categoryForQuery, PRIORITY_CATEGORY } = await import('../discovery/lib/queries.js');
-    const { serpSearch, extractCandidates } = await import('../discovery/lib/serpapi.js');
+    const { serpSearch, extractCandidates, serpSearchesRemaining, MONTHLY_SEARCH_BUDGET } = await import('../discovery/lib/serpapi.js');
 
     const sql = neon(process.env.DATABASE_URL);
     const started = Date.now();
-    // Raised from 50 (2026-08-25) - was never actually the binding
-    // constraint (the sequential loop below hit TIME_BUDGET_MS first every
-    // day, per real observed daily counts of 16-54), but now that queries
-    // run CONCURRENCY-wide instead of one at a time, a run can plausibly
-    // get here first. Kept as a backstop, not the expected limiter.
-    const DAILY_TARGET = 200;
-    // api/admin.js is capped at maxDuration:60 (vercel.json). Raised from
-    // 35000 now that queries run concurrently rather than serially - still
-    // leaves a full SerpAPI timeout (10s, see serpapi.js) of margin below
-    // the hard 60s cap for in-flight work to finish after the check trips.
+
+    // SerpAPI is a 250-searches/MONTH free plan (2026-09-01, after the
+    // previously shared key was downgraded). That monthly pool - not
+    // wall-clock - is the binding constraint now. Ask SerpAPI directly how
+    // much is left this month (the /account call is free, doesn't count) and
+    // bail before touching the query pool if we're out.
+    let budget;
+    try {
+      budget = await serpSearchesRemaining();
+    } catch (err) {
+      return res.status(200).json({ ok: true, added: 0, queriesRun: 0, stopReason: `could not read SerpAPI budget: ${err.message}` });
+    }
+    // PER_RUN_CAP x 2 GitHub Actions runs/day => ~8 searches/day => ~240/month,
+    // just under the 250 cap even if the monthly gate never trips. runBudget
+    // is whichever of the two is tighter on this particular run.
+    const PER_RUN_CAP = 4;
+    const runBudget = Math.min(PER_RUN_CAP, budget.remaining);
+    if (runBudget <= 0) {
+      return res.status(200).json({ ok: true, added: 0, queriesRun: 0, stopReason: `monthly SerpAPI budget reached (${budget.usedThisMonth} used this month, cap ${MONTHLY_SEARCH_BUDGET})` });
+    }
+
+    // Secondary guard only - api/admin.js is capped at maxDuration:60
+    // (vercel.json), so this stops a run hanging near the hard cap. With
+    // runBudget in single digits it rarely trips first anymore.
     const TIME_BUDGET_MS = 50000;
-    // No SerpAPI cost concern (2026-08-25) - queries are I/O-bound
-    // (waiting on SerpAPI + DB round-trips), so running several at once
-    // multiplies real throughput within the same wall-clock budget instead
-    // of just doing the same handful of queries faster. This was the
-    // actual bottleneck behind the ~4-6 queries/day observed previously,
-    // not DAILY_TARGET or SerpAPI spend.
-    const CONCURRENCY = 8;
+    // Backstop only - runBudget stops the run long before this.
+    const DAILY_TARGET = 200;
+    // No point spinning up more workers than searches we're allowed to make.
+    const CONCURRENCY = Math.min(4, runBudget);
 
     await sql`CREATE TABLE IF NOT EXISTS candidate_publishers (
       id SERIAL PRIMARY KEY,
@@ -377,24 +388,28 @@ export default async function handler(req, res) {
     }
 
     // CONCURRENCY workers each loop independently, claiming and processing
-    // one query at a time, until the time budget/DAILY_TARGET trips or the
-    // pool empties out. `added`/`queriesRun` are safe to mutate from
+    // one query at a time, until runBudget/DAILY_TARGET/the time budget trips
+    // or the pool empties out. `added`/`queriesRun` are safe to mutate from
     // multiple workers without a lock - JS is single-threaded, so each
-    // `added += newCount` runs to completion before the next `await` ever
-    // yields control elsewhere.
+    // statement runs to completion before the next `await` yields elsewhere.
     async function worker() {
-      while (added < DAILY_TARGET && !poolExhausted) {
+      while (!poolExhausted) {
+        if (added >= DAILY_TARGET) { stopReason = 'daily target reached'; return; }
         if (Date.now() - started > TIME_BUDGET_MS) { stopReason = 'time budget reached'; return; }
-        const query = await claimNextQuery();
-        if (!query) { poolExhausted = true; stopReason = 'query pool exhausted'; return; }
-        added += await processQuery(query);
+        // Reserve the SerpAPI slot before the call - there's no await between
+        // this check and the increment, so concurrent workers can't overshoot
+        // runBudget the way a post-call `queriesRun++` would let them.
+        if (queriesRun >= runBudget) { stopReason = 'run budget reached'; return; }
         queriesRun++;
+        const query = await claimNextQuery();
+        if (!query) { queriesRun--; poolExhausted = true; stopReason = 'query pool exhausted'; return; }
+        added += await processQuery(query);
       }
     }
 
     await Promise.all(Array.from({ length: CONCURRENCY }, worker));
 
-    return res.status(200).json({ ok: true, added, queriesRun, stopReason, elapsedMs: Date.now() - started });
+    return res.status(200).json({ ok: true, added, queriesRun, stopReason, monthlyUsedBefore: budget.usedThisMonth, monthlyBudget: MONTHLY_SEARCH_BUDGET, elapsedMs: Date.now() - started });
   }
 
   // ── Outreach helper login (password-only) ──────────────────────────────

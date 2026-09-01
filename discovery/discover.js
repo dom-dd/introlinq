@@ -11,7 +11,7 @@
 // are never duplicated.
 
 import { sql, ensureSchema } from './lib/db.js';
-import { serpSearch, extractCandidates } from './lib/serpapi.js';
+import { serpSearch, extractCandidates, serpSearchesRemaining, MONTHLY_SEARCH_BUDGET } from './lib/serpapi.js';
 import { generateQueriesByCategory, categoryForQuery, PRIORITY_CATEGORY } from './lib/queries.js';
 
 function parseArgs(argv) {
@@ -102,11 +102,26 @@ async function main() {
   const seed = await seedQueryPool();
   console.log(`  ${seed.total} queries generated, ${seed.inserted} new`);
 
+  // SerpAPI is a 250-searches/MONTH free plan - a big --target run would blow
+  // the whole month in one go, so cap this run at whatever's left under
+  // MONTHLY_SEARCH_BUDGET (read from SerpAPI directly; the /account call is free).
+  const budget = await serpSearchesRemaining();
+  console.log(`SerpAPI: ${budget.usedThisMonth} searches used this month, ${budget.remaining} left under the ${MONTHLY_SEARCH_BUDGET}/mo budget`);
+  if (budget.remaining <= 0) {
+    console.log('Monthly SerpAPI budget is spent - not running any searches. Wait for the monthly reset or raise MONTHLY_SEARCH_BUDGET in lib/serpapi.js.');
+    return;
+  }
+
   let domainCount = await currentDomainCount();
   console.log(`Starting. Domains so far: ${domainCount} / target ${target}`);
 
+  let searchesMade = 0;
   let stopReason = 'target reached';
   while (domainCount < target) {
+    if (searchesMade >= budget.remaining) {
+      stopReason = `monthly SerpAPI budget reached (${searchesMade} searches this run)`;
+      break;
+    }
     const query = await nextPendingQuery();
     if (!query) {
       stopReason = 'query pool exhausted';
@@ -115,12 +130,14 @@ async function main() {
 
     try {
       const results = await serpSearch(query.query);
+      searchesMade++;
       const candidates = extractCandidates(results);
       const newDomains = await insertCandidates(candidates, query.query);
       await markQueryDone(query.id, { resultsCount: results.length, newDomainsCount: newDomains });
       domainCount += newDomains;
-      console.log(`[${query.query}] +${newDomains} new domains (total: ${domainCount}/${target})`);
+      console.log(`[${query.query}] +${newDomains} new domains (total: ${domainCount}/${target}, ${searchesMade}/${budget.remaining} searches)`);
     } catch (err) {
+      searchesMade++; // a failed attempt may still have counted against the quota
       await markQueryFailed(query.id, err.message);
       console.error(`[${query.query}] FAILED: ${err.message}`);
     }

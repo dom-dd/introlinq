@@ -1,4 +1,12 @@
 const SERPAPI_ENDPOINT = 'https://serpapi.com/search.json';
+const SERPAPI_ACCOUNT_ENDPOINT = 'https://serpapi.com/account.json';
+
+// SerpAPI is a 250-searches/MONTH free plan (2026-09-01, after the previously
+// shared key was downgraded). This is the real constraint on discovery now -
+// every serpSearch() below counts against a pool that has to last the whole
+// calendar month. Hold a small buffer under 250 so a miscount, a retry, or a
+// manual discover.js run can't tip us over into blocked/paid territory.
+export const MONTHLY_SEARCH_BUDGET = 240;
 
 // Domains that show up constantly in searches but are never realistic
 // outreach targets - social platforms, marketplaces, reference sites, major
@@ -82,6 +90,35 @@ export async function serpSearch(query, { num = 10 } = {}) {
   const data = await res.json();
   if (data.error) throw new Error(`SerpAPI error: ${data.error}`);
   return data.organic_results || [];
+}
+
+// Asks SerpAPI how much of the monthly quota is already spent and returns how
+// many more searches we can safely run this calendar month under
+// MONTHLY_SEARCH_BUDGET. The /account call itself is free and does NOT count
+// against the search quota. `remaining` is never negative.
+export async function serpSearchesRemaining() {
+  const apiKey = process.env.SERPAPI_KEY;
+  if (!apiKey) throw new Error('SERPAPI_KEY is not set. Copy discovery/.env.local.example to discovery/.env.local and fill it in.');
+
+  const url = new URL(SERPAPI_ACCOUNT_ENDPOINT);
+  url.searchParams.set('api_key', apiKey);
+
+  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(10000) });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`SerpAPI account error ${res.status}: ${body.slice(0, 300)}`);
+  }
+  const data = await res.json();
+  // this_month_usage counts up; plan_searches_left counts down. Trust whichever
+  // is tighter, so we stop even if one field lags or the plan resets mid-run.
+  const usedThisMonth = Number(data.this_month_usage ?? 0);
+  const planLeft = Number(data.plan_searches_left ?? data.total_searches_left ?? Infinity);
+  const budgetLeft = MONTHLY_SEARCH_BUDGET - usedThisMonth;
+  return {
+    usedThisMonth,
+    planLeft,
+    remaining: Math.max(0, Math.min(budgetLeft, planLeft))
+  };
 }
 
 // Extracts a clean, deduplicated-by-domain list of candidates from raw

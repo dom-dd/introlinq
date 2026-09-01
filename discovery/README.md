@@ -49,6 +49,15 @@ Try a small target first (e.g. `--target 50`) to confirm your SerpAPI key
 works and check the SERP account isn't over quota before committing to a
 larger run.
 
+**SerpAPI budget:** the key is on a 250-searches/**month** free plan. Both
+`discover.js` and the Vercel-side `run-discovery` endpoint call
+`serpSearchesRemaining()` (in `lib/serpapi.js`) first and stop once
+`MONTHLY_SEARCH_BUDGET` (240, a buffer under 250) is spent for the calendar
+month - so a large `--target` here can't blow the whole month in one run, it
+just stops early with `monthly SerpAPI budget reached`. The daily cron caps
+itself further at `PER_RUN_CAP` (4) searches per run x 2 runs/day ~= 8/day.
+Raise `MONTHLY_SEARCH_BUDGET` if the plan is upgraded.
+
 ## Resuming
 
 All progress lives in Postgres. If a run is interrupted (Ctrl+C, crash,

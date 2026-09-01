@@ -7,12 +7,13 @@ name: Daily publisher discovery
 # api/admin.js function (resource=run-discovery) rather than a new file,
 # triggered by GitHub Actions' free scheduler rather than Vercel's own cron.
 #
-# Two real daily runs, both unconditional - 06:00 and 12:00 UTC. Previously
-# 12:00 only fired as a same-day retry if 06:00 had failed (kept SerpAPI
-# spend to one run/day), but with no SerpAPI budget concern (2026-08-25) and
-# run-discovery now processing queries CONCURRENCY-wide instead of one at a
-# time (see api/admin.js), a genuine second run is worth more than holding
-# it in reserve as a failure backstop.
+# Two runs/day, 06:00 and 12:00 UTC. SerpAPI is back on a 250-searches/MONTH
+# free plan (2026-09-01, after the previously shared key was downgraded), so
+# run-discovery (see api/admin.js) now caps itself at PER_RUN_CAP=4 SerpAPI
+# searches per run and hard-stops on a monthly budget it reads from SerpAPI
+# directly. 4 x 2 runs/day ~= 8/day ~= 240/month, under the 250 cap. The
+# second run also covers the case where GitHub Actions silently drops the
+# 06:00 one.
 #
 # After discovery, this also runs discovery/classify.js directly on the
 # runner (not through api/admin.js - that function is already at Vercel's
