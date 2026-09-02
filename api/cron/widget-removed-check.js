@@ -18,34 +18,57 @@ export default async function handler(req, res) {
 
   await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS widget_removed_notified_at TIMESTAMPTZ`.catch(() => {});
 
+  // With ACTIVATION_V2 the "was live, now silent" check keys off
+  // last_script_activity_at (any script embed - widget, carousel or board),
+  // not last_widget_fire_at alone, so a removed carousel/board is caught
+  // too. A manual-link publisher has last_script_activity_at IS NULL and so
+  // never triggers this - "clicks went quiet" isn't evidence a link was
+  // removed. Unset the env var to fall back to the widget-only check.
+  const V2 = !!process.env.ACTIVATION_V2;
+  if (V2) {
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS last_script_activity_at TIMESTAMPTZ`.catch(() => {});
+  }
+  const quietField = V2 ? 'last_script_activity_at' : 'last_widget_fire_at';
+
   // ever went live, currently silent, not already notified about this
-  // silence episode (widget_removed_notified_at is cleared in match.js the
-  // moment the widget fires again, so a reinstall + later re-removal
+  // silence episode (widget_removed_notified_at is cleared the moment a
+  // script embed fires again - in match.js for the widget, in dashboard.js
+  // stampActivity for carousel/board - so a reinstall + later re-removal
   // re-triggers this cleanly).
-  const candidates = await sql`
-    SELECT * FROM publishers
-    WHERE active = true
-      AND first_widget_fire_at IS NOT NULL
-      AND last_widget_fire_at IS NOT NULL
-      AND widget_removed_notified_at IS NULL
-      AND slug NOT LIKE 'demo-%'
-  `;
+  const candidates = V2
+    ? await sql`
+        SELECT * FROM publishers
+        WHERE active = true
+          AND last_script_activity_at IS NOT NULL
+          AND widget_removed_notified_at IS NULL
+          AND slug NOT LIKE 'demo-%'
+      `
+    : await sql`
+        SELECT * FROM publishers
+        WHERE active = true
+          AND first_widget_fire_at IS NOT NULL
+          AND last_widget_fire_at IS NOT NULL
+          AND widget_removed_notified_at IS NULL
+          AND slug NOT LIKE 'demo-%'
+      `;
 
   const results = [];
 
   for (const pub of candidates) {
-    const daysSinceQuiet = (Date.now() - new Date(pub.last_widget_fire_at).getTime()) / 86400000;
+    const quietSince = pub[quietField];
+    const daysSinceQuiet = (Date.now() - new Date(quietSince).getTime()) / 86400000;
     if (daysSinceQuiet < DAYS_SILENT) continue;
 
-    const lastFire = new Date(pub.last_widget_fire_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
+    const lastFire = new Date(quietSince).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
+    const thing = V2 ? 'IntroLinq embed' : 'widget';
     const emailRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         from: 'IntroLinq <notifications@introlinq.com>',
         to: NOTIFY_EMAIL,
-        subject: `${pub.name} may have removed the widget`,
-        text: `${pub.name} (${pub.slug}, ${pub.email}) hasn't fired the widget since ${lastFire} (${Math.floor(daysSinceQuiet)} days silent). They were live before, so this looks like a removal rather than a never-installed case. Worth a personal follow-up.`,
+        subject: `${pub.name} may have removed the ${thing}`,
+        text: `${pub.name} (${pub.slug}, ${pub.email}) hasn't fired the ${thing} since ${lastFire} (${Math.floor(daysSinceQuiet)} days silent). They were live before, so this looks like a removal rather than a never-installed case. Worth a personal follow-up.`,
       }),
     });
 

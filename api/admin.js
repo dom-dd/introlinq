@@ -760,8 +760,11 @@ export default async function handler(req, res) {
     // widget stops running, so recency of that is what "currently live"
     // actually means - 3 days mirrors the silence threshold
     // widget-removed-check.js already uses to flag a publisher as gone.
+    // With ACTIVATION_V2, "currently live" means any activity in the last
+    // 3 days (widget/carousel/board/manual), not just a widget fire.
+    const liveField = process.env.ACTIVATION_V2 ? 'last_activity_at' : 'last_widget_fire_at';
     const [publishers, experts, lastSync] = await Promise.all([
-      sql`SELECT COUNT(*)::int AS count, COUNT(*) FILTER (WHERE last_widget_fire_at > NOW() - INTERVAL '3 days')::int AS live_count FROM publishers WHERE active = true AND slug NOT LIKE 'demo-%'`,
+      sql.query(`SELECT COUNT(*)::int AS count, COUNT(*) FILTER (WHERE ${liveField} > NOW() - INTERVAL '3 days')::int AS live_count FROM publishers WHERE active = true AND slug NOT LIKE 'demo-%'`),
       // Labeled "from OpenIntro" in the UI - must actually filter to that
       // provider, not count every active expert across every provider
       // (demo providers included), or the number silently drifts from what
@@ -1070,11 +1073,15 @@ export default async function handler(req, res) {
       // Windowed to STATS_RESET_AT so these match what each publisher sees in
       // their own dashboard - not deleted, just filtered (see STATS_RESET_AT
       // comment above).
-      const [matchStats, clickStats, hoverStats, seenStats, cacheStats] = await Promise.all([
+      const [matchStats, clickStats, hoverStats, seenStats, cacheStats, embedSourceStats, clickSourceStats] = await Promise.all([
         sql`SELECT publisher, COUNT(*)::int AS impressions FROM match_logs WHERE match_count > 0 AND is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY publisher`.catch(() => []),
         sql`SELECT publisher, COUNT(*)::int AS clicks FROM click_logs WHERE is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY publisher`.catch(() => []),
         sql`SELECT publisher, COUNT(*)::int AS hovers FROM hover_logs WHERE is_bot = false GROUP BY publisher`.catch(() => []),
         sql`SELECT publisher, COUNT(*)::int AS seen FROM seen_logs WHERE is_bot = false GROUP BY publisher`.catch(() => []),
+        // Integration-mode signals: which non-widget embeds each publisher
+        // actually uses. Widget is inferred separately from first_widget_fire_at.
+        sql`SELECT DISTINCT publisher, source FROM match_logs WHERE is_bot = false AND source IN ('carousel','board')`.catch(() => []),
+        sql`SELECT DISTINCT publisher, traffic_source FROM click_logs WHERE is_bot = false AND traffic_source IN ('newsletter','carousel','board')`.catch(() => []),
         // Scan-cap status: total pages scanned (any verdict) vs. how many
         // actually found a match, per publisher - powers the cap icon's
         // tooltip breakdown. last_30d is the number that actually determines
@@ -1091,14 +1098,25 @@ export default async function handler(req, res) {
       const hoverMap = Object.fromEntries(hoverStats.map(r => [r.publisher, r.hovers]));
       const seenMap = Object.fromEntries(seenStats.map(r => [r.publisher, r.seen]));
       const cacheMap = Object.fromEntries(cacheStats.map(r => [r.publisher, r]));
+      // publisher slug -> Set of non-widget modes seen
+      const modeMap = {};
+      const addMode = (slug, m) => { (modeMap[slug] || (modeMap[slug] = new Set())).add(m); };
+      embedSourceStats.forEach(r => addMode(r.publisher, r.source));
+      clickSourceStats.forEach(r => addMode(r.publisher, r.traffic_source === 'newsletter' ? 'manual' : r.traffic_source));
+      const activationV2 = !!process.env.ACTIVATION_V2;
       const result = publishers.map(p => {
         const c = cacheMap[p.slug];
+        const modes = [];
+        if (p.first_widget_fire_at) modes.push('widget');
+        ['carousel', 'board', 'manual'].forEach(m => { if (modeMap[p.slug]?.has(m)) modes.push(m); });
         return {
           ...p,
           impressions: matchMap[p.slug] || 0,
           clicks: clickMap[p.slug] || 0,
           hovers: hoverMap[p.slug] || 0,
           seen: seenMap[p.slug] || 0,
+          modes,
+          activation_v2: activationV2,
           scanned_pages: c ? c.total : 0,
           matched_pages: c ? c.matched : 0,
           no_match_pages: c ? c.total - c.matched : 0,

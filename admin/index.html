@@ -1502,7 +1502,19 @@ function renderWidgetStatusIcon(p) {
   const isLive = !neverInstalled && !!lastFire && (Date.now() - lastFire.getTime()) < WIDGET_STALE_MS;
   const wentQuiet = !neverInstalled && !isLive;
   let tooltip, color, bg;
-  if (neverInstalled) {
+  // ACTIVATION_V2: a publisher with no widget fire but real activity via
+  // another mode (carousel / board / manual links) is active, not pending.
+  const otherModes = (p.modes || []).filter(m => m !== 'widget');
+  if (p.activation_v2 && neverInstalled && otherModes.length) {
+    const lastAct = p.last_activity_at ? new Date(p.last_activity_at) : null;
+    const actLive = !!lastAct && (Date.now() - lastAct.getTime()) < WIDGET_STALE_MS;
+    const label = otherModes.join(' + ');
+    tooltip = actLive
+      ? `Active via ${label} (no AI text widget). Last activity ${lastAct ? fmt(lastAct) : 'unknown'}.`
+      : `Was active via ${label} but no activity since ${lastAct ? fmt(lastAct) : 'unknown'} - the embed or link may be gone.`;
+    color = actLive ? '#16a34a' : '#dc2626';
+    bg = actLive ? '#f0fdf4' : '#fff1f1';
+  } else if (neverInstalled) {
     tooltip = `Widget has never fired - the embed code likely hasn't been added to their site yet.`;
     color = '#e6a820';
     bg = '#fef3c7';
@@ -1541,14 +1553,20 @@ function reminderTooltip(p) {
     ['Day 10', 10, p.reminder_3_sent_at],
     ['Day 24', 24, p.reminder_4_sent_at],
   ];
+  const activatedV2 = p.activation_v2 && p.activated_at;
+  const stopReason = p.first_widget_fire_at
+    ? 'widget went live'
+    : activatedV2
+      ? `active via ${((p.modes || []).filter(m => m !== 'widget').join(' + ')) || 'another mode'}`
+      : null;
   const lines = stages.map(([label, days, sentAt]) => {
     if (sentAt) return `${label}: sent on ${fmtDateTime(sentAt)}`;
-    if (p.first_widget_fire_at) return `${label}: cancelled - widget went live`;
+    if (stopReason) return `${label}: cancelled - ${stopReason}`;
     if (p.reminders_paused) return `${label}: on pause`;
     return `${label}: scheduled for ${fmtDate(new Date(created.getTime() + days * 86400000))}`;
   });
-  const action = p.first_widget_fire_at
-    ? 'Stopped automatically - widget went live'
+  const action = stopReason
+    ? `Stopped automatically - ${stopReason}`
     : p.reminders_paused
       ? 'Paused manually - click to resume'
       : 'Active - click to pause';
@@ -1562,7 +1580,16 @@ function reminderTooltip(p) {
 function publisherWidgetBucket(p) {
   const lastFire = p.last_widget_fire_at ? new Date(p.last_widget_fire_at) : null;
   const neverInstalled = !p.first_widget_fire_at;
-  if (neverInstalled) return 'pub-pending';
+  if (neverInstalled) {
+    // ACTIVATION_V2: non-widget activity (carousel/board/manual) keeps a
+    // publisher out of the "Pending Install" bucket.
+    const otherModes = (p.modes || []).filter(m => m !== 'widget');
+    if (p.activation_v2 && otherModes.length) {
+      const lastAct = p.last_activity_at ? new Date(p.last_activity_at) : null;
+      return (lastAct && (Date.now() - lastAct.getTime()) < WIDGET_STALE_MS) ? 'pub-active' : 'pub-quiet';
+    }
+    return 'pub-pending';
+  }
   const isLive = !!lastFire && (Date.now() - lastFire.getTime()) < WIDGET_STALE_MS;
   return isLive ? 'pub-active' : 'pub-quiet';
 }
@@ -1611,6 +1638,7 @@ function publisherRow(p) {
         <div class="td-name">${esc(p.name)}</div>
         <div style="font-size:0.75rem;color:var(--ink-muted)">${esc(p.email)}</div>
         ${(p.contact_first_name || p.contact_last_name) ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px;font-style:italic">${esc([p.contact_first_name, p.contact_last_name].filter(Boolean).join(' '))}</div>` : ''}
+        ${(p.activation_v2 && (p.modes || []).length) ? `<div style="margin-top:3px;display:flex;gap:3px;flex-wrap:wrap">${p.modes.map(m => `<span style="font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.03em;padding:1px 5px;border-radius:4px;background:${m==='widget'?'#eef2ff':m==='manual'?'#fef9c3':'#ecfdf5'};color:${m==='widget'?'#4338ca':m==='manual'?'#a16207':'#047857'}">${m}</span>`).join('')}</div>` : ''}
         <div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px">
           ${Math.round((p.revenue_share||0.70)*100)}% rev share
           <button onclick="editRevenueShare(${p.id}, ${Math.round((p.revenue_share||0.70)*100)})" title="Edit revenue share" style="background:none;border:none;cursor:pointer;color:var(--ink-muted);padding:0 0 0 3px;vertical-align:middle" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--ink-muted)'"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
