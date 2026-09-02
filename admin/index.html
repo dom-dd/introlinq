@@ -1502,7 +1502,7 @@ function renderWidgetStatusIcon(p) {
   const isLive = !neverInstalled && !!lastFire && (Date.now() - lastFire.getTime()) < WIDGET_STALE_MS;
   const wentQuiet = !neverInstalled && !isLive;
   let tooltip, color, bg;
-  const otherModes = p.activation_v2 ? (p.modes || []).filter(m => m !== 'widget') : [];
+  const otherModes = (p.modes || []).filter(m => m !== 'widget');
   if (neverInstalled && otherModes.length) {
     // Active via carousel/board/manual - the AI text widget just isn't the
     // integration they chose, so this reads neutral grey, not alarm-yellow.
@@ -1538,9 +1538,9 @@ const MODE_ICON_DEFS = {
   board:    { label: 'Expert Board embed',              on: '#0f766e', onBg: '#ccfbf1', svg: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>' },
 };
 function renderModeIcons(p) {
-  if (!p.activation_v2) return '';
+  if (!Array.isArray(p.modes)) return '';
   const fmt = d => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
-  const modes = p.modes || [];
+  const modes = p.modes;
   return ['manual', 'carousel', 'board'].map(m => {
     const def = MODE_ICON_DEFS[m];
     const on = modes.includes(m);
@@ -1576,10 +1576,9 @@ function reminderTooltip(p) {
     ['Day 10', 10, p.reminder_3_sent_at],
     ['Day 24', 24, p.reminder_4_sent_at],
   ];
-  const activatedV2 = p.activation_v2 && p.activated_at;
   const stopReason = p.first_widget_fire_at
     ? 'widget went live'
-    : activatedV2
+    : (p.activated_at || (p.modes || []).some(m => m !== 'widget'))
       ? `active via ${((p.modes || []).filter(m => m !== 'widget').join(' + ')) || 'another mode'}`
       : null;
   const lines = stages.map(([label, days, sentAt]) => {
@@ -1607,11 +1606,10 @@ function reminderTooltip(p) {
 // the Inactive bucket so the sub-panel element IDs don't have to change.
 function publisherWidgetBucket(p) {
   if (!p.active) return 'pub-pending';
-  const v2 = p.activation_v2;
-  const everActive = !!p.first_widget_fire_at || (v2 && !!p.activated_at);
+  const everActive = !!p.first_widget_fire_at || !!p.activated_at || (p.modes || []).length > 0;
   if (!everActive) return 'pub-pending';
   const lastFire = p.last_widget_fire_at ? new Date(p.last_widget_fire_at).getTime() : 0;
-  const lastAny = (v2 && p.last_activity_at) ? new Date(p.last_activity_at).getTime() : 0;
+  const lastAny = p.last_activity_at ? new Date(p.last_activity_at).getTime() : 0;
   return (Date.now() - Math.max(lastFire, lastAny)) < WIDGET_STALE_MS ? 'pub-active' : 'pub-quiet';
 }
 
