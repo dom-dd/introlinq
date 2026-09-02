@@ -322,7 +322,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
            timestamps change - no separate stored status to keep in sync. -->
       <div class="pub-subtab-bar">
         <button class="pub-subtab active" data-name="pub-active" onclick="switchPublishersSubtab('pub-active',this)">Active</button>
-        <button class="pub-subtab" data-name="pub-pending" onclick="switchPublishersSubtab('pub-pending',this)">Pending Install</button>
+        <button class="pub-subtab" data-name="pub-pending" onclick="switchPublishersSubtab('pub-pending',this)">Inactive</button>
         <button class="pub-subtab" data-name="pub-quiet" onclick="switchPublishersSubtab('pub-quiet',this)">Went Quiet</button>
       </div>
 
@@ -1502,7 +1502,14 @@ function renderWidgetStatusIcon(p) {
   const isLive = !neverInstalled && !!lastFire && (Date.now() - lastFire.getTime()) < WIDGET_STALE_MS;
   const wentQuiet = !neverInstalled && !isLive;
   let tooltip, color, bg;
-  if (neverInstalled) {
+  const otherModes = p.activation_v2 ? (p.modes || []).filter(m => m !== 'widget') : [];
+  if (neverInstalled && otherModes.length) {
+    // Active via carousel/board/manual - the AI text widget just isn't the
+    // integration they chose, so this reads neutral grey, not alarm-yellow.
+    tooltip = `AI text widget not used - active via ${otherModes.join(' + ')} instead (see the icons alongside).`;
+    color = '#8888a8';
+    bg = '#f4f4f8';
+  } else if (neverInstalled) {
     tooltip = `Widget has never fired - the embed code likely hasn't been added to their site yet.`;
     color = '#e6a820';
     bg = '#fef3c7';
@@ -1593,21 +1600,19 @@ function reminderTooltip(p) {
 // logic exactly (same WIDGET_STALE_MS threshold) so a publisher's sub-tab
 // bucket always agrees with the status icon shown in its row - there's no
 // separate stored status field to drift out of sync with it.
+// Three buckets: Active (activity within WIDGET_STALE_MS via ANY mode -
+// widget, carousel, board or manual links), Went Quiet (was active, has
+// since gone silent), Inactive (deactivated by an admin, or signed up and
+// never did anything at all). The internal key 'pub-pending' is kept for
+// the Inactive bucket so the sub-panel element IDs don't have to change.
 function publisherWidgetBucket(p) {
-  const lastFire = p.last_widget_fire_at ? new Date(p.last_widget_fire_at) : null;
-  const neverInstalled = !p.first_widget_fire_at;
-  if (neverInstalled) {
-    // ACTIVATION_V2: non-widget activity (carousel/board/manual) keeps a
-    // publisher out of the "Pending Install" bucket.
-    const otherModes = (p.modes || []).filter(m => m !== 'widget');
-    if (p.activation_v2 && otherModes.length) {
-      const lastAct = p.last_activity_at ? new Date(p.last_activity_at) : null;
-      return (lastAct && (Date.now() - lastAct.getTime()) < WIDGET_STALE_MS) ? 'pub-active' : 'pub-quiet';
-    }
-    return 'pub-pending';
-  }
-  const isLive = !!lastFire && (Date.now() - lastFire.getTime()) < WIDGET_STALE_MS;
-  return isLive ? 'pub-active' : 'pub-quiet';
+  if (!p.active) return 'pub-pending';
+  const v2 = p.activation_v2;
+  const everActive = !!p.first_widget_fire_at || (v2 && !!p.activated_at);
+  if (!everActive) return 'pub-pending';
+  const lastFire = p.last_widget_fire_at ? new Date(p.last_widget_fire_at).getTime() : 0;
+  const lastAny = (v2 && p.last_activity_at) ? new Date(p.last_activity_at).getTime() : 0;
+  return (Date.now() - Math.max(lastFire, lastAny)) < WIDGET_STALE_MS ? 'pub-active' : 'pub-quiet';
 }
 
 function switchPublishersSubtab(name, btn) {
@@ -1627,7 +1632,7 @@ async function loadPublishers() {
 
   const emptyMessage = {
     'pub-active': 'No active publishers yet.',
-    'pub-pending': 'No publishers pending install - everyone who signed up has added the embed code.',
+    'pub-pending': 'No inactive publishers - everyone who signed up is doing something and none are deactivated.',
     'pub-quiet': 'No publishers have gone quiet.',
   };
 
