@@ -1073,15 +1073,36 @@ export default async function handler(req, res) {
       // Windowed to STATS_RESET_AT so these match what each publisher sees in
       // their own dashboard - not deleted, just filtered (see STATS_RESET_AT
       // comment above).
-      const [matchStats, clickStats, hoverStats, seenStats, cacheStats, embedSourceStats, clickSourceStats] = await Promise.all([
+      const [matchStats, clickStats, hoverStats, seenStats, modeStats, cacheStats] = await Promise.all([
         sql`SELECT publisher, COUNT(*)::int AS impressions FROM match_logs WHERE match_count > 0 AND is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY publisher`.catch(() => []),
         sql`SELECT publisher, COUNT(*)::int AS clicks FROM click_logs WHERE is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY publisher`.catch(() => []),
         sql`SELECT publisher, COUNT(*)::int AS hovers FROM hover_logs WHERE is_bot = false GROUP BY publisher`.catch(() => []),
         sql`SELECT publisher, COUNT(*)::int AS seen FROM seen_logs WHERE is_bot = false GROUP BY publisher`.catch(() => []),
-        // Integration-mode signals: which non-widget embeds each publisher
-        // actually uses. Widget is inferred separately from first_widget_fire_at.
-        sql`SELECT DISTINCT publisher, source FROM match_logs WHERE is_bot = false AND source IN ('carousel','board')`.catch(() => []),
-        sql`SELECT DISTINCT publisher, traffic_source FROM click_logs WHERE is_bot = false AND traffic_source IN ('newsletter','carousel','board')`.catch(() => []),
+        // Integration-mode signals: which non-widget embeds a publisher is
+        // genuinely using. Widget is inferred separately from
+        // first_widget_fire_at. Two guards against false positives:
+        //  - exclude any hit whose page is on introlinq.com itself - that's
+        //    the /expertboard?pub=<slug> preview page and the dashboard
+        //    previews, not a real embed on the publisher's own site;
+        //  - the JS below only counts a mode once it has >=3 non-bot events
+        //    from >=3 distinct IPs, so one-off QA clicks don't light it up.
+        sql`
+          WITH mode_events AS (
+            SELECT publisher, source AS mode, ip FROM match_logs
+            WHERE is_bot = false AND source IN ('carousel','board')
+              AND page_url IS NOT NULL AND page_url NOT ILIKE '%introlinq.com%'
+            UNION ALL
+            SELECT publisher,
+              CASE WHEN COALESCE(traffic_source, phrase) = 'newsletter' THEN 'manual'
+                   ELSE COALESCE(traffic_source, phrase) END AS mode,
+              ip FROM click_logs
+            WHERE is_bot = false
+              AND (traffic_source IN ('carousel','board','newsletter') OR phrase IN ('carousel','board','newsletter'))
+              AND (article_url IS NULL OR article_url NOT ILIKE '%introlinq.com%')
+          )
+          SELECT publisher, mode, COUNT(*)::int AS n, COUNT(DISTINCT ip)::int AS ips
+          FROM mode_events GROUP BY publisher, mode
+        `.catch(() => []),
         // Scan-cap status: total pages scanned (any verdict) vs. how many
         // actually found a match, per publisher - powers the cap icon's
         // tooltip breakdown. last_30d is the number that actually determines
@@ -1098,11 +1119,14 @@ export default async function handler(req, res) {
       const hoverMap = Object.fromEntries(hoverStats.map(r => [r.publisher, r.hovers]));
       const seenMap = Object.fromEntries(seenStats.map(r => [r.publisher, r.seen]));
       const cacheMap = Object.fromEntries(cacheStats.map(r => [r.publisher, r]));
-      // publisher slug -> Set of non-widget modes seen
+      // publisher slug -> Set of non-widget modes genuinely in use. A mode
+      // only counts with >=3 non-bot events from >=3 distinct IPs, so a
+      // handful of QA hits don't register as real usage.
       const modeMap = {};
-      const addMode = (slug, m) => { (modeMap[slug] || (modeMap[slug] = new Set())).add(m); };
-      embedSourceStats.forEach(r => addMode(r.publisher, r.source));
-      clickSourceStats.forEach(r => addMode(r.publisher, r.traffic_source === 'newsletter' ? 'manual' : r.traffic_source));
+      modeStats.forEach(r => {
+        if (!r.mode || r.n < 3 || r.ips < 3) return;
+        (modeMap[r.publisher] || (modeMap[r.publisher] = new Set())).add(r.mode);
+      });
       const activationV2 = !!process.env.ACTIVATION_V2;
       const result = publishers.map(p => {
         const c = cacheMap[p.slug];

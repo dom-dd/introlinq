@@ -315,13 +315,17 @@ export default async function handler(req, res) {
     // proof of an embed rendering on the publisher's site, so it stamps
     // last_activity_at but not last_script_activity_at (removal detection).
     const isManualLink = source === 'newsletter' || phrase === 'newsletter';
+    // Clicks that originate on introlinq.com itself (the /expertboard
+    // preview page, dashboard previews) are QA, not real publisher usage -
+    // don't let them count as activation.
+    const isPreview = /introlinq\.com/i.test(article || '');
     await Promise.all([
       sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, article_title, phrase, lang, timezone, device, traffic_source, ip, is_bot, click_source, notification_sent)
         VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${click_id}, ${article || null},
                 ${title || null}, ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null}, ${ip || null}, ${isBot}, ${click_source || null}, ${willNotify})
       `.catch(() => {}),
       slackPromise,
-      isBot ? Promise.resolve() : stampActivity(sql, pub, { script: !isManualLink }),
+      (isBot || isPreview) ? Promise.resolve() : stampActivity(sql, pub, { script: !isManualLink }),
     ]);
 
     return res.redirect(302, destUrl);
@@ -444,12 +448,15 @@ export default async function handler(req, res) {
       carouselBotColumnsReady = true;
     }
     const isBot = await isBotHit(req, sql, 'match_logs', { ip, publisher: pub, page_url: article });
+    // A render on introlinq.com's own preview page (/expertboard?pub=...) is
+    // QA, not the embed being live on the publisher's site.
+    const isPreview = /introlinq\.com/i.test(article || '');
     await Promise.all([
       sql`
         INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, match_count, page_url, source, ip, is_bot)
         VALUES (${pub}, ${isBoard ? '[board]' : '[carousel]'}, ${[]}, ${names}, ${count}, ${article || null}, ${isBoard ? 'board' : 'carousel'}, ${ip || null}, ${isBot})
       `.catch(() => {}),
-      isBot ? Promise.resolve() : stampActivity(sql, pub, { script: true }),
+      (isBot || isPreview) ? Promise.resolve() : stampActivity(sql, pub, { script: true }),
     ]);
     return res.status(200).end();
   }
