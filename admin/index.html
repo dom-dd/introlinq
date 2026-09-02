@@ -44,7 +44,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 .logout-btn{background:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);font-size:0.75rem;padding:0.25rem 0.75rem;border-radius:100px;cursor:pointer;font-family:'Inter',sans-serif;transition:border-color 0.15s}
 .logout-btn:hover{border-color:rgba(255,255,255,0.5);color:var(--white)}
 
-.admin-body{max-width:1280px;margin:0 auto;padding:2.5rem 2rem 5rem}
+.admin-body{max-width:1600px;margin:0 auto;padding:2.5rem 2rem 5rem}
 
 /* Stats */
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem}
@@ -151,8 +151,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(
 
 /* Table */
 table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:0.75rem 1.1rem;font-size:0.7rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border)}
-td{padding:0.875rem 1.1rem;font-size:0.875rem;color:var(--ink-soft);border-bottom:1px solid var(--border)}
+th{text-align:left;padding:0.75rem 0.8rem;font-size:0.7rem;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border)}
+td{padding:0.875rem 0.8rem;font-size:0.875rem;color:var(--ink-soft);border-bottom:1px solid var(--border)}
 td:last-child{text-align:right;white-space:nowrap}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:rgba(0,0,0,0.01)}
@@ -1549,8 +1549,8 @@ function renderModeIcons(p) {
     const tooltip = on
       ? `${def.label} - detected${p.last_activity_at ? `. Last activity across all modes: ${fmt(p.last_activity_at)}` : ''}.`
       : `No ${def.label.toLowerCase()} activity detected for this publisher.`;
-    return `<span title="${esc(tooltip)}" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${bg};color:${color};flex-shrink:0;cursor:default">`
-      + `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${def.svg}</svg></span>`;
+    return `<span title="${esc(tooltip)}" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:${bg};color:${color};flex-shrink:0;cursor:default">`
+      + `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${def.svg}</svg></span>`;
   }).join('');
 }
 
