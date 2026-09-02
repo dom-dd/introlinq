@@ -422,31 +422,11 @@
       // check in api/match.js). td-post-content is the theme's own tight
       // single-post wrapper, checked before the generic fallbacks below.
       '.td-post-content',
-      // Zyro / Hostinger Website Builder blog posts (confirmed on
-      // onlinebizoffers.com). The post is an Astro client:only Vue island,
-      // so the body only exists after hydration and carries none of the
-      // class names above - it renders as a bare <div class="wrapper">
-      // holding <h1>, <div class="meta-bar"> (the "Reading duration: ~13
-      // minutes" line), then the <p>/<h2> body. The outer page's own
-      // selectors never match it, so this used to fall through to <main
-      // class="page">, which wraps the nav/header/footer and hydrates its
-      // header block (title + SEO excerpt) well before the island's body -
-      // so a scan firing mid-hydration matched only the excerpt/title. Bare
-      // '.wrapper' is far too generic for this shared list; ':has(> .meta-
-      // bar)' pins it to this exact structure (a page-level wrapper never
-      // has a reading-duration bar as a direct child) without needing a
-      // per-publisher selector. Checked before the generic fallbacks below.
-      '.wrapper:has(> .meta-bar)',
       'article',
       'main'
     ];
     for (var i = 0; i < selectors.length; i++) {
-      // try/catch: ':has()' (and any future modern selector added here)
-      // throws SyntaxError in a browser too old to support it - without
-      // this, that one bad selector would abort findArticle() entirely
-      // rather than just being skipped.
-      var el;
-      try { el = document.querySelector(selectors[i]); } catch (e) { el = null; }
+      var el = document.querySelector(selectors[i]);
       if (el && (el.innerText || '').length > 200) return el;
     }
     return null;
