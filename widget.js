@@ -201,22 +201,7 @@
     var el = findArticle();
     var text = el ? extractParagraphText(el) : '';
 
-    // A bare <article>/<main>/<body> match can be a client-rendered page's
-    // shell whose real body hasn't mounted yet - on an Astro/Vue island
-    // site (confirmed on onlinebizoffers.com) the post container (e.g.
-    // .wrapper:has(> .meta-bar), checked ahead of 'main' in findArticle)
-    // only appears a second or two after <main> already exists. <main>
-    // holding just a post-header block (title + SEO excerpt, ~300 chars
-    // once nav/header/footer are excluded) clears the 150 floor, so without
-    // this the scan commits to that stub and matches only the excerpt.
-    // Keep retrying while the sole match is a generic container under ~600
-    // chars; a real article body is many times that, and a genuine
-    // <main>-only site with a short post still scans once retries run out
-    // (the < 150 check below is unchanged).
-    var generic = el && el.matches && el.matches('article, main, body');
-    var thin = !el || text.length < 150 || (generic && text.length < 600);
-
-    if (thin && attempt < 10) {
+    if ((!el || text.length < 150) && attempt < 10) {
       setTimeout(function () { tryRun(attempt + 1); }, 600);
       return;
     }
