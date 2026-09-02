@@ -836,6 +836,7 @@
       + '&tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || '')
       + '&device=' + (window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop')
       + '&source=' + encodeURIComponent(getTrafficSource())
+      + '&il_type=text'
       + '&title=' + encodeURIComponent(document.title.slice(0, 150))
       + '&click_source=no_match_cta';
 
@@ -1474,6 +1475,7 @@
       + '&tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || '')
       + '&device=' + (window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop')
       + '&source=' + encodeURIComponent(getTrafficSource())
+      + '&il_type=text'
       + '&title=' + encodeURIComponent(document.title.slice(0, 150))
       + '&click_source=' + encodeURIComponent(clickSource);
   }
@@ -1496,6 +1498,7 @@
       + '&tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || '')
       + '&device=' + (window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop')
       + '&source=' + encodeURIComponent(getTrafficSource())
+      + '&il_type=text'
       + '&title=' + encodeURIComponent(document.title.slice(0, 150))
       + '&click_source=partner_logo';
   }

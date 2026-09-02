@@ -242,7 +242,7 @@
           + '&expert_name=' + encodeURIComponent(e.name || '')
           + '&expert_url=' + encodeURIComponent(e.booking_url)
           + '&article=' + encodeURIComponent(window.location.href.slice(0, 300))
-          + '&phrase=expertboard&source=board'
+          + '&phrase=expertboard&source=board&il_type=board'
         : '#';
 
       return '<div class="ilb-card">'

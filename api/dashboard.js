@@ -235,7 +235,11 @@ export default async function handler(req, res) {
 
   // Public redirect - routes Book button through IntroLinq before sending to partner
   if (req.method === 'GET' && action === 'out') {
-    const { expert_id, expert_name, expert_url, article, phrase, lang, tz, device, source, title, click_source } = req.query;
+    const { expert_id, expert_name, expert_url, article, phrase, lang, tz, device, source, title, click_source, il_type } = req.query;
+    // Explicit integration tag set by each surface (text / carousel / board
+    // / manual). Older links/cached scripts don't send it - left null, and
+    // the source/phrase heuristic still classifies those.
+    const integration = ['text', 'carousel', 'board', 'manual'].includes(il_type) ? il_type : null;
     if (!expert_url) return res.status(400).json({ error: 'Missing expert_url' });
 
     const click_id = crypto.randomUUID();
@@ -268,6 +272,7 @@ export default async function handler(req, res) {
       // was actually working, only whether Slack messages stopped arriving
       // in practice (2026-08-27).
       sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS notification_sent BOOLEAN`.catch(() => {}),
+      sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS integration TEXT`.catch(() => {}),
     ]);
     if (!clickBotColumnsReady) {
       await ensureBotColumns(sql, 'click_logs');
@@ -320,9 +325,9 @@ export default async function handler(req, res) {
     // don't let them count as activation.
     const isPreview = /introlinq\.com/i.test(article || '');
     await Promise.all([
-      sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, article_title, phrase, lang, timezone, device, traffic_source, ip, is_bot, click_source, notification_sent)
+      sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, article_title, phrase, lang, timezone, device, traffic_source, ip, is_bot, click_source, notification_sent, integration)
         VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${click_id}, ${article || null},
-                ${title || null}, ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null}, ${ip || null}, ${isBot}, ${click_source || null}, ${willNotify})
+                ${title || null}, ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null}, ${ip || null}, ${isBot}, ${click_source || null}, ${willNotify}, ${integration})
       `.catch(() => {}),
       slackPromise,
       (isBot || isPreview) ? Promise.resolve() : stampActivity(sql, pub, { script: !isManualLink }),

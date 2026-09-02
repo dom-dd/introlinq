@@ -1782,7 +1782,7 @@ function copyNewsletterLink(expertId) {
     + '&expert_id=' + encodeURIComponent(e.id)
     + '&expert_name=' + encodeURIComponent(e.name || '')
     + '&expert_url=' + encodeURIComponent(e.booking_url)
-    + '&phrase=newsletter&source=newsletter';
+    + '&phrase=newsletter&source=newsletter&il_type=manual';
   navigator.clipboard.writeText(url);
   toast('Link copied!');
 }

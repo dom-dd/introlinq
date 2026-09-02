@@ -1064,6 +1064,10 @@ export default async function handler(req, res) {
     // they'd already been scanning freely for a while with no cap in mind.
     // Only publishers created after that point default to false (capped).
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS scan_cap_override BOOLEAN NOT NULL DEFAULT false`;
+    // Referenced by the mode-detection CTE below; created here so a fresh
+    // deploy's first admin load doesn't error before any click has run the
+    // matching ALTER in api/dashboard.js.
+    await sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS integration TEXT`.catch(() => {});
 
     if (req.method === 'GET') {
       // Demo publisher accounts (power the /demo/*.html showcase pages' widgets)
@@ -1093,15 +1097,21 @@ export default async function handler(req, res) {
               AND page_url IS NOT NULL AND page_url NOT ILIKE '%introlinq.com%'
             UNION ALL
             SELECT publisher,
-              CASE WHEN COALESCE(traffic_source, phrase) = 'newsletter' THEN 'manual'
-                   ELSE COALESCE(traffic_source, phrase) END AS mode,
+              COALESCE(
+                NULLIF(integration, 'text'),
+                CASE WHEN COALESCE(traffic_source, phrase) = 'newsletter' THEN 'manual'
+                     WHEN COALESCE(traffic_source, phrase) IN ('carousel','board') THEN COALESCE(traffic_source, phrase)
+                     ELSE NULL END
+              ) AS mode,
               ip FROM click_logs
             WHERE is_bot = false
-              AND (traffic_source IN ('carousel','board','newsletter') OR phrase IN ('carousel','board','newsletter'))
+              AND (integration IN ('carousel','board','manual')
+                   OR traffic_source IN ('carousel','board','newsletter')
+                   OR phrase IN ('carousel','board','newsletter'))
               AND (article_url IS NULL OR article_url NOT ILIKE '%introlinq.com%')
           )
           SELECT publisher, mode, COUNT(*)::int AS n, COUNT(DISTINCT ip)::int AS ips
-          FROM mode_events GROUP BY publisher, mode
+          FROM mode_events WHERE mode IS NOT NULL GROUP BY publisher, mode
         `.catch(() => []),
         // Scan-cap status: total pages scanned (any verdict) vs. how many
         // actually found a match, per publisher - powers the cap icon's

@@ -126,7 +126,7 @@
           +'&expert_name='+encodeURIComponent(e.name||'')
           +'&expert_url='+encodeURIComponent(e.booking_url)
           +'&article='+encodeURIComponent(window.location.href.slice(0,300))
-          +'&phrase=carousel&source=carousel'
+          +'&phrase=carousel&source=carousel&il_type=carousel'
         : '#';
       return '<div class="ilc-card">'
         +'<img class="ilc-photo" src="'+esc(e.photo_url||fallback)+'" onerror="this.src=\''+fallback+'\'" alt="'+esc(e.name)+'">'
