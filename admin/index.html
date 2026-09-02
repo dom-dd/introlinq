@@ -1502,19 +1502,7 @@ function renderWidgetStatusIcon(p) {
   const isLive = !neverInstalled && !!lastFire && (Date.now() - lastFire.getTime()) < WIDGET_STALE_MS;
   const wentQuiet = !neverInstalled && !isLive;
   let tooltip, color, bg;
-  // ACTIVATION_V2: a publisher with no widget fire but real activity via
-  // another mode (carousel / board / manual links) is active, not pending.
-  const otherModes = (p.modes || []).filter(m => m !== 'widget');
-  if (p.activation_v2 && neverInstalled && otherModes.length) {
-    const lastAct = p.last_activity_at ? new Date(p.last_activity_at) : null;
-    const actLive = !!lastAct && (Date.now() - lastAct.getTime()) < WIDGET_STALE_MS;
-    const label = otherModes.join(' + ');
-    tooltip = actLive
-      ? `Active via ${label} (no AI text widget). Last activity ${lastAct ? fmt(lastAct) : 'unknown'}.`
-      : `Was active via ${label} but no activity since ${lastAct ? fmt(lastAct) : 'unknown'} - the embed or link may be gone.`;
-    color = actLive ? '#16a34a' : '#dc2626';
-    bg = actLive ? '#f0fdf4' : '#fff1f1';
-  } else if (neverInstalled) {
+  if (neverInstalled) {
     tooltip = `Widget has never fired - the embed code likely hasn't been added to their site yet.`;
     color = '#e6a820';
     bg = '#fef3c7';
@@ -1529,6 +1517,34 @@ function renderWidgetStatusIcon(p) {
   }
   const icon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
   return `<span title="${esc(tooltip)}" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:${bg};color:${color};flex-shrink:0;cursor:default">${icon}</span>`;
+}
+
+// ACTIVATION_V2: one small circular icon per non-widget integration mode
+// (carousel / board / manual newsletter links). Muted grey when we've never
+// seen that mode from this publisher, lit in its own colour once detected -
+// same read-at-a-glance idea as the widget/active/payment icons next to it.
+// Renders nothing at all unless the flag is on, so with it off the Status
+// column looks exactly as before.
+const MODE_ICON_DEFS = {
+  manual:   { label: 'Manual links (newsletter/email)', on: '#a16207', onBg: '#fef9c3', svg: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>' },
+  carousel: { label: 'Carousel embed',                  on: '#4338ca', onBg: '#eef2ff', svg: '<rect x="6" y="6" width="12" height="12" rx="1"/><path d="M3 9v6M21 9v6"/>' },
+  board:    { label: 'Expert Board embed',              on: '#0f766e', onBg: '#ccfbf1', svg: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>' },
+};
+function renderModeIcons(p) {
+  if (!p.activation_v2) return '';
+  const fmt = d => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
+  const modes = p.modes || [];
+  return ['manual', 'carousel', 'board'].map(m => {
+    const def = MODE_ICON_DEFS[m];
+    const on = modes.includes(m);
+    const color = on ? def.on : '#c4c4d0';
+    const bg = on ? def.onBg : '#f5f5f8';
+    const tooltip = on
+      ? `${def.label} - detected${p.last_activity_at ? `. Last activity across all modes: ${fmt(p.last_activity_at)}` : ''}.`
+      : `No ${def.label.toLowerCase()} activity detected for this publisher.`;
+    return `<span title="${esc(tooltip)}" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${bg};color:${color};flex-shrink:0;cursor:default">`
+      + `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${def.svg}</svg></span>`;
+  }).join('');
 }
 
 // Replaces the old plain-text "Active"/"Inactive" badge column - same
@@ -1638,7 +1654,6 @@ function publisherRow(p) {
         <div class="td-name">${esc(p.name)}</div>
         <div style="font-size:0.75rem;color:var(--ink-muted)">${esc(p.email)}</div>
         ${(p.contact_first_name || p.contact_last_name) ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px;font-style:italic">${esc([p.contact_first_name, p.contact_last_name].filter(Boolean).join(' '))}</div>` : ''}
-        ${(p.activation_v2 && (p.modes || []).length) ? `<div style="margin-top:3px;display:flex;gap:3px;flex-wrap:wrap">${p.modes.map(m => `<span style="font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.03em;padding:1px 5px;border-radius:4px;background:${m==='widget'?'#eef2ff':m==='manual'?'#fef9c3':'#ecfdf5'};color:${m==='widget'?'#4338ca':m==='manual'?'#a16207':'#047857'}">${m}</span>`).join('')}</div>` : ''}
         <div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px">
           ${Math.round((p.revenue_share||0.70)*100)}% rev share
           <button onclick="editRevenueShare(${p.id}, ${Math.round((p.revenue_share||0.70)*100)})" title="Edit revenue share" style="background:none;border:none;cursor:pointer;color:var(--ink-muted);padding:0 0 0 3px;vertical-align:middle" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--ink-muted)'"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
@@ -1685,7 +1700,7 @@ function publisherRow(p) {
         </div>
       </td>
       <td style="white-space:nowrap">${new Date(p.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' })}</td>
-      <td><div style="display:flex;gap:4px">${renderActiveStatusIcon(p)}${renderWidgetStatusIcon(p)}${renderPaymentStatusIcon(p)}</div></td>
+      <td><div style="display:flex;gap:4px;align-items:center">${renderActiveStatusIcon(p)}${renderWidgetStatusIcon(p)}${renderModeIcons(p)}${renderPaymentStatusIcon(p)}</div></td>
       <td>
         <div style="display:flex;gap:6px;align-items:center;justify-content:flex-start">
           <button onclick="recrawlPublisher('${esc(p.slug)}')" title="Recrawl - clear this publisher's page cache so every page re-scans on next visit" style="background:#fff7e6;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
