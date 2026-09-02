@@ -238,6 +238,23 @@ export async function isCoordinatedBurst(sql, table, { ip, publisher, page_url, 
   return (rows[0]?.n || 0) >= 1;
 }
 
+// Team/founder IPs that must always count as real traffic, no matter how
+// they hit the site - repeated manual testing of one page (checking a fix,
+// watching for the Slack ping) trips isBurstTraffic/isSitewideBurst exactly
+// like a bot would, which then hides those very test hits from the
+// dashboard and suppresses the Slack notification being tested for. Kept as
+// a short explicit list for the same reason KNOWN_CRAWLER_RANGES is:
+// obvious to audit, trivial to remove an entry. Note home IPs are often
+// dynamic - an entry here can silently stop matching after an ISP lease
+// change and just needs updating.
+const TRUSTED_IPS = new Set([
+  '82.19.114.4', // Dom (founder) - manual widget/QA testing
+]);
+
+export function isTrustedIp(ip) {
+  return !!ip && TRUSTED_IPS.has(ip);
+}
+
 // Single source of truth for "should this row count as a bot" - combines
 // every signal (known-crawler IP range, known-crawler User-Agent, same-page
 // burst, sitewide burst, distributed fan-out burst, coordinated multi-IP
@@ -251,6 +268,7 @@ export async function isCoordinatedBurst(sql, table, { ip, publisher, page_url, 
 // reader regardless of whether its purpose is "good" (indexing) or "bad"
 // (scraping), so all get the same is_bot=true treatment here.
 export async function isBotHit(req, sql, table, { ip, publisher, page_url, expert_id, expert_name }) {
+  if (isTrustedIp(ip)) return false;
   if (isKnownCrawlerIp(ip) || isAllowlistedCrawler(req)) return true;
   if (await isBurstTraffic(sql, table, { ip, publisher, page_url })) return true;
   if (await isCoordinatedBurst(sql, table, { ip, publisher, page_url, expert_id, expert_name })) return true;
