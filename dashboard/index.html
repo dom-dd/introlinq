@@ -525,6 +525,7 @@ tr:last-child td{border-bottom:none}
   <div class="logo">Intro<span>Linq</span></div>
   <div style="display:flex;align-items:center;gap:1rem">
     <div class="pub-name" id="header-name"></div>
+    <div id="header-modes" style="display:none;font-size:0.7rem;color:rgba(255,255,255,0.55);letter-spacing:0.02em"></div>
     <button class="suggest-expert-btn" onclick="openSuggestExpertModal()">Suggest an Expert</button>
     <button onclick="logout()" style="background:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);font-size:0.75rem;font-family:'Inter',sans-serif;padding:0.35rem 0.75rem;border-radius:100px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='rgba(255,255,255,0.5)';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(255,255,255,0.2)';this.style.color='rgba(255,255,255,0.6)'">Log out</button>
   </div>
@@ -566,7 +567,8 @@ tr:last-child td{border-bottom:none}
 
     <!-- ── Overview ── -->
     <div class="tab-panel active" id="tab-overview">
-      <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
+      <div id="manual-only-note" style="display:none;margin-bottom:16px;padding:12px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:0.8125rem;color:#92400e;line-height:1.5"></div>
+      <div class="stats-grid" id="overview-stats-grid" style="grid-template-columns:repeat(5,1fr)">
         <div class="stat-card">
           <div class="stat-label">Page visits<span class="stat-info-icon" title="Counts every page load on a page where the widget is installed and ran - not your site's total traffic. Pages without the widget aren't counted.">i</span></div>
           <div class="stat-value clickable" id="stat-articles" onclick="openPagesModal()">-</div>
@@ -595,7 +597,7 @@ tr:last-child td{border-bottom:none}
         </div>
       </div>
 
-      <div class="section">
+      <div class="section" id="overview-performance-section">
         <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
           <div>
             <div class="section-title">Performance</div>
@@ -1233,6 +1235,13 @@ async function loadDashboard() {
   const d = await res.json();
 
   document.getElementById('header-name').textContent = d.publisher.name;
+  const modesEl = document.getElementById('header-modes');
+  if (modesEl) {
+    const labels = { widget: 'AI text widget', carousel: 'Carousel', board: 'Expert board', manual: 'Manual links' };
+    const ms = (d.activation_v2 && Array.isArray(d.modes)) ? d.modes : [];
+    modesEl.textContent = ms.map(m => labels[m] || m).join(' · ');
+    modesEl.style.display = ms.length ? 'block' : 'none';
+  }
   document.getElementById('main').style.display = 'block';
 
   // Store page URLs for modal
@@ -1293,6 +1302,10 @@ async function loadDashboard() {
   // Logs
   renderLogs(d.logs_matched || [], d.logs_no_match || []);
 
+  // ACTIVATION_V2: publishers using only manual links have no view/hover
+  // funnel to show - swap the Overview to a clicks/bookings/earnings layout.
+  applyManualOnlyLayout(d);
+
   // Setup banner - show until widget has fired at least once (regardless of match outcome).
   // Uses first_widget_fire_at rather than inferring from the log arrays -
   // those are additionally filtered by STATS_RESET_AT/is_bot/page_url, so
@@ -1303,10 +1316,11 @@ async function loadDashboard() {
     // not a banner sitting oddly above the tab bar). It stays in the tab
     // bar for as long as the widget's never fired, so navigating away to
     // look around and coming back to it is just clicking a tab, no
-    // dismiss/reopen tracking needed.
+    // dismiss/reopen tracking needed. A manual-links publisher (v2) is
+    // genuinely set up, so the tab stays available but isn't forced open.
     initInstallTab(d.publisher.slug, d.publisher.platform, d.publisher.platform_detected);
     document.getElementById('install-tab-btn').style.display = '';
-    switchTab('install', document.getElementById('install-tab-btn'));
+    if (!(d.activation_v2 && d.manual_only)) switchTab('install', document.getElementById('install-tab-btn'));
   } else if (d.publisher.last_widget_fire_at) {
     // Always visible once live, not just right after setup - last_widget_fire_at
     // updates on every single widget request, so this is an ongoing "is it still
@@ -2019,6 +2033,48 @@ function renderLogs(matched, noMatch) {
   _logsMatched = matched;
   _logsNoMatch = noMatch;
   renderLogsFiltered();
+}
+
+// ACTIVATION_V2 manual-links layout. A publisher whose only activity is
+// clicks on links they pasted into a newsletter/email has no page-visit,
+// seen or hover data by nature - the old 5-card funnel + charts read as
+// "nothing works". Swap in a clicks / bookings / earnings view instead.
+// Idempotent and fully reversible: when the flag/flag-condition is off it
+// restores the original 5-card grid and the Performance section.
+function applyManualOnlyLayout(d) {
+  const on = !!(d.activation_v2 && d.manual_only);
+  const note = document.getElementById('manual-only-note');
+  const grid = document.getElementById('overview-stats-grid');
+  const perf = document.getElementById('overview-performance-section');
+  if (note) {
+    note.style.display = on ? 'block' : 'none';
+    if (on) note.textContent = 'Views and hovers can’t be tracked for links placed in newsletters, emails or an embedded board — your clicks, bookings and earnings below are what’s measured.';
+  }
+  if (perf) perf.style.display = on ? 'none' : '';
+  if (!grid) return;
+  const byCur = (d.bookings && d.bookings.by_currency) || [];
+  const earnings = byCur.length ? byCur.map(c => `${c.currency} ${Math.round(c.payout).toLocaleString()}`).join(' · ') : '—';
+  const bookingCount = ((d.bookings && d.bookings.count) || 0).toLocaleString();
+  const baseCards = Array.from(grid.querySelectorAll('.stat-card')).filter(c => !c.dataset.manualExtra);
+  baseCards.forEach((card, i) => { card.style.display = (on && i !== 3) ? 'none' : ''; }); // keep card 3 = Clicks
+  let extras = Array.from(grid.querySelectorAll('[data-manual-extra]'));
+  if (on && !extras.length) {
+    const mk = (label, value, sub) => {
+      const el = document.createElement('div');
+      el.className = 'stat-card';
+      el.dataset.manualExtra = '1';
+      el.innerHTML = `<div class="stat-label">${label}</div><div class="stat-value">${value}</div><div class="stat-sub">${sub}</div>`;
+      return el;
+    };
+    grid.appendChild(mk('Bookings', bookingCount, 'calls booked from your links'));
+    grid.appendChild(mk('Earnings', earnings, 'your share, all time'));
+  } else if (on) {
+    extras[0].querySelector('.stat-value').textContent = bookingCount;
+    extras[1].querySelector('.stat-value').textContent = earnings;
+  } else {
+    extras.forEach(e => e.remove());
+  }
+  grid.style.gridTemplateColumns = on ? 'repeat(3,1fr)' : 'repeat(5,1fr)';
 }
 
 function setLogsFilter(filter, btn) {

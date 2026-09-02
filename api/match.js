@@ -514,6 +514,14 @@ async function markPublisherActivity(sql, publisher) {
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS first_widget_fire_at TIMESTAMPTZ`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS last_widget_fire_at TIMESTAMPTZ`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS widget_removed_notified_at TIMESTAMPTZ`.catch(() => {});
+    // Cross-mode activity timestamps (see api/cron/activation-reminders.js
+    // and widget-removed-check.js). A widget fire is the strongest kind of
+    // activity, so it stamps all three: activated_at (ever did anything),
+    // last_activity_at (any signal), last_script_activity_at (a script
+    // embed specifically - widget/carousel/board, not a manual link click).
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS activated_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS last_activity_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS last_script_activity_at TIMESTAMPTZ`.catch(() => {});
     publisherActivityColumnsReady = true;
   }
   // Clearing widget_removed_notified_at on every fire (not just the first)
@@ -524,6 +532,9 @@ async function markPublisherActivity(sql, publisher) {
     UPDATE publishers
     SET last_widget_fire_at = NOW(),
         first_widget_fire_at = COALESCE(first_widget_fire_at, NOW()),
+        activated_at = COALESCE(activated_at, NOW()),
+        last_activity_at = NOW(),
+        last_script_activity_at = NOW(),
         widget_removed_notified_at = NULL
     WHERE slug = ${publisher}
     RETURNING name, email, (first_widget_fire_at = NOW()) AS just_went_live

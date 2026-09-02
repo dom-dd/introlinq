@@ -32,19 +32,34 @@ export default async function handler(req, res) {
   await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS reminder_4_sent_at TIMESTAMPTZ`.catch(() => {});
   await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS reminders_paused BOOLEAN DEFAULT false`.catch(() => {});
 
-  // first_widget_fire_at IS NULL is the actual "stop the sequence" condition -
-  // the moment a publisher's widget genuinely fires for the first time, they
-  // stop matching this query entirely and no further reminder ever sends,
-  // regardless of which stage they were on.
+  // The "stop the sequence" condition. Historically first_widget_fire_at IS
+  // NULL - i.e. the AI text widget never fired. With ACTIVATION_V2 it's
+  // activated_at IS NULL instead: ANY real activity (widget fire, carousel
+  // or board render, or a repeat manual-link click) stops the nudges, so a
+  // publisher who integrated via a non-widget method isn't told they never
+  // started. Unset the env var to fall straight back to the old behaviour.
+  const V2 = !!process.env.ACTIVATION_V2;
+  if (V2) {
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS activated_at TIMESTAMPTZ`.catch(() => {});
+  }
   const candidates = TEST_MODE
     ? await sql`SELECT * FROM publishers WHERE slug = ${TEST_PUBLISHER} AND active = true`
-    : await sql`
-        SELECT * FROM publishers
-        WHERE active = true
-          AND first_widget_fire_at IS NULL
-          AND reminders_paused = false
-          AND created_at IS NOT NULL
-      `;
+    : V2
+      ? await sql`
+          SELECT * FROM publishers
+          WHERE active = true
+            AND activated_at IS NULL
+            AND first_widget_fire_at IS NULL
+            AND reminders_paused = false
+            AND created_at IS NOT NULL
+        `
+      : await sql`
+          SELECT * FROM publishers
+          WHERE active = true
+            AND first_widget_fire_at IS NULL
+            AND reminders_paused = false
+            AND created_at IS NOT NULL
+        `;
 
   const results = [];
 

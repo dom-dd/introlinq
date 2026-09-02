@@ -56,6 +56,49 @@ function getSessionToken(req) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+// Cross-mode activation model (v2). Every behaviour change it drives is
+// gated on this one env var so the whole thing can be reverted from the
+// Vercel dashboard with no redeploy: unset ACTIVATION_V2 and every reader
+// (reminder cron, removed-check cron, admin panel, publisher dashboard)
+// falls straight back to the widget-only first_widget_fire_at logic. The
+// new columns and board_view rows simply stop being written/read.
+const ACTIVATION_V2 = !!process.env.ACTIVATION_V2;
+let _activityColsReady = false;
+async function stampActivity(sql, pub, { script }) {
+  if (!ACTIVATION_V2 || !pub) return;
+  if (!_activityColsReady) {
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS activated_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS last_activity_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS last_script_activity_at TIMESTAMPTZ`.catch(() => {});
+    _activityColsReady = true;
+  }
+  // A script-embed signal (widget/carousel/board render or click) also
+  // resets widget_removed_notified_at, exactly like a widget fire does in
+  // match.js - a manual newsletter-link click never does, since there's no
+  // embed on the publisher's side that could have been "removed".
+  if (script) {
+    await sql`UPDATE publishers SET activated_at = COALESCE(activated_at, NOW()), last_activity_at = NOW(), last_script_activity_at = NOW(), widget_removed_notified_at = NULL WHERE slug = ${pub}`.catch(() => {});
+  } else {
+    // Manual link click. Always a "last activity" signal, but it only
+    // counts as activation (which silences the reminder sequence) once
+    // there's a non-bot click from an EARLIER calendar day - so a handful
+    // of self-test clicks on signup day don't stop the nudges for someone
+    // who still hasn't really put a link anywhere.
+    await sql`
+      UPDATE publishers p SET
+        last_activity_at = NOW(),
+        activated_at = COALESCE(
+          p.activated_at,
+          (SELECT NOW() FROM click_logs c
+             WHERE c.publisher = ${pub} AND c.is_bot = false
+               AND c.created_at::date < CURRENT_DATE
+             LIMIT 1)
+        )
+      WHERE p.slug = ${pub}
+    `.catch(() => {});
+  }
+}
+
 export default async function handler(req, res) {
   const { pub, provider, action } = req.query;
   if (!pub && action !== 'booking') return res.status(400).json({ error: 'Missing pub' });
@@ -268,12 +311,17 @@ export default async function handler(req, res) {
         }).catch(() => {})
       : Promise.resolve();
 
+    // A newsletter/manual link click is the only click type that isn't
+    // proof of an embed rendering on the publisher's site, so it stamps
+    // last_activity_at but not last_script_activity_at (removal detection).
+    const isManualLink = source === 'newsletter' || phrase === 'newsletter';
     await Promise.all([
       sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, article_title, phrase, lang, timezone, device, traffic_source, ip, is_bot, click_source, notification_sent)
         VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${click_id}, ${article || null},
                 ${title || null}, ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null}, ${ip || null}, ${isBot}, ${click_source || null}, ${willNotify})
       `.catch(() => {}),
       slackPromise,
+      isBot ? Promise.resolve() : stampActivity(sql, pub, { script: !isManualLink }),
     ]);
 
     return res.redirect(302, destUrl);
@@ -375,8 +423,16 @@ export default async function handler(req, res) {
   // below - it's excluded from the Recent Activity feed further down since
   // it isn't a phrase-match run and would render there as a confusing
   // empty-phrase / "no expert matched" row.
-  if (req.method === 'POST' && action === 'carousel_view') {
-    const { expert_names, match_count, article, device } = req.body || {};
+  // board_view mirrors carousel_view exactly - the Expert Board is a
+  // script embed with a fixed curated list and no content scan, so like
+  // the carousel it has no other moment that logs a "this was shown"
+  // event. Fired once by expertboard.js right after a real render. Gated
+  // on ACTIVATION_V2: while it's off, the endpoint is a harmless no-op so
+  // an already-cached expertboard.js can keep pinging with no effect.
+  if (req.method === 'POST' && (action === 'carousel_view' || action === 'board_view')) {
+    if (action === 'board_view' && !ACTIVATION_V2) return res.status(200).end();
+    const isBoard = action === 'board_view';
+    const { expert_names, match_count, article } = req.body || {};
     if (!carouselSourceColumnReady) {
       await sql`ALTER TABLE match_logs ADD COLUMN IF NOT EXISTS source TEXT`.catch(() => {});
       carouselSourceColumnReady = true;
@@ -388,10 +444,13 @@ export default async function handler(req, res) {
       carouselBotColumnsReady = true;
     }
     const isBot = await isBotHit(req, sql, 'match_logs', { ip, publisher: pub, page_url: article });
-    await sql`
-      INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, match_count, page_url, source, ip, is_bot)
-      VALUES (${pub}, '[carousel]', ${[]}, ${names}, ${count}, ${article || null}, 'carousel', ${ip || null}, ${isBot})
-    `.catch(() => {});
+    await Promise.all([
+      sql`
+        INSERT INTO match_logs (publisher, article_preview, phrases, expert_names, match_count, page_url, source, ip, is_bot)
+        VALUES (${pub}, ${isBoard ? '[board]' : '[carousel]'}, ${[]}, ${names}, ${count}, ${article || null}, ${isBoard ? 'board' : 'carousel'}, ${ip || null}, ${isBot})
+      `.catch(() => {}),
+      isBot ? Promise.resolve() : stampActivity(sql, pub, { script: true }),
+    ]);
     return res.status(200).end();
   }
 
@@ -579,8 +638,15 @@ export default async function handler(req, res) {
     // read as "unreachable" and mask a real removal. Bare domain is the
     // last resort, tried only if every recent page fails or none exist.
     const recentPages = await sql`SELECT page_url FROM match_cache WHERE publisher = ${pub} ORDER BY cached_at DESC LIMIT 5`.catch(() => []);
+    // match_cache is populated by widget fires only, so a carousel/board-only
+    // publisher has none - fall back to the pages their embed actually
+    // rendered on (recorded by carousel_view/board_view) before resorting to
+    // the bare homepage, which is usually the wrong page to check.
+    const embedPages = ACTIVATION_V2
+      ? await sql`SELECT page_url FROM match_logs WHERE publisher = ${pub} AND source IN ('carousel','board') AND page_url IS NOT NULL AND is_bot = false ORDER BY created_at DESC LIMIT 10`.catch(() => [])
+      : [];
     const homepage = pubRow.domain ? (/^https?:\/\//i.test(pubRow.domain) ? pubRow.domain : 'https://' + pubRow.domain) : null;
-    const candidates = [...recentPages.map(r => r.page_url), homepage].filter(Boolean);
+    const candidates = [...new Set([...recentPages.map(r => r.page_url), ...embedPages.map(r => r.page_url), homepage].filter(Boolean))].slice(0, 6);
     if (!candidates.length) return res.status(200).json({ status: 'unknown', reason: 'no_domain' });
 
     // Deliberately NOT parsing <script> tag boundaries - confirmed on
@@ -655,6 +721,9 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS no_match_text_color TEXT`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS platform TEXT`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS platform_detected BOOLEAN NOT NULL DEFAULT false`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS activated_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS last_activity_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS last_script_activity_at TIMESTAMPTZ`.catch(() => {});
     // Ensure providers have a name column
     await sql`ALTER TABLE providers ADD COLUMN IF NOT EXISTS name TEXT`;
     await sql`UPDATE providers SET name = 'OpenIntro' WHERE slug = 'openintro' AND name IS NULL`;
@@ -679,7 +748,7 @@ export default async function handler(req, res) {
              COALESCE(no_match_fallback_enabled, false) AS no_match_fallback_enabled,
              COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners,
              COALESCE(revenue_share, 0.70) AS revenue_share,
-             payment_email, carousel_title, board_text_color, no_match_text_color, first_widget_fire_at, last_widget_fire_at, platform, platform_detected,
+             payment_email, carousel_title, board_text_color, no_match_text_color, first_widget_fire_at, last_widget_fire_at, activated_at, last_activity_at, last_script_activity_at, platform, platform_detected,
              email, contact_first_name, contact_last_name,
              (password_hash IS NOT NULL) AS has_password
       FROM publishers WHERE slug = ${pub} AND active = true LIMIT 1
@@ -731,8 +800,8 @@ export default async function handler(req, res) {
       // back. Each half gets its own genuine most-recent-50, so Matched
       // always shows real history instead of whatever the chronological
       // stream happened to contain.
-      sql`SELECT phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, created_at FROM match_logs WHERE publisher = ${pub} AND page_url IS NOT NULL AND (source IS NULL OR source <> 'carousel') AND is_bot = false AND match_count > 0 AND created_at >= ${STATS_RESET_AT} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
-      sql`SELECT phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, created_at FROM match_logs WHERE publisher = ${pub} AND page_url IS NOT NULL AND (source IS NULL OR source <> 'carousel') AND is_bot = false AND match_count = 0 AND created_at >= ${STATS_RESET_AT} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
+      sql`SELECT phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, created_at FROM match_logs WHERE publisher = ${pub} AND page_url IS NOT NULL AND (source IS NULL OR source NOT IN ('carousel','board')) AND is_bot = false AND match_count > 0 AND created_at >= ${STATS_RESET_AT} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
+      sql`SELECT phrases, expert_names, expert_booking_urls, match_count, page_url, no_match_reason, created_at FROM match_logs WHERE publisher = ${pub} AND page_url IS NOT NULL AND (source IS NULL OR source NOT IN ('carousel','board')) AND is_bot = false AND match_count = 0 AND created_at >= ${STATS_RESET_AT} ORDER BY created_at DESC LIMIT 50`.catch(() => []),
       sql`SELECT COUNT(*)::int AS total FROM click_logs WHERE publisher = ${pub} AND is_bot = false AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
       sql`SELECT COUNT(*)::int AS total FROM hover_logs WHERE publisher = ${pub} AND is_bot = false AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
       sql`SELECT COUNT(*)::int AS total FROM seen_logs WHERE publisher = ${pub} AND is_bot = false AND created_at >= ${STATS_RESET_AT}`.catch(() => [{ total: 0 }]),
@@ -790,14 +859,39 @@ export default async function handler(req, res) {
       enabled: (publisher.enabled_partners || ['openintro']).includes(p.slug),
     }));
 
+    // Integration mode set - which of widget / carousel / board / manual
+    // this publisher is actually using, each from its own positive signal.
+    // Only used for display (a small label, and the manual-only dashboard
+    // layout); nothing depends on it being exhaustive.
+    const clicksTotal = clickData[0]?.total || 0;
+    const impressionsTotal = totalImpressions[0]?.total || 0;
+    let modes = [];
+    let manualOnly = false;
+    if (ACTIVATION_V2) {
+      const embedSources = await sql`SELECT DISTINCT source FROM match_logs WHERE publisher = ${pub} AND is_bot = false AND source IS NOT NULL`.catch(() => []);
+      const clickSources = (topSources || []).map(r => r.source);
+      const has = s => embedSources.some(r => r.source === s) || clickSources.includes(s);
+      if (publisher.first_widget_fire_at) modes.push('widget');
+      if (has('carousel')) modes.push('carousel');
+      if (has('board')) modes.push('board');
+      if (clickSources.includes('newsletter')) modes.push('manual');
+      // Manual-only: real click traffic but nothing that produces a view
+      // signal (no widget/carousel/board render ever). This is what drives
+      // the clicks-first dashboard layout instead of an all-zeros funnel.
+      manualOnly = impressionsTotal === 0 && clicksTotal > 0;
+    }
+
     return res.status(200).json({
       publisher,
+      activation_v2: ACTIVATION_V2,
+      modes,
+      manual_only: manualOnly,
       logs_matched: logsMatched,
       logs_no_match: logsNoMatch,
-      clicks: clickData[0]?.total || 0,
+      clicks: clicksTotal,
       hovers: hoverData[0]?.total || 0,
       seen: seenData[0]?.total || 0,
-      total_impressions: totalImpressions[0]?.total || 0,
+      total_impressions: impressionsTotal,
       total_impressions_raw: totalImpressionsRaw[0]?.total || 0,
       total_expert_shown: totalExpertShown[0]?.total || 0,
       partners: partnersWithStatus,

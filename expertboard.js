@@ -11,6 +11,7 @@
 
   var API = 'https://www.introlinq.com/api/board?pub=' + encodeURIComponent(PUB);
   var TRACK = 'https://www.introlinq.com/api/dashboard?action=out';
+  var IMPRESSION = 'https://www.introlinq.com/api/dashboard?action=board_view&pub=' + encodeURIComponent(PUB);
 
   var _lang = (document.documentElement.lang || 'en').toLowerCase().slice(0, 2);
   var _bookLabels = {
@@ -86,6 +87,22 @@
     .then(function(data) {
       if (!data) { container.innerHTML = ''; return; }
       render(data);
+      // Impression ping - mirrors carousel.js. The board shows a fixed
+      // curated list with no content scan, so this is its only "was shown"
+      // signal (keeps board clicks from outnumbering board impressions in
+      // the dashboard CTR math). The endpoint is a harmless no-op unless
+      // ACTIVATION_V2 is enabled server-side.
+      if (data.experts && data.experts.length) {
+        fetch(IMPRESSION, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            expert_names: data.experts.map(function(e){ return e.name; }),
+            match_count: data.experts.length,
+            article: window.location.href.slice(0, 300)
+          })
+        }).catch(function(){});
+      }
     })
     .catch(function(){ container.innerHTML = ''; });
 
