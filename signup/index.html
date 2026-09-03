@@ -112,6 +112,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 
   gtag('config', 'G-J1RDCPZ6SB');
 </script>
+<!-- PostHog -->
+<script src="/analytics.js"></script>
 </head>
 <body>
 
@@ -266,6 +268,7 @@ function clearError() {
 
 async function submit() {
   clearError();
+  if (window.ilTrack) ilTrack('signup_submit');
   const name = document.getElementById('f-name').value.trim();
   const email = document.getElementById('f-email').value.trim();
   const domain = document.getElementById('f-domain').value.trim();
@@ -298,8 +301,11 @@ async function submit() {
   if (!res.ok) {
     btn.disabled = false;
     btn.textContent = 'Create my account →';
+    if (window.ilTrack) ilTrack('signup_error', { message: (data && data.error) || 'unknown', status: res.status });
     return showError(data.error || 'Something went wrong. Please try again.');
   }
+
+  if (window.ilTrack) ilTrack('signup_success', { slug: data.slug });
 
   // Show success state
   document.getElementById('form-section').style.display = 'none';
@@ -368,6 +374,21 @@ async function footerSubscribe() {
 document.getElementById('footer-email')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') footerSubscribe();
 });
+
+// Funnel: fire once the visitor actually starts filling the signup form
+// (first focus on any of its fields, footer newsletter box excluded).
+(function () {
+  let started = false;
+  ['f-name', 'f-email', 'f-domain', 'f-first', 'f-last'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('focus', () => {
+      if (started) return;
+      started = true;
+      if (window.ilTrack) ilTrack('signup_form_start');
+    }, { once: true });
+  });
+})();
 </script>
 </body>
 </html>
