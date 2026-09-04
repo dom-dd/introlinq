@@ -1,11 +1,11 @@
 name: Daily publisher discovery
 
-# Vercel's Hobby plan caps native Cron Jobs at 2 per account (already used
-# by api/sync/openintro and api/cron/weekly-stats) AND caps Serverless
-# Functions at 12 per deployment (already at the limit), so this daily
-# trigger lives here instead - the discovery logic runs inside the existing
-# api/admin.js function (resource=run-discovery) rather than a new file,
-# triggered by GitHub Actions' free scheduler rather than Vercel's own cron.
+# Lives on GitHub Actions rather than a Vercel cron: the discovery run pokes
+# an existing endpoint (api/admin.js, resource=run-discovery) and then runs
+# classify.js / apollo-search.js directly on the runner - long, money-spending
+# steps that are easier to watch and budget here than inside a 60s Vercel
+# function. (Originally also worked around the Vercel Hobby 2-cron cap; the
+# project is on Pro now, but there's no reason to move this back.)
 #
 # Three runs/day, 06:00 / 12:00 / 18:00 UTC. run-discovery (see api/admin.js)
 # caps itself at SEARCHES_PER_DAY (100) SerpAPI searches per UTC day, counted
