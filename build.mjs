@@ -2,9 +2,10 @@
 /*
  * build.mjs - injects shared partials into the static HTML pages.
  *
- * Runs as Vercel's `buildCommand` (see vercel.json) and can be run locally
- * with `node build.mjs`. Idempotent: it rewrites the content between marker
- * comments every time, so committing the built output is fine.
+ * Run `node build.mjs` after editing partials/footer.html, then commit the
+ * result - the injected output is committed, so there is no Vercel build
+ * step (this project deploys the repo as-is). Idempotent: it rewrites the
+ * content between the marker comments every time.
  *
  * Right now it handles one partial: the site footer. Each participating page
  * must contain exactly one marker pair:
