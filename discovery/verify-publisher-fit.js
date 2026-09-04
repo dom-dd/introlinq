@@ -9,10 +9,13 @@
 // Same two-stage reasoning as verify-categories.js, which caught a large
 // false-positive rate doing this the same way for the partner categories.
 //
-// Only sets status='confirmed_fit' when genuinely confident - everything
-// else is left exactly where it already was, never downgraded, since this
-// is additive curation on top of the normal pipeline, not a replacement
-// for it.
+// Only sets status='to_contact' (an existing outreach-dashboard bucket -
+// "reviewed and worth pursuing, but the intro email hasn't gone out yet")
+// when genuinely confident - everything else is left exactly where it
+// already was, never downgraded, since this is additive curation on top of
+// the normal pipeline, not a replacement for it. Used to set a since-
+// retired 'confirmed_fit' status the dashboard no longer recognizes -
+// fixed 2026-09-04.
 //
 // Usage: node discovery/verify-publisher-fit.js
 
@@ -143,7 +146,7 @@ async function main() {
     if (result.confidentFit) {
       confirmed++;
       console.log(`[${processedCount}/${rows.length}] ${row.domain}: CONFIRMED (${result.category}) - ${result.reason}`);
-      await sql`UPDATE candidate_publishers SET status = 'confirmed_fit', category = COALESCE(${result.category}, category) WHERE id = ${row.id}`;
+      await sql`UPDATE candidate_publishers SET status = 'to_contact', category = COALESCE(${result.category}, category) WHERE id = ${row.id}`;
     } else {
       rejected++;
       console.log(`[${processedCount}/${rows.length}] ${row.domain}: not confident - ${result.reason}`);

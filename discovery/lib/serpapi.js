@@ -38,15 +38,17 @@ const DOMAIN_BLACKLIST = new Set([
   'businessweek.com', 'apnews.com', 'abcnews.go.com', 'nbcnews.com', 'cbsnews.com',
   'entrepreneur.com',
   // blog directories/aggregators - good future discovery source, not a target
-  'businessblogshub.com', 'alltop.com', 'feedspot.com',
+  'businessblogshub.com', 'alltop.com', 'feedspot.com', 'blog-directory.org',
   // publishing platforms - bare domain is never a specific business's own blog
-  'medium.com', 'substack.com', 'wordpress.com', 'blogspot.com', 'sites.google.com'
+  'medium.com', 'substack.com', 'wordpress.com', 'blogspot.com', 'sites.google.com', 'wixsite.com'
 ]);
 
 // .gov / .mil / .edu domains (US and international, e.g. site.gov.uk) are
 // institutional, not businesses - never outreach targets. 'ac' catches
 // international academic TLDs (ac.uk, ac.nz, ac.jp, ac.in, etc).
-function isInstitutionalDomain(domain) {
+// Exported - reused by discovery/lib/blogdirectory.js so every source
+// filters institutional domains the same way.
+export function isInstitutionalDomain(domain) {
   const labels = domain.split('.');
   return labels.includes('gov') || labels.includes('mil') || labels.includes('edu') || labels.includes('ac');
 }
@@ -54,7 +56,9 @@ function isInstitutionalDomain(domain) {
 // Matches the blacklist on the domain itself or any parent domain, so a
 // subdomain (aws.amazon.com, sites.google.com) is caught even if only the
 // apex domain (amazon.com, google.com) is listed.
-function isBlacklistedDomain(domain) {
+// Exported - reused by discovery/lib/blogdirectory.js so every source
+// filters the same platforms/media/institutions out.
+export function isBlacklistedDomain(domain) {
   if (DOMAIN_BLACKLIST.has(domain)) return true;
   const labels = domain.split('.');
   for (let i = 1; i < labels.length - 1; i++) {

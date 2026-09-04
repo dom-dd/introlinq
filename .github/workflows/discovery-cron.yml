@@ -24,6 +24,15 @@ name: Daily publisher discovery
 # and APOLLO_API_KEY as repo secrets (Settings -> Secrets and variables ->
 # Actions) in addition to CRON_SECRET - these spend real money per lead, so
 # removing/renaming any of them here pauses that spend without touching code.
+#
+# discovery/discover-blogdirectory.js (added 2026-09-04) works through
+# blog-directory.org's ~1,153-page "business" listing page by page - free
+# (no Anthropic/Apollo spend, just DATABASE_URL), resumable via the
+# blogdirectory_progress table, so 15 pages/run x 3 runs/day clears the
+# whole query in about three weeks. verify-publisher-fit.js then re-checks
+# each classified "publisher" lead against its REAL homepage (not just a
+# title) before it's trusted - this directory in particular is dominated by
+# single-company promo posts that look like blogs from a title alone.
 on:
   schedule:
     - cron: '0 6 * * *'
@@ -64,6 +73,12 @@ jobs:
         if: always()
         run: npm ci
 
+      - name: Discover via blog-directory.org
+        if: always()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: node discovery/discover-blogdirectory.js --pages 15 --query business
+
       # Added 2026-08-26 - SerpAPI's free keyword search plateaus in the low
       # thousands (bounded by our finite topic list + what Google indexes for
       # those exact phrases); Apollo's own database is a much larger pool of
@@ -87,3 +102,10 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           APOLLO_API_KEY: ${{ secrets.APOLLO_API_KEY }}
         run: node discovery/classify.js
+
+      - name: Verify high-confidence publisher fits
+        if: always()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node discovery/verify-publisher-fit.js

@@ -132,6 +132,46 @@ left off.
 
 `competitor` and `unclear` leads are skipped - not worth enrichment credits.
 
+## Verifying real publisher fit (blog-directory.org and beyond)
+
+```
+node discovery/verify-publisher-fit.js
+```
+
+`classify.js` only ever sees a title/snippet, which is enough to catch
+obvious vendors but not enough to catch a well-disguised one - a single
+company's promo post can read exactly like a genuine article from a title
+alone. This script re-checks every `lead_type: 'publisher'`,
+`team_size: solo|small-team` lead against its REAL homepage content (fetched
+fresh, run through Sonnet) and only promotes it to `to_contact` (an existing
+outreach-dashboard bucket meaning "reviewed and worth pursuing") when
+genuinely confident it's an independent blog, not a company site with a blog
+section. Everything else is left exactly where it was - additive curation,
+not a replacement for the normal pipeline. Runs in the daily cron right
+after `classify.js`.
+
+## blog-directory.org source
+
+```
+node discovery/discover-blogdirectory.js --pages 15 [--query business]
+```
+
+A large self-submission directory (27k+ "business"-tagged listings as of
+Sept 2026, ~1,153 pages at 24 listings/page) - useful for volume, but most
+listings are single promotional posts from local businesses/agencies rather
+than real blogs, confirmed by hand before building this. Candidates go
+through the exact same `classify.js` / `verify-publisher-fit.js` filters as
+every other source; this script's only job is resolving directory listings
+(each one requires an extra fetch of its own detail page to find the real
+external URL - see `discovery/lib/blogdirectory.js`) into raw
+`candidate_publishers` rows.
+
+Resumable like the rest of the pipeline: progress (which page a given query
+is up to) lives in `blogdirectory_progress`, so re-running - including the
+cron, at 15 pages x 3 runs/day - pages forward instead of re-scraping page 1
+every time. At that pace the ~1,153-page "business" query takes about three
+weeks; pass a different `--query` once it's exhausted to keep going.
+
 ## What's NOT built yet
 
 Crawling each site for deeper metadata, traffic/priority scoring, or
@@ -154,3 +194,6 @@ Added by `enrich.js`: `contact_first_name`, `contact_last_name`,
 `discovery_queries` - tracks every generated search query and its status
 (`pending` / `done` / `failed`), so runs are resumable and queries are never
 re-run needlessly.
+
+`blogdirectory_progress` - one row per blog-directory.org query, tracking
+`next_page`/`total_pages` so `discover-blogdirectory.js` resumes correctly.
