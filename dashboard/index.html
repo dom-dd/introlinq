@@ -47,10 +47,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 
 /* Mini footer - logo only, no marketing links/CTAs. This is a logged-in
    app screen, not a marketing page: the shared site footer (partials/
-   footer.html) doesn't belong here. */
-.mini-footer{padding:2rem 2rem 3rem;text-align:center;border-top:1px solid var(--border)}
-.mini-footer-logo{font-family:'DM Serif Display',serif;font-size:1rem;color:var(--ink-muted)}
-.mini-footer-logo span{color:var(--sage)}
+   footer.html) doesn't belong here. Same dark background + gold "Linq" as
+   .header above - every dark surface on the site uses gold, every light
+   one uses sage, so this must match .header, not the light-bg footers. */
+.mini-footer{background:var(--ink);padding:2.5rem 2rem;text-align:center}
+.mini-footer-logo{font-family:'DM Serif Display',serif;font-size:1rem;color:var(--white)}
+.mini-footer-logo span{color:var(--gold)}
 
 /* ── Pages modal ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(26,26,46,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
