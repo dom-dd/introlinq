@@ -1,0 +1,38 @@
+name: Weekly blog post
+
+# The weekly blog generator (api/cron/weekly-blog.js) used to be a native
+# Vercel cron in vercel.json. Vercel's Hobby plan only runs the first 2 cron
+# jobs per project (already spent on api/sync/openintro and
+# api/cron/weekly-stats), so that entry never actually fired. It lives here
+# instead, on GitHub Actions' free scheduler, exactly like discovery-cron.yml.
+#
+# The endpoint does all the real work on Vercel (calls Anthropic, writes to
+# Neon, notifies Slack + email) - this workflow only pokes it with the same
+# bearer token Vercel's own cron would have sent. Needs one repo secret:
+# CRON_SECRET (Settings -> Secrets and variables -> Actions), already present
+# for discovery-cron.yml. It must match CRON_SECRET in the Vercel project env.
+#
+# Wednesdays 10:00 UTC, matching the original schedule. GitHub may delay
+# scheduled runs by a few minutes under load; that's fine for a weekly post.
+
+on:
+  schedule:
+    - cron: '0 10 * * 3'
+  workflow_dispatch: {} # manual "Run workflow" button in the Actions tab
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger weekly-blog endpoint
+        run: |
+          status=$(curl -s -o response.json -w "%{http_code}" --max-time 90 \
+            -X GET "https://www.introlinq.com/api/cron/weekly-blog" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          echo "HTTP status: $status"
+          cat response.json || true
+          echo
+          if [ "$status" -ne 200 ]; then
+            echo "weekly-blog trigger failed"
+            exit 1
+          fi
