@@ -1,4 +1,10 @@
 import { neon } from '@neondatabase/serverless';
+import { readFileSync } from 'node:fs';
+
+// Shared site footer - single source of truth in partials/footer.html, also
+// injected into the static pages by build.mjs. Read once at cold start.
+// vercel.json keeps partials/** bundled with this function (includeFiles).
+const FOOTER_HTML = readFileSync(new URL('../partials/footer.html', import.meta.url), 'utf8').trim();
 
 function esc(str) {
   return String(str || '')
@@ -54,13 +60,6 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .related-guides{display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:1rem}
 .related-link{background:var(--white);border:1px solid var(--border);border-radius:100px;padding:0.625rem 1.25rem;font-size:0.875rem;font-weight:500;color:var(--sage);text-decoration:none}
 .related-link:hover{border-color:var(--sage)}
-footer{background:var(--ink);padding:3rem 2rem 2rem}
-.footer-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
-.footer-logo{font-family:'DM Serif Display',serif;font-size:1.25rem;color:var(--white);text-decoration:none}
-.footer-logo span{color:var(--sage-mid)}
-.footer-links{display:flex;gap:1.5rem;flex-wrap:wrap}
-.footer-link{font-size:0.8125rem;color:rgba(255,255,255,0.55);text-decoration:none}
-.footer-copy{font-size:0.75rem;color:rgba(255,255,255,0.4);width:100%;margin-top:1.5rem;text-align:center}
 @media(max-width:640px){.page-wrap{padding:2rem 1.25rem 4rem}nav{padding:1rem 1.25rem}.page-title,.article-title{font-size:1.75rem}}
 `;
 
@@ -75,17 +74,7 @@ function nav() {
 }
 
 function footer() {
-  return `<footer>
-  <div class="footer-inner">
-    <a class="footer-logo" href="/">Intro<span>Linq</span></a>
-    <div class="footer-links">
-      <a class="footer-link" href="/signup">Create your account</a>
-      <a class="footer-link" href="/privacy">Privacy Policy</a>
-      <a class="footer-link" href="/terms">Terms of Service</a>
-    </div>
-    <p class="footer-copy">Copyright &copy; 2026 IntroLinq. All rights reserved.</p>
-  </div>
-</footer>`;
+  return FOOTER_HTML;
 }
 
 function fontLinks() {

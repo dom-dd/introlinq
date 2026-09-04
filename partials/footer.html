@@ -1,0 +1,112 @@
+<!--
+  Shared site footer - single source of truth. Edit here only.
+  build.mjs injects this into the static pages; api/blog.js reads it for
+  /blog and post pages. Relies on the host page defining these CSS custom
+  properties: --ink --white --sage --sage-mid --gold.
+-->
+<style>
+/* Site footer - canonical. Do not copy this block back into a page. */
+.site-footer{background:var(--ink);color:rgba(255,255,255,0.7);margin-top:4rem;padding:3.5rem 2rem 2rem}
+.site-footer .footer-top{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1.4fr 1fr 1fr 1.3fr;gap:2.5rem;padding-bottom:2.5rem;border-bottom:1px solid rgba(255,255,255,0.1)}
+.site-footer .footer-brand{padding-right:1rem}
+.site-footer .footer-logo{font-family:'DM Serif Display',serif;font-size:1.375rem;color:var(--white);text-decoration:none;display:inline-block;margin-bottom:0.75rem}
+.site-footer .footer-logo span{color:var(--gold)}
+.site-footer .footer-tagline{font-size:0.8125rem;line-height:1.6;color:rgba(255,255,255,0.55)}
+.site-footer .footer-col-title{font-size:0.75rem;font-weight:600;color:rgba(255,255,255,0.9);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:1rem}
+.site-footer .footer-col .footer-link{display:block;font-size:0.8438rem;color:rgba(255,255,255,0.6);text-decoration:none;margin-bottom:0.7rem;transition:color 0.15s}
+.site-footer .footer-col .footer-link:hover{color:var(--white)}
+.site-footer .footer-newsletter-sub{font-size:0.8125rem;color:rgba(255,255,255,0.55);line-height:1.5;margin-bottom:1rem}
+.site-footer .footer-newsletter-form{display:flex;gap:0.5rem}
+.site-footer .footer-input{flex:1;min-width:0;padding:0.625rem 0.875rem;border-radius:8px;border:1.5px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--white);font-size:0.8125rem;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.15s}
+.site-footer .footer-input::placeholder{color:rgba(255,255,255,0.35)}
+.site-footer .footer-input:focus{border-color:var(--sage-mid)}
+.site-footer .footer-subscribe-btn{background:var(--sage);color:var(--white);border:none;padding:0.625rem 1.125rem;border-radius:8px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:opacity 0.15s}
+.site-footer .footer-subscribe-btn:hover{opacity:0.85}
+.site-footer .footer-newsletter-msg{font-size:0.75rem;margin-top:0.625rem;min-height:1em}
+.site-footer .footer-newsletter-msg.success{color:var(--sage-mid)}
+.site-footer .footer-newsletter-msg.error{color:#f5a3a3}
+.site-footer .footer-bottom{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;padding-top:1.5rem}
+.site-footer .footer-copy{font-size:0.75rem;color:rgba(255,255,255,0.4)}
+.site-footer .footer-contact{font-size:0.75rem;color:rgba(255,255,255,0.5);text-decoration:none}
+.site-footer .footer-contact:hover{color:var(--white)}
+@media (max-width:820px){
+  .site-footer .footer-top{grid-template-columns:1fr 1fr;gap:2rem}
+  .site-footer .footer-brand,.site-footer .footer-newsletter{grid-column:1 / -1}
+}
+@media (max-width:480px){
+  .site-footer .footer-top{grid-template-columns:1fr}
+}
+</style>
+<footer class="site-footer">
+  <div class="footer-top">
+    <div class="footer-brand">
+      <a class="footer-logo" href="/">Intro<span>Linq</span></a>
+      <p class="footer-tagline">The AI matching layer between content and expert advice - free for publishers, forever.</p>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Product</div>
+      <a href="/signup" class="footer-link">Create your account</a>
+      <a href="/install" class="footer-link">Install guide</a>
+      <a href="/login" class="footer-link">Log in</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Guides</div>
+      <a href="/blog" class="footer-link">Blog</a>
+      <a href="/monetize-finance-blog" class="footer-link">Monetize a finance blog</a>
+      <a href="/monetize-health-blog" class="footer-link">Monetize a health blog</a>
+      <a href="/monetize-career-blog" class="footer-link">Monetize a career blog</a>
+      <a href="/monetize-fashion-blog" class="footer-link">Monetize a fashion blog</a>
+      <a href="/monetize-food-blog" class="footer-link">Monetize a food blog</a>
+      <a href="/monetize-sport-blog" class="footer-link">Monetize a fitness blog</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Legal</div>
+      <a href="/privacy" class="footer-link">Privacy Policy</a>
+      <a href="/terms" class="footer-link">Terms of Service</a>
+      <a href="/cookies" class="footer-link">Cookie Policy</a>
+    </div>
+    <div class="footer-col footer-newsletter">
+      <div class="footer-col-title">Stay in the loop</div>
+      <p class="footer-newsletter-sub">Occasional updates on new features and expert partners.</p>
+      <div class="footer-newsletter-form">
+        <input type="email" id="footer-email" placeholder="you@example.com" class="footer-input">
+        <button onclick="footerSubscribe()" class="footer-subscribe-btn">Subscribe</button>
+      </div>
+      <div class="footer-newsletter-msg" id="footer-newsletter-msg"></div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p class="footer-copy">Copyright &copy; 2026 IntroLinq. All rights reserved.</p>
+    <a href="mailto:hello@introlinq.com" class="footer-contact">hello@introlinq.com</a>
+  </div>
+</footer>
+<script>
+/* Footer newsletter - posts to the same /api/subscribe-email endpoint as the
+   exit popup. Guarded so a page that still defines its own copy wins harmlessly. */
+window.footerSubscribe = window.footerSubscribe || async function footerSubscribe() {
+  const emailInput = document.getElementById('footer-email');
+  const msgEl = document.getElementById('footer-newsletter-msg');
+  if (!emailInput || !msgEl) return;
+  const email = emailInput.value.trim();
+  msgEl.className = 'footer-newsletter-msg';
+  msgEl.textContent = '';
+  if (!email) return;
+  try {
+    const res = await fetch('/api/subscribe-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    if (!res.ok) throw new Error();
+    emailInput.value = '';
+    msgEl.textContent = "You're subscribed - check your inbox.";
+    msgEl.className = 'footer-newsletter-msg success';
+  } catch {
+    msgEl.textContent = 'Something went wrong. Try again.';
+    msgEl.className = 'footer-newsletter-msg error';
+  }
+};
+document.getElementById('footer-email')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') window.footerSubscribe();
+});
+</script>
