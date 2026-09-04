@@ -153,24 +153,28 @@ after `classify.js`.
 ## blog-directory.org source
 
 ```
-node discovery/discover-blogdirectory.js --pages 15 [--query business]
+node discovery/discover-blogdirectory.js --pages 80 [--query ""]
 ```
 
-A large self-submission directory (27k+ "business"-tagged listings as of
-Sept 2026, ~1,153 pages at 24 listings/page) - useful for volume, but most
-listings are single promotional posts from local businesses/agencies rather
-than real blogs, confirmed by hand before building this. Candidates go
-through the exact same `classify.js` / `verify-publisher-fit.js` filters as
-every other source; this script's only job is resolving directory listings
-(each one requires an extra fetch of its own detail page to find the real
-external URL - see `discovery/lib/blogdirectory.js`) into raw
-`candidate_publishers` rows.
+A large self-submission directory - the unfiltered `--query ""` listing is
+~5,647 pages at 24 listings/page (a `--query business` text search only
+covers ~1,153 of those; since IntroLinq's expert network spans every
+category in `lib/categories.js`, not just business, the unfiltered crawl is
+both bigger and the better fit, so it's what the cron uses). Most listings
+are single promotional posts from local businesses/agencies rather than real
+blogs, confirmed by hand before building this. Candidates go through the
+exact same `classify.js` / `verify-publisher-fit.js` filters as every other
+source; this script's only job is resolving directory listings (each one
+requires an extra fetch of its own detail page to find the real external
+URL - see `discovery/lib/blogdirectory.js`) into raw `candidate_publishers`
+rows.
 
 Resumable like the rest of the pipeline: progress (which page a given query
-is up to) lives in `blogdirectory_progress`, so re-running - including the
-cron, at 15 pages x 3 runs/day - pages forward instead of re-scraping page 1
-every time. At that pace the ~1,153-page "business" query takes about three
-weeks; pass a different `--query` once it's exhausted to keep going.
+is up to) lives in `blogdirectory_progress`, keyed per query string so
+`business` and `""` (or any future query) track independently. At ~3s/page,
+80 pages x 3 runs/day clears the full ~5,647-page unfiltered listing in
+about 3.5 weeks; pass a different `--query` once it's exhausted (or to widen
+into a specific term sooner) to keep going.
 
 ## What's NOT built yet
 

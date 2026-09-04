@@ -26,10 +26,13 @@ name: Daily publisher discovery
 # removing/renaming any of them here pauses that spend without touching code.
 #
 # discovery/discover-blogdirectory.js (added 2026-09-04) works through
-# blog-directory.org's ~1,153-page "business" listing page by page - free
-# (no Anthropic/Apollo spend, just DATABASE_URL), resumable via the
-# blogdirectory_progress table, so 15 pages/run x 3 runs/day clears the
-# whole query in about three weeks. verify-publisher-fit.js then re-checks
+# blog-directory.org's full unfiltered listing (--query "", ~5,647 pages -
+# a superset of the "business"-only search, and a better fit anyway since
+# IntroLinq's expert network spans all of lib/categories.js, not just
+# business) page by page - free (no Anthropic/Apollo spend, just
+# DATABASE_URL), resumable via the blogdirectory_progress table. ~3s/page
+# measured locally, so 80 pages/run x 3 runs/day (~4min/run) clears the
+# whole listing in about 3.5 weeks. verify-publisher-fit.js then re-checks
 # each classified "publisher" lead against its REAL homepage (not just a
 # title) before it's trusted - this directory in particular is dominated by
 # single-company promo posts that look like blogs from a title alone.
@@ -77,7 +80,7 @@ jobs:
         if: always()
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: node discovery/discover-blogdirectory.js --pages 15 --query business
+        run: node discovery/discover-blogdirectory.js --pages 80 --query ""
 
       # Added 2026-08-26 - SerpAPI's free keyword search plateaus in the low
       # thousands (bounded by our finite topic list + what Google indexes for
