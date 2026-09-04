@@ -1,6 +1,7 @@
 ﻿import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import { notifyTeam, escapeHtml } from './_notify.js';
 
 // Lockout window for password login - 5 failed attempts locks the account
 // for 15 minutes, reset on the next successful login. Guards the one new
@@ -239,6 +240,11 @@ export default async function handler(req, res) {
         body: JSON.stringify({ text: `📝 New publisher signed up (not yet installed): *${name.trim()}* (${normalised}) - ${cleanDomain}` })
       }).catch(() => {});
     }
+
+    notifyTeam(
+      `New publisher signup: ${name.trim()}`,
+      `<p><strong>${escapeHtml(name.trim())}</strong> (${escapeHtml(normalised)}) just signed up.</p><p>Domain: ${escapeHtml(cleanDomain)}</p><p>Not yet installed.</p>`
+    ).catch(() => {});
 
     return res.status(201).json({ ok: true, slug });
   }

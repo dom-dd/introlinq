@@ -1,5 +1,6 @@
 ﻿import { neon } from '@neondatabase/serverless';
 import { getClientIp, isBurstTraffic, isSitewideBurst, isKnownCrawlerIp, isBotHit, ensureBotColumns, isAllowlistedCrawler, isTrustedIp } from './_botDetect.js';
+import { notifyTeam, escapeHtml } from './_notify.js';
 
 // match_cache is global per page now, not per reader country - country
 // fragmentation (every new country paying for its own fresh scan) turned
@@ -562,15 +563,23 @@ async function notifyPublisherWentLive(name, email, publisher) {
       body: JSON.stringify({ text: `🎉 *${name}* just went live - their widget fired for the first time. Installation confirmed!` }),
     }).catch(() => {});
   }
-  if (process.env.RESEND_API_KEY && process.env.COMPANY_NOTIFICATION_EMAIL) {
+  // Was gated on COMPANY_NOTIFICATION_EMAIL (a single address) - switched to
+  // the shared notifyTeam helper (fixed dom@/monika@ recipients) 2026-09-04
+  // so this doesn't silently depend on that env var being set.
+  notifyTeam(
+    `${name} just went live`,
+    `<p><strong>${escapeHtml(name)}</strong> (${escapeHtml(publisher)}) just went live - their AI widget fired for the first time. Installation confirmed!</p>`
+  ).catch(() => {});
+  if (process.env.RESEND_API_KEY && email) {
+    const firstName = (name || '').split(' ')[0] || name;
     fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'IntroLinq <notifications@introlinq.com>',
-        to: process.env.COMPANY_NOTIFICATION_EMAIL,
-        subject: `${name} just went live on IntroLinq`,
-        text: `${name} (${publisher}) just installed the widget and it fired for the first time - they're officially live.`,
+        from: 'IntroLinq <hello@introlinq.com>',
+        to: email,
+        subject: `You're live! IntroLinq is working on your site 🎉`,
+        html: widgetLiveEmail(firstName),
       }),
     }).catch(() => {});
   }

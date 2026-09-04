@@ -2,6 +2,7 @@
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { getClientIp, isBotHit, ensureBotColumns } from './_botDetect.js';
+import { notifyTeam, escapeHtml } from './_notify.js';
 
 const PASSWORD_MIN_LENGTH = 8;
 
@@ -76,15 +77,26 @@ async function stampActivity(sql, pub, { script }) {
   // resets widget_removed_notified_at, exactly like a widget fire does in
   // match.js - a manual newsletter-link click never does, since there's no
   // embed on the publisher's side that could have been "removed".
+  // RETURNING + comparing activated_at to this statement's own NOW() (same
+  // trick as match.js's first_widget_fire_at check) detects "this call is
+  // the one that just activated them" - the AI widget's own first-fire
+  // already notifies from match.js, so this only covers the two ACTIVATION_V2
+  // added: carousel/board (script) and manual link (not script) - previously
+  // silent, added 2026-09-04.
+  let row;
   if (script) {
-    await sql`UPDATE publishers SET activated_at = COALESCE(activated_at, NOW()), last_activity_at = NOW(), last_script_activity_at = NOW(), widget_removed_notified_at = NULL WHERE slug = ${pub}`.catch(() => {});
+    [row] = await sql`
+      UPDATE publishers SET activated_at = COALESCE(activated_at, NOW()), last_activity_at = NOW(), last_script_activity_at = NOW(), widget_removed_notified_at = NULL
+      WHERE slug = ${pub}
+      RETURNING name, (activated_at = NOW()) AS just_activated
+    `.catch(() => [null]);
   } else {
     // Manual link click. Always a "last activity" signal, but it only
     // counts as activation (which silences the reminder sequence) once
     // there's a non-bot click from an EARLIER calendar day - so a handful
     // of self-test clicks on signup day don't stop the nudges for someone
     // who still hasn't really put a link anywhere.
-    await sql`
+    [row] = await sql`
       UPDATE publishers p SET
         last_activity_at = NOW(),
         activated_at = COALESCE(
@@ -95,8 +107,29 @@ async function stampActivity(sql, pub, { script }) {
              LIMIT 1)
         )
       WHERE p.slug = ${pub}
-    `.catch(() => {});
+      RETURNING name, (activated_at = NOW()) AS just_activated
+    `.catch(() => [null]);
   }
+  if (row?.just_activated) {
+    notifyFirstActivation(row.name, pub, script ? 'carousel/board' : 'manual link').catch(() => {});
+  }
+}
+
+// Mirrors match.js's notifyPublisherWentLive (Slack + team email) for the
+// two ACTIVATION_V2 activation modes that never had a "first activation"
+// notification at all before this.
+async function notifyFirstActivation(name, slug, mode) {
+  if (process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL) {
+    fetch(process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: `🎉 *${name}* just activated via ${mode} - first real engagement confirmed!` }),
+    }).catch(() => {});
+  }
+  notifyTeam(
+    `${name} just activated (${mode})`,
+    `<p><strong>${escapeHtml(name)}</strong> (${escapeHtml(slug)}) just activated via ${escapeHtml(mode)} - first real engagement confirmed!</p>`
+  ).catch(() => {});
 }
 
 export default async function handler(req, res) {
