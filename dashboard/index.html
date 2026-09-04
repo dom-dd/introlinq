@@ -43,14 +43,21 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .tab-btn.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
 
 /* ── Body ── */
-.body{max-width:900px;margin:0 auto;padding:2.5rem 2rem 5rem}
+/* #main is switched to display:flex (not block) in JS below so this column
+   can stretch to at least the viewport height (minus the 56px header) - on
+   a short tab like Overview, .body's flex:1 fills the leftover space and
+   pushes .mini-footer to the bottom of the viewport instead of it floating
+   right under a half-empty page. On a tall tab, .body just grows past the
+   viewport as normal and the footer follows immediately after it. */
+#main{flex-direction:column;min-height:calc(100vh - 56px)}
+.body{max-width:900px;margin:0 auto;padding:2.5rem 2rem 5rem;flex:1 0 auto;width:100%}
 
 /* Mini footer - logo only, no marketing links/CTAs. This is a logged-in
    app screen, not a marketing page: the shared site footer (partials/
    footer.html) doesn't belong here. Same dark background + gold "Linq" as
    .header above - every dark surface on the site uses gold, every light
    one uses sage, so this must match .header, not the light-bg footers. */
-.mini-footer{background:var(--ink);padding:2.5rem 2rem;text-align:center}
+.mini-footer{background:var(--ink);padding:2.5rem 2rem;text-align:center;flex-shrink:0}
 .mini-footer-logo{font-family:'DM Serif Display',serif;font-size:1rem;color:var(--white)}
 .mini-footer-logo span{color:var(--gold)}
 
@@ -1255,7 +1262,7 @@ async function loadDashboard() {
     modesEl.textContent = ms.map(m => labels[m] || m).join(' · ');
     modesEl.style.display = ms.length ? 'block' : 'none';
   }
-  document.getElementById('main').style.display = 'block';
+  document.getElementById('main').style.display = 'flex';
 
   // Store page URLs for modal
   _pageUrls = d.page_urls || [];
