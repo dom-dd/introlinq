@@ -7,6 +7,9 @@
 //   node discovery/enrich.js --dry-run          preview matches, no credits spent
 //   node discovery/enrich.js --limit 20         enrich up to 20 leads (default 20)
 //   node discovery/enrich.js --limit 500        larger batch once you trust it
+//   node discovery/enrich.js --include-blogdirectory --limit 50
+//                                                also enrich blogdirectory-sourced
+//                                                leads (excluded by default - see below)
 //
 // Resumable: only processes rows where contact_status IS NULL, so re-running
 // picks up where the last run left off. --dry-run never writes to the
@@ -15,16 +18,29 @@
 // Also imported by classify.js, which calls enrichPendingPublishers() itself
 // right after classifying a batch - so a lead getting marked "publisher"
 // automatically cascades into enrichment without a second manual step.
+//
+// discovery_source: 'blogdirectory' leads are excluded from that automatic
+// cascade by default (added 2026-09-04) - at ~66k domains and a ~37%
+// found-and-revealed rate among the ~10% that classify as "publisher",
+// enriching the full blog-directory.org crawl would burn through roughly
+// the entire shared monthly Apollo credit pool (see discovery/README.md) by
+// itself. classify.js/verify-publisher-fit.js still run normally (free/
+// cheap) so leads still land in "To contact" - just without an email yet.
+// Pass --include-blogdirectory on a manual enrich.js run (with an explicit
+// --limit) to work through them in controlled, deliberate batches instead.
 
 import { pathToFileURL } from 'node:url';
 import { sql } from './lib/db.js';
 import { searchPerson, revealEmail, isRealEmail, isRedactedName, titlesForRow } from './lib/apollo.js';
 
+const AUTO_ENRICH_EXCLUDED_SOURCES = ['blogdirectory'];
+
 function parseArgs(argv) {
-  const args = { limit: 20, dryRun: false };
+  const args = { limit: 20, dryRun: false, includeBlogdirectory: false };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--limit') args.limit = parseInt(argv[i + 1], 10) || args.limit;
     if (argv[i] === '--dry-run') args.dryRun = true;
+    if (argv[i] === '--include-blogdirectory') args.includeBlogdirectory = true;
   }
   return args;
 }
@@ -45,12 +61,16 @@ export async function ensureColumns() {
 // Core enrichment pass, shared by the CLI below and by classify.js's
 // auto-cascade. Always scoped to lead_type='publisher' - vendor/competitor/
 // unclear leads are never worth an Apollo credit for this campaign.
-export async function enrichPendingPublishers({ limit = 20, dryRun = false } = {}) {
+// excludeSources defaults to AUTO_ENRICH_EXCLUDED_SOURCES so classify.js's
+// unattended cascade never spends on blogdirectory leads; pass [] (what the
+// CLI's --include-blogdirectory does) to enrich them deliberately.
+export async function enrichPendingPublishers({ limit = 20, dryRun = false, excludeSources = AUTO_ENRICH_EXCLUDED_SOURCES } = {}) {
   await ensureColumns();
 
   const rows = await sql`
     SELECT id, domain, lead_type, team_size FROM candidate_publishers
     WHERE lead_type = 'publisher' AND contact_status IS NULL
+      AND discovery_source != ALL(${excludeSources})
     ORDER BY id ASC
     LIMIT ${limit}
   `;
@@ -146,8 +166,9 @@ export async function enrichPendingPublishers({ limit = 20, dryRun = false } = {
 }
 
 async function main() {
-  const { limit, dryRun } = parseArgs(process.argv.slice(2));
-  const { found, notFound, noEmail, processed } = await enrichPendingPublishers({ limit, dryRun });
+  const { limit, dryRun, includeBlogdirectory } = parseArgs(process.argv.slice(2));
+  const excludeSources = includeBlogdirectory ? [] : AUTO_ENRICH_EXCLUDED_SOURCES;
+  const { found, notFound, noEmail, processed } = await enrichPendingPublishers({ limit, dryRun, excludeSources });
 
   if (processed === 0) {
     console.log('Nothing to enrich - all classified publisher leads already have a contact_status.');

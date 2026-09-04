@@ -176,6 +176,18 @@ is up to) lives in `blogdirectory_progress`, keyed per query string so
 about 3.5 weeks; pass a different `--query` once it's exhausted (or to widen
 into a specific term sooner) to keep going.
 
+**Apollo enrichment is excluded by default for this source** (see
+`enrich.js`) - at full-crawl scale (~66k candidate domains estimated),
+auto-enriching every classified "publisher" lead here would burn through
+roughly the entire shared monthly Apollo credit pool by itself. `classify.js`
+and `verify-publisher-fit.js` still run normally (Anthropic-only, cheap -
+~$40-50 total for the whole crawl), so leads still reach "To contact" -
+just without an email yet. Enrich them deliberately, in controlled batches:
+
+```
+node discovery/enrich.js --include-blogdirectory --limit 50
+```
+
 ## What's NOT built yet
 
 Crawling each site for deeper metadata, traffic/priority scoring, or
