@@ -206,6 +206,23 @@
       return;
     }
 
+    // Last resort before giving up entirely (this is the final attempt -
+    // further retries won't change a stable DOM). isChrome() can zero out a
+    // real article outright when findArticle() had to fall back to a broad
+    // wrapper - a bare <main>, or a page-builder <article> - whose ENTIRE
+    // content happens to sit inside a <header>/<nav>/<footer> or
+    // role="banner" landmark. Confirmed on open-intro.com's blog posts
+    // (Sep 2026): the post body renders inside <header>, so every paragraph
+    // was rejected and the widget never reached the 150-char bar across all
+    // 10 attempts - a real article, permanently blank, with no request ever
+    // sent to notice. A stray menu word occasionally winning a highlight
+    // (the failure isChrome exists to prevent) is a far smaller cost than
+    // the widget going dark, so only here - once there's nowhere left to
+    // retry - fall back to the unfiltered extraction instead.
+    if (el && text.length < 150) {
+      text = extractParagraphText(el, false);
+    }
+
     if (!el || text.length < 150) return;
 
     _lang = detectLanguage(text);
@@ -475,7 +492,12 @@
     return role === 'navigation' || role === 'banner' || role === 'contentinfo';
   }
 
-  function extractParagraphText(el) {
+  // excludeChrome defaults true (the normal, safer path). tryRun passes
+  // false only as a last-resort re-extraction when the filtered text came
+  // back too thin to even attempt a request - see the comment at its call
+  // site for why isChrome can legitimately zero out a real article.
+  function extractParagraphText(el, excludeChrome) {
+    if (excludeChrome === undefined) excludeChrome = true;
     var walker = document.createTreeWalker(
       el,
       NodeFilter.SHOW_TEXT,
@@ -485,7 +507,7 @@
           if (/^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA|INPUT|CODE|PRE|A|H1|H2|H3|H4|H5|H6)$/.test(p.tagName)) return NodeFilter.FILTER_REJECT;
           if (isOwnWidget(p)) return NodeFilter.FILTER_REJECT;
           if (isAdContainer(p)) return NodeFilter.FILTER_REJECT;
-          if (isChrome(p)) return NodeFilter.FILTER_REJECT;
+          if (excludeChrome && isChrome(p)) return NodeFilter.FILTER_REJECT;
           p = p.parentElement;
         }
         return NodeFilter.FILTER_ACCEPT;
