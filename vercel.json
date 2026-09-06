@@ -38,6 +38,7 @@
   "functions": {
     "api/admin.js": { "maxDuration": 60 },
     "api/match.js": { "maxDuration": 60 },
+    "api/suggest.js": { "maxDuration": 60 },
     "api/dashboard.js": { "maxDuration": 30 },
     "api/cron/weekly-blog.js": { "maxDuration": 60 },
     "api/blog.js": { "maxDuration": 30, "includeFiles": "partials/**" }

@@ -524,6 +524,27 @@ tr:last-child td{border-bottom:none}
 .nl-detail-tags{display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.5rem}
 .nl-tag{display:inline-block;background:var(--sage-light);color:var(--sage);font-size:0.68rem;font-weight:500;padding:0.15rem 0.55rem;border-radius:100px}
 .nl-detail-meta{margin-top:0.5rem;color:var(--ink-muted);font-size:0.7rem}
+/* Manual Entry - AI article suggestions */
+.nl-sg-wrap{padding:0 1.5rem 1.25rem}
+.nl-sg-textarea{width:100%;min-height:130px;resize:vertical;padding:0.75rem 0.875rem;border:1.5px solid var(--border);border-radius:var(--radius);font-size:0.8125rem;line-height:1.6;font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);outline:none;transition:border-color .15s,background .15s}
+.nl-sg-textarea:focus{border-color:var(--sage);background:var(--white)}
+.nl-sg-bar{display:flex;align-items:center;gap:0.75rem;margin-top:0.625rem}
+.nl-sg-btn{background:var(--ink);color:#fff;border:none;font-size:0.8125rem;font-weight:600;font-family:'Inter',sans-serif;padding:0.55rem 1.1rem;border-radius:100px;cursor:pointer;transition:opacity .15s}
+.nl-sg-btn:hover{opacity:0.85}
+.nl-sg-btn:disabled{opacity:0.5;cursor:not-allowed}
+.nl-sg-hint{font-size:0.7rem;color:var(--ink-muted)}
+.nl-sg-out{margin-top:1rem;display:flex;flex-direction:column;gap:0.875rem}
+.nl-sg-group-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-muted);margin-bottom:0.35rem}
+.nl-sg-place{border:1px solid var(--border);border-radius:var(--radius);padding:0.875rem 1rem}
+.nl-sg-quote{font-size:0.8rem;color:var(--ink);line-height:1.55;border-left:3px solid var(--sage-mid);padding-left:0.75rem;font-style:italic}
+.nl-sg-reason{font-size:0.72rem;color:var(--ink-muted);margin-top:0.4rem;line-height:1.5}
+.nl-sg-experts{display:flex;flex-direction:column;gap:0.45rem;margin-top:0.7rem}
+.nl-sg-exrow{display:flex;align-items:center;gap:0.625rem}
+.nl-sg-exphoto{width:30px;height:30px;border-radius:50%;object-fit:cover;background:var(--sage-light);flex-shrink:0}
+.nl-sg-exinfo{flex:1;min-width:0}
+.nl-sg-exname{font-size:0.75rem;font-weight:600;color:var(--ink)}
+.nl-sg-exrole{font-size:0.68rem;color:var(--ink-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nl-sg-err{font-size:0.78rem;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:0.625rem 0.875rem}
 </style>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-J1RDCPZ6SB"></script>
@@ -988,7 +1009,7 @@ tr:last-child td{border-bottom:none}
         <div class="wpreview">
           <div class="wpreview-desc">
             <div class="wpreview-desc-label">Manual Entry & Newsletters</div>
-            <div class="wpreview-desc-text">Search your available experts and copy a tracked link to paste into a newsletter by hand.</div>
+            <div class="wpreview-desc-text">Paste an article to get suggested experts and where to link them, or search your roster and copy a tracked link by hand.</div>
             <div class="wpreview-desc-sub">For Substack, Medium, or any newsletter where the widget can't run - clicks are tracked the same way as your other widgets.</div>
           </div>
           <div class="wpreview-anim">
@@ -1001,6 +1022,20 @@ tr:last-child td{border-bottom:none}
               <div class="prev-nl-row"><div class="prev-board-avatar"></div><div style="flex:1"><div class="prev-board-name" style="width:32%"></div><div class="prev-board-bio" style="width:58%;margin-top:3px"></div></div><div class="prev-nl-linkbtn"><svg class="prev-nl-icon-link" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><svg class="prev-nl-icon-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
               <div class="prev-nl-row"><div class="prev-board-avatar"></div><div style="flex:1"><div class="prev-board-name" style="width:45%"></div><div class="prev-board-bio" style="width:65%;margin-top:3px"></div></div><div class="prev-nl-linkbtn"><svg class="prev-nl-icon-link" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><svg class="prev-nl-icon-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
             </div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Suggest experts for an article</div>
+            <div class="section-sub">Paste your article or newsletter draft - we'll point out where an expert link fits and which experts to use.</div>
+          </div>
+          <div class="nl-sg-wrap">
+            <textarea id="nl-article" class="nl-sg-textarea" placeholder="Paste your article or newsletter text here…"></textarea>
+            <div class="nl-sg-bar">
+              <button id="nl-analyze-btn" class="nl-sg-btn" onclick="analyzeArticle()">Suggest experts</button>
+              <span class="nl-sg-hint" id="nl-sg-hint">Your text isn't stored - it's only used to generate suggestions.</span>
+            </div>
+            <div id="nl-sg-out" class="nl-sg-out"></div>
           </div>
         </div>
         <div class="section">
@@ -1794,17 +1829,105 @@ function filterNewsletterExperts(term) {
   renderNewsletterExperts(filtered);
 }
 
-function copyNewsletterLink(expertId) {
-  const e = (_nlExperts || []).find(x => x.id === expertId);
-  if (!e || !e.booking_url) return;
-  const url = 'https://www.introlinq.com/api/dashboard?action=out'
+// Holds experts returned by the "Suggest experts" panel, so the copy
+// buttons in those results can resolve an id the same way the browse list does.
+let _nlSuggestById = {};
+
+function nlTrackedLink(e) {
+  return 'https://www.introlinq.com/api/dashboard?action=out'
     + '&pub=' + encodeURIComponent(PUB)
     + '&expert_id=' + encodeURIComponent(e.id)
     + '&expert_name=' + encodeURIComponent(e.name || '')
     + '&expert_url=' + encodeURIComponent(e.booking_url)
     + '&phrase=newsletter&source=newsletter&il_type=manual';
-  navigator.clipboard.writeText(url);
+}
+
+function copyNewsletterLink(expertId) {
+  const e = (_nlExperts || []).find(x => x.id === expertId) || _nlSuggestById[expertId];
+  if (!e || !e.booking_url) return;
+  navigator.clipboard.writeText(nlTrackedLink(e));
   toast('Link copied!');
+}
+
+// ── Manual Entry: AI article suggestions ───────────────────────────────────
+
+async function analyzeArticle() {
+  const ta = document.getElementById('nl-article');
+  const out = document.getElementById('nl-sg-out');
+  const btn = document.getElementById('nl-analyze-btn');
+  const text = (ta.value || '').trim();
+  if (text.length < 200) {
+    out.innerHTML = '<div class="nl-sg-err">Paste a bit more text first - at least a paragraph or two.</div>';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Analysing…';
+  out.innerHTML = '<div class="logs-empty">Reading your article and matching experts… this takes a few seconds.</div>';
+  if (window.ilTrack) ilTrack('manual_suggest_run', { chars: text.length });
+  try {
+    const res = await fetch('/api/suggest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ pub: PUB, text })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      out.innerHTML = '<div class="nl-sg-err">' + esc(data.error || 'Something went wrong - try again.') + '</div>';
+      return;
+    }
+    renderSuggestions(data);
+  } catch (e) {
+    out.innerHTML = '<div class="nl-sg-err">Could not reach the suggestion service - try again in a minute.</div>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Suggest experts';
+  }
+}
+
+function sgExpertRow(e) {
+  const fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=64&name=' + encodeURIComponent(e.name);
+  const role = [e.position, e.company].filter(Boolean).join(' · ');
+  return `<div class="nl-sg-exrow">
+    <img class="nl-sg-exphoto" src="${esc(e.photo_url || fallback)}" onerror="this.src='${esc(fallback)}'" alt="${esc(e.name)}">
+    <div class="nl-sg-exinfo">
+      <div class="nl-sg-exname">${esc(e.name)}</div>
+      ${role ? `<div class="nl-sg-exrole">${esc(role)}</div>` : ''}
+    </div>
+    <button class="nl-copy-btn" onclick="copyNewsletterLink(${e.id})">Copy link</button>
+  </div>`;
+}
+
+function renderSuggestions(data) {
+  const out = document.getElementById('nl-sg-out');
+  const placements = data.placements || [];
+  const overall = data.overall || [];
+
+  // Index every suggested expert so the copy buttons can find them.
+  _nlSuggestById = {};
+  placements.forEach(p => (p.experts || []).forEach(e => { _nlSuggestById[e.id] = e; }));
+  overall.forEach(e => { _nlSuggestById[e.id] = e; });
+
+  if (!placements.length && !overall.length) {
+    out.innerHTML = '<div class="logs-empty">No clear spots for an expert link in this text - it may be news or an announcement rather than a how-to. Try the search below.</div>';
+    return;
+  }
+
+  let html = '';
+  if (placements.length) {
+    html += '<div><div class="nl-sg-group-label">Where to add a link (' + placements.length + ')</div>';
+    html += placements.map(p => `<div class="nl-sg-place">
+      <div class="nl-sg-quote">${esc(p.quote)}</div>
+      ${p.reason ? `<div class="nl-sg-reason">${esc(p.reason)}</div>` : ''}
+      <div class="nl-sg-experts">${(p.experts || []).map(sgExpertRow).join('')}</div>
+    </div>`).join('');
+    html += '</div>';
+  }
+  if (overall.length) {
+    html += `<div><div class="nl-sg-group-label">Experts for the whole piece</div>
+      <div class="nl-sg-place"><div class="nl-sg-experts">${overall.map(sgExpertRow).join('')}</div></div></div>`;
+  }
+  out.innerHTML = html;
 }
 
 // ── Partners ─────────────────────────────────────────────────────────────────
@@ -2539,7 +2662,7 @@ const ONBOARDING_WIDGETS = {
   text: { label: 'AI Text Widget', file: 'widget.js', badge: '#3d7a5f', letter: 'T', desc: 'Highlights phrases in your articles and shows a matching expert popup when readers hover.' },
   carousel: { label: 'Expert Carousel', file: 'carousel.js', badge: '#e6a820', letter: 'C', desc: 'A scrollable row of expert cards - drop it at the end of any article or page.' },
   board: { label: 'Expert Board', file: 'expertboard.js', badge: '#4a4a6a', letter: 'B', desc: 'A full browsable expert directory with search and topic filters.' },
-  manual: { label: 'Manual Entry & Newsletters', file: null, badge: '#21759b', letter: 'M', desc: 'Search your available experts and copy a tracked link to paste into a newsletter by hand. No install needed - works on Substack and Medium too.' },
+  manual: { label: 'Manual Entry & Newsletters', file: null, badge: '#21759b', letter: 'M', desc: 'Paste an article to get suggested experts and link placements, or search your roster and copy a tracked link by hand. No install needed - works on Substack and Medium too.' },
 };
 
 // Compact reuse of the Widgets tab's own preview mockups (same .prev-*
