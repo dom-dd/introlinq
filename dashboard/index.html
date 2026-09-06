@@ -79,6 +79,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .tab-btn.install-tab-btn{color:#b91c1c;font-weight:700}
 .tab-btn.install-tab-btn:hover{color:#b91c1c}
 .tab-btn.install-tab-btn.active{border-bottom-color:#b91c1c;color:#b91c1c}
+/* Once the publisher has ever been live the Install tab stays put but
+   stops shouting - it's now just "add another surface", not an alarm. */
+.tab-btn.install-tab-btn.is-live{color:var(--ink-soft);font-weight:600}
+.tab-btn.install-tab-btn.is-live:hover{color:var(--ink)}
+.tab-btn.install-tab-btn.is-live.active{border-bottom-color:var(--ink);color:var(--ink)}
 /* Capped so the onboarding cards/previews don't stretch arbitrarily wide on
    a big monitor - the carousel preview's seamless-loop animation depends on
    a bounded number of cards fitting the visible width (see .prev-track's
@@ -1291,6 +1296,17 @@ function switchTab(name, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
+  // The Install tab is now always in the bar (see loadDashboard), so a live
+  // publisher can open it to add a second widget. Its body is only
+  // pre-populated by loadDashboard when not live - otherwise fill it on
+  // first open. `!firstChild` so an in-progress step-through survives a tab
+  // switch away and back.
+  if (name === 'install' && window._cd && window._cd.publisher) {
+    const body = document.getElementById('install-tab-body');
+    if (body && !body.firstChild) {
+      initInstallTab(window._cd.publisher.slug, window._cd.publisher.platform, window._cd.publisher.platform_detected);
+    }
+  }
   if (name === 'overview' && window._cd && !window._chartsReady) {
     initCharts(window._cd);
     setPeriod('daily', document.querySelector('.period-btn.active'));
@@ -1389,7 +1405,7 @@ async function loadDashboard() {
     // dismiss/reopen tracking needed. A manual-links publisher (v2) is
     // genuinely set up, so the tab stays available but isn't forced open.
     initInstallTab(d.publisher.slug, d.publisher.platform, d.publisher.platform_detected);
-    document.getElementById('install-tab-btn').style.display = '';
+    setInstallTabChrome(false);
     if (!(d.activation_v2 && d.manual_only)) switchTab('install', document.getElementById('install-tab-btn'));
   } else if (d.publisher.last_widget_fire_at) {
     // Always visible once live, not just right after setup - last_widget_fire_at
@@ -1419,6 +1435,13 @@ async function loadDashboard() {
     // delay anything else on the page - fire and forget.
     checkWidgetLive(d.publisher.slug, lastFire);
   }
+
+  // The Install tab is a permanent fixture, not a transient setup prompt.
+  // Once the publisher has ever been live it stays in the tab bar (just
+  // relabelled and de-emphasised), so "add another widget later" is always
+  // a plain tab click - never the disappear-then-silently-reappear
+  // behaviour the Widgets-tab install buttons used to cause.
+  setInstallTabChrome(!!d.publisher.first_widget_fire_at);
 
   // Widget tab
   const p = d.publisher;
@@ -2769,6 +2792,10 @@ const ONBOARDING_WIDGET_PREVIEWS = {
 
 let _onboardingPub = null;
 let _onboardingPlatformDetected = false;
+// The widget type ('text' | 'carousel' | 'board') the current step-through
+// is for - set by renderOnboardingSteps, read by the success screen so it
+// can offer the *other* surfaces.
+let _onboardingWidgetType = null;
 // Set by startWidgetInstall() when the platform isn't known yet and the
 // platform picker needs to be shown first - once picked,
 // selectOnboardingPlatform() checks this and skips straight to that
@@ -2786,6 +2813,25 @@ let _sessionConfirmedPlatform = null;
 
 function goToOverviewTab() {
   switchTab('overview', document.getElementById('overview-tab-btn'));
+}
+
+// Keeps the Install tab button + its panel header in sync with whether the
+// publisher has ever been live. Not-live: red "● Get started", urgent
+// header. Live: quiet "Install", neutral "add another surface" header. The
+// button is always shown either way - see the loadDashboard comment.
+function setInstallTabChrome(isLive) {
+  const btn = document.getElementById('install-tab-btn');
+  if (btn) {
+    btn.style.display = '';
+    btn.textContent = isLive ? 'Install' : '● Get started';
+    btn.classList.toggle('is-live', !!isLive);
+  }
+  const title = document.querySelector('#tab-install .install-tab-title');
+  const sub = document.querySelector('#tab-install .install-tab-sub');
+  if (title) title.textContent = isLive ? 'Install a widget' : "Let's get your widget live";
+  if (sub) sub.textContent = isLive
+    ? 'Add the AI text widget, a visual widget, or tracked links for your newsletter and socials.'
+    : "Your widget isn't installed yet - pick your platform below and we'll walk you through it, step by step.";
 }
 
 function initInstallTab(pub, savedPlatform, wasDetected) {
@@ -3032,6 +3078,7 @@ function renderStepVisual(spec, color, url, realCode, realId) {
 function renderOnboardingSteps(id, stepIndex, widgetType) {
   stepIndex = stepIndex || 0;
   widgetType = widgetType || 'text';
+  _onboardingWidgetType = widgetType;
   // Navigating away from the final step mid-countdown (Back, or picking
   // another widget) must not leave testOnboardingWidget's retry timer
   // firing against a panel that's no longer there.
@@ -3134,14 +3181,12 @@ async function testOnboardingWidget(attempt) {
   }
   if (data && data.status === 'live') {
     btn.disabled = false;
-    result.className = 'onboarding-test-result ok';
-    result.textContent = "✓ You're live! Widget found and working.";
-    // first_widget_fire_at only gets set by real reader traffic hitting the
-    // widget (see api/match.js), not by this check - so there's nothing to
-    // reload yet. Just take them to Overview directly instead of reloading
-    // into a state that would look identical to "still not installed".
-    document.getElementById('install-tab-btn').style.display = 'none';
-    setTimeout(goToOverviewTab, 1800);
+    // Don't bounce straight to Overview - that hid the fact that Carousel,
+    // Board and newsletter links even exist. Land on a "you're set up, here's
+    // what else you can add" screen instead, with the Install tab kept in
+    // place (relabelled) so it stays reachable.
+    setInstallTabChrome(true);
+    renderOnboardingDone(_onboardingWidgetType);
     return;
   }
   // Not found yet. A brand-new install almost always fails the first check
@@ -3179,6 +3224,51 @@ async function testOnboardingWidget(attempt) {
     result.className = 'onboarding-test-result fail';
     result.innerHTML = `Couldn't verify - make sure your site has a homepage domain on file, or email <a href="mailto:hello@introlinq.com">hello@introlinq.com</a>.`;
   }
+}
+
+// Success screen shown after "Test my install" confirms a widget is live.
+// The whole point is discovery: someone who's only ever seen the AI Text
+// Widget should leave here knowing the Carousel, Board and newsletter/social
+// links exist and are one click away. Surfaces already in use (from the
+// stats `modes` array, plus the one just finished) show as "Added" rather
+// than being hidden, so the list doubles as a coverage overview.
+function renderOnboardingDone(justInstalled) {
+  const modeFor = { text: 'widget', carousel: 'carousel', board: 'board', manual: 'manual' };
+  const active = (window._cd && Array.isArray(window._cd.modes)) ? window._cd.modes.slice() : [];
+  if (justInstalled && modeFor[justInstalled] && !active.includes(modeFor[justInstalled])) {
+    active.push(modeFor[justInstalled]);
+  }
+  const justLabel = ONBOARDING_WIDGETS[justInstalled] ? ONBOARDING_WIDGETS[justInstalled].label : 'Your widget';
+  const cards = Object.entries(ONBOARDING_WIDGETS)
+    .filter(([id]) => id !== justInstalled)
+    .map(([id, w]) => {
+      const done = active.includes(modeFor[id]);
+      const act = id === 'manual' ? 'goToNewsletterLinks()' : `startWidgetInstall('${id}')`;
+      return `
+      <div class="widget-card onboarding-next-card${done ? ' done' : ''}"${done ? '' : ` role="button" tabindex="0" onclick="${act}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${act}}"`}>
+        <div class="widget-card-top">
+          <div class="platform-badge" style="background:${w.badge};width:28px;height:28px;font-size:0.75rem">${w.letter}</div>
+          <div class="widget-card-label">${esc(w.label)}</div>
+        </div>
+        <div class="widget-card-desc">${esc(w.desc)}</div>
+        <div class="widget-card-preview">${ONBOARDING_WIDGET_PREVIEWS[id]}</div>
+        ${done ? `<span class="widget-card-tag">Added ✓</span>` : `<span class="widget-card-example-link">Set this up →</span>`}
+      </div>`;
+    }).join('');
+  document.getElementById('install-tab-body').innerHTML = `
+    <div class="onboarding-done-head">
+      <div class="onboarding-done-check">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="onboarding-done-title">${esc(justLabel)} is set up</div>
+      <div class="onboarding-done-sub">It goes live the moment a reader loads one of your pages - you can watch views, hovers and clicks come in from the Overview tab.</div>
+    </div>
+    <div class="onboarding-done-actions">
+      <button class="onboarding-test-btn" onclick="goToOverviewTab()">Go to dashboard →</button>
+    </div>
+    <div class="onboarding-next-label">Add another surface - more places to be seen, more chances at a click</div>
+    <div class="widget-grid">${cards}</div>
+  `;
 }
 
 // "See example" modal - shows the REAL widget.js/carousel.js/expertboard.js
