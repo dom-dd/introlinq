@@ -94,6 +94,20 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .install-tab-title{font-family:'DM Serif Display',serif;font-size:1.375rem;color:var(--ink);margin-bottom:0.375rem}
 .install-tab-sub{font-size:0.9375rem;color:var(--ink-soft);line-height:1.5}
 .onboarding-lede{font-size:0.875rem;color:var(--ink-soft);line-height:1.5;margin-bottom:1.5rem}
+/* Channel picker - the single top-level "what do you want to set up?"
+   question that now fronts the whole install flow. Wide stacked rows
+   rather than a tile grid: three choices, each needs a sentence. */
+.channel-grid{display:flex;flex-direction:column;gap:0.75rem;margin-bottom:0.5rem}
+.channel-card{display:flex;align-items:center;gap:1rem;width:100%;text-align:left;padding:1.1rem 1.25rem;border:2px solid var(--border);border-radius:12px;background:var(--white);cursor:pointer;font-family:'Inter',sans-serif;transition:border-color .15s,transform .1s}
+.channel-card:hover{border-color:var(--sage);transform:translateY(-1px)}
+.channel-card-body{flex:1;min-width:0}
+.channel-card-label{font-size:0.9375rem;font-weight:600;color:var(--ink);margin-bottom:0.2rem}
+.channel-card-desc{font-size:0.8125rem;color:var(--ink-soft);line-height:1.45}
+.channel-card-arrow{color:var(--ink-muted);font-size:1.1rem;flex-shrink:0}
+/* Regrouped widget picker: one prominent recommended card for the AI text
+   widget, then the two visual widgets as a secondary row under a label. */
+.widget-sub-label{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-muted);margin:1.75rem 0 0.75rem}
+.widget-card.lead{border-color:var(--sage);background:var(--sage-light)}
 .platform-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem}
 .platform-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.625rem;padding:1.25rem 0.75rem;border:2px solid var(--border);border-radius:12px;background:var(--white);cursor:pointer;transition:border-color .15s,transform .1s;font-family:'Inter',sans-serif}
 .platform-card:hover{border-color:var(--sage);transform:translateY(-1px)}
@@ -1405,8 +1419,12 @@ async function loadDashboard() {
     // dismiss/reopen tracking needed. A manual-links publisher (v2) is
     // genuinely set up, so the tab stays available but isn't forced open.
     initInstallTab(d.publisher.slug, d.publisher.platform, d.publisher.platform_detected);
-    setInstallTabChrome(false);
-    if (!(d.activation_v2 && d.manual_only)) switchTab('install', document.getElementById('install-tab-btn'));
+    // A manual-links-only publisher (v2) is already set up - give them the
+    // quiet "Install" chrome, not the red "get started" alarm, and don't
+    // force the tab open.
+    const manualOnly = !!(d.activation_v2 && d.manual_only);
+    setInstallTabChrome(manualOnly);
+    if (!manualOnly) switchTab('install', document.getElementById('install-tab-btn'));
   } else if (d.publisher.last_widget_fire_at) {
     // Always visible once live, not just right after setup - last_widget_fire_at
     // updates on every single widget request, so this is an ongoing "is it still
@@ -1440,8 +1458,10 @@ async function loadDashboard() {
   // Once the publisher has ever been live it stays in the tab bar (just
   // relabelled and de-emphasised), so "add another widget later" is always
   // a plain tab click - never the disappear-then-silently-reappear
-  // behaviour the Widgets-tab install buttons used to cause.
-  setInstallTabChrome(!!d.publisher.first_widget_fire_at);
+  // behaviour the Widgets-tab install buttons used to cause. The not-live
+  // branch above already set the chrome (accounting for manual-only), so
+  // only (re)assert it here for the live branches.
+  if (d.publisher.first_widget_fire_at) setInstallTabChrome(true);
 
   // Widget tab
   const p = d.publisher;
@@ -2837,18 +2857,76 @@ function setInstallTabChrome(isLive) {
 function initInstallTab(pub, savedPlatform, wasDetected) {
   _onboardingPub = pub;
   _onboardingPlatformDetected = !!wasDetected;
-  // Only called while first_widget_fire_at is still null (see loadDashboard),
-  // so that signal is always false here - platform_detected (a real site
-  // scan at signup) is the only thing that can make a stored platform
-  // confident at this entry point. Anything else is just a prior click,
-  // offered as a suggestion rather than skipped straight past - same
-  // reasoning as startWidgetInstall's isConfidentPlatform check.
-  if (savedPlatform && wasDetected && (ONBOARDING_PLATFORMS[savedPlatform] || ONBOARDING_UNSUPPORTED[savedPlatform])) {
-    renderOnboardingWidgetPicker(savedPlatform);
+  // Everything now starts from one question - website widget, newsletter,
+  // or social links (see renderInstallChannelPicker). A known/detected
+  // platform is no longer a reason to skip straight past that choice; it
+  // just makes the "website widget" branch skip the platform step instead.
+  _suggestedPlatform = (savedPlatform && (ONBOARDING_PLATFORMS[savedPlatform] || ONBOARDING_UNSUPPORTED[savedPlatform])) ? savedPlatform : null;
+  renderInstallChannelPicker();
+}
+
+// Top-level install choice, keyed on distribution channel rather than
+// widget type. "Site" leads into the platform + widget flow; the other two
+// both route to the same manual tracked-link tool (it's identical work -
+// only the framing differs), so Substack/Medium/any-newsletter and social
+// sharing are first-class answers here instead of dead ends discovered
+// later.
+const INSTALL_CHANNELS = {
+  site: { label: 'A widget on my website', letter: 'W', badge: '#3d7a5f',
+    desc: "The AI text widget, an expert carousel, or a browsable board - embedded on your blog or site." },
+  newsletter: { label: 'Links for my newsletter', letter: 'N', badge: '#e6a820',
+    desc: "Substack, Medium, Mailchimp, any email tool. Paste a draft for suggested experts, or copy a tracked link by hand. Nothing to install." },
+  social: { label: 'Links to share on social', letter: 'S', badge: '#4a4a6a',
+    desc: "Grab a tracked expert link to drop into a post, thread or bio. Nothing to install." },
+};
+
+function renderInstallChannelPicker() {
+  const cards = Object.entries(INSTALL_CHANNELS).map(([id, c]) => `
+    <button class="channel-card" onclick="selectInstallChannel('${id}')">
+      <div class="platform-badge" style="background:${c.badge};flex-shrink:0">${c.letter}</div>
+      <div class="channel-card-body">
+        <div class="channel-card-label">${esc(c.label)}</div>
+        <div class="channel-card-desc">${esc(c.desc)}</div>
+      </div>
+      <div class="channel-card-arrow">&rarr;</div>
+    </button>`).join('');
+  document.getElementById('install-tab-body').innerHTML = `
+    <div class="onboarding-lede">What would you like to set up? You can add the others any time from this tab.</div>
+    <div class="channel-grid">${cards}</div>
+  `;
+}
+
+function selectInstallChannel(id) {
+  if (id === 'newsletter' || id === 'social') { goToNewsletterLinks(); return; }
+  // Website widget: skip the platform step when we already know it for
+  // real, show the interstitial (not a widget choice) for Substack/Medium,
+  // otherwise ask.
+  const pub = window._cd && window._cd.publisher;
+  if (pub && isConfidentPlatform(pub) && ONBOARDING_PLATFORMS[pub.platform]) {
+    renderOnboardingWidgetPicker(pub.platform);
+  } else if (pub && isConfidentPlatform(pub) && ONBOARDING_UNSUPPORTED[pub.platform]) {
+    renderUnsupportedInterstitial(pub.platform);
   } else {
-    _suggestedPlatform = (savedPlatform && (ONBOARDING_PLATFORMS[savedPlatform] || ONBOARDING_UNSUPPORTED[savedPlatform])) ? savedPlatform : null;
+    _suggestedPlatform = (pub && (ONBOARDING_PLATFORMS[pub.platform] || ONBOARDING_UNSUPPORTED[pub.platform])) ? pub.platform : null;
     renderOnboardingPicker();
   }
+}
+
+// Substack/Medium: no widget choice to make (nothing embeds), so this
+// replaces the old picker-with-everything-disabled with a single "here's
+// why, here's what works" screen straight through to the manual tool.
+function renderUnsupportedInterstitial(platformId) {
+  const label = (ONBOARDING_UNSUPPORTED[platformId] || {}).label || platformId;
+  const why = platformId === 'substack'
+    ? 'Substack blocks the custom HTML and scripts an embedded widget needs'
+    : 'Medium has no support for custom code';
+  document.getElementById('install-tab-body').innerHTML = `
+    <button class="onboarding-back" onclick="renderOnboardingPicker()">&larr; Choose a different platform</button>
+    <div class="onboarding-note">${esc(label)} can't run an embedded widget - ${why}. Tracked expert links work exactly the same way for you, with clicks and bookings attributed just like the widgets. We've noted you're on ${esc(label)}, so you'll be first to hear if native support lands.</div>
+    <div class="onboarding-done-actions" style="justify-content:flex-start">
+      <button class="onboarding-test-btn" onclick="goToNewsletterLinks()">Set up tracked links &rarr;</button>
+    </div>
+  `;
 }
 
 // Entry point for the Widgets tab's "Install this widget" button (added
@@ -2883,10 +2961,9 @@ function startWidgetInstall(widgetType) {
   if (isConfidentPlatform(pub) && ONBOARDING_PLATFORMS[pub.platform]) {
     renderOnboardingSteps(pub.platform, 0, widgetType);
   } else if (isConfidentPlatform(pub) && ONBOARDING_UNSUPPORTED[pub.platform]) {
-    // Substack/Medium - let the normal widget-picker explain why a
-    // script-embed widget won't work there rather than forcing a broken
-    // install flow for it.
-    renderOnboardingWidgetPicker(pub.platform);
+    // Substack/Medium - straight to the "why + what works" screen, no
+    // widget choice to make.
+    renderUnsupportedInterstitial(pub.platform);
   } else {
     _pendingTargetWidget = widgetType;
     // Not confident, but an unconfirmed prior click is still worth
@@ -2915,7 +2992,8 @@ function renderOnboardingPicker() {
     </button>
   `).join('');
   document.getElementById('install-tab-body').innerHTML = `
-    <div class="onboarding-lede">How is your blog built? Pick your platform and we'll walk you through installing the widget - it only takes a couple of minutes.</div>
+    <button class="onboarding-back" onclick="renderInstallChannelPicker()">&larr; Back</button>
+    <div class="onboarding-lede">How is your site built? Pick your platform and we'll walk you through it - it only takes a couple of minutes.</div>
     ${suggested ? `<div class="onboarding-note">You picked <strong>${esc(suggestedLabel)}</strong> last time, but we're not fully sure yet - confirm it below, or pick a different platform if that's changed.</div>` : ''}
     <div class="platform-grid">${cards}${unsupported}</div>
   `;
@@ -2936,45 +3014,46 @@ function selectOnboardingPlatform(id) {
     const target = _pendingTargetWidget;
     _pendingTargetWidget = null;
     if (ONBOARDING_UNSUPPORTED[id]) {
-      renderOnboardingWidgetPicker(id);
+      renderUnsupportedInterstitial(id);
     } else {
       renderOnboardingSteps(id, 0, target);
     }
     return;
   }
-  renderOnboardingWidgetPicker(id);
+  if (ONBOARDING_UNSUPPORTED[id]) {
+    renderUnsupportedInterstitial(id);
+  } else {
+    renderOnboardingWidgetPicker(id);
+  }
 }
 
-// Step 2: which of the three script-embed widgets (or Manual Entry) to
-// install first. On Substack/Medium the three script-embed cards are shown
-// disabled rather than hidden entirely - being upfront about WHY (same
-// explanation as the old dead-end screen) reads as more trustworthy than
-// silently only offering one option, and Manual Entry is flagged as the
-// one that actually works for them.
-function renderOnboardingWidgetPicker(platformId) {
-  const isUnsupported = !!ONBOARDING_UNSUPPORTED[platformId];
-  const platformLabel = isUnsupported ? ONBOARDING_UNSUPPORTED[platformId].label : ONBOARDING_PLATFORMS[platformId].label;
-  const cards = Object.entries(ONBOARDING_WIDGETS).map(([id, w]) => {
-    const disabled = isUnsupported && id !== 'manual';
-    const recommended = isUnsupported && id === 'manual';
-    return `
-    <div class="widget-card${disabled ? ' disabled' : ''}${recommended ? ' recommended' : ''}" ${disabled ? '' : `role="button" tabindex="0" onclick="selectOnboardingWidget('${platformId}','${id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectOnboardingWidget('${platformId}','${id}')}"`}>
+// Step 2 (website-widget branch only - Substack/Medium never reach here,
+// they go to renderUnsupportedInterstitial). Regrouped: the AI text widget
+// leads as the recommended default, the two visual widgets sit below it
+// under a "visual block" label. Manual Entry is gone from here - it's now
+// its own top-level channel (see renderInstallChannelPicker).
+function widgetPickerCard(platformId, id, cls) {
+  const w = ONBOARDING_WIDGETS[id];
+  return `
+    <div class="widget-card${cls ? ' ' + cls : ''}" role="button" tabindex="0" onclick="selectOnboardingWidget('${platformId}','${id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectOnboardingWidget('${platformId}','${id}')}">
       <div class="widget-card-top">
         <div class="platform-badge" style="background:${w.badge};width:28px;height:28px;font-size:0.75rem">${w.letter}</div>
         <div class="widget-card-label">${esc(w.label)}</div>
       </div>
       <div class="widget-card-desc">${esc(w.desc)}</div>
       <div class="widget-card-preview">${ONBOARDING_WIDGET_PREVIEWS[id]}</div>
-      ${disabled ? `<span class="widget-card-tag unavailable">Not available on ${esc(platformLabel)}</span>` : (id === 'manual' ? '' : `<button class="widget-card-example-link" onclick="openWidgetExample('${platformId}','${id}',event)">See live example →</button>`)}
-      ${recommended ? `<span class="widget-card-tag">Recommended for ${esc(platformLabel)}</span>` : ''}
-    </div>
-  `;
-  }).join('');
+      <button class="widget-card-example-link" onclick="openWidgetExample('${platformId}','${id}',event)">See live example &rarr;</button>
+    </div>`;
+}
+
+function renderOnboardingWidgetPicker(platformId) {
+  const platformLabel = (ONBOARDING_PLATFORMS[platformId] || {}).label || platformId;
   document.getElementById('install-tab-body').innerHTML = `
-    <button class="onboarding-back" onclick="renderOnboardingPicker()">← Choose a different platform</button>
-    ${isUnsupported ? `<div class="onboarding-note">${esc(platformLabel)} doesn't allow the kind of embed the AI Text Widget, Carousel, or Expert Board need (${platformId === 'substack' ? 'Substack blocks custom HTML/scripts' : 'Medium has no support for custom code at all'}) - but Manual Entry works today, no install required. We've noted you're on ${esc(platformLabel)}, so you'll be first to hear if official platform support happens.</div>` : ''}
-    <div class="onboarding-lede">What would you like to install first? You can add the others later from the Widgets tab.</div>
-    <div class="widget-grid">${cards}</div>
+    <button class="onboarding-back" onclick="renderOnboardingPicker()">&larr; Choose a different platform</button>
+    <div class="onboarding-lede">Installing on <strong>${esc(platformLabel)}</strong>. We recommend starting with the AI Text Widget - it runs on every article automatically with nothing to place by hand. You can add the others any time.</div>
+    <div class="widget-grid" style="grid-template-columns:1fr">${widgetPickerCard(platformId, 'text', 'lead')}</div>
+    <div class="widget-sub-label">Or add a visual block you place yourself</div>
+    <div class="widget-grid">${widgetPickerCard(platformId, 'carousel')}${widgetPickerCard(platformId, 'board')}</div>
   `;
 }
 
