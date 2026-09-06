@@ -1084,17 +1084,28 @@ export default async function handler(req, res) {
         sql`SELECT publisher, COUNT(*)::int AS seen FROM seen_logs WHERE is_bot = false GROUP BY publisher`.catch(() => []),
         // Integration-mode signals: which non-widget embeds a publisher is
         // genuinely using. Widget is inferred separately from
-        // first_widget_fire_at. Two guards against false positives:
-        //  - exclude any hit whose page is on introlinq.com itself - that's
-        //    the /expertboard?pub=<slug> preview page and the dashboard
-        //    previews, not a real embed on the publisher's own site;
+        // first_widget_fire_at. Guards against false positives:
+        //  - the page must be a real http(s) URL, which drops renders inside
+        //    sandboxed previews (about:srcdoc, about:blank) - e.g. an email
+        //    builder's preview pane or a ChatGPT/Claude canvas iframe;
+        //  - exclude hits whose host is a known preview/sandbox origin:
+        //    introlinq.com itself (the /expertboard?pub=<slug> preview page
+        //    and dashboard previews), plus the AI code-sandbox hosts that
+        //    show up when the snippet is pasted into ChatGPT or Claude;
         //  - the JS below only counts a mode once it has >=3 non-bot events
         //    from >=3 distinct IPs, so one-off QA clicks don't light it up.
+        // The click_logs branch still allows a NULL article_url - manual
+        // newsletter links legitimately arrive with no referring page - but
+        // rejects a non-NULL one that fails the same host checks.
         sql`
           WITH mode_events AS (
             SELECT publisher, source AS mode, ip FROM match_logs
             WHERE is_bot = false AND source IN ('carousel','board')
-              AND page_url IS NOT NULL AND page_url NOT ILIKE '%introlinq.com%'
+              AND page_url LIKE 'http%'
+              AND page_url NOT ILIKE '%introlinq.com%'
+              AND page_url NOT ILIKE '%oaiusercontent.com%'
+              AND page_url NOT ILIKE '%claudeusercontent.com%'
+              AND page_url NOT ILIKE '%claude.site%'
             UNION ALL
             SELECT publisher,
               COALESCE(
@@ -1108,7 +1119,13 @@ export default async function handler(req, res) {
               AND (integration IN ('carousel','board','manual')
                    OR traffic_source IN ('carousel','board','newsletter')
                    OR phrase IN ('carousel','board','newsletter'))
-              AND (article_url IS NULL OR article_url NOT ILIKE '%introlinq.com%')
+              AND (article_url IS NULL OR (
+                    article_url LIKE 'http%'
+                    AND article_url NOT ILIKE '%introlinq.com%'
+                    AND article_url NOT ILIKE '%oaiusercontent.com%'
+                    AND article_url NOT ILIKE '%claudeusercontent.com%'
+                    AND article_url NOT ILIKE '%claude.site%'
+                  ))
           )
           SELECT publisher, mode, COUNT(*)::int AS n, COUNT(DISTINCT ip)::int AS ips
           FROM mode_events WHERE mode IS NOT NULL GROUP BY publisher, mode

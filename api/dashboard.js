@@ -913,7 +913,18 @@ export default async function handler(req, res) {
     let modes = [];
     let manualOnly = false;
     if (ACTIVATION_V2) {
-      const embedSources = await sql`SELECT DISTINCT source FROM match_logs WHERE publisher = ${pub} AND is_bot = false AND source IS NOT NULL`.catch(() => []);
+      // Same preview/sandbox host guard as the admin panel's mode CTE - a
+      // carousel/board render inside an email-builder preview pane or an
+      // AI code sandbox (about:srcdoc, *.oaiusercontent.com, *.claude.site)
+      // must not light up a mode label on the publisher's own dashboard.
+      const embedSources = await sql`
+        SELECT DISTINCT source FROM match_logs
+        WHERE publisher = ${pub} AND is_bot = false AND source IS NOT NULL
+          AND page_url LIKE 'http%'
+          AND page_url NOT ILIKE '%introlinq.com%'
+          AND page_url NOT ILIKE '%oaiusercontent.com%'
+          AND page_url NOT ILIKE '%claudeusercontent.com%'
+          AND page_url NOT ILIKE '%claude.site%'`.catch(() => []);
       const clickSources = (topSources || []).map(r => r.source);
       const has = s => embedSources.some(r => r.source === s) || clickSources.includes(s);
       if (publisher.first_widget_fire_at) modes.push('widget');
