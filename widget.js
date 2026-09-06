@@ -183,6 +183,21 @@
     return best;
   }
 
+  // The highlight pass (collectTextNodes, used by highlightOnePhrase and
+  // findFallbackAnchor) must scan the SAME text the AI match was built from.
+  // extractParagraphText normally excludes site chrome (<nav>/<header>/
+  // <footer> or role=navigation/banner/contentinfo); tryRun re-runs it
+  // WITHOUT that filter as a last resort when a real article's entire body
+  // sits inside such a landmark (confirmed on open-intro.com, whose blog
+  // post body renders inside <header>). When that fallback fires, this flips
+  // to false so collectTextNodes stops excluding chrome too. Without it the
+  // scan matches phrases the highlighter can then never find in the DOM -
+  // every highlight silently fails to render, and the widget goes on to fire
+  // a bogus staleCache report that forces a paid rescan into the same wall.
+  // This was the Sep 2026 regression: a51c123 added isChrome() to both
+  // functions; 9a8b256 gave only extractParagraphText the escape hatch.
+  var _excludeChromeInHighlight = true;
+
   var _started = false;
   function safeInit() {
     if (_started) return;
@@ -201,7 +216,12 @@
     var el = findArticle();
     var text = el ? extractParagraphText(el) : '';
 
-    if ((!el || text.length < 150) && attempt < 10) {
+    // 20 x 600ms = 12s. Was 10 (6s) - too tight for a client-rendered
+    // (Next.js/hydrated) article body on a slow mobile connection, where the
+    // post markup can land well after DOMContentLoaded. Once tryRun gives up
+    // it never re-arms (the window 'load' listener no-ops behind _started),
+    // so a too-short budget is a permanent blank on mobile, not a retry.
+    if ((!el || text.length < 150) && attempt < 20) {
       setTimeout(function () { tryRun(attempt + 1); }, 600);
       return;
     }
@@ -213,14 +233,17 @@
     // content happens to sit inside a <header>/<nav>/<footer> or
     // role="banner" landmark. Confirmed on open-intro.com's blog posts
     // (Sep 2026): the post body renders inside <header>, so every paragraph
-    // was rejected and the widget never reached the 150-char bar across all
-    // 10 attempts - a real article, permanently blank, with no request ever
+    // was rejected and the widget never reached the 150-char bar across every
+    // retry attempt - a real article, permanently blank, with no request ever
     // sent to notice. A stray menu word occasionally winning a highlight
     // (the failure isChrome exists to prevent) is a far smaller cost than
     // the widget going dark, so only here - once there's nowhere left to
-    // retry - fall back to the unfiltered extraction instead.
+    // retry - fall back to the unfiltered extraction instead, and drop the
+    // same chrome filter from the highlight pass so it can actually place the
+    // phrases this text just produced (see _excludeChromeInHighlight).
     if (el && text.length < 150) {
       text = extractParagraphText(el, false);
+      _excludeChromeInHighlight = false;
     }
 
     if (!el || text.length < 150) return;
@@ -1078,7 +1101,7 @@
               return NodeFilter.FILTER_REJECT;
             }
             if (isOwnWidget(el)) return NodeFilter.FILTER_REJECT;
-            if (isChrome(el)) return NodeFilter.FILTER_REJECT;
+            if (_excludeChromeInHighlight && isChrome(el)) return NodeFilter.FILTER_REJECT;
             el = el.parentElement;
           }
           return NodeFilter.FILTER_ACCEPT;
