@@ -1,0 +1,13 @@
+# Local-only files that must never be served as static assets.
+# The GitHub integration only ever deployed committed files; a `vercel` CLI
+# deploy uploads the working tree, so this keeps scratch/debug files out.
+_tmp-*
+_wtest
+svn/
+potential project.txt
+*.log
+discovery/.env.local
+.env
+.env.tmp
+.env.local
+node_modules

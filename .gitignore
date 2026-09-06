@@ -8,3 +8,9 @@ node_modules
 discovery/*.csv
 *.log
 discovery/test-response*.json
+
+# local scratch / debug artefacts - never commit
+_tmp-*
+_wtest
+/svn/
+potential project.txt
