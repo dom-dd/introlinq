@@ -155,6 +155,21 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .onboarding-test-result.pending{color:var(--ink-muted)}
 .onboarding-test-result.ok{color:var(--sage)}
 .onboarding-test-result.fail{color:#b91c1c}
+/* Distinct from .onboarding-note (gold, platform caveats) - this is the
+   "here's what to do before you hit Test" instruction, the single most
+   skipped-past detail in the whole flow, so it gets its own louder box. */
+.onboarding-wait-callout{background:#eef4ff;border:1px solid #c7d9f5;border-radius:8px;padding:0.85rem 1rem;font-size:0.8rem;color:#2c4a7c;line-height:1.55;margin-bottom:1.25rem}
+.onboarding-wait-callout-title{font-weight:700;margin-bottom:0.25rem;color:#1e3a63}
+/* Post-success "you're live, add another surface" screen */
+.onboarding-done-head{display:flex;flex-direction:column;align-items:center;text-align:center;gap:0.4rem;padding:1.5rem 0 0.5rem}
+.onboarding-done-check{width:44px;height:44px;border-radius:50%;background:var(--sage-light);display:flex;align-items:center;justify-content:center}
+.onboarding-done-title{font-family:'DM Serif Display',serif;font-size:1.375rem;color:var(--ink)}
+.onboarding-done-sub{font-size:0.8125rem;color:var(--ink-soft);max-width:420px;line-height:1.5}
+.onboarding-done-actions{display:flex;justify-content:center;margin:1.25rem 0 1.75rem}
+.onboarding-next-label{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-muted);margin-bottom:0.75rem;text-align:center}
+.onboarding-next-card{opacity:1}
+.onboarding-next-card.done{opacity:0.55}
+.onboarding-next-card.done [role="button"]{pointer-events:none}
 .onboarding-download-btn{display:inline-flex;align-items:center;gap:0.5rem;background:var(--sage);color:#fff;text-decoration:none;padding:0.75rem 1.5rem;border-radius:100px;font-size:0.8125rem;font-weight:700}
 .onboarding-download-btn:hover{opacity:0.88}
 /* Replaces the old inline embed-code/GTM-tabs/guide-icons block in the
@@ -3017,6 +3032,10 @@ function renderStepVisual(spec, color, url, realCode, realId) {
 function renderOnboardingSteps(id, stepIndex, widgetType) {
   stepIndex = stepIndex || 0;
   widgetType = widgetType || 'text';
+  // Navigating away from the final step mid-countdown (Back, or picking
+  // another widget) must not leave testOnboardingWidget's retry timer
+  // firing against a panel that's no longer there.
+  if (_testCountdownTimer) { clearInterval(_testCountdownTimer); _testCountdownTimer = null; }
   const p = ONBOARDING_PLATFORMS[id];
   const w = ONBOARDING_WIDGETS[widgetType];
   const total = p.steps.length;
@@ -3045,10 +3064,11 @@ function renderOnboardingSteps(id, stepIndex, widgetType) {
         <div class="onboarding-step-num">${stepIndex + 1}</div>
         <div>
           <div class="onboarding-step-title">${step.title}</div>
-          <div class="onboarding-step-desc">${step.desc}${isLast ? ' The very first visit to a page won\'t show anything though - that visit just kicks off a scan. Wait about 30 seconds and refresh, and it\'ll show up right away from then on for every visitor.' : ''}</div>
+          <div class="onboarding-step-desc">${step.desc}</div>
         </div>
       </div>
     </div>
+    ${isLast ? renderOnboardingWaitCallout(widgetType) : ''}
     ${isLast && p.note ? `<div class="onboarding-note">${p.note}</div>` : ''}
     <div style="text-align:right">
       ${isLast
@@ -3070,12 +3090,41 @@ function goToNewsletterLinks() {
   switchWidgetTab('newsletter', document.getElementById('wtab-newsletter-btn'));
 }
 
-async function testOnboardingWidget() {
+// The single most skipped-past detail in onboarding: the widget needs one
+// real page view before there's anything to find. Rendered as its own loud
+// box right above "Test my install" (see renderOnboardingSteps), with copy
+// that differs for the text widget (scan-then-refresh dance) vs the two
+// visual widgets (render immediately, just need the page opened once).
+function renderOnboardingWaitCallout(widgetType) {
+  if (widgetType === 'carousel' || widgetType === 'board') {
+    const name = widgetType === 'carousel' ? 'carousel' : 'board';
+    return `<div class="onboarding-wait-callout">
+      <div class="onboarding-wait-callout-title">⏱ Before you test</div>
+      Open the page where you placed the ${name} in a normal browser tab - it should appear within a second or two. "Test my install" then confirms we've received the signal, which can take up to a minute to register.
+    </div>`;
+  }
+  return `<div class="onboarding-wait-callout">
+    <div class="onboarding-wait-callout-title">⏱ Before you test - this part trips people up</div>
+    Open a published article on your own site in a normal browser tab now. <strong>That first view shows nothing</strong> - it only kicks off the scan. Wait ~30 seconds, refresh that page, and the highlight appears - for you and every reader after. "Test my install" watches for that first signal and keeps re-checking for a minute, so you don't have to time it yourself.
+  </div>`;
+}
+
+// Retry timer for testOnboardingWidget's countdown - module-level so
+// renderOnboardingSteps can clear it if the user navigates away mid-wait.
+let _testCountdownTimer = null;
+
+async function testOnboardingWidget(attempt) {
+  attempt = attempt || 1;
+  const MAX_ATTEMPTS = 3;
+  const RETRY_SECONDS = 20;
   const btn = document.getElementById('onboarding-test-btn');
   const result = document.getElementById('onboarding-test-result');
+  if (!btn || !result) return;
+  if (_testCountdownTimer) { clearInterval(_testCountdownTimer); _testCountdownTimer = null; }
   btn.disabled = true;
+  btn.textContent = 'Test my install';
   result.className = 'onboarding-test-result pending';
-  result.textContent = 'Checking your site…';
+  result.textContent = attempt === 1 ? 'Checking your site…' : `Checking again (${attempt} of ${MAX_ATTEMPTS})…`;
   let data;
   try {
     const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(_onboardingPub) + '&action=check_live', { credentials: 'include' });
@@ -3083,8 +3132,8 @@ async function testOnboardingWidget() {
   } catch {
     data = null;
   }
-  btn.disabled = false;
   if (data && data.status === 'live') {
+    btn.disabled = false;
     result.className = 'onboarding-test-result ok';
     result.textContent = "✓ You're live! Widget found and working.";
     // first_widget_fire_at only gets set by real reader traffic hitting the
@@ -3093,9 +3142,39 @@ async function testOnboardingWidget() {
     // into a state that would look identical to "still not installed".
     document.getElementById('install-tab-btn').style.display = 'none';
     setTimeout(goToOverviewTab, 1800);
-  } else if (data && data.status === 'not_found') {
+    return;
+  }
+  // Not found yet. A brand-new install almost always fails the first check
+  // simply because no real page view has happened in the ~seconds since
+  // they finished pasting - so instead of a dead-end error, count down and
+  // re-check automatically a couple of times before giving up.
+  if (attempt < MAX_ATTEMPTS) {
+    let remaining = RETRY_SECONDS;
+    btn.disabled = false;
+    btn.textContent = 'Check now';
+    btn.onclick = () => testOnboardingWidget(attempt + 1);
+    const tick = () => {
+      result.className = 'onboarding-test-result pending';
+      result.innerHTML = `Nothing yet - this usually just means no one's loaded a page since you installed. Open an article on your site, then sit tight: re-checking in ${remaining}s…`;
+      if (remaining <= 0) {
+        clearInterval(_testCountdownTimer);
+        _testCountdownTimer = null;
+        testOnboardingWidget(attempt + 1);
+        return;
+      }
+      remaining--;
+    };
+    tick();
+    _testCountdownTimer = setInterval(tick, 1000);
+    return;
+  }
+  // Final attempt exhausted.
+  btn.disabled = false;
+  btn.textContent = 'Test my install';
+  btn.onclick = () => testOnboardingWidget(1);
+  if (data && data.status === 'not_found') {
     result.className = 'onboarding-test-result fail';
-    result.innerHTML = `Not found yet - double check the steps above, or email <a href="mailto:hello@introlinq.com">hello@introlinq.com</a>.`;
+    result.innerHTML = `Still not seeing it. <strong>Have you opened a published article on your own site in a browser yet?</strong> Nothing registers until a real page has loaded the widget once. If you have, re-check the steps above or email <a href="mailto:hello@introlinq.com">hello@introlinq.com</a>.`;
   } else {
     result.className = 'onboarding-test-result fail';
     result.innerHTML = `Couldn't verify - make sure your site has a homepage domain on file, or email <a href="mailto:hello@introlinq.com">hello@introlinq.com</a>.`;
