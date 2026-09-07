@@ -297,7 +297,7 @@ export default async function handler(req, res) {
     // selector existed, or pasted somewhere else, still get a best guess.
     let manualChannel = null;
     if (integration === 'manual') {
-      const explicit = ['website', 'newsletter', 'social'].includes(channel) ? channel : null;
+      const explicit = ['website', 'newsletter', 'social', 'medium', 'substack'].includes(channel) ? channel : null;
       manualChannel = explicit || inferManualChannel(req.headers.referer || req.headers.referrer, pub);
     }
 
@@ -629,19 +629,48 @@ export default async function handler(req, res) {
   // array_append-if-absent semantics, not replace. Confirmation that the
   // surface is actually live still comes only from a real load ping
   // (first_widget_fire_at / last_script_activity_at / a manual click).
+  // Valid Widgets-tab tab ids: the 3 script widgets + the manual-link
+  // channels ('manual' kept for legacy started_widgets rows).
+  const WIDGET_IDS = ['text', 'carousel', 'board', 'manual', 'newsletter', 'social', 'website', 'medium', 'substack'];
+
   if (req.method === 'PATCH' && req.body.started_widget) {
     const w = String(req.body.started_widget);
-    if (!['text', 'carousel', 'board', 'manual'].includes(w)) {
+    if (!WIDGET_IDS.includes(w)) {
       return res.status(400).json({ error: 'Invalid widget' });
     }
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS started_widgets TEXT[] DEFAULT '{}'`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS removed_widgets JSONB DEFAULT '{}'`.catch(() => {});
+    // Re-adding clears any prior removal of the same id.
     const [row] = await sql`
       UPDATE publishers
-      SET started_widgets = (SELECT ARRAY(SELECT DISTINCT unnest(COALESCE(started_widgets, '{}') || ARRAY[${w}]::text[])))
+      SET started_widgets = (SELECT ARRAY(SELECT DISTINCT unnest(COALESCE(started_widgets, '{}') || ARRAY[${w}]::text[]))),
+          removed_widgets = COALESCE(removed_widgets, '{}'::jsonb) - ${w}
       WHERE slug = ${pub} AND active = true
-      RETURNING started_widgets
+      RETURNING started_widgets, removed_widgets
     `.catch(() => [null]);
-    return res.status(200).json({ ok: true, started_widgets: row?.started_widgets || [] });
+    return res.status(200).json({ ok: true, started_widgets: row?.started_widgets || [], removed_widgets: row?.removed_widgets || {} });
+  }
+
+  // Remove a tab from the Widgets view. Records the removal time in
+  // removed_widgets and drops it from started_widgets; the GET self-heal
+  // brings the tab back if newer activity appears.
+  if (req.method === 'PATCH' && req.body.remove_widget) {
+    const w = String(req.body.remove_widget);
+    if (!WIDGET_IDS.includes(w) || w === 'manual') {
+      return res.status(400).json({ error: 'Invalid widget' });
+    }
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS started_widgets TEXT[] DEFAULT '{}'`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS removed_widgets JSONB DEFAULT '{}'`.catch(() => {});
+    // Removing the Newsletter tab also clears the legacy 'manual' marker.
+    const alsoDrop = w === 'newsletter' ? 'manual' : w;
+    const [row] = await sql`
+      UPDATE publishers
+      SET removed_widgets = COALESCE(removed_widgets, '{}'::jsonb) || jsonb_build_object(${w}::text, to_jsonb(NOW())),
+          started_widgets = array_remove(array_remove(COALESCE(started_widgets, '{}'), ${w}), ${alsoDrop})
+      WHERE slug = ${pub} AND active = true
+      RETURNING started_widgets, removed_widgets
+    `.catch(() => [null]);
+    return res.status(200).json({ ok: true, started_widgets: row?.started_widgets || [], removed_widgets: row?.removed_widgets || {} });
   }
 
   if (req.method === 'PATCH') {
@@ -827,6 +856,11 @@ export default async function handler(req, res) {
     // it's what tells the Widgets tab to show a "Pending" card for something
     // set up but not yet confirmed by a load ping, instead of "never started".
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS started_widgets TEXT[] DEFAULT '{}'`.catch(() => {});
+    // Tabs the publisher has explicitly removed from the Widgets view, as a
+    // JSONB map id -> ISO timestamp of removal. A tab stays hidden while its
+    // last activity predates the removal; the GET below self-heals (drops
+    // the key) the moment newer activity shows up, so the tab returns.
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS removed_widgets JSONB DEFAULT '{}'`.catch(() => {});
     // Ensure providers have a name column
     await sql`ALTER TABLE providers ADD COLUMN IF NOT EXISTS name TEXT`;
     await sql`UPDATE providers SET name = 'OpenIntro' WHERE slug = 'openintro' AND name IS NULL`;
@@ -853,6 +887,7 @@ export default async function handler(req, res) {
              COALESCE(revenue_share, 0.70) AS revenue_share,
              payment_email, carousel_title, board_text_color, no_match_text_color, first_widget_fire_at, last_widget_fire_at, activated_at, last_activity_at, last_script_activity_at, platform, platform_detected,
              COALESCE(started_widgets, '{}') AS started_widgets,
+             COALESCE(removed_widgets, '{}'::jsonb) AS removed_widgets,
              email, contact_first_name, contact_last_name,
              (password_hash IS NOT NULL) AS has_password
       FROM publishers WHERE slug = ${pub} AND active = true LIMIT 1
@@ -895,7 +930,7 @@ export default async function handler(req, res) {
            clicksByDay, impressionsByDay, hoversByDay, seenByDay, clicksByWeek, impressionsByWeek, hoversByWeek, seenByWeek,
            clicksByMonth, impressionsByMonth, hoversByMonth, seenByMonth,
            totalExpertShown, expertShownByDay, expertShownByWeek, expertShownByMonth,
-           topPhrases, topSources, topDevices, pageUrls, manualByChannel, clicksByIntegration] = await Promise.all([
+           topPhrases, topSources, topDevices, pageUrls, manualByChannel, clicksByIntegration, manualLastClick] = await Promise.all([
       // Split into two queries rather than one chronological "last 50" -
       // a busy, low-match-rate site (mostly-news publishers correctly get
       // few matches - see match.js's "NEVER match news" rule) can easily
@@ -970,6 +1005,13 @@ export default async function handler(req, res) {
           FROM click_logs
           WHERE publisher = ${pub} AND is_bot = false AND created_at >= ${STATS_RESET_AT}
           GROUP BY 1`.catch(() => []),
+      // Most recent manual-link click per channel - lets the dashboard
+      // un-hide a removed manual tab the moment one of its links is clicked
+      // again (see removed_widgets self-heal below).
+      sql`SELECT manual_channel AS channel, MAX(created_at) AS last_at
+          FROM click_logs
+          WHERE publisher = ${pub} AND is_bot = false AND integration = 'manual' AND manual_channel IS NOT NULL
+          GROUP BY 1`.catch(() => []),
     ]);
 
     const expertCountByProvider = new Map(expertCounts.map(r => [r.provider_id, r.count]));
@@ -1016,10 +1058,36 @@ export default async function handler(req, res) {
       manualOnly = impressionsTotal === 0 && clicksTotal > 0;
     }
 
+    // Self-heal removed_widgets: a tab whose widget or tagged link has fired
+    // since it was removed comes back - drop the key and report the id in
+    // `resurfaced` so the dashboard can say so.
+    let removedWidgets = publisher.removed_widgets || {};
+    const resurfaced = [];
+    const removedKeys = Object.keys(removedWidgets);
+    if (removedKeys.length) {
+      const manualLastByChannel = Object.fromEntries((manualLastClick || []).map((r) => [r.channel, r.last_at]));
+      const kept = {};
+      for (const id of removedKeys) {
+        const removedAt = new Date(removedWidgets[id]);
+        let lastAct = null;
+        if (id === 'text') lastAct = publisher.last_widget_fire_at;
+        else if (id === 'carousel' || id === 'board') lastAct = publisher.last_script_activity_at;
+        else lastAct = manualLastByChannel[id];
+        if (lastAct && new Date(lastAct) > removedAt) resurfaced.push(id);
+        else kept[id] = removedWidgets[id];
+      }
+      if (resurfaced.length) {
+        removedWidgets = kept;
+        await sql`UPDATE publishers SET removed_widgets = ${JSON.stringify(kept)}::jsonb WHERE slug = ${pub}`.catch(() => {});
+      }
+    }
+    publisher.removed_widgets = removedWidgets;
+
     return res.status(200).json({
       publisher,
       activation_v2: ACTIVATION_V2,
       modes,
+      resurfaced,
       manual_only: manualOnly,
       logs_matched: logsMatched,
       logs_no_match: logsNoMatch,
@@ -1054,6 +1122,7 @@ export default async function handler(req, res) {
       // card status lines (and, later, the per-surface Overview blocks).
       clicks_by_surface: Object.fromEntries((clicksByIntegration || []).map((r) => [r.surface, r.count])),
       manual_clicks_by_channel: Object.fromEntries((manualByChannel || []).map((r) => [r.channel, r.count])),
+      manual_last_click_by_channel: Object.fromEntries((manualLastClick || []).map((r) => [r.channel, r.last_at])),
     });
   }
 

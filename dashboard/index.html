@@ -87,6 +87,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .widget-status-line{font-size:0.8125rem;color:var(--ink-soft);padding:0 1.5rem 1rem;line-height:1.5}
 .widget-status-line.live{color:var(--ink-soft)}
 .wstatus-link{background:none;border:none;color:var(--sage);font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;font-size:0.8125rem;padding:0;text-decoration:underline}
+.widget-remove-row{padding:0.25rem 0 1.5rem;text-align:right}
+.widget-remove-btn{background:none;border:1px solid var(--border);color:var(--ink-muted);font-family:'Inter',sans-serif;font-size:0.75rem;font-weight:600;padding:0.4rem 0.9rem;border-radius:100px;cursor:pointer;transition:all .15s}
+.widget-remove-btn:hover{border-color:#dc2626;color:#dc2626}
 .wtab-btn.wtab-add{color:var(--sage);font-weight:700;flex:0 0 auto;padding-left:1.5rem;padding-right:1.5rem}
 .widget-empty{text-align:center;padding:3.5rem 1.5rem;max-width:460px;margin:0 auto}
 .widget-empty-title{font-family:'DM Serif Display',serif;font-size:1.375rem;color:var(--ink);margin-bottom:0.5rem}
@@ -138,6 +141,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
    root cause of the carousel card overflowing off-screen on wide monitors). */
 .widget-card{display:flex;flex-direction:column;align-items:flex-start;gap:0.5rem;padding:1rem 1.1rem;border:2px solid var(--border);border-radius:12px;background:var(--white);cursor:pointer;transition:border-color .15s,transform .1s;font-family:'Inter',sans-serif;text-align:left;min-width:0}
 .widget-card:hover{border-color:var(--sage);transform:translateY(-1px)}
+.widget-card-disabled{opacity:0.55;cursor:default;pointer-events:none}
+.widget-card-disabled:hover{border-color:var(--border);transform:none}
+.widget-card-disabled .widget-card-tag{background:var(--ink-muted)}
 .widget-card-top{display:flex;align-items:center;gap:0.625rem}
 .widget-card-label{font-size:0.875rem;font-weight:600;color:var(--ink)}
 .widget-card-desc{font-size:0.75rem;color:var(--ink-soft);line-height:1.5}
@@ -859,6 +865,7 @@ tr:last-child td{border-bottom:none}
             </div>
           </div>
         </div>
+        <div class="widget-remove-row"><button class="widget-remove-btn" onclick="removeWidget('text')">Remove this widget</button></div>
       </div>
 
       <!-- EXPERT CAROUSEL -->
@@ -905,6 +912,7 @@ tr:last-child td{border-bottom:none}
             </div>
           </div>
         </div>
+        <div class="widget-remove-row"><button class="widget-remove-btn" onclick="removeWidget('carousel')">Remove this widget</button></div>
       </div>
 
       <!-- EXPERTBOARD -->
@@ -963,24 +971,18 @@ tr:last-child td{border-bottom:none}
             </div>
           </div>
         </div>
+        <div class="widget-remove-row"><button class="widget-remove-btn" onclick="removeWidget('board')">Remove this widget</button></div>
       </div>
 
-      <!-- MANUAL LINKS (newsletter / social / website) -->
+      <!-- MANUAL LINKS - one shared panel, re-parametrised per channel tab
+           (newsletter / social / website / medium / substack) by pickManualChannel -->
       <div class="wtab-panel" id="wtab-manual">
         <div class="widget-status-line" id="wstatus-manual"></div>
-        <div class="section">
-          <div class="section-header">
+        <div class="section" style="padding-bottom:1rem">
+          <div class="section-header" style="border-bottom:none">
             <div class="section-title" id="manual-tool-title">Tracked expert links</div>
             <div class="section-sub" id="manual-tool-sub">Paste your content for suggested experts, or browse the roster - then copy a tracked link to paste in by hand.</div>
-          </div>
-          <div style="padding:0 1.5rem 1rem">
-            <div class="setting-title" style="margin-bottom:0.4rem">Where are you putting these links?</div>
-            <div class="option-group" id="manual-channel-group">
-              <button class="opt-btn" data-val="website" onclick="pickManualChannel('website')">My website</button>
-              <button class="opt-btn" data-val="newsletter" onclick="pickManualChannel('newsletter')">Newsletter</button>
-              <button class="opt-btn" data-val="social" onclick="pickManualChannel('social')">Social</button>
-            </div>
-            <div class="setting-desc" style="margin-top:0.4rem">Sets where clicks from these links are attributed - switch any time.</div>
+            <div class="section-sub" id="manual-platform-note" style="display:none;margin-top:0.5rem;color:var(--sage)"></div>
           </div>
         </div>
         <div class="section">
@@ -1010,6 +1012,7 @@ tr:last-child td{border-bottom:none}
           </div>
           <div id="nl-list" class="nl-list"><div class="logs-empty">Loading experts…</div></div>
         </div>
+        <div class="widget-remove-row"><button class="widget-remove-btn" id="manual-remove-btn" onclick="removeWidget(_manualChannel)">Remove this tab</button></div>
       </div>
 
       <!-- Expert networks — shared across all widgets -->
@@ -1626,44 +1629,76 @@ function switchWidgetTab(name, btn) {
   document.querySelectorAll('#widget-home .wtab-panel').forEach(p => p.classList.remove('active'));
   if (btn) btn.classList.add('active');
   else { const b = document.querySelector('#widget-subnav .wtab-btn[data-w="' + name + '"]'); if (b) b.classList.add('active'); }
-  const panel = document.getElementById('wtab-' + name);
+  // Every manual channel tab shares the one #wtab-manual panel.
+  const isManual = MANUAL_CHANNELS.includes(name) || name === 'manual';
+  const panel = document.getElementById('wtab-' + (isManual ? 'manual' : name));
   if (panel) panel.classList.add('active');
-  if (name === 'manual') {
-    pickManualChannel(_manualChannel);
+  if (isManual) {
+    pickManualChannel(MANUAL_CHANNELS.includes(name) ? name : _manualChannel);
     if (_nlExperts === null) loadNewsletterExperts();
   }
 }
 
 // ── Single Widgets tab: home view (your surfaces) + guided add flow ────────
 
+// The three script-embed widgets - one of each, max.
+const SCRIPT_WIDGETS = ['text', 'carousel', 'board'];
+// The manual tracked-link channels - each is its own sub-nav tab, all
+// backed by the single #wtab-manual panel (re-parametrised per tab). The
+// tab identity is the link's channel= tag; there's no in-panel chooser.
+const MANUAL_CHANNELS = ['newsletter', 'social', 'website', 'medium', 'substack'];
+
 const WIDGET_META = {
-  text:     { label: 'AI Text Widget', letter: 'T', badge: '#3d7a5f' },
-  carousel: { label: 'Expert Carousel', letter: 'C', badge: '#e6a820' },
-  board:    { label: 'Expert Board', letter: 'B', badge: '#4a4a6a' },
-  manual:   { label: 'Newsletter & social links', letter: 'M', badge: '#21759b' },
+  text:       { label: 'AI Text Widget', letter: 'T', badge: '#3d7a5f' },
+  carousel:   { label: 'Expert Carousel', letter: 'C', badge: '#e6a820' },
+  board:      { label: 'Expert Board', letter: 'B', badge: '#4a4a6a' },
+  newsletter: { label: 'Newsletter links', letter: 'N', badge: '#e6a820', manual: true },
+  social:     { label: 'Social links', letter: 'S', badge: '#4a4a6a', manual: true },
+  website:    { label: 'Manual set-up', letter: 'M', badge: '#21759b', manual: true },
+  medium:     { label: 'Medium links', letter: 'M', badge: '#000000', manual: true },
+  substack:   { label: 'Substack links', letter: 'S', badge: '#FF6719', manual: true },
 };
 
 // Which channel the manual-link tool is currently tagging copied links with.
 let _manualChannel = 'newsletter';
 
 function pickManualChannel(ch) {
-  if (!['website', 'newsletter', 'social'].includes(ch)) return;
+  if (!MANUAL_CHANNELS.includes(ch)) return;
   _manualChannel = ch;
-  document.querySelectorAll('#manual-channel-group .opt-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.val === ch);
-  });
   const titles = {
-    website: 'Tracked expert links for your site',
-    newsletter: 'Tracked expert links for your newsletter',
-    social: 'Tracked expert links to share on social',
+    website: 'Manual set-up - tracked expert links',
+    newsletter: 'Newsletter links - tracked expert links',
+    social: 'Social links - tracked expert links',
+    medium: 'Medium links - tracked expert links',
+    substack: 'Substack links - tracked expert links',
+  };
+  const subs = {
+    website: 'Paste content for suggested experts, or browse the roster - then copy a tracked link to place by hand.',
+    newsletter: 'Paste content for suggested experts, or browse the roster - then copy a tracked link for your newsletter.',
+    social: 'Paste content for suggested experts, or browse the roster - then copy a tracked link to share on social.',
+    medium: "Medium can't run a widget, so place tracked links by hand. Paste a post for suggestions, or browse the roster.",
+    substack: "Substack can't run a widget, so place tracked links by hand. Paste a post for suggestions, or browse the roster.",
   };
   const pasteSubs = {
-    website: "Paste an article from your site - we'll point out where an expert link fits and which experts to use.",
+    website: "Paste an article - we'll point out where an expert link fits and which experts to use.",
     newsletter: "Paste your newsletter draft - we'll point out where an expert link fits and which experts to use.",
     social: "Paste your post or thread - we'll suggest the experts worth linking.",
+    medium: "Paste your Medium post - we'll point out where an expert link fits and which experts to use.",
+    substack: "Paste your Substack post - we'll point out where an expert link fits and which experts to use.",
   };
   const t = document.getElementById('manual-tool-title'); if (t) t.textContent = titles[ch];
+  const s = document.getElementById('manual-tool-sub'); if (s) s.textContent = subs[ch];
   const ps = document.getElementById('manual-paste-sub'); if (ps) ps.textContent = pasteSubs[ch];
+  const pn = document.getElementById('manual-platform-note');
+  if (pn) {
+    const plat = ch === 'medium' ? 'Medium' : ch === 'substack' ? 'Substack' : null;
+    pn.style.display = plat ? 'block' : 'none';
+    if (plat) pn.textContent = `We've noted you're on ${plat} - you'll be first to hear if native widget support lands.`;
+  }
+  const rb = document.getElementById('manual-remove-btn');
+  if (rb) rb.textContent = 'Remove ' + ((WIDGET_META[ch] || {}).label || 'this tab');
+  const d = window._cd;
+  if (d) setWidgetStatusLine('manual', { live: true }, d);
 }
 
 // Confidently-known platform that can't run any script embed → only manual
@@ -1675,11 +1710,23 @@ function platformIsEmbedCapable(pub) {
 }
 
 function widgetState(pub, d, id) {
-  const started = (Array.isArray(pub.started_widgets) ? pub.started_widgets : []).includes(id);
+  const startedList = Array.isArray(pub.started_widgets) ? pub.started_widgets : [];
+  // Legacy: a lone 'manual' entry from before channels were split becomes
+  // the Newsletter tab.
+  const started = startedList.includes(id) || (id === 'newsletter' && startedList.includes('manual'));
   let live = false;
   if (id === 'text') live = !!pub.first_widget_fire_at;
-  else live = Array.isArray(d.modes) && d.modes.includes(id === 'manual' ? 'manual' : id);
-  return { started, live, shown: started || live };
+  else if (id === 'carousel' || id === 'board') live = Array.isArray(d.modes) && d.modes.includes(id);
+  else if (MANUAL_CHANNELS.includes(id)) live = (((d.manual_clicks_by_channel || {})[id]) || 0) > 0;
+  // Medium/Substack: the platform IS the tab - no explicit "add" needed,
+  // there's no widget alternative for them.
+  const platformAuto = (id === 'medium' && pub.platform === 'medium') || (id === 'substack' && pub.platform === 'substack');
+  // A removed tab stays hidden. The server clears the removal the moment it
+  // sees newer activity (see /api/dashboard GET), so if it's still flagged
+  // here nothing has fired since - keep it hidden.
+  const removed = !!(pub.removed_widgets && pub.removed_widgets[id]);
+  const shown = !removed && (started || live || platformAuto);
+  return { started, live, shown, platformAuto, removed };
 }
 
 function renderWidgetHome() {
@@ -1687,62 +1734,88 @@ function renderWidgetHome() {
   const pub = d.publisher;
   renderEmbedSnippets();
   const embedOK = platformIsEmbedCapable(pub);
-  const order = embedOK ? ['text', 'carousel', 'board', 'manual'] : ['manual'];
+  // Candidate tabs, in sub-nav order. Script widgets only where an embed can
+  // run; medium/substack manual tabs only when that's the platform.
+  const manualCandidates = MANUAL_CHANNELS.filter(c => {
+    if (c === 'medium') return pub.platform === 'medium';
+    if (c === 'substack') return pub.platform === 'substack';
+    return true;
+  });
+  const order = (embedOK ? SCRIPT_WIDGETS.slice() : []).concat(manualCandidates);
   const states = {};
   order.forEach(id => { states[id] = widgetState(pub, d, id); });
-  // Migration safety net: an existing publisher who installed through the
-  // old flow has no started_widgets entry and, on a quiet day, no ping yet
-  // either - without this they'd see "No widgets yet" despite doing the
-  // work. If a supported platform is confidently known and nothing else is
-  // showing, surface the text widget as Pending (the old red "Get started"
-  // tab was nagging exactly this population).
+  // Migration safety net: an existing publisher with no started_widgets and
+  // no ping yet still sees the text widget as Pending on a known-supported
+  // platform (was the old red "Get started" nag).
   if (embedOK && !order.some(id => states[id].shown) && pub.platform
       && ONBOARDING_PLATFORMS[pub.platform] && isConfidentPlatform(pub)) {
-    states.text = { started: true, live: false, shown: true };
+    states.text = { started: true, live: false, shown: true, platformAuto: false, removed: false };
   }
   const shown = order.filter(id => states[id].shown);
 
-  // Sub-nav: one button per shown surface + an Add button.
+  // Sub-nav: one button per shown tab, + Add unless everything's already up.
   const nav = document.getElementById('widget-subnav');
   nav.innerHTML = shown.map(id => {
     const s = states[id];
     const dot = s.live ? '<span class="wnav-dot live"></span>' : (s.started ? '<span class="wnav-dot pending"></span>' : '');
     return `<button class="wtab-btn" data-w="${id}" onclick="switchWidgetTab('${id}',this)">${dot}${esc(WIDGET_META[id].label)}</button>`;
-  }).join('') + `<button class="wtab-btn wtab-add" onclick="startAddWidget()">+ Add</button>`;
+  }).join('') + (shown.length < order.length
+    ? `<button class="wtab-btn wtab-add" onclick="startAddWidget()">+ Add</button>` : '');
 
-  // Status line on each shown panel.
-  shown.forEach(id => setWidgetStatusLine(id, states[id], d));
+  // Header sub-line reflects the tabs that actually exist.
+  const modesEl = document.getElementById('header-modes');
+  if (modesEl) {
+    modesEl.textContent = shown.map(id => (WIDGET_META[id] || {}).label || id).join(' · ');
+    modesEl.style.display = shown.length ? 'block' : 'none';
+  }
 
-  // Show the right panel.
+  // Status line per non-manual panel; the manual panel's line is set by
+  // pickManualChannel for whichever channel is active.
+  shown.forEach(id => { if (!MANUAL_CHANNELS.includes(id)) setWidgetStatusLine(id, states[id], d); });
+
   document.querySelectorAll('#widget-home .wtab-panel').forEach(p => p.classList.remove('active'));
   if (!shown.length) {
     document.getElementById('wtab-empty').classList.add('active');
   } else {
     const first = shown[0];
-    document.getElementById('wtab-' + first).classList.add('active');
+    const isManual = MANUAL_CHANNELS.includes(first);
+    document.getElementById('wtab-' + (isManual ? 'manual' : first)).classList.add('active');
     const b = nav.querySelector('.wtab-btn[data-w="' + first + '"]');
     if (b) b.classList.add('active');
-    if (first === 'manual') {
-      pickManualChannel(_manualChannel);
+    if (isManual) {
+      pickManualChannel(first);
       if (_nlExperts === null) loadNewsletterExperts();
     }
+  }
+
+  // Tell the publisher about any tab that came back because its widget or a
+  // tagged link fired again after they'd removed it.
+  const resurfaced = Array.isArray(d.resurfaced) ? d.resurfaced : [];
+  if (resurfaced.length && !d._resurfacedShown) {
+    d._resurfacedShown = true;
+    const names = resurfaced.map(id => (WIDGET_META[id] || {}).label || id).join(', ');
+    toast(names + (resurfaced.length === 1 ? ' is' : ' are') + ' still live on your site - brought back.');
   }
   return shown.length > 0;
 }
 
 function setWidgetStatusLine(id, s, d) {
-  const el = document.getElementById('wstatus-' + id);
-  if (!el) return;
-  if (id === 'manual') {
-    const by = d.manual_clicks_by_channel || {};
-    const total = Object.values(by).reduce((a, b) => a + b, 0);
-    const parts = ['newsletter', 'social', 'website'].filter(c => by[c]).map(c => `${c} ${by[c]}`);
+  // Every manual channel tab shares one status element - show the active
+  // channel's own click count.
+  if (id === 'manual' || MANUAL_CHANNELS.includes(id)) {
+    const el = document.getElementById('wstatus-manual');
+    if (!el) return;
+    const ch = MANUAL_CHANNELS.includes(id) ? id : _manualChannel;
+    const n = ((d.manual_clicks_by_channel || {})[ch]) || 0;
+    const label = ((WIDGET_META[ch] || {}).label || ch).toLowerCase();
     el.className = 'widget-status-line live';
-    el.innerHTML = total
-      ? `<span class="wnav-dot live"></span> ${total} link click${total === 1 ? '' : 's'}${parts.length ? ' · ' + esc(parts.join(' · ')) : ''}`
+    el.innerHTML = n
+      ? `<span class="wnav-dot live"></span> ${n} ${label} click${n === 1 ? '' : 's'}`
       : `<span class="wnav-dot pending"></span> No link clicks yet - copy a tracked link below and drop it in.`;
     return;
   }
+  const el = document.getElementById('wstatus-' + id);
+  if (!el) return;
   if (s.live) {
     const fireAt = id === 'text' ? d.publisher.last_widget_fire_at : d.publisher.last_script_activity_at;
     let when = '';
@@ -1801,7 +1874,7 @@ function startAddWidget(targetWidget) {
     if (pub && isConfidentPlatform(pub) && ONBOARDING_PLATFORMS[pub.platform]) {
       renderOnboardingSteps(pub.platform, 0, targetWidget);
     } else if (pub && isConfidentPlatform(pub) && ONBOARDING_UNSUPPORTED[pub.platform]) {
-      renderUnsupportedInterstitial(pub.platform);
+      goToManualTool(pub.platform === 'substack' ? 'substack' : 'medium');
     } else {
       _pendingTargetWidget = targetWidget;
       _suggestedPlatform = (pub && (ONBOARDING_PLATFORMS[pub.platform] || ONBOARDING_UNSUPPORTED[pub.platform])) ? pub.platform : null;
@@ -1824,15 +1897,47 @@ function exitWidgetFlow() {
 // Persist "this surface's install flow was started" so the home view shows
 // it as Pending on the next load instead of forgetting.
 function markWidgetStarted(id) {
-  if (!['text', 'carousel', 'board', 'manual'].includes(id)) return;
+  if (!SCRIPT_WIDGETS.includes(id) && !MANUAL_CHANNELS.includes(id) && id !== 'manual') return;
   const pub = window._cd && window._cd.publisher;
   if (pub) {
     pub.started_widgets = Array.from(new Set([...(pub.started_widgets || []), id]));
+    // Re-adding a tab you'd removed clears the removal.
+    if (pub.removed_widgets && pub.removed_widgets[id]) delete pub.removed_widgets[id];
   }
   fetch('/api/dashboard?pub=' + encodeURIComponent(_onboardingPub), {
     method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ started_widget: id }),
   }).catch(() => {});
+}
+
+// Remove a widget / manual tab from the dashboard. Script widgets prompt to
+// confirm the embed code is actually gone; if it (or a tagged link) fires
+// again later the server un-removes it and the tab returns with a note.
+async function removeWidget(id) {
+  if (!SCRIPT_WIDGETS.includes(id) && !MANUAL_CHANNELS.includes(id)) return;
+  const label = (WIDGET_META[id] || {}).label || 'this';
+  const msg = MANUAL_CHANNELS.includes(id)
+    ? `Remove the "${label}" tab? Links you've already placed keep working - this just hides the tab. It comes back if one of those links is clicked.`
+    : `Remove ${label}?\n\nHave you already deleted its embed code from your site? If the code is still on a page, this tab will reappear next time that page loads.`;
+  if (!window.confirm(msg)) return;
+  const pub = window._cd && window._cd.publisher;
+  try {
+    const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
+      method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ remove_widget: id }),
+    });
+    if (res.status === 401) { window.location.href = '/login'; return; }
+    if (!res.ok) { toast('Could not remove - try again'); return; }
+    const data = await res.json();
+    if (pub) {
+      pub.removed_widgets = data.removed_widgets || {};
+      pub.started_widgets = data.started_widgets || [];
+    }
+    toast(label + ' removed');
+    renderWidgetHome();
+  } catch {
+    toast('Could not remove - try again');
+  }
 }
 
 
@@ -2994,12 +3099,18 @@ function goToOverviewTab() {
 // channel picker's Newsletter/Social choices and the Medium/Substack
 // interstitial.
 function goToManualTool(channel) {
-  markWidgetStarted('manual');
+  const ch = MANUAL_CHANNELS.includes(channel) ? channel : 'newsletter';
+  markWidgetStarted(ch);
   exitWidgetFlow();
   switchTab('widget', document.getElementById('widget-tab-btn'));
-  switchWidgetTab('manual');
-  pickManualChannel(channel || 'newsletter');
+  switchWidgetTab(ch);
+  pickManualChannel(ch);
   if (_nlExperts === null) loadNewsletterExperts();
+  // Medium/Substack can't run a widget - say so on the way in rather than
+  // via a whole interstitial screen (the reason also lives on the tab).
+  if (ch === 'medium' || ch === 'substack') {
+    toast(WIDGET_META[ch].label.replace(' links', '') + " can't run a widget - here are tracked links instead.");
+  }
 }
 // Back-compat alias - older call sites.
 function goToNewsletterLinks() { goToManualTool('newsletter'); }
@@ -3011,12 +3122,14 @@ function goToNewsletterLinks() { goToManualTool('newsletter'); }
 // sharing are first-class answers here instead of dead ends discovered
 // later.
 const INSTALL_CHANNELS = {
-  site: { label: 'A widget on my website', letter: 'W', badge: '#3d7a5f',
-    desc: "The AI text widget, an expert carousel, or a browsable board - embedded on your blog or site." },
+  site: { label: 'A widget on my site', letter: 'W', badge: '#3d7a5f',
+    desc: "The AI text widget, an expert carousel, or a browsable board - embedded on your blog or site. If you're on Medium or Substack we'll set you up with tracked links instead." },
   newsletter: { label: 'Links for my newsletter', letter: 'N', badge: '#e6a820',
-    desc: "Substack, Medium, Mailchimp, any email tool. Paste a draft for suggested experts, or copy a tracked link by hand. Nothing to install." },
+    desc: "Mailchimp, Beehiiv, any email tool. Paste a draft for suggested experts, or copy a tracked link by hand. Nothing to install." },
   social: { label: 'Links to share on social', letter: 'S', badge: '#4a4a6a',
     desc: "Grab a tracked expert link to drop into a post, thread or bio. Nothing to install." },
+  manual: { label: 'Manual set-up', letter: 'M', badge: '#21759b',
+    desc: "Place tracked expert links by hand anywhere else - a page on your own site, a doc, wherever. Nothing to install." },
 };
 
 function renderInstallChannelPicker() {
@@ -3037,35 +3150,19 @@ function renderInstallChannelPicker() {
 
 function selectInstallChannel(id) {
   if (id === 'newsletter' || id === 'social') { goToManualTool(id); return; }
-  // Website widget: skip the platform step when we already know it for
-  // real, show the interstitial (not a widget choice) for Substack/Medium,
-  // otherwise ask.
+  if (id === 'manual') { goToManualTool('website'); return; }
+  // Website widget: skip the platform step when we already know it. On a
+  // known Medium/Substack, go straight to that manual tab (no interstitial -
+  // the "why" lives on the tab), otherwise ask which platform.
   const pub = window._cd && window._cd.publisher;
   if (pub && isConfidentPlatform(pub) && ONBOARDING_PLATFORMS[pub.platform]) {
     renderOnboardingWidgetPicker(pub.platform);
   } else if (pub && isConfidentPlatform(pub) && ONBOARDING_UNSUPPORTED[pub.platform]) {
-    renderUnsupportedInterstitial(pub.platform);
+    goToManualTool(pub.platform === 'substack' ? 'substack' : 'medium');
   } else {
     _suggestedPlatform = (pub && (ONBOARDING_PLATFORMS[pub.platform] || ONBOARDING_UNSUPPORTED[pub.platform])) ? pub.platform : null;
     renderOnboardingPicker();
   }
-}
-
-// Substack/Medium: no widget choice to make (nothing embeds), so this
-// replaces the old picker-with-everything-disabled with a single "here's
-// why, here's what works" screen straight through to the manual tool.
-function renderUnsupportedInterstitial(platformId) {
-  const label = (ONBOARDING_UNSUPPORTED[platformId] || {}).label || platformId;
-  const why = platformId === 'substack'
-    ? 'Substack blocks the custom HTML and scripts an embedded widget needs'
-    : 'Medium has no support for custom code';
-  document.getElementById('install-tab-body').innerHTML = `
-    <button class="onboarding-back" onclick="renderOnboardingPicker()">&larr; Choose a different platform</button>
-    <div class="onboarding-note">${esc(label)} can't run an embedded widget - ${why}. Tracked expert links work exactly the same way for you, with clicks and bookings attributed just like the widgets. We've noted you're on ${esc(label)}, so you'll be first to hear if native support lands.</div>
-    <div class="onboarding-done-actions" style="justify-content:flex-start">
-      <button class="onboarding-test-btn" onclick="goToManualTool('newsletter')">Set up tracked links &rarr;</button>
-    </div>
-  `;
 }
 
 // Entry point for the Widgets tab's "Install this widget" button (added
@@ -3132,47 +3229,59 @@ function selectOnboardingPlatform(id) {
   // it - see isConfidentPlatform().
   _sessionConfirmedPlatform = id;
   if (window._cd && window._cd.publisher) window._cd.publisher.platform = id;
+  if (ONBOARDING_UNSUPPORTED[id]) {
+    _pendingTargetWidget = null;
+    goToManualTool(id === 'substack' ? 'substack' : 'medium');
+    return;
+  }
   if (_pendingTargetWidget) {
     const target = _pendingTargetWidget;
     _pendingTargetWidget = null;
-    if (ONBOARDING_UNSUPPORTED[id]) {
-      renderUnsupportedInterstitial(id);
-    } else {
-      renderOnboardingSteps(id, 0, target);
-    }
+    renderOnboardingSteps(id, 0, target);
     return;
   }
-  if (ONBOARDING_UNSUPPORTED[id]) {
-    renderUnsupportedInterstitial(id);
-  } else {
-    renderOnboardingWidgetPicker(id);
-  }
+  renderOnboardingWidgetPicker(id);
 }
 
 // Step 2 (website-widget branch only - Substack/Medium never reach here,
-// they go to renderUnsupportedInterstitial). Regrouped: the AI text widget
-// leads as the recommended default, the two visual widgets sit below it
-// under a "visual block" label. Manual Entry is gone from here - it's now
-// its own top-level channel (see renderInstallChannelPicker).
+// they're routed straight to their manual-links tab by goToManualTool).
+// Regrouped: the AI text widget leads as the recommended default, the two
+// visual widgets sit below it under a "visual block" label. Manual Entry is
+// gone from here - it's now its own top-level channel (see
+// renderInstallChannelPicker).
+// Is this script widget already set up (started or live)? One of each, max -
+// so the picker shows it as "Already added" rather than lettng it be re-added.
+function scriptWidgetTaken(id) {
+  const d = window._cd;
+  if (!d || !d.publisher) return false;
+  return widgetState(d.publisher, d, id).shown;
+}
+
 function widgetPickerCard(platformId, id, cls) {
   const w = ONBOARDING_WIDGETS[id];
+  const taken = scriptWidgetTaken(id);
+  const handlers = taken ? '' : ` role="button" tabindex="0" onclick="selectOnboardingWidget('${platformId}','${id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectOnboardingWidget('${platformId}','${id}')}"`;
   return `
-    <div class="widget-card${cls ? ' ' + cls : ''}" role="button" tabindex="0" onclick="selectOnboardingWidget('${platformId}','${id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectOnboardingWidget('${platformId}','${id}')}">
+    <div class="widget-card${cls ? ' ' + cls : ''}${taken ? ' widget-card-disabled' : ''}"${handlers}>
       <div class="widget-card-top">
         <div class="platform-badge" style="background:${w.badge};width:28px;height:28px;font-size:0.75rem">${w.letter}</div>
         <div class="widget-card-label">${esc(w.label)}</div>
+        ${taken ? '<span class="widget-card-tag">Already added</span>' : ''}
       </div>
       <div class="widget-card-desc">${esc(w.desc)}</div>
       <div class="widget-card-preview">${ONBOARDING_WIDGET_PREVIEWS[id]}</div>
-      <button class="widget-card-example-link" onclick="openWidgetExample('${platformId}','${id}',event)">See live example &rarr;</button>
+      ${taken ? '' : `<button class="widget-card-example-link" onclick="openWidgetExample('${platformId}','${id}',event)">See live example &rarr;</button>`}
     </div>`;
 }
 
 function renderOnboardingWidgetPicker(platformId) {
   const platformLabel = (ONBOARDING_PLATFORMS[platformId] || {}).label || platformId;
+  const allTaken = SCRIPT_WIDGETS.every(scriptWidgetTaken);
   document.getElementById('install-tab-body').innerHTML = `
     <button class="onboarding-back" onclick="renderOnboardingPicker()">&larr; Choose a different platform</button>
-    <div class="onboarding-lede">Installing on <strong>${esc(platformLabel)}</strong>. We recommend starting with the AI Text Widget - it runs on every article automatically with nothing to place by hand. You can add the others any time.</div>
+    <div class="onboarding-lede">${allTaken
+      ? `You've already added all three site widgets on <strong>${esc(platformLabel)}</strong>. Remove one from its own tab if you want to swap.`
+      : `Installing on <strong>${esc(platformLabel)}</strong>. We recommend starting with the AI Text Widget - it runs on every article automatically with nothing to place by hand. You can add the others any time.`}</div>
     <div class="widget-grid" style="grid-template-columns:1fr">${widgetPickerCard(platformId, 'text', 'lead')}</div>
     <div class="widget-sub-label">Or add a visual block you place yourself</div>
     <div class="widget-grid">${widgetPickerCard(platformId, 'carousel')}${widgetPickerCard(platformId, 'board')}</div>
