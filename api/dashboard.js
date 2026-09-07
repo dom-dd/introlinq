@@ -132,6 +132,22 @@ async function notifyFirstActivation(name, slug, mode) {
   ).catch(() => {});
 }
 
+// Best-guess of which channel a manual link click came from, when the link
+// itself didn't carry an explicit &channel= (copied before the selector
+// existed, or pasted somewhere other than where it was grabbed). Referer is
+// only a hint - a "website" guess needs the publisher's own domain to match,
+// everything else falls through to null rather than a wrong label.
+const SOCIAL_REFERER_HOSTS = ['t.co', 'lnkd.in', 'linkedin.com', 'facebook.com', 'fb.me', 'x.com', 'twitter.com', 'instagram.com', 'reddit.com', 'youtube.com', 'threads.net', 'bsky.app', 'tiktok.com', 'pinterest.com'];
+function inferManualChannel(referer, pubSlug) {
+  if (!referer) return null;
+  let host;
+  try { host = new URL(referer).hostname.replace(/^www\./, '').toLowerCase(); } catch { return null; }
+  if (SOCIAL_REFERER_HOSTS.some((h) => host === h || host.endsWith('.' + h))) return 'social';
+  if (/(^|\.)(substack\.com|beehiiv\.com|ghost\.io|mailchi\.mp|campaign-archive\.com|list-manage\.com)$/.test(host)) return 'newsletter';
+  if (pubSlug && host.includes(String(pubSlug).toLowerCase())) return 'website';
+  return null;
+}
+
 export default async function handler(req, res) {
   const { pub, provider, action } = req.query;
   if (!pub && action !== 'booking') return res.status(400).json({ error: 'Missing pub' });
@@ -268,12 +284,22 @@ export default async function handler(req, res) {
 
   // Public redirect - routes Book button through IntroLinq before sending to partner
   if (req.method === 'GET' && action === 'out') {
-    const { expert_id, expert_name, expert_url, article, phrase, lang, tz, device, source, title, click_source, il_type } = req.query;
+    const { expert_id, expert_name, expert_url, article, phrase, lang, tz, device, source, title, click_source, il_type, channel } = req.query;
     // Explicit integration tag set by each surface (text / carousel / board
     // / manual). Older links/cached scripts don't send it - left null, and
     // the source/phrase heuristic still classifies those.
     const integration = ['text', 'carousel', 'board', 'manual'].includes(il_type) ? il_type : null;
     if (!expert_url) return res.status(400).json({ error: 'Missing expert_url' });
+
+    // For manual links only: which of the publisher's own channels the link
+    // was placed in. Explicit `channel` (set by the copy-link tool) wins;
+    // otherwise inferred from the click's Referer so links copied before the
+    // selector existed, or pasted somewhere else, still get a best guess.
+    let manualChannel = null;
+    if (integration === 'manual') {
+      const explicit = ['website', 'newsletter', 'social'].includes(channel) ? channel : null;
+      manualChannel = explicit || inferManualChannel(req.headers.referer || req.headers.referrer, pub);
+    }
 
     const click_id = crypto.randomUUID();
 
@@ -306,6 +332,10 @@ export default async function handler(req, res) {
       // in practice (2026-08-27).
       sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS notification_sent BOOLEAN`.catch(() => {}),
       sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS integration TEXT`.catch(() => {}),
+      // Which publisher channel a manual link sat in (website / newsletter /
+      // social) - null for every non-manual click. Drives the per-channel
+      // click breakdown on the dashboard.
+      sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS manual_channel TEXT`.catch(() => {}),
     ]);
     if (!clickBotColumnsReady) {
       await ensureBotColumns(sql, 'click_logs');
@@ -352,15 +382,18 @@ export default async function handler(req, res) {
     // A newsletter/manual link click is the only click type that isn't
     // proof of an embed rendering on the publisher's site, so it stamps
     // last_activity_at but not last_script_activity_at (removal detection).
-    const isManualLink = source === 'newsletter' || phrase === 'newsletter';
+    // Keyed off the explicit integration tag now that manual links can carry
+    // source=website|social too - the old source/phrase==='newsletter' check
+    // still catches links copied before il_type was sent.
+    const isManualLink = il_type === 'manual' || source === 'newsletter' || phrase === 'newsletter';
     // Clicks that originate on introlinq.com itself (the /expertboard
     // preview page, dashboard previews) are QA, not real publisher usage -
     // don't let them count as activation.
     const isPreview = /introlinq\.com/i.test(article || '');
     await Promise.all([
-      sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, article_title, phrase, lang, timezone, device, traffic_source, ip, is_bot, click_source, notification_sent, integration)
+      sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, article_title, phrase, lang, timezone, device, traffic_source, ip, is_bot, click_source, notification_sent, integration, manual_channel)
         VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${click_id}, ${article || null},
-                ${title || null}, ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null}, ${ip || null}, ${isBot}, ${click_source || null}, ${willNotify}, ${integration})
+                ${title || null}, ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null}, ${ip || null}, ${isBot}, ${click_source || null}, ${willNotify}, ${integration}, ${manualChannel})
       `.catch(() => {}),
       slackPromise,
       (isBot || isPreview) ? Promise.resolve() : stampActivity(sql, pub, { script: !isManualLink }),
@@ -591,6 +624,26 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, email: newEmail });
   }
 
+  // Mark a surface as "install flow started" - additive, never removes. Its
+  // own branch (not the generic COALESCE update) because it needs
+  // array_append-if-absent semantics, not replace. Confirmation that the
+  // surface is actually live still comes only from a real load ping
+  // (first_widget_fire_at / last_script_activity_at / a manual click).
+  if (req.method === 'PATCH' && req.body.started_widget) {
+    const w = String(req.body.started_widget);
+    if (!['text', 'carousel', 'board', 'manual'].includes(w)) {
+      return res.status(400).json({ error: 'Invalid widget' });
+    }
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS started_widgets TEXT[] DEFAULT '{}'`.catch(() => {});
+    const [row] = await sql`
+      UPDATE publishers
+      SET started_widgets = (SELECT ARRAY(SELECT DISTINCT unnest(COALESCE(started_widgets, '{}') || ARRAY[${w}]::text[])))
+      WHERE slug = ${pub} AND active = true
+      RETURNING started_widgets
+    `.catch(() => [null]);
+    return res.status(200).json({ ok: true, started_widgets: row?.started_widgets || [] });
+  }
+
   if (req.method === 'PATCH') {
     const { match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, no_match_fallback_enabled, no_match_text_color, enabled_partners, payment_email, active, carousel_title, board_text_color, name, contact_first_name, contact_last_name, domain, platform } = req.body;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS platform TEXT`.catch(() => {});
@@ -769,6 +822,11 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS activated_at TIMESTAMPTZ`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS last_activity_at TIMESTAMPTZ`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS last_script_activity_at TIMESTAMPTZ`.catch(() => {});
+    // Which surfaces the publisher has gone through the install flow for
+    // ('text' | 'carousel' | 'board' | 'manual'). Intent, not confirmation -
+    // it's what tells the Widgets tab to show a "Pending" card for something
+    // set up but not yet confirmed by a load ping, instead of "never started".
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS started_widgets TEXT[] DEFAULT '{}'`.catch(() => {});
     // Ensure providers have a name column
     await sql`ALTER TABLE providers ADD COLUMN IF NOT EXISTS name TEXT`;
     await sql`UPDATE providers SET name = 'OpenIntro' WHERE slug = 'openintro' AND name IS NULL`;
@@ -794,6 +852,7 @@ export default async function handler(req, res) {
              COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners,
              COALESCE(revenue_share, 0.70) AS revenue_share,
              payment_email, carousel_title, board_text_color, no_match_text_color, first_widget_fire_at, last_widget_fire_at, activated_at, last_activity_at, last_script_activity_at, platform, platform_detected,
+             COALESCE(started_widgets, '{}') AS started_widgets,
              email, contact_first_name, contact_last_name,
              (password_hash IS NOT NULL) AS has_password
       FROM publishers WHERE slug = ${pub} AND active = true LIMIT 1
@@ -836,7 +895,7 @@ export default async function handler(req, res) {
            clicksByDay, impressionsByDay, hoversByDay, seenByDay, clicksByWeek, impressionsByWeek, hoversByWeek, seenByWeek,
            clicksByMonth, impressionsByMonth, hoversByMonth, seenByMonth,
            totalExpertShown, expertShownByDay, expertShownByWeek, expertShownByMonth,
-           topPhrases, topSources, topDevices, pageUrls] = await Promise.all([
+           topPhrases, topSources, topDevices, pageUrls, manualByChannel, clicksByIntegration] = await Promise.all([
       // Split into two queries rather than one chronological "last 50" -
       // a busy, low-match-rate site (mostly-news publishers correctly get
       // few matches - see match.js's "NEVER match news" rule) can easily
@@ -894,6 +953,23 @@ export default async function handler(req, res) {
       sql`SELECT traffic_source AS source, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND traffic_source IS NOT NULL AND is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY traffic_source ORDER BY count DESC`.catch(() => []),
       sql`SELECT device, COUNT(*)::int AS count FROM click_logs WHERE publisher = ${pub} AND device IS NOT NULL AND is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY device ORDER BY count DESC`.catch(() => []),
       sql`SELECT page_url, COUNT(*)::int AS count FROM match_logs WHERE publisher = ${pub} AND match_count > 0 AND page_url IS NOT NULL AND is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY page_url ORDER BY count DESC LIMIT 100`.catch(() => []),
+      // Manual-link clicks split by the channel they were placed in. Legacy
+      // manual clicks (tagged only source='newsletter', no manual_channel)
+      // fold into 'newsletter' via COALESCE so the split still adds up to the
+      // manual total.
+      sql`SELECT COALESCE(manual_channel, CASE WHEN traffic_source = 'newsletter' THEN 'newsletter' ELSE 'other' END) AS channel, COUNT(*)::int AS count
+          FROM click_logs
+          WHERE publisher = ${pub} AND is_bot = false AND created_at >= ${STATS_RESET_AT}
+            AND (integration = 'manual' OR traffic_source = 'newsletter')
+          GROUP BY 1`.catch(() => []),
+      // Clicks per surface (text / carousel / board / manual). Legacy clicks
+      // with no integration tag are almost all pre-tag text-widget clicks -
+      // bucket them as 'text' so the surface totals reconcile to the grand
+      // total instead of leaving a large untagged remainder.
+      sql`SELECT COALESCE(NULLIF(integration, ''), CASE WHEN traffic_source IN ('carousel','board') THEN traffic_source WHEN traffic_source = 'newsletter' THEN 'manual' ELSE 'text' END) AS surface, COUNT(*)::int AS count
+          FROM click_logs
+          WHERE publisher = ${pub} AND is_bot = false AND created_at >= ${STATS_RESET_AT}
+          GROUP BY 1`.catch(() => []),
     ]);
 
     const expertCountByProvider = new Map(expertCounts.map(r => [r.provider_id, r.count]));
@@ -930,7 +1006,10 @@ export default async function handler(req, res) {
       if (publisher.first_widget_fire_at) modes.push('widget');
       if (has('carousel')) modes.push('carousel');
       if (has('board')) modes.push('board');
-      if (clickSources.includes('newsletter')) modes.push('manual');
+      // Any manual-link click, whatever channel it was tagged with (the old
+      // check only saw source='newsletter').
+      const manualClicks = (clicksByIntegration || []).reduce((n, r) => n + (r.surface === 'manual' ? r.count : 0), 0);
+      if (manualClicks > 0 || clickSources.includes('newsletter')) modes.push('manual');
       // Manual-only: real click traffic but nothing that produces a view
       // signal (no widget/carousel/board render ever). This is what drives
       // the clicks-first dashboard layout instead of an all-zeros funnel.
@@ -971,6 +1050,10 @@ export default async function handler(req, res) {
       traffic_sources: topSources,
       devices: topDevices,
       page_urls: pageUrls,
+      // Per-surface + per-manual-channel click counts for the Widgets tab
+      // card status lines (and, later, the per-surface Overview blocks).
+      clicks_by_surface: Object.fromEntries((clicksByIntegration || []).map((r) => [r.surface, r.count])),
+      manual_clicks_by_channel: Object.fromEntries((manualByChannel || []).map((r) => [r.channel, r.count])),
     });
   }
 
