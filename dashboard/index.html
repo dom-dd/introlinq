@@ -75,15 +75,25 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:va
 .modal-page-url:hover{text-decoration:underline}
 .modal-page-count{font-size:0.75rem;color:var(--ink-muted);white-space:nowrap;background:var(--white);border:1px solid var(--border);border-radius:100px;padding:0.1rem 0.5rem}
 
-/* ── Get started (install) tab ── */
-.tab-btn.install-tab-btn{color:#b91c1c;font-weight:700}
-.tab-btn.install-tab-btn:hover{color:#b91c1c}
-.tab-btn.install-tab-btn.active{border-bottom-color:#b91c1c;color:#b91c1c}
-/* Once the publisher has ever been live the Install tab stays put but
-   stops shouting - it's now just "add another surface", not an alarm. */
-.tab-btn.install-tab-btn.is-live{color:var(--ink-soft);font-weight:600}
-.tab-btn.install-tab-btn.is-live:hover{color:var(--ink)}
-.tab-btn.install-tab-btn.is-live.active{border-bottom-color:var(--ink);color:var(--ink)}
+/* ── Widgets tab (single home for setup + tuning) ── */
+/* Red nudge on the Widgets tab itself while nothing is set up. */
+.tab-btn.needs-setup{color:#b91c1c;font-weight:700}
+.tab-btn.needs-setup:hover{color:#b91c1c}
+.tab-btn.needs-setup.active{border-bottom-color:#b91c1c;color:#b91c1c}
+/* Status dot shared by the sub-nav and each panel's status line. */
+.wnav-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:0.4rem;vertical-align:middle;flex-shrink:0}
+.wnav-dot.live{background:var(--sage)}
+.wnav-dot.pending{background:var(--gold)}
+.widget-status-line{font-size:0.8125rem;color:var(--ink-soft);padding:0 1.5rem 1rem;line-height:1.5}
+.widget-status-line.live{color:var(--ink-soft)}
+.wstatus-link{background:none;border:none;color:var(--sage);font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;font-size:0.8125rem;padding:0;text-decoration:underline}
+.wtab-btn.wtab-add{color:var(--sage);font-weight:700}
+.widget-empty{text-align:center;padding:3.5rem 1.5rem;max-width:460px;margin:0 auto}
+.widget-empty-title{font-family:'DM Serif Display',serif;font-size:1.375rem;color:var(--ink);margin-bottom:0.5rem}
+.widget-empty-sub{font-size:0.875rem;color:var(--ink-soft);line-height:1.5;margin-bottom:1.5rem}
+/* Capped so the onboarding cards/previews don't stretch arbitrarily wide on
+   a big monitor - the carousel preview's seamless-loop animation depends on
+   a bounded number of cards fitting the visible width (see .prev-track's
 /* Capped so the onboarding cards/previews don't stretch arbitrarily wide on
    a big monitor - the carousel preview's seamless-loop animation depends on
    a bounded number of cards fitting the visible width (see .prev-track's
@@ -612,7 +622,6 @@ tr:last-child td{border-bottom:none}
 <div id="main" style="display:none">
 
   <div class="tab-bar">
-    <button class="tab-btn install-tab-btn" id="install-tab-btn" style="display:none" onclick="switchTab('install',this)">● Get started</button>
     <button class="tab-btn active" id="overview-tab-btn" onclick="switchTab('overview',this)">Overview</button>
     <button class="tab-btn" id="widget-tab-btn" onclick="switchTab('widget',this)">Widgets</button>
     <button class="tab-btn" onclick="switchTab('payouts',this)">Payouts</button>
@@ -626,15 +635,6 @@ tr:last-child td{border-bottom:none}
   </div>
 
   <div class="body">
-
-    <!-- ── Get started (install) ── -->
-    <div class="tab-panel" id="tab-install">
-      <div class="install-tab-header">
-        <div class="install-tab-title">Let's get your widget live</div>
-        <div class="install-tab-sub">Your widget isn't installed yet - pick your platform below and we'll walk you through it, step by step.</div>
-      </div>
-      <div id="install-tab-body"></div>
-    </div>
 
     <!-- ── Overview ── -->
     <div class="tab-panel active" id="tab-overview">
@@ -731,55 +731,24 @@ tr:last-child td{border-bottom:none}
     <!-- ── Widget ── -->
     <div class="tab-panel" id="tab-widget">
 
-      <div class="wtab-nav">
-        <button class="wtab-btn active" onclick="switchWidgetTab('text',this)">AI Text Widget</button>
-        <button class="wtab-btn" onclick="switchWidgetTab('carousel',this)">Expert Carousel</button>
-        <button class="wtab-btn" onclick="switchWidgetTab('board',this)">Expert Board</button>
-        <button class="wtab-btn" id="wtab-newsletter-btn" onclick="switchWidgetTab('newsletter',this)">Manual Entry & Newsletters</button>
+     <!-- HOME: the widgets you've actually started / that are live. Built by
+          renderWidgetHome() - a sub-nav of only your surfaces plus "+ Add",
+          each panel showing that surface's status line + its settings. -->
+     <div id="widget-home">
+      <div class="wtab-nav" id="widget-subnav"></div>
+
+      <!-- Empty state - nothing started yet -->
+      <div class="wtab-panel" id="wtab-empty">
+        <div class="widget-empty">
+          <div class="widget-empty-title">No widgets yet</div>
+          <div class="widget-empty-sub">Add the AI text widget, a visual widget, or tracked links for your newsletter and socials - we'll walk you through it.</div>
+          <button class="onboarding-test-btn" onclick="startAddWidget()">Add a widget</button>
+        </div>
       </div>
 
       <!-- TEXT WIDGET -->
-      <div class="wtab-panel active" id="wtab-text">
-        <div class="wpreview">
-          <div class="wpreview-desc">
-            <div class="wpreview-desc-label">AI Text Widget</div>
-            <div class="wpreview-desc-text">Highlights phrases in your articles and shows a matching expert popup when readers hover.</div>
-            <div class="wpreview-desc-sub">Works automatically - no article edits needed. One snippet in your blog template is all it takes.</div>
-          </div>
-          <div class="wpreview-anim">
-            <div class="wpreview-inner">
-              <div style="display:flex;gap:1.25rem;align-items:center">
-                <div style="flex:1">
-                  <div class="prev-line" style="width:90%"></div>
-                  <div class="prev-line" style="width:75%"></div>
-                  <div style="margin-bottom:7px;font-size:0.72rem;color:var(--ink-muted)">Advice on <span class="prev-highlight">fundraising strategy</span> for your round</div>
-                  <div class="prev-line" style="width:85%"></div>
-                  <div class="prev-line" style="width:60%"></div>
-                </div>
-                <div class="prev-popup" style="position:relative;right:auto;top:auto;transform:none;animation:popup-float 4s ease-in-out infinite;flex-shrink:0">
-                  <div class="prev-popup-row">
-                    <div class="prev-avatar"></div>
-                    <div class="prev-name-block">
-                      <div class="prev-name-line"></div>
-                      <div class="prev-role-line"></div>
-                    </div>
-                  </div>
-                  <div class="prev-book-btn"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Install -->
-        <div class="section">
-          <div class="section-header">
-            <div class="section-title">Install AI Text Widget</div>
-            <div class="section-sub">A guided, step-by-step walkthrough for your platform</div>
-          </div>
-          <div style="padding:0 1.5rem 1.25rem">
-            <button class="widget-install-cta" onclick="startWidgetInstall('text')">Install this widget →</button>
-          </div>
-        </div>
+      <div class="wtab-panel" id="wtab-text">
+        <div class="widget-status-line" id="wstatus-text"></div>
         <!-- Settings -->
         <div class="section">
           <div class="section-header">
@@ -877,50 +846,7 @@ tr:last-child td{border-bottom:none}
 
       <!-- EXPERT CAROUSEL -->
       <div class="wtab-panel" id="wtab-carousel">
-        <div class="wpreview">
-          <div class="wpreview-desc">
-            <div class="wpreview-desc-label">Expert Carousel</div>
-            <div class="wpreview-desc-text">A scrollable row of expert cards - drop it at the end of any article or page.</div>
-            <div class="wpreview-desc-sub">Readers can browse experts and book a call directly, without leaving your site.</div>
-          </div>
-          <div class="wpreview-anim">
-            <div class="wpreview-inner">
-              <div class="prev-carousel-header">
-                <div class="prev-carousel-label">Suggested experts to speak to</div>
-                <div class="prev-carousel-arrows">
-                  <div class="prev-arrow"><svg width="5" height="8" viewBox="0 0 6 10" fill="none" stroke="#aaa" stroke-width="1.5" stroke-linecap="round"><polyline points="5 1 1 5 5 9"/></svg></div>
-                  <div class="prev-arrow"><svg width="5" height="8" viewBox="0 0 6 10" fill="none" stroke="#aaa" stroke-width="1.5" stroke-linecap="round"><polyline points="1 1 5 5 1 9"/></svg></div>
-                </div>
-              </div>
-              <div class="prev-track-wrap">
-                <div class="prev-track">
-                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                  <div class="prev-card"><div class="prev-card-avatar"></div><div class="prev-card-line"></div><div class="prev-card-line short"></div><div class="prev-card-line bio"></div><div class="prev-card-line bio short"></div><div class="prev-card-btn"></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Install -->
-        <div class="section">
-          <div class="section-header">
-            <div class="section-title">Install Expert Carousel</div>
-            <div class="section-sub">A guided, step-by-step walkthrough for your platform</div>
-          </div>
-          <div style="padding:0 1.5rem 1.25rem">
-            <button class="widget-install-cta" onclick="startWidgetInstall('carousel')">Install this widget →</button>
-          </div>
-        </div>
+        <div class="widget-status-line" id="wstatus-carousel"></div>
         <!-- Settings -->
         <div class="section">
           <div class="section-header">
@@ -955,45 +881,7 @@ tr:last-child td{border-bottom:none}
 
       <!-- EXPERTBOARD -->
       <div class="wtab-panel" id="wtab-board">
-        <div class="wpreview">
-          <div class="wpreview-desc">
-            <div class="wpreview-desc-label">Expert Board</div>
-            <div class="wpreview-desc-text">A full browsable expert directory with search and topic filters.</div>
-            <div class="wpreview-desc-sub">Ideal for a dedicated "Meet our experts" page - lets readers find and book the right person.</div>
-          </div>
-          <div class="wpreview-anim">
-            <div class="wpreview-inner">
-              <div class="prev-board-search">
-                <div class="prev-board-search-icon"></div>
-                <div class="prev-board-search-bar"></div>
-              </div>
-              <div class="prev-board-filters">
-                <div class="prev-board-filter active" style="width:28px"></div>
-                <div class="prev-board-filter" style="width:44px"></div>
-                <div class="prev-board-filter" style="width:38px"></div>
-                <div class="prev-board-filter" style="width:50px"></div>
-              </div>
-              <div class="prev-board-grid">
-                <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:70%"></div><div class="prev-board-btn"></div></div>
-                <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:60%"></div><div class="prev-board-btn"></div></div>
-                <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:80%"></div><div class="prev-board-btn"></div></div>
-                <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:65%"></div><div class="prev-board-btn"></div></div>
-                <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:75%"></div><div class="prev-board-btn"></div></div>
-                <div class="prev-board-card"><div class="prev-board-card-top"><div class="prev-board-avatar"></div><div class="prev-board-name"></div></div><div class="prev-board-bio"></div><div class="prev-board-bio" style="width:55%"></div><div class="prev-board-btn"></div></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Install -->
-        <div class="section">
-          <div class="section-header">
-            <div class="section-title">Install Expert Board</div>
-            <div class="section-sub">A guided, step-by-step walkthrough for your platform</div>
-          </div>
-          <div style="padding:0 1.5rem 1.25rem">
-            <button class="widget-install-cta" onclick="startWidgetInstall('board')">Install this widget →</button>
-          </div>
-        </div>
+        <div class="widget-status-line" id="wstatus-board"></div>
         <!-- Settings -->
         <div class="section">
           <div class="section-header">
@@ -1038,33 +926,31 @@ tr:last-child td{border-bottom:none}
         </div>
       </div>
 
-      <!-- NEWSLETTER LINKS -->
-      <div class="wtab-panel" id="wtab-newsletter">
-        <div class="wpreview">
-          <div class="wpreview-desc">
-            <div class="wpreview-desc-label">Manual Entry & Newsletters</div>
-            <div class="wpreview-desc-text">Paste an article to get suggested experts and where to link them, or search your roster and copy a tracked link by hand.</div>
-            <div class="wpreview-desc-sub">For Substack, Medium, or any newsletter where the widget can't run - clicks are tracked the same way as your other widgets.</div>
+      <!-- MANUAL LINKS (newsletter / social / website) -->
+      <div class="wtab-panel" id="wtab-manual">
+        <div class="widget-status-line" id="wstatus-manual"></div>
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title" id="manual-tool-title">Tracked expert links</div>
+            <div class="section-sub" id="manual-tool-sub">Paste your content for suggested experts, or browse the roster - then copy a tracked link to paste in by hand.</div>
           </div>
-          <div class="wpreview-anim">
-            <div class="wpreview-inner">
-              <div class="prev-board-search">
-                <div class="prev-board-search-icon"></div>
-                <div class="prev-board-search-bar"></div>
-              </div>
-              <div class="prev-nl-row"><div class="prev-board-avatar"></div><div style="flex:1"><div class="prev-board-name" style="width:40%"></div><div class="prev-board-bio" style="width:70%;margin-top:3px"></div></div><div class="prev-nl-linkbtn"><svg class="prev-nl-icon-link" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><svg class="prev-nl-icon-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
-              <div class="prev-nl-row"><div class="prev-board-avatar"></div><div style="flex:1"><div class="prev-board-name" style="width:32%"></div><div class="prev-board-bio" style="width:58%;margin-top:3px"></div></div><div class="prev-nl-linkbtn"><svg class="prev-nl-icon-link" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><svg class="prev-nl-icon-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
-              <div class="prev-nl-row"><div class="prev-board-avatar"></div><div style="flex:1"><div class="prev-board-name" style="width:45%"></div><div class="prev-board-bio" style="width:65%;margin-top:3px"></div></div><div class="prev-nl-linkbtn"><svg class="prev-nl-icon-link" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><svg class="prev-nl-icon-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+          <div style="padding:0 1.5rem 1rem">
+            <div class="setting-title" style="margin-bottom:0.4rem">Where are you putting these links?</div>
+            <div class="option-group" id="manual-channel-group">
+              <button class="opt-btn" data-val="website" onclick="pickManualChannel('website')">My website</button>
+              <button class="opt-btn" data-val="newsletter" onclick="pickManualChannel('newsletter')">Newsletter</button>
+              <button class="opt-btn" data-val="social" onclick="pickManualChannel('social')">Social</button>
             </div>
+            <div class="setting-desc" style="margin-top:0.4rem">Sets where clicks from these links are attributed - switch any time.</div>
           </div>
         </div>
         <div class="section">
           <div class="section-header">
-            <div class="section-title">Suggest experts for an article</div>
-            <div class="section-sub">Paste your article or newsletter draft - we'll point out where an expert link fits and which experts to use.</div>
+            <div class="section-title">Suggest experts for a piece</div>
+            <div class="section-sub" id="manual-paste-sub">Paste your article, newsletter draft or post - we'll point out where an expert link fits and which experts to use.</div>
           </div>
           <div class="nl-sg-wrap">
-            <textarea id="nl-article" class="nl-sg-textarea" placeholder="Paste your article or newsletter text here…"></textarea>
+            <textarea id="nl-article" class="nl-sg-textarea" placeholder="Paste your text here…"></textarea>
             <div class="nl-sg-bar">
               <button id="nl-analyze-btn" class="nl-sg-btn" onclick="analyzeArticle()">Suggest experts</button>
               <span class="nl-sg-hint" id="nl-sg-hint">Your text isn't stored - it's only used to generate suggestions.</span>
@@ -1075,7 +961,7 @@ tr:last-child td{border-bottom:none}
         <div class="section">
           <div class="section-header">
             <div class="section-title">Browse &amp; copy expert links</div>
-            <div class="section-sub">Nothing to install - search, then copy a link to paste into your newsletter</div>
+            <div class="section-sub">Nothing to install - search, then copy a tracked link to paste in by hand</div>
           </div>
           <div class="nl-search-row">
             <div class="nl-search-wrap">
@@ -1095,6 +981,19 @@ tr:last-child td{border-bottom:none}
         </div>
         <div id="partners-list"></div>
       </div>
+
+     </div><!-- /widget-home -->
+
+     <!-- FLOW: the guided "add a widget" walkthrough, shown in place of the
+          home view. renderInstallChannelPicker / renderOnboardingSteps /
+          renderOnboardingDone all target #install-tab-body. -->
+     <div id="widget-flow" hidden>
+       <div class="install-tab-header">
+         <div class="install-tab-title" id="widget-flow-title">Add a widget</div>
+         <div class="install-tab-sub" id="widget-flow-sub">Pick what you want to set up and we'll walk you through it.</div>
+       </div>
+       <div id="install-tab-body"></div>
+     </div>
 
     </div>
 
@@ -1310,17 +1209,9 @@ function switchTab(name, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
-  // The Install tab is now always in the bar (see loadDashboard), so a live
-  // publisher can open it to add a second widget. Its body is only
-  // pre-populated by loadDashboard when not live - otherwise fill it on
-  // first open. `!firstChild` so an in-progress step-through survives a tab
-  // switch away and back.
-  if (name === 'install' && window._cd && window._cd.publisher) {
-    const body = document.getElementById('install-tab-body');
-    if (body && !body.firstChild) {
-      initInstallTab(window._cd.publisher.slug, window._cd.publisher.platform, window._cd.publisher.platform_detected);
-    }
-  }
+  // Landing on the Widgets tab always shows the home view (the list of your
+  // surfaces), never a half-finished add flow left over from before.
+  if (name === 'widget') exitWidgetFlow();
   if (name === 'overview' && window._cd && !window._chartsReady) {
     initCharts(window._cd);
     setPeriod('daily', document.querySelector('.period-btn.active'));
@@ -1411,20 +1302,23 @@ async function loadDashboard() {
   // those are additionally filtered by STATS_RESET_AT/is_bot/page_url, so
   // an early or bot-flagged fire could under-report "ever installed" if
   // reconstructed from them instead.
+  // The Widgets tab is the single home for setup + tuning. Build its home
+  // view (list of started/live surfaces + "Add"), and if nothing's started
+  // at all, drop the publisher straight onto it with the add flow open.
+  _onboardingPub = d.publisher.slug;
+  _onboardingPlatformDetected = !!d.publisher.platform_detected;
+  const startedList = Array.isArray(d.publisher.started_widgets) ? d.publisher.started_widgets : [];
+  const anyLive = !!d.publisher.first_widget_fire_at || (Array.isArray(d.modes) && d.modes.some(m => ['carousel', 'board', 'manual'].includes(m)));
+  const manualOnly = !!(d.activation_v2 && d.manual_only);
+  renderWidgetHome();
+  setWidgetTabNudge(!(startedList.length || anyLive || manualOnly));
+  if (!startedList.length && !anyLive && !manualOnly) {
+    switchTab('widget', document.getElementById('widget-tab-btn'));
+    startAddWidget();
+  }
+
   if (!d.publisher.first_widget_fire_at) {
-    // Not live yet - the "Get started" tab is the entry point (not a modal,
-    // not a banner sitting oddly above the tab bar). It stays in the tab
-    // bar for as long as the widget's never fired, so navigating away to
-    // look around and coming back to it is just clicking a tab, no
-    // dismiss/reopen tracking needed. A manual-links publisher (v2) is
-    // genuinely set up, so the tab stays available but isn't forced open.
-    initInstallTab(d.publisher.slug, d.publisher.platform, d.publisher.platform_detected);
-    // A manual-links-only publisher (v2) is already set up - give them the
-    // quiet "Install" chrome, not the red "get started" alarm, and don't
-    // force the tab open.
-    const manualOnly = !!(d.activation_v2 && d.manual_only);
-    setInstallTabChrome(manualOnly);
-    if (!manualOnly) switchTab('install', document.getElementById('install-tab-btn'));
+    // (banner stays hidden until first fire)
   } else if (d.publisher.last_widget_fire_at) {
     // Always visible once live, not just right after setup - last_widget_fire_at
     // updates on every single widget request, so this is an ongoing "is it still
@@ -1453,15 +1347,6 @@ async function loadDashboard() {
     // delay anything else on the page - fire and forget.
     checkWidgetLive(d.publisher.slug, lastFire);
   }
-
-  // The Install tab is a permanent fixture, not a transient setup prompt.
-  // Once the publisher has ever been live it stays in the tab bar (just
-  // relabelled and de-emphasised), so "add another widget later" is always
-  // a plain tab click - never the disappear-then-silently-reappear
-  // behaviour the Widgets-tab install buttons used to cause. The not-live
-  // branch above already set the chrome (accounting for manual-only), so
-  // only (re)assert it here for the live branches.
-  if (d.publisher.first_widget_fire_at) setInstallTabChrome(true);
 
   // Widget tab
   const p = d.publisher;
@@ -1694,11 +1579,186 @@ async function saveCarouselTitle() {
 }
 
 function switchWidgetTab(name, btn) {
-  document.querySelectorAll('.wtab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.wtab-panel').forEach(p => p.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('wtab-' + name).classList.add('active');
-  if (name === 'newsletter' && _nlExperts === null) loadNewsletterExperts();
+  document.querySelectorAll('#widget-subnav .wtab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#widget-home .wtab-panel').forEach(p => p.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else { const b = document.querySelector('#widget-subnav .wtab-btn[data-w="' + name + '"]'); if (b) b.classList.add('active'); }
+  const panel = document.getElementById('wtab-' + name);
+  if (panel) panel.classList.add('active');
+  if (name === 'manual') {
+    pickManualChannel(_manualChannel);
+    if (_nlExperts === null) loadNewsletterExperts();
+  }
+}
+
+// ── Single Widgets tab: home view (your surfaces) + guided add flow ────────
+
+const WIDGET_META = {
+  text:     { label: 'AI Text Widget', letter: 'T', badge: '#3d7a5f' },
+  carousel: { label: 'Expert Carousel', letter: 'C', badge: '#e6a820' },
+  board:    { label: 'Expert Board', letter: 'B', badge: '#4a4a6a' },
+  manual:   { label: 'Newsletter & social links', letter: 'M', badge: '#21759b' },
+};
+
+// Which channel the manual-link tool is currently tagging copied links with.
+let _manualChannel = 'newsletter';
+
+function pickManualChannel(ch) {
+  if (!['website', 'newsletter', 'social'].includes(ch)) return;
+  _manualChannel = ch;
+  document.querySelectorAll('#manual-channel-group .opt-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.val === ch);
+  });
+  const titles = {
+    website: 'Tracked expert links for your site',
+    newsletter: 'Tracked expert links for your newsletter',
+    social: 'Tracked expert links to share on social',
+  };
+  const pasteSubs = {
+    website: "Paste an article from your site - we'll point out where an expert link fits and which experts to use.",
+    newsletter: "Paste your newsletter draft - we'll point out where an expert link fits and which experts to use.",
+    social: "Paste your post or thread - we'll suggest the experts worth linking.",
+  };
+  const t = document.getElementById('manual-tool-title'); if (t) t.textContent = titles[ch];
+  const ps = document.getElementById('manual-paste-sub'); if (ps) ps.textContent = pasteSubs[ch];
+}
+
+// Confidently-known platform that can't run any script embed → only manual
+// links are offered, matching the add-flow's interstitial.
+function platformIsEmbedCapable(pub) {
+  if (!pub) return true;
+  const known = pub.platform_detected || pub.first_widget_fire_at || pub.platform === _sessionConfirmedPlatform;
+  return !(known && ONBOARDING_UNSUPPORTED[pub.platform]);
+}
+
+function widgetState(pub, d, id) {
+  const started = (Array.isArray(pub.started_widgets) ? pub.started_widgets : []).includes(id);
+  let live = false;
+  if (id === 'text') live = !!pub.first_widget_fire_at;
+  else live = Array.isArray(d.modes) && d.modes.includes(id === 'manual' ? 'manual' : id);
+  return { started, live, shown: started || live };
+}
+
+function renderWidgetHome() {
+  const d = window._cd; if (!d) return;
+  const pub = d.publisher;
+  const embedOK = platformIsEmbedCapable(pub);
+  const order = embedOK ? ['text', 'carousel', 'board', 'manual'] : ['manual'];
+  const states = {};
+  order.forEach(id => { states[id] = widgetState(pub, d, id); });
+  const shown = order.filter(id => states[id].shown);
+
+  // Sub-nav: one button per shown surface + an Add button.
+  const nav = document.getElementById('widget-subnav');
+  nav.innerHTML = shown.map(id => {
+    const s = states[id];
+    const dot = s.live ? '<span class="wnav-dot live"></span>' : (s.started ? '<span class="wnav-dot pending"></span>' : '');
+    return `<button class="wtab-btn" data-w="${id}" onclick="switchWidgetTab('${id}',this)">${dot}${esc(WIDGET_META[id].label)}</button>`;
+  }).join('') + `<button class="wtab-btn wtab-add" onclick="startAddWidget()">+ Add</button>`;
+
+  // Status line on each shown panel.
+  shown.forEach(id => setWidgetStatusLine(id, states[id], d));
+
+  // Show the right panel.
+  document.querySelectorAll('#widget-home .wtab-panel').forEach(p => p.classList.remove('active'));
+  if (!shown.length) {
+    document.getElementById('wtab-empty').classList.add('active');
+  } else {
+    const first = shown[0];
+    document.getElementById('wtab-' + first).classList.add('active');
+    const b = nav.querySelector('.wtab-btn[data-w="' + first + '"]');
+    if (b) b.classList.add('active');
+    if (first === 'manual') {
+      pickManualChannel(_manualChannel);
+      if (_nlExperts === null) loadNewsletterExperts();
+    }
+  }
+}
+
+function setWidgetStatusLine(id, s, d) {
+  const el = document.getElementById('wstatus-' + id);
+  if (!el) return;
+  if (id === 'manual') {
+    const by = d.manual_clicks_by_channel || {};
+    const total = Object.values(by).reduce((a, b) => a + b, 0);
+    const parts = ['newsletter', 'social', 'website'].filter(c => by[c]).map(c => `${c} ${by[c]}`);
+    el.className = 'widget-status-line live';
+    el.innerHTML = total
+      ? `<span class="wnav-dot live"></span> ${total} link click${total === 1 ? '' : 's'}${parts.length ? ' · ' + esc(parts.join(' · ')) : ''}`
+      : `<span class="wnav-dot pending"></span> No link clicks yet - copy a tracked link below and drop it in.`;
+    return;
+  }
+  if (s.live) {
+    const fireAt = id === 'text' ? d.publisher.last_widget_fire_at : d.publisher.last_script_activity_at;
+    let when = '';
+    if (fireAt) {
+      const days = (Date.now() - new Date(fireAt).getTime()) / 86400000;
+      when = days > 7 ? ` · no check-in for ${Math.floor(days)} days` : ` · last seen ${relativeTime(new Date(fireAt))}`;
+    }
+    el.className = 'widget-status-line live';
+    el.innerHTML = `<span class="wnav-dot live"></span> Live${esc(when)}`;
+  } else {
+    el.className = 'widget-status-line pending';
+    el.innerHTML = `<span class="wnav-dot pending"></span> Set up, but we haven't seen it load yet. `
+      + `<button class="wstatus-link" onclick="startAddWidget('${id}')">Open the walkthrough &amp; test</button>`;
+  }
+}
+
+function setWidgetTabNudge(needsSetup) {
+  const btn = document.getElementById('widget-tab-btn');
+  if (!btn) return;
+  btn.classList.toggle('needs-setup', !!needsSetup);
+  btn.textContent = needsSetup ? '● Set up your widget' : 'Widgets';
+}
+
+function startAddWidget(targetWidget) {
+  document.getElementById('widget-home').hidden = true;
+  document.getElementById('widget-flow').hidden = false;
+  // Make sure we're on the Widgets tab (may be called from loadDashboard).
+  const wt = document.getElementById('widget-tab-btn');
+  if (wt && !wt.classList.contains('active')) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    wt.classList.add('active');
+    document.getElementById('tab-widget').classList.add('active');
+  }
+  if (targetWidget && ['text', 'carousel', 'board'].includes(targetWidget)) {
+    const pub = window._cd && window._cd.publisher;
+    if (pub && isConfidentPlatform(pub) && ONBOARDING_PLATFORMS[pub.platform]) {
+      renderOnboardingSteps(pub.platform, 0, targetWidget);
+    } else if (pub && isConfidentPlatform(pub) && ONBOARDING_UNSUPPORTED[pub.platform]) {
+      renderUnsupportedInterstitial(pub.platform);
+    } else {
+      _pendingTargetWidget = targetWidget;
+      _suggestedPlatform = (pub && (ONBOARDING_PLATFORMS[pub.platform] || ONBOARDING_UNSUPPORTED[pub.platform])) ? pub.platform : null;
+      renderOnboardingPicker();
+    }
+    return;
+  }
+  renderInstallChannelPicker();
+}
+
+function exitWidgetFlow() {
+  const flow = document.getElementById('widget-flow');
+  const home = document.getElementById('widget-home');
+  if (flow) flow.hidden = true;
+  if (home) home.hidden = false;
+  document.getElementById('install-tab-body').innerHTML = '';
+  renderWidgetHome();
+}
+
+// Persist "this surface's install flow was started" so the home view shows
+// it as Pending on the next load instead of forgetting.
+function markWidgetStarted(id) {
+  if (!['text', 'carousel', 'board', 'manual'].includes(id)) return;
+  const pub = window._cd && window._cd.publisher;
+  if (pub) {
+    pub.started_widgets = Array.from(new Set([...(pub.started_widgets || []), id]));
+  }
+  fetch('/api/dashboard?pub=' + encodeURIComponent(_onboardingPub), {
+    method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ started_widget: id }),
+  }).catch(() => {});
 }
 
 
@@ -1892,12 +1952,13 @@ function filterNewsletterExperts(term) {
 let _nlSuggestById = {};
 
 function nlTrackedLink(e) {
+  const ch = _manualChannel || 'newsletter';
   return 'https://www.introlinq.com/api/dashboard?action=out'
     + '&pub=' + encodeURIComponent(PUB)
     + '&expert_id=' + encodeURIComponent(e.id)
     + '&expert_name=' + encodeURIComponent(e.name || '')
     + '&expert_url=' + encodeURIComponent(e.booking_url)
-    + '&phrase=newsletter&source=newsletter&il_type=manual';
+    + '&phrase=' + encodeURIComponent(ch) + '&source=' + encodeURIComponent(ch) + '&channel=' + encodeURIComponent(ch) + '&il_type=manual';
 }
 
 function copyNewsletterLink(expertId) {
@@ -2835,35 +2896,20 @@ function goToOverviewTab() {
   switchTab('overview', document.getElementById('overview-tab-btn'));
 }
 
-// Keeps the Install tab button + its panel header in sync with whether the
-// publisher has ever been live. Not-live: red "● Get started", urgent
-// header. Live: quiet "Install", neutral "add another surface" header. The
-// button is always shown either way - see the loadDashboard comment.
-function setInstallTabChrome(isLive) {
-  const btn = document.getElementById('install-tab-btn');
-  if (btn) {
-    btn.style.display = '';
-    btn.textContent = isLive ? 'Install' : '● Get started';
-    btn.classList.toggle('is-live', !!isLive);
-  }
-  const title = document.querySelector('#tab-install .install-tab-title');
-  const sub = document.querySelector('#tab-install .install-tab-sub');
-  if (title) title.textContent = isLive ? 'Install a widget' : "Let's get your widget live";
-  if (sub) sub.textContent = isLive
-    ? 'Add the AI text widget, a visual widget, or tracked links for your newsletter and socials.'
-    : "Your widget isn't installed yet - pick your platform below and we'll walk you through it, step by step.";
+// Leave the guided add flow and drop the publisher on the manual link tool
+// (Widgets tab home) with the right channel pre-selected. Used by the
+// channel picker's Newsletter/Social choices and the Medium/Substack
+// interstitial.
+function goToManualTool(channel) {
+  markWidgetStarted('manual');
+  exitWidgetFlow();
+  switchTab('widget', document.getElementById('widget-tab-btn'));
+  switchWidgetTab('manual');
+  pickManualChannel(channel || 'newsletter');
+  if (_nlExperts === null) loadNewsletterExperts();
 }
-
-function initInstallTab(pub, savedPlatform, wasDetected) {
-  _onboardingPub = pub;
-  _onboardingPlatformDetected = !!wasDetected;
-  // Everything now starts from one question - website widget, newsletter,
-  // or social links (see renderInstallChannelPicker). A known/detected
-  // platform is no longer a reason to skip straight past that choice; it
-  // just makes the "website widget" branch skip the platform step instead.
-  _suggestedPlatform = (savedPlatform && (ONBOARDING_PLATFORMS[savedPlatform] || ONBOARDING_UNSUPPORTED[savedPlatform])) ? savedPlatform : null;
-  renderInstallChannelPicker();
-}
+// Back-compat alias - older call sites.
+function goToNewsletterLinks() { goToManualTool('newsletter'); }
 
 // Top-level install choice, keyed on distribution channel rather than
 // widget type. "Site" leads into the platform + widget flow; the other two
@@ -2897,7 +2943,7 @@ function renderInstallChannelPicker() {
 }
 
 function selectInstallChannel(id) {
-  if (id === 'newsletter' || id === 'social') { goToNewsletterLinks(); return; }
+  if (id === 'newsletter' || id === 'social') { goToManualTool(id); return; }
   // Website widget: skip the platform step when we already know it for
   // real, show the interstitial (not a widget choice) for Substack/Medium,
   // otherwise ask.
@@ -2924,7 +2970,7 @@ function renderUnsupportedInterstitial(platformId) {
     <button class="onboarding-back" onclick="renderOnboardingPicker()">&larr; Choose a different platform</button>
     <div class="onboarding-note">${esc(label)} can't run an embedded widget - ${why}. Tracked expert links work exactly the same way for you, with clicks and bookings attributed just like the widgets. We've noted you're on ${esc(label)}, so you'll be first to hear if native support lands.</div>
     <div class="onboarding-done-actions" style="justify-content:flex-start">
-      <button class="onboarding-test-btn" onclick="goToNewsletterLinks()">Set up tracked links &rarr;</button>
+      <button class="onboarding-test-btn" onclick="goToManualTool('newsletter')">Set up tracked links &rarr;</button>
     </div>
   `;
 }
@@ -2951,27 +2997,10 @@ function isConfidentPlatform(pub) {
   return !!(pub.platform && (pub.platform_detected || pub.first_widget_fire_at || pub.platform === _sessionConfirmedPlatform));
 }
 
+// Thin back-compat wrapper - the guided add flow now lives inside the
+// Widgets tab (see startAddWidget).
 function startWidgetInstall(widgetType) {
-  const pub = window._cd && window._cd.publisher;
-  if (!pub) return;
-  _onboardingPub = pub.slug;
-  _onboardingPlatformDetected = !!pub.platform_detected;
-  document.getElementById('install-tab-btn').style.display = '';
-  switchTab('install', document.getElementById('install-tab-btn'));
-  if (isConfidentPlatform(pub) && ONBOARDING_PLATFORMS[pub.platform]) {
-    renderOnboardingSteps(pub.platform, 0, widgetType);
-  } else if (isConfidentPlatform(pub) && ONBOARDING_UNSUPPORTED[pub.platform]) {
-    // Substack/Medium - straight to the "why + what works" screen, no
-    // widget choice to make.
-    renderUnsupportedInterstitial(pub.platform);
-  } else {
-    _pendingTargetWidget = widgetType;
-    // Not confident, but an unconfirmed prior click is still worth
-    // offering as a one-click suggestion rather than making them hunt for
-    // it again from scratch - see renderOnboardingPicker.
-    _suggestedPlatform = (ONBOARDING_PLATFORMS[pub.platform] || ONBOARDING_UNSUPPORTED[pub.platform]) ? pub.platform : null;
-    renderOnboardingPicker();
-  }
+  startAddWidget(widgetType);
 }
 
 function renderOnboardingPicker() {
@@ -3158,6 +3187,9 @@ function renderOnboardingSteps(id, stepIndex, widgetType) {
   stepIndex = stepIndex || 0;
   widgetType = widgetType || 'text';
   _onboardingWidgetType = widgetType;
+  // Reaching the walkthrough counts as "started" - the home view shows it
+  // as Pending from here on, even before the first load ping.
+  markWidgetStarted(widgetType);
   // Navigating away from the final step mid-countdown (Back, or picking
   // another widget) must not leave testOnboardingWidget's retry timer
   // firing against a panel that's no longer there.
@@ -3211,11 +3243,6 @@ function copyOnboardingCode() {
   toast('Embed code copied!');
 }
 
-function goToNewsletterLinks() {
-  switchTab('widget', document.getElementById('widget-tab-btn'));
-  switchWidgetTab('newsletter', document.getElementById('wtab-newsletter-btn'));
-}
-
 // The single most skipped-past detail in onboarding: the widget needs one
 // real page view before there's anything to find. Rendered as its own loud
 // box right above "Test my install" (see renderOnboardingSteps), with copy
@@ -3260,11 +3287,6 @@ async function testOnboardingWidget(attempt) {
   }
   if (data && data.status === 'live') {
     btn.disabled = false;
-    // Don't bounce straight to Overview - that hid the fact that Carousel,
-    // Board and newsletter links even exist. Land on a "you're set up, here's
-    // what else you can add" screen instead, with the Install tab kept in
-    // place (relabelled) so it stays reachable.
-    setInstallTabChrome(true);
     renderOnboardingDone(_onboardingWidgetType);
     return;
   }
@@ -3305,48 +3327,23 @@ async function testOnboardingWidget(attempt) {
   }
 }
 
-// Success screen shown after "Test my install" confirms a widget is live.
-// The whole point is discovery: someone who's only ever seen the AI Text
-// Widget should leave here knowing the Carousel, Board and newsletter/social
-// links exist and are one click away. Surfaces already in use (from the
-// stats `modes` array, plus the one just finished) show as "Added" rather
-// than being hidden, so the list doubles as a coverage overview.
+// Success screen after "Test my install" confirms a widget is live. Short -
+// the Widgets home list it drops back to IS the "what have I got / what
+// could I add" overview now, so this doesn't need to re-list surfaces.
 function renderOnboardingDone(justInstalled) {
-  const modeFor = { text: 'widget', carousel: 'carousel', board: 'board', manual: 'manual' };
-  const active = (window._cd && Array.isArray(window._cd.modes)) ? window._cd.modes.slice() : [];
-  if (justInstalled && modeFor[justInstalled] && !active.includes(modeFor[justInstalled])) {
-    active.push(modeFor[justInstalled]);
-  }
   const justLabel = ONBOARDING_WIDGETS[justInstalled] ? ONBOARDING_WIDGETS[justInstalled].label : 'Your widget';
-  const cards = Object.entries(ONBOARDING_WIDGETS)
-    .filter(([id]) => id !== justInstalled)
-    .map(([id, w]) => {
-      const done = active.includes(modeFor[id]);
-      const act = id === 'manual' ? 'goToNewsletterLinks()' : `startWidgetInstall('${id}')`;
-      return `
-      <div class="widget-card onboarding-next-card${done ? ' done' : ''}"${done ? '' : ` role="button" tabindex="0" onclick="${act}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${act}}"`}>
-        <div class="widget-card-top">
-          <div class="platform-badge" style="background:${w.badge};width:28px;height:28px;font-size:0.75rem">${w.letter}</div>
-          <div class="widget-card-label">${esc(w.label)}</div>
-        </div>
-        <div class="widget-card-desc">${esc(w.desc)}</div>
-        <div class="widget-card-preview">${ONBOARDING_WIDGET_PREVIEWS[id]}</div>
-        ${done ? `<span class="widget-card-tag">Added ✓</span>` : `<span class="widget-card-example-link">Set this up →</span>`}
-      </div>`;
-    }).join('');
   document.getElementById('install-tab-body').innerHTML = `
     <div class="onboarding-done-head">
       <div class="onboarding-done-check">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
       <div class="onboarding-done-title">${esc(justLabel)} is set up</div>
-      <div class="onboarding-done-sub">It goes live the moment a reader loads one of your pages - you can watch views, hovers and clicks come in from the Overview tab.</div>
+      <div class="onboarding-done-sub">It's confirmed live. Track views and clicks from the Overview tab - or add another surface from your Widgets list.</div>
     </div>
-    <div class="onboarding-done-actions">
-      <button class="onboarding-test-btn" onclick="goToOverviewTab()">Go to dashboard →</button>
+    <div class="onboarding-done-actions" style="gap:0.75rem">
+      <button class="onboarding-test-btn" onclick="exitWidgetFlow()">Back to my widgets</button>
+      <button class="onboarding-test-btn" style="background:var(--sage)" onclick="goToOverviewTab()">Go to Overview &rarr;</button>
     </div>
-    <div class="onboarding-next-label">Add another surface - more places to be seen, more chances at a click</div>
-    <div class="widget-grid">${cards}</div>
   `;
 }
 
