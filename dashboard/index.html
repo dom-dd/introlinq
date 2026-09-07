@@ -555,12 +555,14 @@ tr:last-child td{border-bottom:none}
 .nl-name{font-size:0.8125rem;font-weight:600;color:var(--ink)}
 .nl-role{font-size:0.7rem;color:var(--ink-muted);margin-top:0.1rem}
 .nl-desc{font-size:0.75rem;color:var(--ink-soft);margin-top:0.2rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.nl-actions{display:flex;align-items:center;gap:0.4rem;flex-shrink:0}
+.nl-actions{display:flex;align-items:center;gap:0.4rem;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
 .nl-icon-btn{flex-shrink:0;width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:none;border:1px solid var(--border);color:var(--ink-muted);border-radius:50%;cursor:pointer;transition:all .15s;text-decoration:none}
 .nl-icon-btn:hover{border-color:var(--sage);color:var(--sage)}
 .nl-card.expanded .nl-icon-btn.nl-expand-btn{border-color:var(--sage);color:var(--sage);transform:rotate(180deg)}
 .nl-copy-btn{flex-shrink:0;background:var(--sage-light);color:var(--sage);border:none;font-size:0.75rem;font-weight:700;font-family:'Inter',sans-serif;padding:0.45rem 0.875rem;border-radius:100px;cursor:pointer;transition:opacity .15s}
 .nl-copy-btn:hover{opacity:0.8}
+.nl-dl-btn{flex-shrink:0;display:inline-flex;align-items:center;background:none;color:var(--ink-muted);border:1px solid var(--border);font-size:0.75rem;font-weight:600;font-family:'Inter',sans-serif;padding:calc(0.45rem - 1px) calc(0.875rem - 1px);border-radius:100px;cursor:pointer;transition:all .15s;text-decoration:none;white-space:nowrap}
+.nl-dl-btn:hover{border-color:var(--sage);color:var(--sage)}
 .nl-detail{display:none;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);font-size:0.75rem;color:var(--ink-soft);line-height:1.55}
 .nl-card.expanded .nl-detail{display:block}
 .nl-detail-highlights{margin:0.5rem 0 0;padding-left:1.1rem;color:var(--ink-soft)}
@@ -583,11 +585,15 @@ tr:last-child td{border-bottom:none}
 .nl-sg-quote{font-size:0.8rem;color:var(--ink);line-height:1.55;border-left:3px solid var(--sage-mid);padding-left:0.75rem;font-style:italic}
 .nl-sg-reason{font-size:0.72rem;color:var(--ink-muted);margin-top:0.4rem;line-height:1.5}
 .nl-sg-experts{display:flex;flex-direction:column;gap:0.45rem;margin-top:0.7rem}
-.nl-sg-exrow{display:flex;align-items:center;gap:0.625rem}
+.nl-sg-exrow{display:flex;align-items:center;gap:0.625rem;flex-wrap:wrap}
 .nl-sg-exphoto{width:30px;height:30px;border-radius:50%;object-fit:cover;background:var(--sage-light);flex-shrink:0}
 .nl-sg-exinfo{flex:1;min-width:0}
 .nl-sg-exname{font-size:0.75rem;font-weight:600;color:var(--ink)}
 .nl-sg-exrole{font-size:0.68rem;color:var(--ink-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nl-sg-exactions{display:flex;align-items:center;gap:0.4rem;flex-shrink:0;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+.nl-sg-detail{display:none;margin-top:0.55rem;padding-top:0.55rem;border-top:1px solid var(--border);font-size:0.72rem;color:var(--ink-soft);line-height:1.5}
+.nl-sg-exwrap.expanded .nl-sg-detail{display:block}
+.nl-sg-exwrap.expanded .nl-expand-btn{border-color:var(--sage);color:var(--sage);transform:rotate(180deg)}
 .nl-sg-err{font-size:0.78rem;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:0.625rem 0.875rem}
 </style>
 <!-- Google tag (gtag.js) -->
@@ -1897,6 +1903,28 @@ function loadNewsletterExperts() {
     });
 }
 
+// Shared inner HTML for the expandable expert detail panel - used by both the
+// browse list (renderNewsletterExperts) and the "Suggest experts" result rows
+// (sgExpertRow) so the two stay in sync. Tolerates the slimmer expert object
+// the /api/suggest endpoint returns (headline instead of headlines).
+function expertDetailHtml(e) {
+  const desc = (e.headlines || {}).en || e.headline || e.bio || '';
+  // description_long is OpenIntro's actual long-form bio - falls back to the
+  // short bio only for experts that don't have one synced yet.
+  const fullBio = e.description_long || e.bio || desc || 'No further details available.';
+  const highlights = e.highlights || [];
+  const tags = [...new Set([...(e.services || []), ...(e.notable_categories || [])])];
+  const metaParts = [];
+  if (e.location_country) metaParts.push(e.location_country);
+  if (e.languages && e.languages.length) metaParts.push(e.languages.join(', '));
+  if (e.price_from) metaParts.push(`${e.price_currency || ''} ${e.price_from}+`.trim());
+  const metaLine = metaParts.join(' · ');
+  return `<div>${esc(fullBio)}</div>
+    ${highlights.length ? `<ul class="nl-detail-highlights">${highlights.map(h => `<li>${esc(h)}</li>`).join('')}</ul>` : ''}
+    ${tags.length ? `<div class="nl-detail-tags">${tags.map(t => `<span class="nl-tag">${esc(t)}</span>`).join('')}</div>` : ''}
+    ${metaLine ? `<div class="nl-detail-meta">${esc(metaLine)}</div>` : ''}`;
+}
+
 function renderNewsletterExperts(list) {
   const el = document.getElementById('nl-list');
   if (!list.length) {
@@ -1907,16 +1935,6 @@ function renderNewsletterExperts(list) {
     const fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=96&name=' + encodeURIComponent(e.name);
     const role = [e.position, e.company].filter(Boolean).join(' · ');
     const desc = (e.headlines || {}).en || e.bio || '';
-    // description_long is OpenIntro's actual long-form bio - falls back to
-    // the short bio only for experts that don't have one synced yet.
-    const fullBio = e.description_long || e.bio || desc || 'No further details available.';
-    const highlights = e.highlights || [];
-    const tags = [...new Set([...(e.services || []), ...(e.notable_categories || [])])];
-    const metaParts = [];
-    if (e.location_country) metaParts.push(e.location_country);
-    if (e.languages && e.languages.length) metaParts.push(e.languages.join(', '));
-    if (e.price_from) metaParts.push(`${e.price_currency || ''} ${e.price_from}+`.trim());
-    const metaLine = metaParts.join(' · ');
     return `<div class="nl-card" id="nl-card-${e.id}">
       <div class="nl-card-main">
         <img class="nl-photo" src="${esc(e.photo_url || fallback)}" onerror="this.src='${esc(fallback)}'" alt="${esc(e.name)}">
@@ -1926,21 +1944,14 @@ function renderNewsletterExperts(list) {
           ${desc ? `<div class="nl-desc">${esc(desc)}</div>` : ''}
         </div>
         <div class="nl-actions">
-          <a class="nl-icon-btn" href="${esc(e.photo_url || fallback)}" target="_blank" rel="noopener" title="Open photo - right-click to save">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></svg>
-          </a>
           <button class="nl-icon-btn nl-expand-btn" onclick="toggleNewsletterDetail(${e.id})" title="More details">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <button class="nl-copy-btn" onclick="copyNewsletterLink(${e.id})">Copy link</button>
+          <a class="nl-dl-btn" href="${esc(e.photo_url || fallback)}" target="_blank" rel="noopener">Download expert picture</a>
         </div>
       </div>
-      <div class="nl-detail">
-        <div>${esc(fullBio)}</div>
-        ${highlights.length ? `<ul class="nl-detail-highlights">${highlights.map(h => `<li>${esc(h)}</li>`).join('')}</ul>` : ''}
-        ${tags.length ? `<div class="nl-detail-tags">${tags.map(t => `<span class="nl-tag">${esc(t)}</span>`).join('')}</div>` : ''}
-        ${metaLine ? `<div class="nl-detail-meta">${esc(metaLine)}</div>` : ''}
-      </div>
+      <div class="nl-detail">${expertDetailHtml(e)}</div>
     </div>`;
   }).join('');
 }
@@ -2022,14 +2033,28 @@ async function analyzeArticle() {
 function sgExpertRow(e) {
   const fallback = 'https://ui-avatars.com/api/?background=edf5f0&color=3d7a5f&bold=true&size=64&name=' + encodeURIComponent(e.name);
   const role = [e.position, e.company].filter(Boolean).join(' · ');
-  return `<div class="nl-sg-exrow">
-    <img class="nl-sg-exphoto" src="${esc(e.photo_url || fallback)}" onerror="this.src='${esc(fallback)}'" alt="${esc(e.name)}">
-    <div class="nl-sg-exinfo">
-      <div class="nl-sg-exname">${esc(e.name)}</div>
-      ${role ? `<div class="nl-sg-exrole">${esc(role)}</div>` : ''}
+  return `<div class="nl-sg-exwrap" id="nl-sg-card-${e.id}">
+    <div class="nl-sg-exrow">
+      <img class="nl-sg-exphoto" src="${esc(e.photo_url || fallback)}" onerror="this.src='${esc(fallback)}'" alt="${esc(e.name)}">
+      <div class="nl-sg-exinfo">
+        <div class="nl-sg-exname">${esc(e.name)}</div>
+        ${role ? `<div class="nl-sg-exrole">${esc(role)}</div>` : ''}
+      </div>
+      <div class="nl-sg-exactions">
+        <button class="nl-icon-btn nl-expand-btn" onclick="toggleSgDetail(${e.id})" title="More details">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <button class="nl-copy-btn" onclick="copyNewsletterLink(${e.id})">Copy link</button>
+        <a class="nl-dl-btn" href="${esc(e.photo_url || fallback)}" target="_blank" rel="noopener">Download expert picture</a>
+      </div>
     </div>
-    <button class="nl-copy-btn" onclick="copyNewsletterLink(${e.id})">Copy link</button>
+    <div class="nl-sg-detail">${expertDetailHtml(e)}</div>
   </div>`;
+}
+
+function toggleSgDetail(expertId) {
+  const card = document.getElementById('nl-sg-card-' + expertId);
+  if (card) card.classList.toggle('expanded');
 }
 
 function renderSuggestions(data) {

@@ -174,6 +174,13 @@ Return ONLY valid JSON, no other text:
     id: e.id, name: e.name, position: e.position, company: e.company,
     photo_url: e.photo_url, booking_url: e.booking_url,
     headline: (e.headlines || {}).en || e.bio || '',
+    // Full detail fields so the dashboard's suggestion rows can show the same
+    // expandable bio panel as the browse list (see expertDetailHtml).
+    bio: e.bio || '',
+    description_long: e.description_long || '',
+    highlights: e.highlights || [],
+    services: e.services || [],
+    notable_categories: e.notable_categories || [],
     location_country: e.location_country,
     languages: e.languages || [],
     price_from: e.price_from, price_currency: e.price_currency,
