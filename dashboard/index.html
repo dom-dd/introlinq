@@ -755,6 +755,17 @@ tr:last-child td{border-bottom:none}
       <!-- TEXT WIDGET -->
       <div class="wtab-panel" id="wtab-text">
         <div class="widget-status-line" id="wstatus-text"></div>
+        <!-- Install code -->
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Install code</div>
+            <div class="section-sub">Paste once, just before &lt;/body&gt; - the same snippet works on any site</div>
+          </div>
+          <div class="setup-embed" style="padding:1.5rem">
+            <div class="setup-embed-code" id="embed-code-text"></div>
+            <button class="setup-copy-btn" onclick="copyEmbedCode('embed-code-text')">Copy code</button>
+          </div>
+        </div>
         <!-- Settings -->
         <div class="section">
           <div class="section-header">
@@ -853,6 +864,17 @@ tr:last-child td{border-bottom:none}
       <!-- EXPERT CAROUSEL -->
       <div class="wtab-panel" id="wtab-carousel">
         <div class="widget-status-line" id="wstatus-carousel"></div>
+        <!-- Install code -->
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Install code</div>
+            <div class="section-sub">Paste once, just before &lt;/body&gt; - the same snippet works on any site</div>
+          </div>
+          <div class="setup-embed" style="padding:1.5rem">
+            <div class="setup-embed-code" id="embed-code-carousel"></div>
+            <button class="setup-copy-btn" onclick="copyEmbedCode('embed-code-carousel')">Copy code</button>
+          </div>
+        </div>
         <!-- Settings -->
         <div class="section">
           <div class="section-header">
@@ -888,6 +910,17 @@ tr:last-child td{border-bottom:none}
       <!-- EXPERTBOARD -->
       <div class="wtab-panel" id="wtab-board">
         <div class="widget-status-line" id="wstatus-board"></div>
+        <!-- Install code -->
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Install code</div>
+            <div class="section-sub">Paste once, just before &lt;/body&gt; - the same snippet works on any site</div>
+          </div>
+          <div class="setup-embed" style="padding:1.5rem">
+            <div class="setup-embed-code" id="embed-code-board"></div>
+            <button class="setup-copy-btn" onclick="copyEmbedCode('embed-code-board')">Copy code</button>
+          </div>
+        </div>
         <!-- Settings -->
         <div class="section">
           <div class="section-header">
@@ -1652,6 +1685,7 @@ function widgetState(pub, d, id) {
 function renderWidgetHome() {
   const d = window._cd; if (!d) return;
   const pub = d.publisher;
+  renderEmbedSnippets();
   const embedOK = platformIsEmbedCapable(pub);
   const order = embedOK ? ['text', 'carousel', 'board', 'manual'] : ['manual'];
   const states = {};
@@ -1723,6 +1757,25 @@ function setWidgetStatusLine(id, s, d) {
     el.innerHTML = `<span class="wnav-dot pending"></span> Set up, but we haven't seen it load yet. `
       + `<button class="wstatus-link" onclick="startAddWidget('${id}')">Open the walkthrough &amp; test</button>`;
   }
+}
+
+// The install snippet is identical for every site the publisher owns, so we
+// surface it on each script-widget panel too (not just the Get started
+// walkthrough) - handy if they lost it or want to add the widget elsewhere.
+function renderEmbedSnippets() {
+  const files = { text: 'widget.js', carousel: 'carousel.js', board: 'expertboard.js' };
+  Object.keys(files).forEach(id => {
+    const el = document.getElementById('embed-code-' + id);
+    if (el) el.textContent = `<script src="https://www.introlinq.com/${files[id]}" data-publisher="${PUB}"><\/script>`;
+  });
+}
+
+function copyEmbedCode(elId) {
+  const el = document.getElementById(elId);
+  const code = el && el.textContent.trim();
+  if (!code) return;
+  navigator.clipboard.writeText(code);
+  toast('Embed code copied!');
 }
 
 function setWidgetTabNudge(needsSetup) {
