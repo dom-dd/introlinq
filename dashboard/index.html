@@ -3402,6 +3402,7 @@ function openWidgetExample(platformId, widgetId, ev) {
   document.getElementById('widget-example-modal-body').innerHTML = `
     <p style="font-size:0.85rem;color:var(--ink-soft);margin-bottom:1rem">${esc(w.desc)}</p>
     <div class="widget-example-demo" style="${demoHeight}"><div id="widget-example-live" style="padding:1.25rem"></div></div>
+    ${widgetId === 'text' ? `<div style="font-size:0.75rem;color:var(--ink-muted);text-align:center;margin:0.5rem 0 0.25rem">The card opens on its own in a moment - hover or tap the highlighted phrase to reopen it.</div>` : ''}
     <div class="widget-example-points-label">What you can customize</div>
     <ul class="widget-example-points">${info.points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>
   `;
@@ -3426,6 +3427,12 @@ function closeWidgetExampleModal() {
   document.getElementById('widget-example-modal').classList.remove('open');
   const live = document.getElementById('widget-example-live');
   if (live) live.innerHTML = '';
+  // widget.js appends its card and discovery-cue nodes to document.body,
+  // not inside the demo container - emptying the container above detaches
+  // the highlight (which stops the cue's IntersectionObserver) but leaves
+  // these two behind, visible on the dashboard until the next open. Clear
+  // them explicitly.
+  document.querySelectorAll('#il-pop, #il-cue').forEach((n) => n.remove());
   // Every widget file's IIFE guards against double-init via a window-level
   // flag (see the "Guards against the widget tag being pasted twice"
   // comment in widget.js) - resetting it here is what lets closing and
@@ -3465,9 +3472,35 @@ function injectLiveTextWidgetDemo() {
         reason: 'Founded and sold an online payments business, then built the world’s largest fintech cluster at Level39 - he knows exactly what investors look for.',
       }],
     }],
-    config: { color: '#e6a820', accent: '#e6a820', size: 'medium', highlightStyle: 'fill', discoveryCue: false },
+    // discoveryCue on so the expert's photo animates over the phrase without
+    // the viewer having to guess it's interactive.
+    config: { color: '#e6a820', accent: '#e6a820', size: 'medium', highlightStyle: 'fill', discoveryCue: true },
   };
   injectLiveWidgetScript('widget.js');
+
+  // The real widget only reveals its card on hover (desktop), and treats a
+  // click as "take me there" - it navigates to the booking page. Neither is
+  // what a read-only "see it in action" demo wants. So once the widget has
+  // injected its highlight (.il-hl), fire a synthetic mouseenter to pop the
+  // card open on its own, and intercept real clicks on the highlight to
+  // just re-open the card instead of leaving the dashboard for open-intro.
+  let _tries = 0;
+  const revealDemoCard = () => {
+    const hl = container.querySelector('.il-hl');
+    if (!hl) { if (++_tries < 40) setTimeout(revealDemoCard, 150); return; }
+    hl.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+    if (!container._ilDemoClickWired) {
+      container._ilDemoClickWired = true;
+      container.addEventListener('click', (ev) => {
+        const t = ev.target.closest && ev.target.closest('.il-hl');
+        if (!t) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        t.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      }, true);
+    }
+  };
+  setTimeout(revealDemoCard, 300);
 }
 </script>
 
