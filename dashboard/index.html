@@ -1307,12 +1307,16 @@ async function loadDashboard() {
   // at all, drop the publisher straight onto it with the add flow open.
   _onboardingPub = d.publisher.slug;
   _onboardingPlatformDetected = !!d.publisher.platform_detected;
-  const startedList = Array.isArray(d.publisher.started_widgets) ? d.publisher.started_widgets : [];
   const anyLive = !!d.publisher.first_widget_fire_at || (Array.isArray(d.modes) && d.modes.some(m => ['carousel', 'board', 'manual'].includes(m)));
   const manualOnly = !!(d.activation_v2 && d.manual_only);
-  renderWidgetHome();
-  setWidgetTabNudge(!(startedList.length || anyLive || manualOnly));
-  if (!startedList.length && !anyLive && !manualOnly) {
+  // renderWidgetHome returns false when it fell through to the empty state
+  // (nothing started, nothing live, no pending-by-platform inference) - that
+  // and only that drops the publisher straight into the add flow.
+  const hasSurfaces = renderWidgetHome();
+  // Red nudge on the tab until something is actually confirmed live (a
+  // pending-only card still counts as "needs your attention").
+  setWidgetTabNudge(!(anyLive || manualOnly));
+  if (!hasSurfaces && !manualOnly) {
     switchTab('widget', document.getElementById('widget-tab-btn'));
     startAddWidget();
   }
@@ -1646,6 +1650,16 @@ function renderWidgetHome() {
   const order = embedOK ? ['text', 'carousel', 'board', 'manual'] : ['manual'];
   const states = {};
   order.forEach(id => { states[id] = widgetState(pub, d, id); });
+  // Migration safety net: an existing publisher who installed through the
+  // old flow has no started_widgets entry and, on a quiet day, no ping yet
+  // either - without this they'd see "No widgets yet" despite doing the
+  // work. If a supported platform is confidently known and nothing else is
+  // showing, surface the text widget as Pending (the old red "Get started"
+  // tab was nagging exactly this population).
+  if (embedOK && !order.some(id => states[id].shown) && pub.platform
+      && ONBOARDING_PLATFORMS[pub.platform] && isConfidentPlatform(pub)) {
+    states.text = { started: true, live: false, shown: true };
+  }
   const shown = order.filter(id => states[id].shown);
 
   // Sub-nav: one button per shown surface + an Add button.
@@ -1673,6 +1687,7 @@ function renderWidgetHome() {
       if (_nlExperts === null) loadNewsletterExperts();
     }
   }
+  return shown.length > 0;
 }
 
 function setWidgetStatusLine(id, s, d) {
