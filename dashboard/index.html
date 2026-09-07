@@ -1693,7 +1693,8 @@ function pickManualChannel(ch) {
   if (pn) {
     const plat = ch === 'medium' ? 'Medium' : ch === 'substack' ? 'Substack' : null;
     pn.style.display = plat ? 'block' : 'none';
-    if (plat) pn.textContent = `We've noted you're on ${plat} - you'll be first to hear if native widget support lands.`;
+    if (plat) pn.innerHTML = `We've noted you're on ${plat} - you'll be first to hear if native widget support lands. `
+      + `<button class="wstatus-link" onclick="changePlatform()">Not on ${plat}? Change platform</button>`;
   }
   const rb = document.getElementById('manual-remove-btn');
   if (rb) rb.textContent = 'Remove ' + ((WIDGET_META[ch] || {}).label || 'this tab');
@@ -1873,9 +1874,9 @@ function startAddWidget(targetWidget) {
     const pub = window._cd && window._cd.publisher;
     if (pub && isConfidentPlatform(pub) && ONBOARDING_PLATFORMS[pub.platform]) {
       renderOnboardingSteps(pub.platform, 0, targetWidget);
-    } else if (pub && isConfidentPlatform(pub) && ONBOARDING_UNSUPPORTED[pub.platform]) {
-      goToManualTool(pub.platform === 'substack' ? 'substack' : 'medium');
     } else {
+      // Unknown, or a Medium/Substack we should let them correct - ask which
+      // platform, pre-selecting the current guess.
       _pendingTargetWidget = targetWidget;
       _suggestedPlatform = (pub && (ONBOARDING_PLATFORMS[pub.platform] || ONBOARDING_UNSUPPORTED[pub.platform])) ? pub.platform : null;
       renderOnboardingPicker();
@@ -3151,18 +3152,32 @@ function renderInstallChannelPicker() {
 function selectInstallChannel(id) {
   if (id === 'newsletter' || id === 'social') { goToManualTool(id); return; }
   if (id === 'manual') { goToManualTool('website'); return; }
-  // Website widget: skip the platform step when we already know it. On a
-  // known Medium/Substack, go straight to that manual tab (no interstitial -
-  // the "why" lives on the tab), otherwise ask which platform.
+  // "A widget on my site": if we already know a supported platform, jump
+  // straight to its widget picker. If we think they're on Medium/Substack,
+  // clicking this means either they want to correct that or they're unsure -
+  // so show the platform picker (current guess pre-selected), not a bounce
+  // back to the manual tab.
   const pub = window._cd && window._cd.publisher;
   if (pub && isConfidentPlatform(pub) && ONBOARDING_PLATFORMS[pub.platform]) {
     renderOnboardingWidgetPicker(pub.platform);
-  } else if (pub && isConfidentPlatform(pub) && ONBOARDING_UNSUPPORTED[pub.platform]) {
-    goToManualTool(pub.platform === 'substack' ? 'substack' : 'medium');
   } else {
     _suggestedPlatform = (pub && (ONBOARDING_PLATFORMS[pub.platform] || ONBOARDING_UNSUPPORTED[pub.platform])) ? pub.platform : null;
     renderOnboardingPicker();
   }
+}
+
+// Re-open the platform picker so a publisher who was mis-tagged as
+// Medium/Substack (or picked it by mistake) can switch. Reached from the
+// "Change platform" link on those manual tabs.
+function changePlatform() {
+  // The link lives on a manual tab inside the Widgets tab, so we're already
+  // on #tab-widget - just swap the home view for the flow.
+  document.getElementById('widget-home').hidden = true;
+  document.getElementById('widget-flow').hidden = false;
+  const pub = window._cd && window._cd.publisher;
+  _pendingTargetWidget = null;
+  _suggestedPlatform = (pub && pub.platform && (ONBOARDING_PLATFORMS[pub.platform] || ONBOARDING_UNSUPPORTED[pub.platform])) ? pub.platform : null;
+  renderOnboardingPicker();
 }
 
 // Entry point for the Widgets tab's "Install this widget" button (added
