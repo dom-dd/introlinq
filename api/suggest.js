@@ -35,8 +35,12 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   const sql = neon(process.env.DATABASE_URL);
-  const { pub, text } = req.body || {};
+  const { pub, text, channel } = req.body || {};
   if (!pub || typeof text !== 'string') return res.status(400).json({ error: 'pub and text required' });
+  // Which manual-links tab the search was run from (newsletter / social /
+  // website / medium / substack). Logged for usage signal - the article
+  // text itself is never stored.
+  const searchChannel = ['newsletter', 'social', 'website', 'medium', 'substack'].includes(channel) ? channel : null;
 
   const article = text.trim().slice(0, MAX_TEXT);
   if (article.length < 200) return res.status(400).json({ error: 'Paste a bit more text - at least a paragraph or two.' });
@@ -58,6 +62,12 @@ export default async function handler(req, res) {
     input_tokens INT, output_tokens INT, cache_creation_input_tokens INT,
     cache_read_input_tokens INT, cost_usd NUMERIC, created_at TIMESTAMPTZ DEFAULT NOW()
   )`.catch(() => {});
+  // Lightweight search record for the suggest tool: which channel it was run
+  // from, how long the pasted text was, and which experts came back. The
+  // text itself is never stored (see the panel's "not stored" promise).
+  await sql`ALTER TABLE ai_call_logs ADD COLUMN IF NOT EXISTS channel TEXT`.catch(() => {});
+  await sql`ALTER TABLE ai_call_logs ADD COLUMN IF NOT EXISTS text_chars INT`.catch(() => {});
+  await sql`ALTER TABLE ai_call_logs ADD COLUMN IF NOT EXISTS expert_ids INT[]`.catch(() => {});
   const [{ n }] = await sql`
     SELECT COUNT(*)::int AS n FROM ai_call_logs
     WHERE publisher = ${pub} AND call_type = 'suggest' AND created_at > NOW() - INTERVAL '24 hours'
@@ -155,9 +165,12 @@ Return ONLY valid JSON, no other text:
   }
 
   // Log the call (fire-and-forget-ish; cost left null - not computed here).
+  // expertIds is filled once the model's picks are parsed below; the pasted
+  // text is never stored, only its length.
   const u = data.usage || {};
-  sql`INSERT INTO ai_call_logs (publisher, page_url, call_type, input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens, cost_usd)
-      VALUES (${pub}, NULL, 'suggest', ${u.input_tokens || null}, ${u.output_tokens || null}, ${u.cache_creation_input_tokens || null}, ${u.cache_read_input_tokens || null}, NULL)`.catch(() => {});
+  const logCall = (expertIds) =>
+    sql`INSERT INTO ai_call_logs (publisher, page_url, call_type, input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens, cost_usd, channel, text_chars, expert_ids)
+        VALUES (${pub}, NULL, 'suggest', ${u.input_tokens || null}, ${u.output_tokens || null}, ${u.cache_creation_input_tokens || null}, ${u.cache_read_input_tokens || null}, NULL, ${searchChannel}, ${article.length}, ${expertIds && expertIds.length ? expertIds : null})`.catch(() => {});
 
   let parsed;
   try {
@@ -166,6 +179,7 @@ Return ONLY valid JSON, no other text:
     parsed = JSON.parse(jsonStr);
   } catch (e) {
     console.error('suggest: JSON parse failed');
+    logCall([]);
     return res.status(502).json({ error: 'Could not read the suggestions - try again.' });
   }
 
@@ -201,6 +215,13 @@ Return ONLY valid JSON, no other text:
 
   const overall = (Array.isArray(parsed.overall_expert_ids) ? parsed.overall_expert_ids : [])
     .map(id => slim(byId.get(Number(id)))).filter(Boolean).slice(0, 4);
+
+  // Unique experts the model surfaced this run (placements + overall).
+  const suggestedIds = [...new Set([
+    ...placements.flatMap(p => p.experts.map(e => e.id)),
+    ...overall.map(e => e.id),
+  ])];
+  logCall(suggestedIds);
 
   return res.status(200).json({ placements, overall });
 }
