@@ -692,7 +692,10 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-    const { match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, no_match_fallback_enabled, no_match_text_color, enabled_partners, payment_email, active, carousel_title, board_text_color, name, contact_first_name, contact_last_name, domain, platform } = req.body;
+    const { match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, no_match_fallback_enabled, no_match_text_color, enabled_partners, payment_email, payment_method, active, carousel_title, board_text_color, name, contact_first_name, contact_last_name, domain, platform } = req.body;
+    // Which rail the publisher chose for payouts - only these two are offered
+    // in the dashboard, so anything else is treated as "not set".
+    const payoutMethod = (payment_method === 'wise' || payment_method === 'paypal') ? payment_method : null;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS platform TEXT`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS platform_detected BOOLEAN NOT NULL DEFAULT false`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS carousel_title TEXT`.catch(() => {});
@@ -719,6 +722,7 @@ export default async function handler(req, res) {
     // choice (read fresh per request, same as highlight_style) - the multi-
     // variant handler in match.js just omits randomExperts when this is off.
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS no_match_fallback_enabled BOOLEAN NOT NULL DEFAULT false`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS payment_method TEXT`.catch(() => {});
     const [updated] = await sql`
       UPDATE publishers SET
         match_power = COALESCE(${match_power ?? null}, match_power),
@@ -732,6 +736,7 @@ export default async function handler(req, res) {
         no_match_text_color = COALESCE(${no_match_text_color ?? null}, no_match_text_color),
         enabled_partners = COALESCE(${enabled_partners ? sql.array(enabled_partners) : null}, enabled_partners),
         payment_email = COALESCE(${payment_email ?? null}, payment_email),
+        payment_method = COALESCE(${payoutMethod}, payment_method),
         active = COALESCE(${active ?? null}, active),
         carousel_title = COALESCE(${carousel_title ?? null}, carousel_title),
         board_text_color = COALESCE(${board_text_color ?? null}, board_text_color),
@@ -746,7 +751,7 @@ export default async function handler(req, res) {
         -- "confirmed by the publisher," clearing any earlier detected guess.
         platform_detected = CASE WHEN ${platform ?? null}::text IS NOT NULL THEN false ELSE platform_detected END
       WHERE slug = ${pub} AND active = true
-      RETURNING match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, no_match_fallback_enabled, no_match_text_color, enabled_partners, payment_email, active, carousel_title, board_text_color, name, contact_first_name, contact_last_name, domain, platform, platform_detected
+      RETURNING match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, no_match_fallback_enabled, no_match_text_color, enabled_partners, payment_email, payment_method, active, carousel_title, board_text_color, name, contact_first_name, contact_last_name, domain, platform, platform_detected
     `;
     // Clear match cache if matching settings changed so new settings take effect immediately.
     // highlight_style is deliberately excluded - it's a pure rendering choice
@@ -858,6 +863,7 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS enabled_partners TEXT[] DEFAULT ARRAY['openintro']`;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS revenue_share DECIMAL DEFAULT 0.70`;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS payment_email TEXT`;
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS payment_method TEXT`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS carousel_title TEXT`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS board_text_color TEXT`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS highlight_style TEXT DEFAULT 'fill'`.catch(() => {});
@@ -907,7 +913,7 @@ export default async function handler(req, res) {
              COALESCE(no_match_fallback_enabled, false) AS no_match_fallback_enabled,
              COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners,
              COALESCE(revenue_share, 0.70) AS revenue_share,
-             payment_email, carousel_title, board_text_color, no_match_text_color, first_widget_fire_at, last_widget_fire_at, activated_at, last_activity_at, last_script_activity_at, platform, platform_detected,
+             payment_email, payment_method, carousel_title, board_text_color, no_match_text_color, first_widget_fire_at, last_widget_fire_at, activated_at, last_activity_at, last_script_activity_at, platform, platform_detected,
              COALESCE(started_widgets, '{}') AS started_widgets,
              COALESCE(removed_widgets, '{}'::jsonb) AS removed_widgets,
              manual_link_copied_at, manual_placed_at,

@@ -1320,13 +1320,13 @@ export default async function handler(req, res) {
       // payment_email surfaced here too so admin can see at a glance who
       // can't be paid yet because they never set one.
       const pendingPayouts = await sql`
-        SELECT b.publisher, p.name AS publisher_name, p.payment_email,
+        SELECT b.publisher, p.name AS publisher_name, p.payment_email, p.payment_method,
                b.booking_currency AS currency,
                COALESCE(SUM(b.publisher_payout),0)::float AS pending
         FROM bookings b
         LEFT JOIN publishers p ON p.slug = b.publisher
         WHERE b.paid_at IS NULL AND b.publisher_payout IS NOT NULL
-        GROUP BY b.publisher, p.name, p.payment_email, b.booking_currency
+        GROUP BY b.publisher, p.name, p.payment_email, p.payment_method, b.booking_currency
         HAVING COALESCE(SUM(b.publisher_payout),0) > 0
         ORDER BY pending DESC
       `.catch(() => []);

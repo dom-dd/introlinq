@@ -2728,7 +2728,7 @@ function renderPendingPayouts(rows) {
     const noEmail = !r.payment_email;
     return `<tr>
       <td><div style="font-weight:500">${esc(r.publisher_name || r.publisher)}</div><div style="font-size:0.72rem;color:var(--ink-muted)">${esc(r.publisher)}</div></td>
-      <td style="font-size:0.8rem">${noEmail ? '<span style="color:#dc2626">No payment email</span>' : esc(r.payment_email)}</td>
+      <td style="font-size:0.8rem">${noEmail ? '<span style="color:#dc2626">No payment email</span>' : esc(r.payment_email) + (r.payment_method ? ` <span style="color:var(--ink-muted)">(${esc(r.payment_method === 'wise' ? 'Wise' : 'PayPal')})</span>` : '')}</td>
       <td style="color:var(--sage);font-weight:600">${amount}</td>
       <td style="white-space:nowrap;text-align:right">
         <button class="btn btn-ghost btn-sm" onclick="markPaid('${esc(r.publisher)}','${esc(r.currency)}','${amount}')" style="margin-right:0.4rem">Mark as paid</button>
