@@ -186,7 +186,7 @@ const hi = (name) => `<p style="margin:0 0 16px;font-size:15px;font-weight:600;c
 const p = (t) => `<p style="margin:0 0 16px;font-size:14.5px;line-height:1.65;color:#585868">${t}</p>`;
 
 // Earnings callout - the "why bother" line, as a soft green panel.
-const earn = (pct) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 22px"><tr><td style="background:#f2f8f4;border:1px solid #d6e9df;border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.6;color:#2f6b52"><strong style="color:#22503d">You keep ${pct}% of every booking</strong> a reader makes &mdash; IntroLinq finds the right expert for each article, you collect the commission, and there's nothing to maintain after setup.</td></tr></table>`;
+const earn = (pct) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 22px"><tr><td style="background:#f2f8f4;border:1px solid #d6e9df;border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.6;color:#2f6b52"><strong style="color:#22503d">You keep ${pct}% of every booking</strong> a reader makes - IntroLinq finds the right expert for each article, you collect the commission, and there's nothing to maintain after setup.</td></tr></table>`;
 
 // Product screenshot. Wrapped so it still reads fine if images are blocked.
 const shot = (file, alt) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:2px 0 24px"><tr><td style="border:1px solid #e6e1d7;border-radius:10px;overflow:hidden;background:#faf8f4"><img src="https://www.introlinq.com/product/screens/${file}" alt="${alt}" width="450" style="display:block;width:100%;max-width:450px;height:auto;border:0"></td></tr></table>`;
@@ -234,9 +234,9 @@ export function buildReminderEmail(stageN, segment, ctx) {
       subject: `Last check-in from us`,
       html: shell(
         hi(firstName) +
-        p(`This is the last automated reminder you'll get &mdash; didn't want to keep nudging if now isn't the right time.`) +
+        p(`This is the last automated reminder you'll get - didn't want to keep nudging if now isn't the right time.`) +
         p(`Your account and dashboard aren't going anywhere, and the ${commissionPct}% commission rate is there whenever you're ready.`) +
-        p(`If you'd like a hand getting set up, just reply &mdash; a real person (me) will help.`) +
+        p(`If you'd like a hand getting set up, just reply - a real person (me) will help.`) +
         cta('Go to my dashboard →')
       ),
     };
@@ -249,7 +249,7 @@ export function buildReminderEmail(stageN, segment, ctx) {
       subject: `Did your IntroLinq links go out?`,
       html: shell(
         hi(firstName) +
-        p(`You copied a tracked link${copiedOn ? ` on ${copiedOn}` : ''} &mdash; nice. Once one is live in a post and a reader clicks it, it shows up on your dashboard and these reminders stop on their own.`) +
+        p(`You copied a tracked link${copiedOn ? ` on ${copiedOn}` : ''} - nice. Once one is live in a post and a reader clicks it, it shows up on your dashboard and these reminders stop on their own.`) +
         p(`If your links are already placed, mark that in the dashboard and we'll go quiet now. If something's in the way, just reply.`) +
         cta('Open my dashboard →')
       ),
@@ -263,7 +263,7 @@ export function buildReminderEmail(stageN, segment, ctx) {
         subject: `Start earning on ${platName} with IntroLinq`,
         html: shell(
           hi(firstName) +
-          p(`${platName} can't run our widget &mdash; but tracked expert links do the same job, and they're just as trackable.`) +
+          p(`${platName} can't run our widget - but tracked expert links do the same job, and they're just as trackable.`) +
           earn(commissionPct) +
           p(`In your dashboard there's a <strong>${platName} links</strong> tab: paste a post, get matching experts, copy the link, drop it in. Nothing to install.`) +
           cta(`Open my ${platName} links →`)
@@ -275,7 +275,7 @@ export function buildReminderEmail(stageN, segment, ctx) {
         subject: `Want me to set up your first ${platName} links?`,
         html: shell(
           hi(firstName) +
-          p(`Happy to do the first few for you &mdash; reply with a link to a recent ${platName} post and I'll send back the tracked links to paste in.`) +
+          p(`Happy to do the first few for you - reply with a link to a recent ${platName} post and I'll send back the tracked links to paste in.`) +
           p(`After that it's about a 30-second job per post, straight from your dashboard.`) +
           cta('Open my dashboard →')
         ),
@@ -285,7 +285,7 @@ export function buildReminderEmail(stageN, segment, ctx) {
       subject: `Your ${platName} posts could be earning`,
       html: shell(
         hi(firstName) +
-        p(`Every ${platName} post you've published already has readers who'd book an expert &mdash; right now none of that is earning you anything.`) +
+        p(`Every ${platName} post you've published already has readers who'd book an expert - right now none of that is earning you anything.`) +
         earn(commissionPct) +
         p(`Adding a tracked link takes seconds and it's free.`) +
         cta(`Open my ${platName} links →`)
@@ -298,7 +298,7 @@ export function buildReminderEmail(stageN, segment, ctx) {
     const what = STARTED_LABELS[startedId] || 'your setup';
     const isScript = SCRIPT_STARTED.has(startedId);
     const finishBlock = isScript ? installBlock(platform, slug)
-      : p(`The tab's ready in your dashboard &mdash; paste a post or browse the roster, then copy a tracked link into your content.`);
+      : p(`The tab's ready in your dashboard - paste a post or browse the roster, then copy a tracked link into your content.`);
     if (stageN === 1) {
       return {
         subject: `You're one step from earning on ${siteName}`,
@@ -318,7 +318,7 @@ export function buildReminderEmail(stageN, segment, ctx) {
         html: shell(
           hi(firstName) +
           p(`Still meaning to finish ${what}? Totally normal for it to slip.`) +
-          p(`Reply to this email and I'll walk you through the last step &mdash; or just do it for you.`) +
+          p(`Reply to this email and I'll walk you through the last step - or just do it for you.`) +
           cta('Go to my dashboard →')
         ),
       };
@@ -339,10 +339,10 @@ export function buildReminderEmail(stageN, segment, ctx) {
   if (segment === 'ready') {
     if (stageN === 1) {
       return {
-        subject: `Start earning on ${siteName} &mdash; about 2 minutes on ${platName}`,
+        subject: `Start earning on ${siteName} - about 2 minutes on ${platName}`,
         html: shell(
           hi(firstName) +
-          p(`Just making sure setup didn't get buried. Here's what your readers see &mdash; a relevant expert, right where the article calls for one:`) +
+          p(`Just making sure setup didn't get buried. Here's what your readers see - a relevant expert, right where the article calls for one:`) +
           shotFor(null) +
           earn(commissionPct) +
           installBlock(platform, slug) +
@@ -355,7 +355,7 @@ export function buildReminderEmail(stageN, segment, ctx) {
         subject: `Need a hand installing IntroLinq?`,
         html: shell(
           hi(firstName) +
-          p(`You don't need a developer for this${platform === 'wordpress' ? ' &mdash; the plugin does it all' : " &mdash; it's a single script tag"}.`) +
+          p(`You don't need a developer for this${platform === 'wordpress' ? ' - the plugin does it all' : " - it's a single script tag"}.`) +
           installBlock(platform, slug) +
           p(`If something specific is blocking you, just reply and I'll help directly.`) +
           cta('Go to my dashboard →')
@@ -366,7 +366,7 @@ export function buildReminderEmail(stageN, segment, ctx) {
       subject: `You're minutes away from your first booking`,
       html: shell(
         hi(firstName) +
-        p(`Every article on ${siteName} already has readers who could use expert help &mdash; right now none of them are earning you anything. Once it's live, matching happens automatically.`) +
+        p(`Every article on ${siteName} already has readers who could use expert help - right now none of them are earning you anything. Once it's live, matching happens automatically.`) +
         shotFor(null) +
         earn(commissionPct) +
         installBlock(platform, slug) +
@@ -384,7 +384,7 @@ export function buildReminderEmail(stageN, segment, ctx) {
         p(`You haven't set up IntroLinq on ${siteName} yet. Here's what it looks like for your readers:`) +
         shot('carousel.jpg', 'The IntroLinq expert carousel on a publisher site') +
         earn(commissionPct) +
-        p(`There's more than one way in &mdash; a widget that runs on every article automatically, a carousel or expert board you place once, or just tracked links for a newsletter or socials. Most people are done in a couple of minutes.`) +
+        p(`There's more than one way in - a widget that runs on every article automatically, a carousel or expert board you place once, or just tracked links for a newsletter or socials. Most people are done in a couple of minutes.`) +
         cta('Pick a setup →')
       ),
     };
@@ -394,20 +394,20 @@ export function buildReminderEmail(stageN, segment, ctx) {
       subject: `Need a hand setting up IntroLinq?`,
       html: shell(
         hi(firstName) +
-        p(`A lot of people mean to do this and then it slips &mdash; totally normal.`) +
+        p(`A lot of people mean to do this and then it slips - totally normal.`) +
         p(`If you're not sure which option fits ${siteName}, reply to this email and I'll tell you exactly what to do, or set it up for you.`) +
         cta('Go to my dashboard →')
       ),
     };
   }
   return {
-    subject: `Every article on ${siteName} could be earning &mdash; none are yet`,
+    subject: `Every article on ${siteName} could be earning - none are yet`,
     html: shell(
       hi(firstName) +
       p(`Once IntroLinq is live it matches the right expert to the right article automatically.`) +
       shot('carousel.jpg', 'The IntroLinq expert carousel on a publisher site') +
       earn(commissionPct) +
-      p(`Setup is still free and still quick &mdash; a widget, a visual block, or tracked links, whichever suits you.`) +
+      p(`Setup is still free and still quick - a widget, a visual block, or tracked links, whichever suits you.`) +
       cta('Go to my dashboard →')
     ),
   };

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>How IntroLinq Works | IntroLinq</title>
-<meta name="description" content="IntroLinq adds a vetted expert to your content and pays you 50% of every booking. See the four formats - the in-article widget, the Expert Carousel, the Expert Board, and manual links - and how each one looks and works.">
+<meta name="description" content="IntroLinq adds a vetted expert to your content and pays you 50% of every booking. See the four formats - the in-article widget, the Expert Carousel, the Expert Board, and manual links - running with real experts.">
 <link rel="canonical" href="https://www.introlinq.com/product">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta property="og:title" content="How IntroLinq Works | IntroLinq">
@@ -56,13 +56,21 @@
   --border:rgba(26,26,46,0.10);--border-soft:rgba(26,26,46,0.06);
   --radius:12px;--radius-sm:8px;
 }
-body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;line-height:1.6}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;line-height:1.6;position:relative}
+/* Soft brand gradient wash (placeholder - to be matched to the reference screenshot) */
+body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(70% 55% at 12% -5%, rgba(61,122,95,0.13), transparent 60%),
+    radial-gradient(55% 45% at 100% 15%, rgba(230,168,32,0.12), transparent 55%),
+    radial-gradient(45% 40% at 85% 100%, rgba(61,122,95,0.08), transparent 60%),
+    var(--cream);
+}
 a{color:inherit}
 
-nav{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 2rem;border-bottom:1px solid var(--border);background:var(--cream);position:sticky;top:0;z-index:100;backdrop-filter:blur(8px)}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 2.5rem;border-bottom:1px solid var(--border);background:rgba(250,248,244,0.8);position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
 .nav-logo{font-family:'DM Serif Display',serif;font-size:1.375rem;color:var(--ink);text-decoration:none}
 .nav-logo span{color:var(--sage)}
-.nav-right{display:flex;align-items:center;gap:1.25rem}
+.nav-right{display:flex;align-items:center;gap:1.5rem}
 .nav-login{font-size:0.875rem;font-weight:500;color:var(--ink-soft);text-decoration:none}
 .nav-cta{background:var(--ink);color:var(--white);border:none;padding:0.625rem 1.25rem;border-radius:100px;font-size:0.875rem;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity 0.15s;text-decoration:none;display:inline-block}
 .nav-cta:hover{opacity:0.85}
@@ -70,106 +78,97 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .nav-drop-btn{display:inline-flex;align-items:center;gap:0.375rem;background:none;border:none;font-family:'Inter',sans-serif;font-size:0.875rem;font-weight:500;color:var(--ink-soft);cursor:pointer;padding:0.25rem 0}
 .nav-drop-btn svg{transition:transform 0.15s}
 .nav-drop:hover .nav-drop-btn svg,.nav-drop:focus-within .nav-drop-btn svg,.nav-drop-btn[aria-expanded="true"] svg{transform:rotate(180deg)}
-.nav-drop-menu{position:absolute;top:calc(100% + 0.75rem);right:0;min-width:296px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 16px 44px rgba(26,26,46,0.14);padding:0.5rem;opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity 0.16s,transform 0.16s,visibility 0.16s;z-index:200}
+.nav-drop-menu{position:absolute;top:calc(100% + 0.75rem);right:0;min-width:300px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 16px 44px rgba(26,26,46,0.14);padding:0.5rem;opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity 0.16s,transform 0.16s,visibility 0.16s;z-index:200}
 .nav-drop:hover .nav-drop-menu,.nav-drop:focus-within .nav-drop-menu,.nav-drop-menu.open{opacity:1;visibility:visible;transform:translateY(0)}
 .nav-drop-menu a{display:block;padding:0.625rem 0.75rem;border-radius:var(--radius-sm);text-decoration:none}
 .nav-drop-menu a:hover{background:var(--sage-light)}
 .nav-drop-menu a b{display:block;font-size:0.875rem;font-weight:600;color:var(--ink)}
 .nav-drop-menu a span{display:block;font-size:0.75rem;color:var(--ink-muted);margin-top:0.125rem}
 
-.page-wrap{max-width:840px;margin:0 auto;padding:4rem 2rem 5rem}
-.hero-eyebrow{font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--sage);margin-bottom:0.75rem}
-.hero-title{font-family:'DM Serif Display',serif;font-size:2.75rem;color:var(--ink);line-height:1.12;letter-spacing:-0.03em;margin-bottom:1rem;text-wrap:balance}
-.hero-sub{font-size:1.0625rem;color:var(--ink-soft);line-height:1.7;margin-bottom:2rem;max-width:620px}
-.hero-cta-row{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:3.5rem}
-.btn-primary{background:var(--ink);color:var(--white);border:none;padding:0.875rem 1.75rem;border-radius:100px;font-size:0.9375rem;font-weight:600;text-decoration:none;display:inline-block}
+.wrap{width:75%;max-width:1200px;margin:0 auto;padding:5rem 0 6rem}
+.hero{max-width:760px}
+.hero-eyebrow{font-size:0.75rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:1rem}
+.hero-title{font-family:'DM Serif Display',serif;font-size:3.25rem;color:var(--ink);line-height:1.08;letter-spacing:-0.03em;margin-bottom:1.25rem;text-wrap:balance}
+.hero-sub{font-size:1.1875rem;color:var(--ink-soft);line-height:1.7;margin-bottom:2.25rem}
+.hero-cta-row{display:flex;gap:1.25rem;align-items:center;flex-wrap:wrap}
+.btn-primary{background:var(--ink);color:var(--white);border:none;padding:0.9375rem 1.875rem;border-radius:100px;font-size:0.9375rem;font-weight:600;text-decoration:none;display:inline-block}
 .hero-note{font-size:0.8125rem;color:var(--ink-muted)}
 
-.section{margin-bottom:3.5rem}
-.section-title{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--ink);letter-spacing:-0.02em;margin-bottom:0.5rem;line-height:1.2}
-.section-lead{font-size:1rem;color:var(--ink-soft);line-height:1.7;margin-bottom:1.75rem;max-width:620px}
+.section{margin-top:6rem}
+.section-head{max-width:640px;margin-bottom:2.5rem}
+.section-title{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--ink);letter-spacing:-0.02em;margin-bottom:0.75rem;line-height:1.15;text-wrap:balance}
+.section-lead{font-size:1.0625rem;color:var(--ink-soft);line-height:1.7}
 
 /* Format cards */
-.format-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
-.format-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;display:flex;flex-direction:column;text-decoration:none;transition:border-color 0.15s,transform 0.15s}
-.format-card:hover{border-color:var(--sage);transform:translateY(-2px)}
-.format-mini{height:132px;border-radius:var(--radius-sm);background:var(--cream);border:1px solid var(--border-soft);margin-bottom:1rem;overflow:hidden;position:relative}
-.format-card h3{font-size:1.05rem;color:var(--ink);font-weight:600;margin-bottom:0.25rem}
-.format-card p{font-size:0.875rem;color:var(--ink-soft);line-height:1.6;flex:1}
-.format-card .go{font-size:0.8125rem;font-weight:600;color:var(--sage);margin-top:0.875rem}
+.format-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.75rem}
+.format-card{background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;text-decoration:none;transition:border-color 0.18s,transform 0.18s,box-shadow 0.18s}
+.format-card:hover{border-color:var(--sage-mid);transform:translateY(-3px);box-shadow:0 18px 40px rgba(26,26,46,0.10)}
+.format-thumb{height:190px;background:var(--sage-light);border-bottom:1px solid var(--border-soft);overflow:hidden;display:flex;align-items:flex-start;justify-content:center}
+.format-thumb img{width:100%;height:100%;object-fit:cover;object-position:top center}
+.format-body{padding:1.75rem}
+.format-body h3{font-size:1.15rem;color:var(--ink);font-weight:600;margin-bottom:0.4rem}
+.format-body p{font-size:0.9375rem;color:var(--ink-soft);line-height:1.65}
+.format-body .go{display:inline-block;margin-top:1rem;font-size:0.8125rem;font-weight:600;color:var(--sage)}
 
-/* mini demo: inline widget */
-.mini-inline{padding:0.9rem 1rem;font-size:0.7rem;line-height:1.7;color:var(--ink-soft)}
-.mini-trigger{color:var(--sage);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;position:relative}
-.mini-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--sage);vertical-align:middle;margin-left:2px;animation:pulse 2s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+/* Screenshot frame */
+.shot{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--white);box-shadow:0 20px 50px rgba(26,26,46,0.10)}
+.shot-bar{display:flex;align-items:center;gap:0.45rem;padding:0.8rem 1.1rem;border-bottom:1px solid var(--border-soft);background:#f3f2ee}
+.shot-bar i{width:10px;height:10px;border-radius:50%;background:#d8d6d0}
+.shot-bar span{margin-left:0.6rem;font-size:0.8125rem;color:var(--ink-muted)}
+.shot img{width:100%;display:block}
+.shot-note{font-size:0.8438rem;color:var(--ink-muted);margin-top:0.9rem;text-align:center}
 
-/* mini demo: carousel */
-.mini-carousel{background:var(--ink);height:100%;padding:0.75rem;display:flex;flex-direction:column;justify-content:center;gap:0.4rem}
-.mini-slide{background:var(--white);border-radius:6px;padding:0.6rem}
-.mini-slide .l{height:5px;border-radius:3px;background:#e4e4ee;margin-bottom:4px}
-.mini-slide .l.s{width:55%}
-.mini-slide .chip{display:inline-block;height:9px;width:34px;border-radius:100px;background:var(--gold);margin-top:4px}
-.mini-dots{display:flex;gap:3px;justify-content:center;margin-top:2px}
-.mini-dots i{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.3)}
-.mini-dots i:first-child{background:var(--sage)}
-
-/* mini demo: board */
-.mini-board{padding:0.75rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;align-content:center;height:100%}
-.mini-bcard{background:var(--white);border:1px solid var(--border-soft);border-radius:6px;padding:6px;display:flex;flex-direction:column;gap:3px}
-.mini-bcard i{width:14px;height:14px;border-radius:50%;background:var(--sage-light)}
-.mini-bcard .l{height:4px;border-radius:2px;background:#e4e4ee}
-.mini-bcard .b{height:8px;border-radius:100px;background:var(--gold);margin-top:1px}
-
-/* mini demo: manual links */
-.mini-manual{padding:0.85rem 1rem;display:flex;flex-direction:column;gap:6px;justify-content:center;height:100%}
-.mini-manual .row{display:flex;align-items:center;gap:6px;font-size:0.62rem;color:var(--ink-soft)}
-.mini-manual .box{border:1px dashed var(--border);border-radius:6px;padding:5px 7px;font-size:0.58rem;color:var(--ink-muted);background:var(--white)}
-.mini-manual .link{font-size:0.58rem;color:var(--sage);background:var(--sage-light);border-radius:5px;padding:4px 7px;font-family:ui-monospace,monospace;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-
-/* compare table */
-.compare-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius)}
-.compare-table{width:100%;border-collapse:collapse;font-size:0.8438rem;min-width:560px}
-.compare-table th,.compare-table td{text-align:left;padding:0.8rem 1rem;border-bottom:1px solid var(--border)}
+/* Compare table */
+.compare-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:16px;background:var(--white)}
+.compare-table{width:100%;border-collapse:collapse;font-size:0.9rem;min-width:640px}
+.compare-table th,.compare-table td{text-align:left;padding:1rem 1.25rem;border-bottom:1px solid var(--border)}
 .compare-table thead th{font-weight:600;color:var(--ink);background:var(--sage-light)}
 .compare-table tbody tr:last-child td{border-bottom:none}
 .compare-table td{color:var(--ink-soft)}
-.compare-table td:first-child{color:var(--ink);font-weight:500}
+.compare-table td:first-child{color:var(--ink);font-weight:600}
 
-/* steps */
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
-.step{background:var(--white);border:1px solid var(--border-soft);border-radius:var(--radius);padding:1.5rem}
-.step-num{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--gold);display:block;margin-bottom:0.4rem}
-.step-title{font-weight:600;color:var(--ink);margin-bottom:0.3rem;font-size:0.9375rem}
-.step-sub{font-size:0.875rem;color:var(--ink-soft);line-height:1.65}
+/* Steps */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-bottom:2.5rem}
+.step{background:var(--white);border:1px solid var(--border-soft);border-radius:16px;padding:1.75rem}
+.step-num{font-family:'DM Serif Display',serif;font-size:1.75rem;color:var(--gold);display:block;margin-bottom:0.5rem}
+.step-title{font-weight:600;color:var(--ink);margin-bottom:0.4rem;font-size:1rem}
+.step-sub{font-size:0.9375rem;color:var(--ink-soft);line-height:1.65}
 
-.dark-cta{background:var(--ink);border-radius:20px;padding:2.5rem;text-align:center}
-.dark-cta-title{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--white);letter-spacing:-0.02em;margin-bottom:0.625rem}
-.dark-cta-sub{font-size:0.9375rem;color:rgba(255,255,255,0.6);line-height:1.65;margin-bottom:1.5rem;max-width:440px;margin-inline:auto}
-.btn-gold{background:var(--gold);color:var(--ink);border:none;padding:0.875rem 2rem;border-radius:100px;font-size:0.9375rem;font-weight:600;text-decoration:none;display:inline-block}
-
-.faq-list{border-top:1px solid var(--border)}
-.faq-item{border-bottom:1px solid var(--border)}
-.faq-question{width:100%;text-align:left;background:none;border:none;padding:1.125rem 0;font-size:0.9375rem;font-weight:600;color:var(--ink);cursor:pointer;font-family:'Inter',sans-serif;display:flex;justify-content:space-between;gap:1rem}
-.faq-question::after{content:'+';color:var(--sage);font-size:1.125rem;flex-shrink:0}
+/* FAQ - its own dark band, full bleed */
+.faq-band{background:var(--ink);margin-top:7rem}
+.faq-inner{width:75%;max-width:1200px;margin:0 auto;padding:5rem 0}
+.faq-band .section-title{color:var(--white)}
+.faq-band .section-lead{color:rgba(255,255,255,0.6)}
+.faq-list{border-top:1px solid rgba(255,255,255,0.14);max-width:800px}
+.faq-item{border-bottom:1px solid rgba(255,255,255,0.14)}
+.faq-question{width:100%;text-align:left;background:none;border:none;padding:1.375rem 0;font-size:1rem;font-weight:600;color:var(--white);cursor:pointer;font-family:'Inter',sans-serif;display:flex;justify-content:space-between;gap:1rem}
+.faq-question::after{content:'+';color:var(--gold);font-size:1.25rem;flex-shrink:0}
 .faq-item.open .faq-question::after{content:'\2212'}
-.faq-answer{display:none;font-size:0.9375rem;color:var(--ink-soft);line-height:1.7;padding-bottom:1.125rem}
+.faq-answer{display:none;font-size:0.9375rem;color:rgba(255,255,255,0.7);line-height:1.75;padding-bottom:1.375rem;max-width:70ch}
 .faq-item.open .faq-answer{display:block}
+
+.dark-cta{background:linear-gradient(135deg,#1a1a2e,#25253f);border-radius:22px;padding:3.25rem;text-align:center;margin-top:6rem}
+.dark-cta-title{font-family:'DM Serif Display',serif;font-size:1.875rem;color:var(--white);letter-spacing:-0.02em;margin-bottom:0.75rem}
+.dark-cta-sub{font-size:1rem;color:rgba(255,255,255,0.65);line-height:1.65;margin-bottom:1.75rem;max-width:460px;margin-inline:auto}
+.btn-gold{background:var(--gold);color:var(--ink);border:none;padding:0.9375rem 2.25rem;border-radius:100px;font-size:0.9375rem;font-weight:600;text-decoration:none;display:inline-block}
+
 .back-link{font-size:0.875rem;color:var(--sage);text-decoration:none;display:inline-block;margin-bottom:2rem}
 
-@media(max-width:760px){
+@media(max-width:1100px){
+  .wrap,.faq-inner{width:90%}
+  .hero-title{font-size:2.5rem}
+}
+@media(max-width:820px){
   .format-grid{grid-template-columns:1fr}
   .steps{grid-template-columns:1fr}
-  .hero-title{font-size:2rem}
 }
 @media(max-width:640px){
-  .page-wrap{padding:2rem 1.25rem 4rem}
+  .wrap{width:auto;padding:3rem 1.25rem 4rem}
+  .faq-inner{width:auto;padding:3.5rem 1.25rem}
   nav{padding:1rem 1.25rem}
   .nav-drop{display:none}
-}
-@media(prefers-reduced-motion:reduce){
-  .mini-pop,.mini-slide,.mini-bcard,.mini-link,.mini-dot{animation:none!important}
-  .mini-pop{opacity:1}
+  .hero-title{font-size:2rem}
+  .dark-cta{padding:2.25rem 1.5rem}
 }
 </style>
 <!-- PostHog -->
@@ -197,78 +196,77 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
   </div>
 </nav>
 
-<div class="page-wrap">
+<div class="wrap">
   <a class="back-link" href="/">← IntroLinq</a>
 
-  <p class="hero-eyebrow">The product</p>
-  <h1 class="hero-title">How IntroLinq works</h1>
-  <p class="hero-sub">Add a vetted expert to your content, and earn 50% of the fee every time a reader books one. There are four ways to place it - pick the one that fits your site, or run several at once. They all share the same matching engine and the same dashboard.</p>
-  <div class="hero-cta-row">
-    <a class="btn-primary" href="/signup">Create your account →</a>
-    <span class="hero-note">Free forever · 2 minute setup · No card needed</span>
+  <div class="hero">
+    <p class="hero-eyebrow">The product</p>
+    <h1 class="hero-title">One engine. Four ways to put an expert in front of your readers.</h1>
+    <p class="hero-sub">IntroLinq reads your content, matches a vetted expert, and pays you 50% of the fee when a reader books. Pick the format that fits your site - or run several. They all share the same network and the same dashboard.</p>
+    <div class="hero-cta-row">
+      <a class="btn-primary" href="/signup">Create your account →</a>
+      <span class="hero-note">Free forever · 2 minute setup · No card needed</span>
+    </div>
   </div>
 
   <section class="section">
-    <h2 class="section-title">The four formats</h2>
-    <p class="section-lead">Each one takes the same input - your article, or a topic you paste in - and returns the best-matched expert. What differs is where it appears and how the reader meets it.</p>
+    <div class="section-head">
+      <h2 class="section-title">The four formats</h2>
+      <p class="section-lead">Each takes the same input - your article, or a topic you paste in - and returns the best-matched expert. What changes is where it appears and how the reader meets it.</p>
+    </div>
     <div class="format-grid">
-
       <a class="format-card" href="/product/inline-widget">
-        <div class="format-mini">
-          <div class="mini-inline">Year two of freelancing and I still had no idea what I was doing with money, so I asked around about <span class="mini-trigger">managing money as a freelancer<span class="mini-dot"></span></span> - the reality of the work, not a fixed paycheck.</div>
+        <div class="format-thumb"><img src="/product/screens/inline.jpg" alt="The in-article widget: highlighted phrases inside a real article" loading="lazy"></div>
+        <div class="format-body">
+          <h3>In-article widget</h3>
+          <p>An underlined phrase inside your post. The reader hovers or taps and the matched expert appears - no layout work, runs on every article you have written.</p>
+          <span class="go">See how it looks →</span>
         </div>
-        <h3>In-article widget</h3>
-        <p>An underlined phrase inside your post. The reader hovers or taps, and the matched expert appears - no layout work, runs on every article you've written.</p>
-        <span class="go">See how it looks →</span>
       </a>
-
       <a class="format-card" href="/product/carousel">
-        <div class="format-mini">
-          <div class="mini-carousel">
-            <div class="mini-slide"><div class="l"></div><div class="l s"></div><span class="chip"></span></div>
-            <div class="mini-dots"><i></i><i></i><i></i></div>
-          </div>
+        <div class="format-thumb"><img src="/product/screens/carousel.jpg" alt="The Expert Carousel: rotating cards of real experts" loading="lazy"></div>
+        <div class="format-body">
+          <h3>Expert Carousel</h3>
+          <p>A standalone block that rotates through recent posts, each paired with its expert. Drop it in a sidebar or between articles.</p>
+          <span class="go">See how it looks →</span>
         </div>
-        <h3>Expert Carousel</h3>
-        <p>A standalone block that rotates through recent posts, each paired with its expert. Drop it in a sidebar or between articles.</p>
-        <span class="go">See how it looks →</span>
       </a>
-
       <a class="format-card" href="/product/expert-board">
-        <div class="format-mini">
-          <div class="mini-board">
-            <div class="mini-bcard"><i></i><div class="l"></div><div class="b"></div></div>
-            <div class="mini-bcard"><i></i><div class="l"></div><div class="b"></div></div>
-            <div class="mini-bcard"><i></i><div class="l"></div><div class="b"></div></div>
-            <div class="mini-bcard"><i></i><div class="l"></div><div class="b"></div></div>
-            <div class="mini-bcard"><i></i><div class="l"></div><div class="b"></div></div>
-            <div class="mini-bcard"><i></i><div class="l"></div><div class="b"></div></div>
-          </div>
+        <div class="format-thumb"><img src="/product/screens/board.jpg" alt="The Expert Board: a searchable grid of real experts" loading="lazy"></div>
+        <div class="format-body">
+          <h3>Expert Board</h3>
+          <p>A browsable, searchable directory of every expert relevant to your audience - a whole page a reader can filter and book from.</p>
+          <span class="go">See how it looks →</span>
         </div>
-        <h3>Expert Board</h3>
-        <p>A browsable, filterable directory of every expert relevant to your audience - a whole page a reader can search and book from.</p>
-        <span class="go">See how it looks →</span>
       </a>
-
       <a class="format-card" href="/product/manual-links">
-        <div class="format-mini">
-          <div class="mini-manual">
-            <div class="row">Paste a post →</div>
-            <div class="box">matched: Claire Dawson · Finance coach</div>
-            <div class="link">introlinq.com/x/claire-dawson?ref=you</div>
-          </div>
+        <div class="format-thumb"><img src="/product/screens/dashboard.jpg" alt="The dashboard, where manual links are generated" loading="lazy"></div>
+        <div class="format-body">
+          <h3>Manual links</h3>
+          <p>No script. Paste a post in your dashboard, get the matched expert, copy a tracked link, and drop it into a newsletter, Substack or Medium.</p>
+          <span class="go">See how it works →</span>
         </div>
-        <h3>Manual links</h3>
-        <p>No script. Paste a post in your dashboard, get the matched expert, copy a tracked link, and drop it into a newsletter, Substack, Medium - anywhere.</p>
-        <span class="go">See how it works →</span>
       </a>
-
     </div>
   </section>
 
   <section class="section">
-    <h2 class="section-title">Which one should I use?</h2>
-    <p class="section-lead">Most publishers start with the in-article widget and add a second format later. You can run all four - they earn into the same account.</p>
+    <div class="section-head">
+      <h2 class="section-title">Real experts, not placeholders</h2>
+      <p class="section-lead">This is the live Expert Carousel from introlinq.com, showing vetted experts from the network - the same one you would install on your site.</p>
+    </div>
+    <div class="shot">
+      <div class="shot-bar"><i></i><i></i><i></i><span>introlinq.com</span></div>
+      <img src="/product/screens/carousel.jpg" alt="The IntroLinq Expert Carousel running with real experts including Adib Bamieh, Ahana Banerjee and Alan Knight OBE">
+    </div>
+    <p class="shot-note">Screenshot of the live widget · <a href="/product/carousel" style="color:var(--sage);font-weight:500">see the Carousel page</a></p>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2 class="section-title">Which one should I use?</h2>
+      <p class="section-lead">Most publishers start with the in-article widget and add a second format later. You can run all four - they earn into the same account.</p>
+    </div>
     <div class="compare-wrap">
       <table class="compare-table">
         <thead>
@@ -285,7 +283,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
   </section>
 
   <section class="section">
-    <h2 class="section-title">The part that's the same for all four</h2>
+    <div class="section-head">
+      <h2 class="section-title">The part that is the same for all four</h2>
+    </div>
     <div class="steps">
       <div class="step">
         <span class="step-num">01</span>
@@ -303,6 +303,11 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
         <p class="step-sub">Every booking shows in your dashboard. Payouts monthly via Wise or PayPal once you pass $50.</p>
       </div>
     </div>
+    <div class="shot">
+      <div class="shot-bar"><i></i><i></i><i></i><span>introlinq.com/dashboard</span></div>
+      <img src="/product/screens/dashboard.jpg" alt="A publisher dashboard showing 12 months of earnings growing to $13,493" loading="lazy">
+    </div>
+    <p class="shot-note">A publisher's earnings dashboard</p>
   </section>
 
   <div class="dark-cta">
@@ -310,9 +315,13 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
     <p class="dark-cta-sub">Free to join, nothing to maintain, and you keep 50% of every booking your content sends our way.</p>
     <a class="btn-gold" href="/signup">Create your account →</a>
   </div>
+</div>
 
-  <section class="section" style="margin-top:3.5rem">
-    <h2 class="section-title">Frequently asked questions</h2>
+<div class="faq-band">
+  <div class="faq-inner">
+    <div class="section-head">
+      <h2 class="section-title">Frequently asked questions</h2>
+    </div>
     <div class="faq-list">
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFaq(this)">Can I run more than one format at once?</button>
@@ -335,7 +344,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
         <div class="faq-answer">Payouts are processed monthly via Wise or PayPal once you reach a $50 minimum. Every booking shows in your dashboard - who booked, which article or link sent them, and what you earned.</div>
       </div>
     </div>
-  </section>
+  </div>
 </div>
 
 <!--footer:start-->
@@ -467,17 +476,16 @@ function toggleFaq(btn) {
   document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
   if (!isOpen) item.classList.add('open');
 }
-/* Nav dropdown - tap toggle for touch devices; hover/focus handled by CSS */
-document.querySelectorAll('.nav-drop-btn').forEach(btn => {
-  btn.addEventListener('click', e => {
-    const menu = btn.nextElementSibling;
-    const open = menu.classList.toggle('open');
+document.querySelectorAll('.nav-drop-btn').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var menu = btn.nextElementSibling;
+    var open = menu.classList.toggle('open');
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   });
 });
-document.addEventListener('click', e => {
+document.addEventListener('click', function (e) {
   if (e.target.closest('.nav-drop')) return;
-  document.querySelectorAll('.nav-drop-menu.open').forEach(m => {
+  document.querySelectorAll('.nav-drop-menu.open').forEach(function (m) {
     m.classList.remove('open');
     m.previousElementSibling.setAttribute('aria-expanded', 'false');
   });

@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Expert Carousel | IntroLinq</title>
-<meta name="description" content="IntroLinq's Expert Carousel is a standalone block that rotates through your recent posts, each paired with a matched expert. One line of code in a sidebar or between posts, 50% commission on every booking. See how it looks.">
+<meta name="description" content="IntroLinq's Expert Carousel is a standalone block that rotates through your recent posts, each paired with a real vetted expert. One line of code in a sidebar or between posts, 50% commission on every booking.">
 <link rel="canonical" href="https://www.introlinq.com/product/carousel">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta property="og:title" content="The Expert Carousel | IntroLinq">
-<meta property="og:description" content="A standalone block that rotates through your recent posts, each paired with a matched expert. One line of code, 50% commission on every booking.">
+<meta property="og:description" content="A standalone block that rotates through your recent posts, each paired with a real vetted expert. One line of code, 50% commission on every booking.">
 <meta property="og:image" content="https://www.introlinq.com/api/og">
 <script type="application/ld+json">
 {
@@ -51,13 +51,20 @@
   --border:rgba(26,26,46,0.10);--border-soft:rgba(26,26,46,0.06);
   --radius:12px;--radius-sm:8px;
 }
-body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;line-height:1.6}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;line-height:1.6;position:relative}
+body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(70% 55% at 12% -5%, rgba(61,122,95,0.13), transparent 60%),
+    radial-gradient(55% 45% at 100% 15%, rgba(230,168,32,0.12), transparent 55%),
+    radial-gradient(45% 40% at 85% 100%, rgba(61,122,95,0.08), transparent 60%),
+    var(--cream);
+}
 a{color:inherit}
 
-nav{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 2rem;border-bottom:1px solid var(--border);background:var(--cream);position:sticky;top:0;z-index:100;backdrop-filter:blur(8px)}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 2.5rem;border-bottom:1px solid var(--border);background:rgba(250,248,244,0.8);position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
 .nav-logo{font-family:'DM Serif Display',serif;font-size:1.375rem;color:var(--ink);text-decoration:none}
 .nav-logo span{color:var(--sage)}
-.nav-right{display:flex;align-items:center;gap:1.25rem}
+.nav-right{display:flex;align-items:center;gap:1.5rem}
 .nav-login{font-size:0.875rem;font-weight:500;color:var(--ink-soft);text-decoration:none}
 .nav-cta{background:var(--ink);color:var(--white);border:none;padding:0.625rem 1.25rem;border-radius:100px;font-size:0.875rem;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity 0.15s;text-decoration:none;display:inline-block}
 .nav-cta:hover{opacity:0.85}
@@ -65,97 +72,83 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .nav-drop-btn{display:inline-flex;align-items:center;gap:0.375rem;background:none;border:none;font-family:'Inter',sans-serif;font-size:0.875rem;font-weight:500;color:var(--ink-soft);cursor:pointer;padding:0.25rem 0}
 .nav-drop-btn svg{transition:transform 0.15s}
 .nav-drop:hover .nav-drop-btn svg,.nav-drop:focus-within .nav-drop-btn svg,.nav-drop-btn[aria-expanded="true"] svg{transform:rotate(180deg)}
-.nav-drop-menu{position:absolute;top:calc(100% + 0.75rem);right:0;min-width:296px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 16px 44px rgba(26,26,46,0.14);padding:0.5rem;opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity 0.16s,transform 0.16s,visibility 0.16s;z-index:200}
+.nav-drop-menu{position:absolute;top:calc(100% + 0.75rem);right:0;min-width:300px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 16px 44px rgba(26,26,46,0.14);padding:0.5rem;opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity 0.16s,transform 0.16s,visibility 0.16s;z-index:200}
 .nav-drop:hover .nav-drop-menu,.nav-drop:focus-within .nav-drop-menu,.nav-drop-menu.open{opacity:1;visibility:visible;transform:translateY(0)}
 .nav-drop-menu a{display:block;padding:0.625rem 0.75rem;border-radius:var(--radius-sm);text-decoration:none}
 .nav-drop-menu a:hover{background:var(--sage-light)}
 .nav-drop-menu a b{display:block;font-size:0.875rem;font-weight:600;color:var(--ink)}
 .nav-drop-menu a span{display:block;font-size:0.75rem;color:var(--ink-muted);margin-top:0.125rem}
 
-.page-wrap{max-width:800px;margin:0 auto;padding:4rem 2rem 5rem}
-.hero-eyebrow{font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--sage);margin-bottom:0.75rem}
-.hero-title{font-family:'DM Serif Display',serif;font-size:2.75rem;color:var(--ink);line-height:1.12;letter-spacing:-0.03em;margin-bottom:1rem;text-wrap:balance}
-.hero-sub{font-size:1.0625rem;color:var(--ink-soft);line-height:1.7;margin-bottom:2rem;max-width:600px}
-.hero-cta-row{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:3rem}
-.btn-primary{background:var(--ink);color:var(--white);border:none;padding:0.875rem 1.75rem;border-radius:100px;font-size:0.9375rem;font-weight:600;text-decoration:none;display:inline-block}
+.wrap{width:75%;max-width:1200px;margin:0 auto;padding:4rem 0 6rem}
+.hero{max-width:720px}
+.hero-eyebrow{font-size:0.75rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:1rem}
+.hero-title{font-family:'DM Serif Display',serif;font-size:3rem;color:var(--ink);line-height:1.1;letter-spacing:-0.03em;margin-bottom:1.25rem;text-wrap:balance}
+.hero-sub{font-size:1.125rem;color:var(--ink-soft);line-height:1.7;margin-bottom:2.25rem}
+.hero-cta-row{display:flex;gap:1.25rem;align-items:center;flex-wrap:wrap}
+.btn-primary{background:var(--ink);color:var(--white);border:none;padding:0.9375rem 1.875rem;border-radius:100px;font-size:0.9375rem;font-weight:600;text-decoration:none;display:inline-block}
 .hero-note{font-size:0.8125rem;color:var(--ink-muted)}
 
-.section{margin-bottom:3.25rem}
-.section-title{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--ink);letter-spacing:-0.02em;margin-bottom:0.5rem;line-height:1.2}
-.section-lead{font-size:1rem;color:var(--ink-soft);line-height:1.7;margin-bottom:1.5rem;max-width:600px}
-.demo-caption{font-size:0.8125rem;color:var(--ink-muted);margin-top:0.75rem;text-align:center}
+.section{margin-top:5.5rem}
+.section-head{max-width:640px;margin-bottom:2.25rem}
+.section-title{font-family:'DM Serif Display',serif;font-size:1.875rem;color:var(--ink);letter-spacing:-0.02em;margin-bottom:0.75rem;line-height:1.15;text-wrap:balance}
+.section-lead{font-size:1.0625rem;color:var(--ink-soft);line-height:1.7}
 
-/* Carousel (canonical) */
-.carousel-wrap{background:var(--ink);border-radius:20px;padding:1.75rem;position:relative}
-.carousel-label{font-size:0.7rem;font-weight:500;color:rgba(255,255,255,0.4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:1rem}
-.carousel-track{position:relative;overflow:visible;border-radius:var(--radius)}
-.carousel-slide{display:none;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem 1.75rem 1.25rem;text-align:left;animation:slideIn 0.4s ease}
-.carousel-slide.active{display:block}
-@keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-.carousel-niche{font-size:0.7rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:0.5rem}
-.carousel-title{font-family:'DM Serif Display',serif;font-size:1.1rem;margin-bottom:0.75rem;color:var(--ink);line-height:1.3}
-.carousel-text{font-size:0.9rem;color:var(--ink-soft);line-height:1.85}
-.carousel-text-2{font-size:0.9rem;color:var(--ink-soft);line-height:1.85;margin-top:0.5rem}
-.carousel-dots{display:flex;gap:0.5rem;justify-content:center;margin-top:1rem}
-.carousel-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.2);border:none;cursor:pointer;padding:0;transition:background 0.2s}
-.carousel-dot.active{background:var(--sage)}
+.shot{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--white);box-shadow:0 20px 50px rgba(26,26,46,0.10)}
+.shot-bar{display:flex;align-items:center;gap:0.45rem;padding:0.8rem 1.1rem;border-bottom:1px solid var(--border-soft);background:#f3f2ee}
+.shot-bar i{width:10px;height:10px;border-radius:50%;background:#d8d6d0}
+.shot-bar span{margin-left:0.6rem;font-size:0.8125rem;color:var(--ink-muted)}
+.shot img{width:100%;display:block}
+.shot-note{font-size:0.8438rem;color:var(--ink-muted);margin-top:0.9rem;text-align:center}
 
-.expert-trigger{position:relative;color:var(--sage);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;cursor:pointer;display:inline-block}
-.expert-trigger-dot{display:inline-block;width:6px;height:6px;background:var(--sage);border-radius:50%;vertical-align:middle;margin-left:3px;animation:pulse 2s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.85)}}
-.expert-popup{display:block;position:absolute;bottom:calc(100% + 10px);left:0;background:var(--white);border:1px solid rgba(26,26,46,0.10);border-radius:16px;padding:18px;width:300px;max-width:calc(100vw - 2.5rem);z-index:30;box-shadow:0 16px 48px rgba(0,0,0,0.14),0 2px 8px rgba(0,0,0,0.06);text-align:left;pointer-events:none;opacity:0;transition:opacity 0.25s}
-.expert-popup::after{content:'';position:absolute;top:100%;left:24px;border:7px solid transparent;border-top-color:rgba(26,26,46,0.10)}
-.expert-popup::before{content:'';position:absolute;top:100%;left:25px;border:6px solid transparent;border-top-color:var(--white);z-index:1}
-.expert-trigger:hover .expert-popup,.expert-trigger.open .expert-popup,.expert-trigger.auto-open .expert-popup{opacity:1;pointer-events:auto}
-.popup-header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
-.popup-avatar{width:54px;height:54px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--sage-light)}
-.popup-info{flex:1;min-width:0}
-.popup-name{display:flex;align-items:center;gap:6px;font-weight:600;font-size:15px;color:var(--ink);line-height:1.25}
-.popup-flag{width:18px;height:18px;border-radius:50%;flex-shrink:0;object-fit:cover}
-.popup-role{display:block;font-size:11.5px;color:var(--ink-soft);line-height:1.3;margin-top:2px}
-.popup-company{display:block;font-size:11.5px;color:var(--ink-muted);line-height:1.3}
-.popup-bio{display:block;font-size:11.5px;font-weight:500;color:var(--ink);line-height:1.45;margin-bottom:8px}
-.popup-rec{display:block;font-size:12.5px;color:var(--ink-soft);font-style:italic;line-height:1.6;border-left:2px solid rgba(230,168,32,0.4);padding-left:10px;margin-bottom:12px}
-.popup-book{display:block;width:100%;box-sizing:border-box;background:var(--gold);color:var(--ink);border:none;padding:9px;border-radius:100px;font-size:13px;font-weight:700;cursor:pointer;text-align:center}
-.popup-footer-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(26,26,46,0.07);font-size:8.5px;color:var(--ink-muted);white-space:nowrap}
-.popup-partner{overflow:hidden;text-overflow:ellipsis;min-width:0}
-.popup-il{flex-shrink:0}
+.live-wrap{margin-top:2rem;background:var(--white);border:1px solid var(--border);border-radius:16px;padding:1.5rem 1.75rem}
+.live-label{font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--sage);margin-bottom:1rem}
+.live-embed{min-height:0}
+.live-embed:empty::after{content:'The interactive widget renders here on introlinq.com.';font-size:0.875rem;color:var(--ink-muted);display:block}
 
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
-.step{background:var(--white);border:1px solid var(--border-soft);border-radius:var(--radius);padding:1.5rem}
-.step-num{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--gold);display:block;margin-bottom:0.4rem}
-.step-title{font-weight:600;color:var(--ink);margin-bottom:0.3rem;font-size:0.9375rem}
-.step-sub{font-size:0.875rem;color:var(--ink-soft);line-height:1.65}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+.step{background:var(--white);border:1px solid var(--border-soft);border-radius:16px;padding:1.75rem}
+.step-num{font-family:'DM Serif Display',serif;font-size:1.75rem;color:var(--gold);display:block;margin-bottom:0.5rem}
+.step-title{font-weight:600;color:var(--ink);margin-bottom:0.4rem;font-size:1rem}
+.step-sub{font-size:0.9375rem;color:var(--ink-soft);line-height:1.65}
 
-.bullets{list-style:none;display:grid;gap:0.75rem}
-.bullets li{font-size:0.9375rem;color:var(--ink-soft);line-height:1.6;padding-left:1.5rem;position:relative}
-.bullets li::before{content:'';position:absolute;left:0;top:0.55em;width:7px;height:7px;border-radius:50%;background:var(--sage)}
+.bullets{list-style:none;display:grid;gap:0.9rem;max-width:640px}
+.bullets li{font-size:1rem;color:var(--ink-soft);line-height:1.6;padding-left:1.75rem;position:relative}
+.bullets li::before{content:'';position:absolute;left:0;top:0.6em;width:8px;height:8px;border-radius:50%;background:var(--sage)}
 
-.code{background:var(--ink);border-radius:var(--radius);padding:1.1rem 1.25rem;overflow-x:auto;display:flex;align-items:center;justify-content:space-between;gap:1rem}
-.code code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:0.8125rem;color:#e7e7ef;white-space:nowrap}
-.code button{background:rgba(255,255,255,0.12);color:#fff;border:none;border-radius:100px;padding:0.4rem 0.9rem;font-size:0.75rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;flex-shrink:0}
+.code{background:var(--ink);border-radius:14px;padding:1.25rem 1.5rem;overflow-x:auto;display:flex;align-items:center;justify-content:space-between;gap:1.25rem;max-width:760px}
+.code code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:0.875rem;color:#e7e7ef;white-space:nowrap}
+.code button{background:rgba(255,255,255,0.12);color:#fff;border:none;border-radius:100px;padding:0.45rem 1rem;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;flex-shrink:0}
 
 .other-formats{display:flex;flex-wrap:wrap;gap:0.75rem}
-.other-formats a{background:var(--white);border:1px solid var(--border);border-radius:100px;padding:0.625rem 1.25rem;font-size:0.875rem;font-weight:500;color:var(--sage);text-decoration:none}
+.other-formats a{background:var(--white);border:1px solid var(--border);border-radius:100px;padding:0.7rem 1.375rem;font-size:0.9rem;font-weight:500;color:var(--sage);text-decoration:none}
 .other-formats a:hover{border-color:var(--sage)}
 
-.dark-cta{background:var(--ink);border-radius:20px;padding:2.5rem;text-align:center}
-.dark-cta-title{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--white);letter-spacing:-0.02em;margin-bottom:0.625rem}
-.dark-cta-sub{font-size:0.9375rem;color:rgba(255,255,255,0.6);line-height:1.65;margin-bottom:1.5rem;max-width:440px;margin-inline:auto}
-.btn-gold{background:var(--gold);color:var(--ink);border:none;padding:0.875rem 2rem;border-radius:100px;font-size:0.9375rem;font-weight:600;text-decoration:none;display:inline-block}
-
-.faq-list{border-top:1px solid var(--border)}
-.faq-item{border-bottom:1px solid var(--border)}
-.faq-question{width:100%;text-align:left;background:none;border:none;padding:1.125rem 0;font-size:0.9375rem;font-weight:600;color:var(--ink);cursor:pointer;font-family:'Inter',sans-serif;display:flex;justify-content:space-between;gap:1rem}
-.faq-question::after{content:'+';color:var(--sage);font-size:1.125rem;flex-shrink:0}
+.faq-band{background:var(--ink);margin-top:6.5rem}
+.faq-inner{width:75%;max-width:1200px;margin:0 auto;padding:5rem 0}
+.faq-band .section-title{color:var(--white)}
+.faq-list{border-top:1px solid rgba(255,255,255,0.14);max-width:800px}
+.faq-item{border-bottom:1px solid rgba(255,255,255,0.14)}
+.faq-question{width:100%;text-align:left;background:none;border:none;padding:1.375rem 0;font-size:1rem;font-weight:600;color:var(--white);cursor:pointer;font-family:'Inter',sans-serif;display:flex;justify-content:space-between;gap:1rem}
+.faq-question::after{content:'+';color:var(--gold);font-size:1.25rem;flex-shrink:0}
 .faq-item.open .faq-question::after{content:'\2212'}
-.faq-answer{display:none;font-size:0.9375rem;color:var(--ink-soft);line-height:1.7;padding-bottom:1.125rem}
+.faq-answer{display:none;font-size:0.9375rem;color:rgba(255,255,255,0.7);line-height:1.75;padding-bottom:1.375rem;max-width:70ch}
 .faq-item.open .faq-answer{display:block}
+
+.dark-cta{background:linear-gradient(135deg,#1a1a2e,#25253f);border-radius:22px;padding:3.25rem;text-align:center;margin-top:5.5rem}
+.dark-cta-title{font-family:'DM Serif Display',serif;font-size:1.75rem;color:var(--white);letter-spacing:-0.02em;margin-bottom:0.75rem}
+.dark-cta-sub{font-size:1rem;color:rgba(255,255,255,0.65);line-height:1.65;margin-bottom:1.75rem;max-width:460px;margin-inline:auto}
+.btn-gold{background:var(--gold);color:var(--ink);border:none;padding:0.9375rem 2.25rem;border-radius:100px;font-size:0.9375rem;font-weight:600;text-decoration:none;display:inline-block}
+
 .back-link{font-size:0.875rem;color:var(--sage);text-decoration:none;display:inline-block;margin-bottom:2rem}
 
-@media(max-width:760px){.steps{grid-template-columns:1fr}.hero-title{font-size:2rem}}
-@media(max-width:640px){.page-wrap{padding:2rem 1.25rem 4rem}nav{padding:1rem 1.25rem}.nav-drop{display:none}.carousel-wrap{padding:1.25rem}.carousel-slide{padding:1.25rem}}
-@media(prefers-reduced-motion:reduce){.expert-trigger-dot{animation:none}}
+@media(max-width:1100px){.wrap,.faq-inner{width:90%}.hero-title{font-size:2.5rem}}
+@media(max-width:820px){.steps{grid-template-columns:1fr}}
+@media(max-width:640px){
+  .wrap{width:auto;padding:2.5rem 1.25rem 4rem}
+  .faq-inner{width:auto;padding:3.5rem 1.25rem}
+  nav{padding:1rem 1.25rem}.nav-drop{display:none}
+  .hero-title{font-size:2rem}.dark-cta{padding:2.25rem 1.5rem}
+}
 </style>
 <!-- PostHog -->
 <script src="/analytics.js"></script>
@@ -182,57 +175,38 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
   </div>
 </nav>
 
-<div class="page-wrap">
+<div class="wrap">
   <a class="back-link" href="/product">← All formats</a>
 
-  <p class="hero-eyebrow">IntroLinq format</p>
-  <h1 class="hero-title">The Expert Carousel</h1>
-  <p class="hero-sub">A standalone block that rotates through your recent posts, each paired with the expert IntroLinq matched to it. Drop it in a sidebar or between articles with one line of code, and earn 50% when a reader books.</p>
-  <div class="hero-cta-row">
-    <a class="btn-primary" href="/signup">Create your account →</a>
-    <span class="hero-note">Free forever · 2 minute setup · No card needed</span>
+  <div class="hero">
+    <p class="hero-eyebrow">IntroLinq format</p>
+    <h1 class="hero-title">The Expert Carousel</h1>
+    <p class="hero-sub">A standalone block that rotates through your recent posts, each paired with a real vetted expert. Drop it in a sidebar or between articles with one line of code, and earn 50% when a reader books.</p>
+    <div class="hero-cta-row">
+      <a class="btn-primary" href="/signup">Create your account →</a>
+      <span class="hero-note">Free forever · 2 minute setup · No card needed</span>
+    </div>
   </div>
 
   <section class="section">
-    <h2 class="section-title">See it rotate</h2>
-    <p class="section-lead">Each card is one of your recent posts with its matched expert. It advances on its own; the dots jump between cards. Hover or tap the underlined phrase inside a card to meet the expert.</p>
-    <div class="carousel-wrap">
-      <div class="carousel-label">Recent posts · IntroLinq picked the expert for each</div>
-      <div class="carousel-track">
-
-        <div class="carousel-slide active">
-          <div class="carousel-niche">Personal finance</div>
-          <div class="carousel-title">Budgeting on an income that's different every month</div>
-          <p class="carousel-text">The 50/30/20 rule assumes a paycheck that lands on the same day for the same amount. When you're freelance, that breaks in week one. What worked was building a buffer month and paying myself a flat "salary" - reached faster after talking to someone about <span class="expert-trigger" onclick="this.classList.toggle('open')">managing money on an irregular income<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=5" alt="Claire Dawson"><span class="popup-info"><span class="popup-name">Claire Dawson<img class="popup-flag" src="https://hatscripts.github.io/circle-flags/flags/gb.svg" alt=""></span><span class="popup-role">Finance coach</span><span class="popup-company">folio.co</span></span></span><span class="popup-bio">If budgeting on irregular income feels like guesswork, Claire can turn it into a plan</span><span class="popup-rec">Need help managing money as a freelancer or creative?</span><button class="popup-book">Speak with Claire →</button><span class="popup-footer-row"><span class="popup-partner">In partnership with Folio.co</span><span class="popup-il">IntroLinq</span></span></span></span>.</p>
-          <p class="carousel-text-2">The maths is simple. Sticking to it when the income swings is the hard part.</p>
-        </div>
-
-        <div class="carousel-slide">
-          <div class="carousel-niche">Sleep</div>
-          <div class="carousel-title">I tracked my sleep for three months and it made everything worse</div>
-          <p class="carousel-text">Apps, supplements, blackout curtains - each helped a bit and then stopped. What shifted things was someone who looked at <span class="expert-trigger" onclick="this.classList.toggle('open')">sleep as part of a wider picture, not a number to optimise<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=53" alt="Dr. Nina Wells"><span class="popup-info"><span class="popup-name">Dr. Nina Wells<img class="popup-flag" src="https://hatscripts.github.io/circle-flags/flags/ca.svg" alt=""></span><span class="popup-role">Sleep &amp; wellness specialist</span><span class="popup-company">wellcast.com</span></span></span><span class="popup-bio">If you've tried everything for sleep and nothing's stuck, Nina can find what's going on</span><span class="popup-rec">Having trouble sleeping and not sure why?</span><button class="popup-book">Speak with Nina →</button><span class="popup-footer-row"><span class="popup-partner">In partnership with Wellcast</span><span class="popup-il">IntroLinq</span></span></span></span>.</p>
-          <p class="carousel-text-2">When you've tried everything, the missing piece is usually a person, not a product.</p>
-        </div>
-
-        <div class="carousel-slide">
-          <div class="carousel-niche">Running</div>
-          <div class="carousel-title">Three attempts at a half marathon, three calf niggles at week six</div>
-          <p class="carousel-text">I assumed I wasn't built for distance. The plan that finally worked came out of a conversation about <span class="expert-trigger" onclick="this.classList.toggle('open')">building mileage at my age without the injury cycle<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=15" alt="Tom Barrett"><span class="popup-info"><span class="popup-name">Tom Barrett<img class="popup-flag" src="https://hatscripts.github.io/circle-flags/flags/gb.svg" alt=""></span><span class="popup-role">Running coach</span><span class="popup-company">coachnow.io</span></span></span><span class="popup-bio">If your mileage keeps ending in a niggle, Tom can build a progression that holds</span><span class="popup-rec">Stuck in the build-up, breakdown, restart cycle?</span><button class="popup-book">Speak with Tom →</button><span class="popup-footer-row"><span class="popup-partner">In partnership with CoachNow</span><span class="popup-il">IntroLinq</span></span></span></span>.</p>
-          <p class="carousel-text-2">The generic plans work until they don't. Then you need someone who can adapt one.</p>
-        </div>
-
-      </div>
-      <div class="carousel-dots">
-        <button class="carousel-dot active" onclick="ilGoToSlide(0)" aria-label="Show slide 1"></button>
-        <button class="carousel-dot" onclick="ilGoToSlide(1)" aria-label="Show slide 2"></button>
-        <button class="carousel-dot" onclick="ilGoToSlide(2)" aria-label="Show slide 3"></button>
-      </div>
+    <div class="section-head">
+      <h2 class="section-title">See it with real experts</h2>
+      <p class="section-lead">This is the live Carousel from introlinq.com. Every card is a real vetted expert from the network - name, role, company and a "Book a call" link.</p>
     </div>
-    <p class="demo-caption">The real Carousel pulls your own recent posts and refreshes as you publish.</p>
+    <div class="shot">
+      <div class="shot-bar"><i></i><i></i><i></i><span>introlinq.com</span></div>
+      <img src="/product/screens/carousel.jpg" alt="The IntroLinq Expert Carousel with real experts: Adib Bamieh, Ahana Banerjee, Alan Knight OBE, Alex Atherton">
+    </div>
+    <p class="shot-note">Screenshot of the live widget, running on the demo publisher</p>
+
+    <div class="live-wrap">
+      <div class="live-label">Live on this page</div>
+      <div class="live-embed" id="live-carousel"></div>
+    </div>
   </section>
 
   <section class="section">
-    <h2 class="section-title">How it works</h2>
+    <div class="section-head"><h2 class="section-title">How it works</h2></div>
     <div class="steps">
       <div class="step">
         <span class="step-num">01</span>
@@ -253,7 +227,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
   </section>
 
   <section class="section">
-    <h2 class="section-title">Best for</h2>
+    <div class="section-head"><h2 class="section-title">Best for</h2></div>
     <ul class="bullets">
       <li>A sidebar or a recurring slot between posts, where an inline widget can't reach.</li>
       <li>Homepages and category pages that need a single, self-updating block.</li>
@@ -263,8 +237,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
   </section>
 
   <section class="section">
-    <h2 class="section-title">The install</h2>
-    <p class="section-lead">One line, placed where the block should appear. Replace <code>YOUR_ID</code> with the ID from your dashboard; set the heading there too.</p>
+    <div class="section-head">
+      <h2 class="section-title">The install</h2>
+      <p class="section-lead">One line, placed where the block should appear. Replace <code>YOUR_ID</code> with the ID from your dashboard; set the heading there too.</p>
+    </div>
     <div class="code">
       <code>&lt;script src="https://cdn.introlinq.com/carousel.js" data-site="YOUR_ID"&gt;&lt;/script&gt;</code>
       <button onclick="navigator.clipboard.writeText('&lt;script src=\'https://cdn.introlinq.com/carousel.js\' data-site=\'YOUR_ID\'&gt;&lt;/script&gt;');this.textContent='Copied'">Copy</button>
@@ -272,7 +248,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
   </section>
 
   <section class="section">
-    <h2 class="section-title">The other formats</h2>
+    <div class="section-head"><h2 class="section-title">The other formats</h2></div>
     <div class="other-formats">
       <a href="/product/inline-widget">In-article widget</a>
       <a href="/product/expert-board">Expert Board</a>
@@ -286,9 +262,11 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
     <p class="dark-cta-sub">Free to join, self-updating, and you keep 50% of every booking.</p>
     <a class="btn-gold" href="/signup">Create your account →</a>
   </div>
+</div>
 
-  <section class="section" style="margin-top:3.25rem">
-    <h2 class="section-title">Frequently asked questions</h2>
+<div class="faq-band">
+  <div class="faq-inner">
+    <div class="section-head"><h2 class="section-title">Frequently asked questions</h2></div>
     <div class="faq-list">
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFaq(this)">Where do I put the Expert Carousel?</button>
@@ -307,7 +285,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
         <div class="faq-answer">When a reader opens a card and books the expert, you earn 50% of the booking fee, tracked to the post on that card. Paid monthly via Wise or PayPal once you pass $50.</div>
       </div>
     </div>
-  </section>
+  </div>
 </div>
 
 <!--footer:start-->
@@ -439,55 +417,32 @@ function toggleFaq(btn) {
   document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
   if (!isOpen) item.classList.add('open');
 }
-
-/* Expert carousel - rotates slides and auto-reveals the matched expert */
-(function () {
-  const slides = document.querySelectorAll('.carousel-slide');
-  const dots = document.querySelectorAll('.carousel-dot');
-  if (!slides.length) return;
-  let cur = 0, autoTimer, popupTimer;
-  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  window.ilGoToSlide = function (n) {
-    slides[cur].querySelectorAll('.expert-trigger').forEach(t => t.classList.remove('auto-open', 'open'));
-    slides[cur].classList.remove('active');
-    dots[cur].classList.remove('active');
-    cur = n;
-    slides[cur].classList.add('active');
-    dots[cur].classList.add('active');
-    clearInterval(autoTimer);
-    if (!reduce) autoTimer = setInterval(() => window.ilGoToSlide((cur + 1) % slides.length), 9000);
-    clearTimeout(popupTimer);
-    popupTimer = setTimeout(() => {
-      const trigger = slides[cur].querySelector('.expert-trigger');
-      if (trigger) trigger.classList.add('auto-open');
-    }, 1600);
-  };
-
-  if (!reduce) {
-    autoTimer = setInterval(() => window.ilGoToSlide((cur + 1) % slides.length), 9000);
-    popupTimer = setTimeout(() => {
-      const trigger = slides[0].querySelector('.expert-trigger');
-      if (trigger) trigger.classList.add('auto-open');
-    }, 1600);
-  }
-})();
-
-/* Nav dropdown - tap toggle for touch devices */
-document.querySelectorAll('.nav-drop-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const menu = btn.nextElementSibling;
-    const open = menu.classList.toggle('open');
+document.querySelectorAll('.nav-drop-btn').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var menu = btn.nextElementSibling;
+    var open = menu.classList.toggle('open');
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   });
 });
-document.addEventListener('click', e => {
+document.addEventListener('click', function (e) {
   if (e.target.closest('.nav-drop')) return;
-  document.querySelectorAll('.nav-drop-menu.open').forEach(m => {
+  document.querySelectorAll('.nav-drop-menu.open').forEach(function (m) {
     m.classList.remove('open');
     m.previousElementSibling.setAttribute('aria-expanded', 'false');
   });
 });
+</script>
+<!-- Live Expert Carousel (real widget, demo publisher). Renders on introlinq.com; blocked by CSP in isolated previews. -->
+<script>
+(function () {
+  var host = document.getElementById('live-carousel');
+  if (!host) return;
+  var s = document.createElement('script');
+  s.src = 'https://www.introlinq.com/carousel.js';
+  s.setAttribute('data-publisher', 'demo-homepage');
+  s.defer = true;
+  host.appendChild(s);
+})();
 </script>
 
 <!-- Google tag (gtag.js) -->
