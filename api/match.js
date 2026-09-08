@@ -1392,23 +1392,24 @@ export default async function handler(req, res) {
       if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig, req, noMatchFallbackEnabled })) return;
     }
 
-    // A cached answer exists but looks stale (hash drifted) AND this exact
-    // IP is already hammering this exact page - rather than pay for another
-    // AI rescan on every repeat hit (the same cost pattern that burned real
-    // money on challenges-tn before its rotating-ad-widget hash issue was
-    // fixed - this is a backstop for any OTHER, not-yet-diagnosed source of
-    // hash instability), serve the last known-good answer instead. A
-    // genuinely new, never-before-scanned page (cached === null) is NEVER
-    // short-circuited this way, no matter how bursty - first discovery of
-    // real content always gets a real scan. Known-good crawlers skip this
-    // check entirely and always get a fresh scan, since accuracy matters
-    // more for a bot that might represent this content to someone else's
-    // audience, and legitimate crawlers don't hammer one URL like this.
-    if (cached && contentChanged && !isAllowlistedCrawler(req) && !isTrustedIp(ip)) {
-      const isBot = isKnownCrawlerIp(ip) || (await isBurstTraffic(sql, 'match_logs', { ip, publisher, page_url }));
-      if (isBot) {
-        if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig, stale: true, req, noMatchFallbackEnabled })) return;
-      }
+    // A cached answer exists but the content hash drifted since it was
+    // scanned (a CMS re-render, an edited paragraph, a rotating related-posts
+    // block, the widget's own retry/extraction changes - anything). Serve the
+    // last known-good matches to the reader RIGHT NOW instead of a blank
+    // screen: a wording drift almost never changes which experts are the
+    // right fit, and slightly-stale suggestions beat nothing while a rescan
+    // runs. Then fall through to claim a background rescan so the entry
+    // refreshes for the next visitor. This is the single biggest source of
+    // "first view blank, refresh shows it" on low-traffic publishers, where a
+    // page's hash drifts faster than repeat traffic can re-warm it - it used
+    // to only rescue bot/burst traffic, everyone else just got the blank.
+    // Allowlisted crawlers still fall through to a real fresh scan (accuracy
+    // matters most when a bot may re-present this content elsewhere), and a
+    // genuinely never-scanned page (cached === null) still gets the real
+    // scan since there is nothing to serve.
+    let alreadyResponded = false;
+    if (cached && contentChanged && cached.has_match && !isAllowlistedCrawler(req)) {
+      alreadyResponded = await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title, readerCountry, ip, pubConfig, stale: true, req, noMatchFallbackEnabled });
     }
 
     // New-publisher scan cap: once a non-exempt publisher has scanned this
@@ -1424,7 +1425,8 @@ export default async function handler(req, res) {
       const capCheck = await sql`SELECT COUNT(*)::int AS n FROM match_cache
         WHERE publisher = ${publisher} AND cached_at > NOW() - INTERVAL '30 days'`;
       if (capCheck[0].n >= SCAN_CAP_LIMIT) {
-        return res.status(200).json({ matches: [], config: pubConfig, capped: true });
+        if (!alreadyResponded) res.status(200).json({ matches: [], config: pubConfig, capped: true });
+        return;
       }
     }
 
@@ -1440,12 +1442,16 @@ export default async function handler(req, res) {
     if (!page_url) {
       // No page_url means no page identity to hang a background scan or a
       // lock on - nothing to do.
-      return res.status(200).json({ matches: [], config: pubConfig });
+      if (!alreadyResponded) res.status(200).json({ matches: [], config: pubConfig });
+      return;
     }
     await ensureScanLocksTable(sql);
     const claimed = await claimScanLock(sql, { pageUrl: page_url, publisher, countryCode: GLOBAL_CACHE_COUNTRY });
 
-    res.status(200).json({ matches: [], config: pubConfig, pending: true });
+    // Response may already be on the wire (we served slightly-stale matches
+    // above) - in that case keep going to run the background rescan, just
+    // don't try to send a second response.
+    if (!alreadyResponded) res.status(200).json({ matches: [], config: pubConfig, pending: true });
     // The widget successfully reached us either way (claimed the scan or not) -
     // that's the real-world signal this is meant to catch. Awaited so it
     // reliably lands even though the function may return right after (see the
