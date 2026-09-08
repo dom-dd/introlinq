@@ -91,11 +91,12 @@ async function stampActivity(sql, pub, { script }) {
       RETURNING name, (activated_at = NOW()) AS just_activated
     `.catch(() => [null]);
   } else {
-    // Manual link click. Always a "last activity" signal, but it only
-    // counts as activation (which silences the reminder sequence) once
-    // there's a non-bot click from an EARLIER calendar day - so a handful
-    // of self-test clicks on signup day don't stop the nudges for someone
-    // who still hasn't really put a link anywhere.
+    // Manual link click. Always a "last activity" signal. It counts as
+    // activation (silences the reminder sequence) once there's real reader
+    // traffic - either a non-bot click from an earlier calendar day, or
+    // non-bot clicks from 2+ distinct IPs (the publisher's own IP plus at
+    // least one real reader). A few same-IP self-test clicks on signup day
+    // still don't count.
     [row] = await sql`
       UPDATE publishers p SET
         last_activity_at = NOW(),
@@ -103,8 +104,9 @@ async function stampActivity(sql, pub, { script }) {
           p.activated_at,
           (SELECT NOW() FROM click_logs c
              WHERE c.publisher = ${pub} AND c.is_bot = false
-               AND c.created_at::date < CURRENT_DATE
-             LIMIT 1)
+               AND (c.integration = 'manual' OR c.traffic_source = 'newsletter')
+             HAVING COUNT(*) FILTER (WHERE c.created_at::date < CURRENT_DATE) > 0
+                 OR COUNT(DISTINCT c.ip) >= 2)
         )
       WHERE p.slug = ${pub}
       RETURNING name, (activated_at = NOW()) AS just_activated
@@ -673,6 +675,22 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, started_widgets: row?.started_widgets || [], removed_widgets: row?.removed_widgets || {} });
   }
 
+  // Manual-links signals for the activation reminder cron. Copying a tracked
+  // link is intent (not activation - a real reader click still is); "mark as
+  // placed" is the publisher's own hard stop for the reminder sequence.
+  if (req.method === 'PATCH' && req.body.manual_link_copied) {
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS manual_link_copied_at TIMESTAMPTZ`.catch(() => {});
+    await sql`UPDATE publishers SET manual_link_copied_at = COALESCE(manual_link_copied_at, NOW()) WHERE slug = ${pub} AND active = true`.catch(() => {});
+    return res.status(200).json({ ok: true });
+  }
+  if (req.method === 'PATCH' && 'manual_placed' in req.body) {
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS manual_placed_at TIMESTAMPTZ`.catch(() => {});
+    const [row] = req.body.manual_placed
+      ? await sql`UPDATE publishers SET manual_placed_at = COALESCE(manual_placed_at, NOW()) WHERE slug = ${pub} AND active = true RETURNING manual_placed_at`.catch(() => [null])
+      : await sql`UPDATE publishers SET manual_placed_at = NULL WHERE slug = ${pub} AND active = true RETURNING manual_placed_at`.catch(() => [null]);
+    return res.status(200).json({ ok: true, manual_placed_at: row?.manual_placed_at || null });
+  }
+
   if (req.method === 'PATCH') {
     const { match_power, match_sensitivity, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, no_match_fallback_enabled, no_match_text_color, enabled_partners, payment_email, active, carousel_title, board_text_color, name, contact_first_name, contact_last_name, domain, platform } = req.body;
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS platform TEXT`.catch(() => {});
@@ -861,6 +879,10 @@ export default async function handler(req, res) {
     // last activity predates the removal; the GET below self-heals (drops
     // the key) the moment newer activity shows up, so the tab returns.
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS removed_widgets JSONB DEFAULT '{}'`.catch(() => {});
+    // Manual-links activation aids for the reminder cron: first time a
+    // tracked link was copied, and a self-declared "my links are placed".
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS manual_link_copied_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS manual_placed_at TIMESTAMPTZ`.catch(() => {});
     // Ensure providers have a name column
     await sql`ALTER TABLE providers ADD COLUMN IF NOT EXISTS name TEXT`;
     await sql`UPDATE providers SET name = 'OpenIntro' WHERE slug = 'openintro' AND name IS NULL`;
@@ -888,6 +910,7 @@ export default async function handler(req, res) {
              payment_email, carousel_title, board_text_color, no_match_text_color, first_widget_fire_at, last_widget_fire_at, activated_at, last_activity_at, last_script_activity_at, platform, platform_detected,
              COALESCE(started_widgets, '{}') AS started_widgets,
              COALESCE(removed_widgets, '{}'::jsonb) AS removed_widgets,
+             manual_link_copied_at, manual_placed_at,
              email, contact_first_name, contact_last_name,
              (password_hash IS NOT NULL) AS has_password
       FROM publishers WHERE slug = ${pub} AND active = true LIMIT 1

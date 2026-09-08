@@ -231,6 +231,23 @@ export default async function handler(req, res) {
       })
     }).catch(() => {});
 
+    // Add to the general mailing list (Resend audience) so product updates,
+    // new partners and new-platform-support news reach them through normal
+    // broadcasts - which also covers long-term re-engagement without a
+    // bespoke cron. Resend manages unsubscribe on the broadcast side.
+    if (process.env.RESEND_AUDIENCE_ID) {
+      fetch(`https://api.resend.com/audiences/${process.env.RESEND_AUDIENCE_ID}/contacts`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: normalised,
+          first_name: (contact_first_name?.trim() || name.trim().split(' ')[0] || ''),
+          last_name: (contact_last_name?.trim() || ''),
+          unsubscribed: false,
+        }),
+      }).catch(() => {});
+    }
+
     // Slack notification - #introlinq-notifications (real events), not the
     // #introlinq-general feed the widget's scan/match activity uses.
     if (process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL) {

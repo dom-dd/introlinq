@@ -983,6 +983,7 @@ tr:last-child td{border-bottom:none}
             <div class="section-title" id="manual-tool-title">Tracked expert links</div>
             <div class="section-sub" id="manual-tool-sub">Paste your content for suggested experts, or browse the roster - then copy a tracked link to paste in by hand.</div>
             <div class="section-sub" id="manual-platform-note" style="display:none;margin-top:0.5rem;color:var(--sage)"></div>
+            <div id="manual-placed-row" style="margin-top:0.75rem;font-size:0.8125rem"></div>
           </div>
         </div>
         <div class="section">
@@ -1696,10 +1697,49 @@ function pickManualChannel(ch) {
     if (plat) pn.innerHTML = `We've noted you're on ${plat} - you'll be first to hear if native widget support lands. `
       + `<button class="wstatus-link" onclick="changePlatform()">Not on ${plat}? Change platform</button>`;
   }
+  renderManualPlacedRow();
   const rb = document.getElementById('manual-remove-btn');
   if (rb) rb.textContent = 'Remove ' + ((WIDGET_META[ch] || {}).label || 'this tab');
   const d = window._cd;
   if (d) setWidgetStatusLine('manual', { live: true }, d);
+}
+
+// "Have you placed your links?" affordance on the manual tabs. Shows once a
+// tracked link has been copied; "Mark as placed" is the publisher's own
+// hard stop for the setup reminder emails (a real reader click stops them
+// regardless).
+function renderManualPlacedRow() {
+  const el = document.getElementById('manual-placed-row');
+  if (!el) return;
+  const pub = window._cd && window._cd.publisher;
+  if (!pub) { el.innerHTML = ''; return; }
+  if (pub.manual_placed_at) {
+    const dt = new Date(pub.manual_placed_at);
+    el.innerHTML = `<span style="color:var(--sage)">&#10003; Marked as placed${isNaN(dt) ? '' : ' on ' + dt.toLocaleDateString()}.</span> `
+      + `<button class="wstatus-link" onclick="markLinksPlaced(false)">Undo</button>`;
+  } else if (pub.manual_link_copied_at) {
+    el.innerHTML = `<span style="color:var(--ink-muted)">Dropped these links into a post or newsletter? </span>`
+      + `<button class="wstatus-link" onclick="markLinksPlaced(true)">Mark as placed</button>`
+      + `<span style="color:var(--ink-muted)"> so we stop sending setup reminders.</span>`;
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+async function markLinksPlaced(placed) {
+  const pub = window._cd && window._cd.publisher;
+  try {
+    const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
+      method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ manual_placed: !!placed }),
+    });
+    if (res.status === 401) { window.location.href = '/login'; return; }
+    if (!res.ok) { toast('Could not save - try again'); return; }
+    const data = await res.json();
+    if (pub) pub.manual_placed_at = data.manual_placed_at || null;
+    toast(placed ? 'Marked as placed' : 'Setup reminders back on');
+    renderManualPlacedRow();
+  } catch { toast('Could not save - try again'); }
 }
 
 // Confidently-known platform that can't run any script embed → only manual
@@ -2146,11 +2186,24 @@ function nlTrackedLink(e) {
     + '&phrase=' + encodeURIComponent(ch) + '&source=' + encodeURIComponent(ch) + '&channel=' + encodeURIComponent(ch) + '&il_type=manual';
 }
 
+let _manualCopyLogged = false;
 function copyNewsletterLink(expertId) {
   const e = (_nlExperts || []).find(x => x.id === expertId) || _nlSuggestById[expertId];
   if (!e || !e.booking_url) return;
   navigator.clipboard.writeText(nlTrackedLink(e));
   toast('Link copied!');
+  // Record "copied a tracked link" once per session - intent signal for the
+  // activation reminder cron (a real reader click is still what activates).
+  if (!_manualCopyLogged) {
+    _manualCopyLogged = true;
+    fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
+      method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ manual_link_copied: true }),
+    }).catch(() => {});
+    const pub = window._cd && window._cd.publisher;
+    if (pub && !pub.manual_link_copied_at) pub.manual_link_copied_at = new Date().toISOString();
+    renderManualPlacedRow();
+  }
 }
 
 // ── Manual Entry: AI article suggestions ───────────────────────────────────
