@@ -41,6 +41,8 @@ const PAGES = [
   'monetize-fashion-blog.html',
   'monetize-food-blog.html',
   'monetize-sport-blog.html',
+  'monetize-beauty-blog.html',
+  'monetize-parenting-blog.html',
   'signup/index.html',
   'login/index.html',
   'install/index.html',
