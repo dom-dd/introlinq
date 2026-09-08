@@ -45,7 +45,6 @@ const PAGES = [
   'monetize-parenting-blog.html',
   'signup/index.html',
   'login/index.html',
-  'install/index.html',
 ];
 
 const START = '<!--footer:start-->';
