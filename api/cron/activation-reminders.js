@@ -199,7 +199,7 @@ const codeBox = (slug) => `<table role="presentation" width="100%" cellpadding="
 const pluginBox = (slug) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:2px 0 20px"><tr><td style="background:#faf8f4;border:1px solid #e6e1d7;border-radius:10px;padding:16px">
   <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#1a1a2e">The easiest way: our WordPress plugin</p>
   <p style="margin:0 0 10px;font-size:13.5px;line-height:1.6;color:#585868">In your WordPress admin go to <strong>Plugins &rarr; Add New</strong>, search <strong>&ldquo;IntroLinq&rdquo;</strong>, install and activate, then enter your Publisher ID: <code style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:#3d7a5f">${slug}</code>. No theme editing, no code.</p>
-  <a href="https://wordpress.org/plugins/introlinq/" style="font-size:13px;font-weight:600;color:#3d7a5f;text-decoration:none">View the plugin on WordPress.org &rarr;</a>
+  <a href="https://wordpress.org/plugins/introlinq/" style="display:inline-block;margin-top:6px;padding:11px 22px;background:#3d7a5f;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none;border-radius:100px">View the plugin on WordPress.org &rarr;</a>
 </td></tr></table>`;
 
 // CTA with deliberate breathing room above it.
