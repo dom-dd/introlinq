@@ -11,6 +11,31 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://www.introlinq.com/product</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.introlinq.com/product/inline-widget</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.introlinq.com/product/carousel</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.introlinq.com/product/expert-board</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.introlinq.com/product/manual-links</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://www.introlinq.com/monetize-finance-blog</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

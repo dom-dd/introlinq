@@ -111,6 +111,17 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .nav-right{display:flex;align-items:center;gap:1.25rem}
 .nav-login{font-size:0.875rem;font-weight:500;color:var(--ink-soft);text-decoration:none}
 .nav-cta:hover{opacity:0.85}
+.nav-drop{position:relative}
+.nav-drop-btn{display:inline-flex;align-items:center;gap:0.375rem;background:none;border:none;font-family:'Inter',sans-serif;font-size:0.875rem;font-weight:500;color:var(--ink-soft);cursor:pointer;padding:0.25rem 0}
+.nav-drop-btn svg{transition:transform 0.15s}
+.nav-drop:hover .nav-drop-btn svg,.nav-drop:focus-within .nav-drop-btn svg,.nav-drop-btn[aria-expanded="true"] svg{transform:rotate(180deg)}
+.nav-drop-menu{position:absolute;top:calc(100% + 0.75rem);right:0;min-width:296px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 16px 44px rgba(26,26,46,0.14);padding:0.5rem;opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity 0.16s,transform 0.16s,visibility 0.16s;z-index:200}
+.nav-drop:hover .nav-drop-menu,.nav-drop:focus-within .nav-drop-menu,.nav-drop-menu.open{opacity:1;visibility:visible;transform:translateY(0)}
+.nav-drop-menu a{display:block;padding:0.625rem 0.75rem;border-radius:var(--radius-sm);text-decoration:none}
+.nav-drop-menu a:hover{background:var(--sage-light)}
+.nav-drop-menu a b{display:block;font-size:0.875rem;font-weight:600;color:var(--ink)}
+.nav-drop-menu a span{display:block;font-size:0.75rem;color:var(--ink-muted);margin-top:0.125rem}
+@media(max-width:640px){.nav-drop{display:none}}
 
 .page-wrap{max-width:760px;margin:0 auto;padding:4rem 2rem 5rem}
 
@@ -249,6 +260,18 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 <nav>
   <a class="nav-logo" href="/">Intro<span>Linq</span></a>
   <div class="nav-right">
+    <div class="nav-drop">
+      <button class="nav-drop-btn" aria-expanded="false" aria-haspopup="true">Explore our product
+        <svg width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="nav-drop-menu" role="menu">
+        <a href="/product" role="menuitem"><b>How IntroLinq works</b><span>The whole thing, end to end</span></a>
+        <a href="/product/inline-widget" role="menuitem"><b>In-article widget</b><span>An expert inside your posts</span></a>
+        <a href="/product/carousel" role="menuitem"><b>Expert Carousel</b><span>A rotating block between posts</span></a>
+        <a href="/product/expert-board" role="menuitem"><b>Expert Board</b><span>A filterable expert directory</span></a>
+        <a href="/product/manual-links" role="menuitem"><b>Manual links</b><span>For newsletters, Substack, Medium</span></a>
+      </div>
+    </div>
     <a class="nav-login" href="/login">Log in</a>
     <a class="nav-cta" href="/signup">Create your account →</a>
   </div>
@@ -563,6 +586,11 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
     </div>
     <div class="footer-col">
       <div class="footer-col-title">Product</div>
+      <a href="/product" class="footer-link">How it works</a>
+      <a href="/product/inline-widget" class="footer-link">In-article widget</a>
+      <a href="/product/carousel" class="footer-link">Expert Carousel</a>
+      <a href="/product/expert-board" class="footer-link">Expert Board</a>
+      <a href="/product/manual-links" class="footer-link">Manual links</a>
       <a href="/signup" class="footer-link">Create your account</a>
       <a href="/login" class="footer-link">Log in</a>
       <a href="/blog" class="footer-link">Blog</a>
@@ -690,6 +718,24 @@ function toggleFaq(btn) {
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
   gtag('config', 'G-J1RDCPZ6SB');
+</script>
+
+<script>
+/* Nav dropdown - tap toggle for touch; hover/focus handled by CSS */
+document.querySelectorAll('.nav-drop-btn').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var menu = btn.nextElementSibling;
+    var open = menu.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+});
+document.addEventListener('click', function (e) {
+  if (e.target.closest('.nav-drop')) return;
+  document.querySelectorAll('.nav-drop-menu.open').forEach(function (m) {
+    m.classList.remove('open');
+    m.previousElementSibling.setAttribute('aria-expanded', 'false');
+  });
+});
 </script>
 </body>
 </html>

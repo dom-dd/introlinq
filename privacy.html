@@ -22,6 +22,17 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .nav-login:hover{color:var(--ink)}
 .nav-cta{background:var(--ink);color:var(--white);border:none;padding:0.625rem 1.25rem;border-radius:100px;font-size:0.875rem;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity 0.15s;text-decoration:none;display:inline-block}
 .nav-cta:hover{opacity:0.85}
+.nav-drop{position:relative}
+.nav-drop-btn{display:inline-flex;align-items:center;gap:0.375rem;background:none;border:none;font-family:'Inter',sans-serif;font-size:0.875rem;font-weight:500;color:var(--ink-soft);cursor:pointer;padding:0.25rem 0}
+.nav-drop-btn svg{transition:transform 0.15s}
+.nav-drop:hover .nav-drop-btn svg,.nav-drop:focus-within .nav-drop-btn svg,.nav-drop-btn[aria-expanded="true"] svg{transform:rotate(180deg)}
+.nav-drop-menu{position:absolute;top:calc(100% + 0.75rem);right:0;min-width:296px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 16px 44px rgba(26,26,46,0.14);padding:0.5rem;opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity 0.16s,transform 0.16s,visibility 0.16s;z-index:200}
+.nav-drop:hover .nav-drop-menu,.nav-drop:focus-within .nav-drop-menu,.nav-drop-menu.open{opacity:1;visibility:visible;transform:translateY(0)}
+.nav-drop-menu a{display:block;padding:0.625rem 0.75rem;border-radius:var(--radius-sm);text-decoration:none}
+.nav-drop-menu a:hover{background:var(--sage-light)}
+.nav-drop-menu a b{display:block;font-size:0.875rem;font-weight:600;color:var(--ink)}
+.nav-drop-menu a span{display:block;font-size:0.75rem;color:var(--ink-muted);margin-top:0.125rem}
+@media(max-width:640px){.nav-drop{display:none}}
 .page-wrap{max-width:720px;margin:0 auto;padding:4rem 2rem 5rem}
 h1{font-family:'DM Serif Display',serif;font-size:2.25rem;color:var(--ink);margin-bottom:0.5rem;letter-spacing:-0.02em}
 .updated{font-size:0.8125rem;color:var(--ink-muted);margin-bottom:3rem}
@@ -75,6 +86,18 @@ li{font-size:0.9375rem;color:var(--ink-soft);line-height:1.8;margin-bottom:0.25r
   <a class="nav-logo" href="/">Intro<span>Linq</span></a>
   <span class="nav-tagline">Free for publishers · No setup required</span>
   <div class="nav-right">
+    <div class="nav-drop">
+      <button class="nav-drop-btn" aria-expanded="false" aria-haspopup="true">Explore our product
+        <svg width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="nav-drop-menu" role="menu">
+        <a href="/product" role="menuitem"><b>How IntroLinq works</b><span>The whole thing, end to end</span></a>
+        <a href="/product/inline-widget" role="menuitem"><b>In-article widget</b><span>An expert inside your posts</span></a>
+        <a href="/product/carousel" role="menuitem"><b>Expert Carousel</b><span>A rotating block between posts</span></a>
+        <a href="/product/expert-board" role="menuitem"><b>Expert Board</b><span>A filterable expert directory</span></a>
+        <a href="/product/manual-links" role="menuitem"><b>Manual links</b><span>For newsletters, Substack, Medium</span></a>
+      </div>
+    </div>
     <a class="nav-login" href="/login">Log in</a>
     <a class="nav-cta" href="/signup">Create your account →</a>
   </div>
@@ -170,6 +193,11 @@ li{font-size:0.9375rem;color:var(--ink-soft);line-height:1.8;margin-bottom:0.25r
     </div>
     <div class="footer-col">
       <div class="footer-col-title">Product</div>
+      <a href="/product" class="footer-link">How it works</a>
+      <a href="/product/inline-widget" class="footer-link">In-article widget</a>
+      <a href="/product/carousel" class="footer-link">Expert Carousel</a>
+      <a href="/product/expert-board" class="footer-link">Expert Board</a>
+      <a href="/product/manual-links" class="footer-link">Manual links</a>
       <a href="/signup" class="footer-link">Create your account</a>
       <a href="/login" class="footer-link">Log in</a>
       <a href="/blog" class="footer-link">Blog</a>
@@ -237,5 +265,23 @@ document.getElementById('footer-email')?.addEventListener('keydown', e => {
 });
 </script>
 <!--footer:end-->
+
+<script>
+/* Nav dropdown - tap toggle for touch; hover/focus handled by CSS */
+document.querySelectorAll('.nav-drop-btn').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var menu = btn.nextElementSibling;
+    var open = menu.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+});
+document.addEventListener('click', function (e) {
+  if (e.target.closest('.nav-drop')) return;
+  document.querySelectorAll('.nav-drop-menu.open').forEach(function (m) {
+    m.classList.remove('open');
+    m.previousElementSibling.setAttribute('aria-expanded', 'false');
+  });
+});
+</script>
 </body>
 </html>

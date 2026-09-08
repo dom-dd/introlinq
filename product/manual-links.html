@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual Links | IntroLinq</title>
+<meta name="description" content="IntroLinq's manual links work where a script can't - newsletters, Substack, Medium, LinkedIn. Paste a post in your dashboard, get the matched expert, copy a tracked link, and drop it in. 50% commission on every booking.">
+<link rel="canonical" href="https://www.introlinq.com/product/manual-links">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta property="og:title" content="Manual Links | IntroLinq">
+<meta property="og:description" content="For newsletters, Substack, Medium, LinkedIn - anywhere you can't run a script. Paste a post, get the matched expert, copy a tracked link. 50% commission on every booking.">
+<meta property="og:image" content="https://www.introlinq.com/api/og">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Where do manual links work?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Anywhere you can place a hyperlink: an email newsletter, Substack, Medium, LinkedIn, a Notion page, a platform with no custom-code access. If it lets you link out, a manual link works." }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I make a manual link?",
+      "acceptedAnswer": { "@type": "Answer", "text": "In your dashboard, paste the post or the topic. IntroLinq shows the matched experts. Pick one, copy the tracked link, and place it in your text - a phrase like \"talk to a finance coach\" pointed at that link." }
+    },
+    {
+      "@type": "Question",
+      "name": "Is the booking still tracked to me?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. The link carries your publisher reference. Any booking that comes through it is attributed to you and shows in your dashboard against the channel you used." }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I earn from manual links?",
+      "acceptedAnswer": { "@type": "Answer", "text": "The same 50% of the booking fee as every other format. Payouts are monthly via Wise or PayPal once you reach $50." }
+    }
+  ]
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#1a1a2e;--ink-soft:#4a4a6a;--ink-muted:#8888a8;
+  --cream:#faf8f4;--white:#ffffff;
+  --sage:#3d7a5f;--sage-light:#edf5f0;--sage-mid:#c8e4d8;
+  --gold:#e6a820;--gold-light:#fef3c7;
+  --border:rgba(26,26,46,0.10);--border-soft:rgba(26,26,46,0.06);
+  --radius:12px;--radius-sm:8px;
+}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;line-height:1.6}
+a{color:inherit}
+
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 2rem;border-bottom:1px solid var(--border);background:var(--cream);position:sticky;top:0;z-index:100;backdrop-filter:blur(8px)}
+.nav-logo{font-family:'DM Serif Display',serif;font-size:1.375rem;color:var(--ink);text-decoration:none}
+.nav-logo span{color:var(--sage)}
+.nav-right{display:flex;align-items:center;gap:1.25rem}
+.nav-login{font-size:0.875rem;font-weight:500;color:var(--ink-soft);text-decoration:none}
+.nav-cta{background:var(--ink);color:var(--white);border:none;padding:0.625rem 1.25rem;border-radius:100px;font-size:0.875rem;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity 0.15s;text-decoration:none;display:inline-block}
+.nav-cta:hover{opacity:0.85}
+.nav-drop{position:relative}
+.nav-drop-btn{display:inline-flex;align-items:center;gap:0.375rem;background:none;border:none;font-family:'Inter',sans-serif;font-size:0.875rem;font-weight:500;color:var(--ink-soft);cursor:pointer;padding:0.25rem 0}
+.nav-drop-btn svg{transition:transform 0.15s}
+.nav-drop:hover .nav-drop-btn svg,.nav-drop:focus-within .nav-drop-btn svg,.nav-drop-btn[aria-expanded="true"] svg{transform:rotate(180deg)}
+.nav-drop-menu{position:absolute;top:calc(100% + 0.75rem);right:0;min-width:296px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 16px 44px rgba(26,26,46,0.14);padding:0.5rem;opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity 0.16s,transform 0.16s,visibility 0.16s;z-index:200}
+.nav-drop:hover .nav-drop-menu,.nav-drop:focus-within .nav-drop-menu,.nav-drop-menu.open{opacity:1;visibility:visible;transform:translateY(0)}
+.nav-drop-menu a{display:block;padding:0.625rem 0.75rem;border-radius:var(--radius-sm);text-decoration:none}
+.nav-drop-menu a:hover{background:var(--sage-light)}
+.nav-drop-menu a b{display:block;font-size:0.875rem;font-weight:600;color:var(--ink)}
+.nav-drop-menu a span{display:block;font-size:0.75rem;color:var(--ink-muted);margin-top:0.125rem}
+
+.page-wrap{max-width:800px;margin:0 auto;padding:4rem 2rem 5rem}
+.hero-eyebrow{font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--sage);margin-bottom:0.75rem}
+.hero-title{font-family:'DM Serif Display',serif;font-size:2.75rem;color:var(--ink);line-height:1.12;letter-spacing:-0.03em;margin-bottom:1rem;text-wrap:balance}
+.hero-sub{font-size:1.0625rem;color:var(--ink-soft);line-height:1.7;margin-bottom:2rem;max-width:600px}
+.hero-cta-row{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:3rem}
+.btn-primary{background:var(--ink);color:var(--white);border:none;padding:0.875rem 1.75rem;border-radius:100px;font-size:0.9375rem;font-weight:600;text-decoration:none;display:inline-block}
+.hero-note{font-size:0.8125rem;color:var(--ink-muted)}
+
+.section{margin-bottom:3.25rem}
+.section-title{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--ink);letter-spacing:-0.02em;margin-bottom:0.5rem;line-height:1.2}
+.section-lead{font-size:1rem;color:var(--ink-soft);line-height:1.7;margin-bottom:1.5rem;max-width:600px}
+.demo-caption{font-size:0.8125rem;color:var(--ink-muted);margin-top:0.75rem;text-align:center}
+
+/* Manual-link demo */
+.ml-demo{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.ml-panel{background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(26,26,46,0.06);display:flex;flex-direction:column}
+.ml-bar{padding:0.7rem 1rem;border-bottom:1px solid var(--border-soft);background:var(--cream);font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-muted)}
+.ml-body{padding:1.25rem;flex:1;display:flex;flex-direction:column;gap:0.75rem}
+.ml-step-label{font-size:0.75rem;font-weight:600;color:var(--sage)}
+.ml-paste{border:1px dashed var(--border);border-radius:var(--radius-sm);padding:0.75rem;font-size:0.8125rem;color:var(--ink-soft);line-height:1.6;min-height:74px}
+.ml-paste .cursor{display:inline-block;width:1px;height:1em;background:var(--ink);vertical-align:text-bottom;animation:blink 1s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+.ml-match{border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:0.6rem 0.75rem;display:flex;align-items:center;gap:0.6rem;opacity:1;transform:translateY(0);transition:opacity .3s,transform .3s}
+.ml-match.pending{opacity:0;transform:translateY(4px)}
+.ml-match img{width:30px;height:30px;border-radius:50%;flex-shrink:0;background:var(--sage-light)}
+.ml-match b{font-size:0.8125rem;color:var(--ink);display:block;line-height:1.2}
+.ml-match span{font-size:0.6875rem;color:var(--ink-muted)}
+.ml-match .pick{margin-left:auto;background:var(--sage-light);color:var(--sage);border:none;border-radius:100px;padding:0.3rem 0.7rem;font-size:0.6875rem;font-weight:700;font-family:'Inter',sans-serif}
+.ml-linkrow{margin-top:auto;display:flex;gap:0.5rem;align-items:center}
+.ml-link{flex:1;min-width:0;font-family:ui-monospace,monospace;font-size:0.6875rem;color:var(--sage);background:var(--sage-light);border-radius:var(--radius-sm);padding:0.55rem 0.7rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.ml-copy{background:var(--ink);color:#fff;border:none;border-radius:100px;padding:0.5rem 0.9rem;font-size:0.6875rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;flex-shrink:0}
+.ml-news{padding:1.25rem;font-size:0.8125rem;color:var(--ink-soft);line-height:1.85;flex:1}
+.ml-news h4{font-family:'DM Serif Display',serif;font-size:1.05rem;color:var(--ink);margin-bottom:0.5rem;line-height:1.3}
+.ml-news .meta{font-size:0.7rem;color:var(--ink-muted);margin-bottom:0.75rem}
+.ml-news a{color:var(--sage);text-decoration:underline;text-underline-offset:2px}
+
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.step{background:var(--white);border:1px solid var(--border-soft);border-radius:var(--radius);padding:1.5rem}
+.step-num{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--gold);display:block;margin-bottom:0.4rem}
+.step-title{font-weight:600;color:var(--ink);margin-bottom:0.3rem;font-size:0.9375rem}
+.step-sub{font-size:0.875rem;color:var(--ink-soft);line-height:1.65}
+
+.bullets{list-style:none;display:grid;gap:0.75rem}
+.bullets li{font-size:0.9375rem;color:var(--ink-soft);line-height:1.6;padding-left:1.5rem;position:relative}
+.bullets li::before{content:'';position:absolute;left:0;top:0.55em;width:7px;height:7px;border-radius:50%;background:var(--sage)}
+
+.other-formats{display:flex;flex-wrap:wrap;gap:0.75rem}
+.other-formats a{background:var(--white);border:1px solid var(--border);border-radius:100px;padding:0.625rem 1.25rem;font-size:0.875rem;font-weight:500;color:var(--sage);text-decoration:none}
+.other-formats a:hover{border-color:var(--sage)}
+
+.dark-cta{background:var(--ink);border-radius:20px;padding:2.5rem;text-align:center}
+.dark-cta-title{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--white);letter-spacing:-0.02em;margin-bottom:0.625rem}
+.dark-cta-sub{font-size:0.9375rem;color:rgba(255,255,255,0.6);line-height:1.65;margin-bottom:1.5rem;max-width:440px;margin-inline:auto}
+.btn-gold{background:var(--gold);color:var(--ink);border:none;padding:0.875rem 2rem;border-radius:100px;font-size:0.9375rem;font-weight:600;text-decoration:none;display:inline-block}
+
+.faq-list{border-top:1px solid var(--border)}
+.faq-item{border-bottom:1px solid var(--border)}
+.faq-question{width:100%;text-align:left;background:none;border:none;padding:1.125rem 0;font-size:0.9375rem;font-weight:600;color:var(--ink);cursor:pointer;font-family:'Inter',sans-serif;display:flex;justify-content:space-between;gap:1rem}
+.faq-question::after{content:'+';color:var(--sage);font-size:1.125rem;flex-shrink:0}
+.faq-item.open .faq-question::after{content:'\2212'}
+.faq-answer{display:none;font-size:0.9375rem;color:var(--ink-soft);line-height:1.7;padding-bottom:1.125rem}
+.faq-item.open .faq-answer{display:block}
+.back-link{font-size:0.875rem;color:var(--sage);text-decoration:none;display:inline-block;margin-bottom:2rem}
+
+@media(max-width:760px){.steps{grid-template-columns:1fr}.hero-title{font-size:2rem}.ml-demo{grid-template-columns:1fr}}
+@media(max-width:640px){.page-wrap{padding:2rem 1.25rem 4rem}nav{padding:1rem 1.25rem}.nav-drop{display:none}}
+@media(prefers-reduced-motion:reduce){.ml-paste .cursor{animation:none}}
+</style>
+<!-- PostHog -->
+<script src="/analytics.js"></script>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">Intro<span>Linq</span></a>
+  <div class="nav-right">
+    <div class="nav-drop">
+      <button class="nav-drop-btn" aria-expanded="false" aria-haspopup="true">Explore our product
+        <svg width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="nav-drop-menu" role="menu">
+        <a href="/product" role="menuitem"><b>How IntroLinq works</b><span>The whole thing, end to end</span></a>
+        <a href="/product/inline-widget" role="menuitem"><b>In-article widget</b><span>An expert inside your posts</span></a>
+        <a href="/product/carousel" role="menuitem"><b>Expert Carousel</b><span>A rotating block between posts</span></a>
+        <a href="/product/expert-board" role="menuitem"><b>Expert Board</b><span>A filterable expert directory</span></a>
+        <a href="/product/manual-links" role="menuitem"><b>Manual links</b><span>For newsletters, Substack, Medium</span></a>
+      </div>
+    </div>
+    <a class="nav-login" href="/login">Log in</a>
+    <a class="nav-cta" href="/signup">Create your account →</a>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <a class="back-link" href="/product">← All formats</a>
+
+  <p class="hero-eyebrow">IntroLinq format</p>
+  <h1 class="hero-title">Manual links</h1>
+  <p class="hero-sub">For newsletters, Substack, Medium, LinkedIn - anywhere you can't run a script. Paste a post in your dashboard, get the matched expert, copy a tracked link, and drop it in. Same 50% commission, no code required.</p>
+  <div class="hero-cta-row">
+    <a class="btn-primary" href="/signup">Create your account →</a>
+    <span class="hero-note">Free forever · 2 minute setup · No card needed</span>
+  </div>
+
+  <section class="section">
+    <h2 class="section-title">The flow</h2>
+    <p class="section-lead">Left: your dashboard turns a post into a tracked link. Right: that link, dropped into a newsletter. The reader clicks through and books; the booking is credited to you.</p>
+    <div class="ml-demo">
+      <div class="ml-panel">
+        <div class="ml-bar">Your dashboard</div>
+        <div class="ml-body">
+          <div class="ml-step-label">1 · Paste a post or a topic</div>
+          <div class="ml-paste" id="ml-paste"><span id="ml-typed">Year two of freelancing and I still had no idea what I was doing with money…</span><span class="cursor"></span></div>
+          <div class="ml-step-label">2 · Pick a matched expert</div>
+          <div class="ml-match" id="ml-match"><img src="https://i.pravatar.cc/80?img=5" alt=""><div><b>Claire Dawson</b><span>Finance coach · folio.co</span></div><span class="pick">Picked</span></div>
+          <div class="ml-linkrow">
+            <span class="ml-link" id="ml-link">introlinq.com/x/claire-dawson?ref=growthjournal</span>
+            <button class="ml-copy" id="ml-copy">Copy</button>
+          </div>
+        </div>
+      </div>
+      <div class="ml-panel">
+        <div class="ml-bar">Your newsletter</div>
+        <div class="ml-news">
+          <h4>Freelance money, year two</h4>
+          <div class="meta">The Growth Journal · Issue 48</div>
+          <p>Year one I kept telling myself I'd sort the money side out later. Later never came - it just got busier.</p>
+          <p>If that's you right now, it's worth <a href="#" onclick="return false">talking to a finance coach</a> who works with freelancers. One call in month three would have saved me a lot of stress.</p>
+        </div>
+      </div>
+    </div>
+    <p class="demo-caption">The link carries your reference, so a booking through it is credited to you.</p>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">How it works</h2>
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-title">Paste the post, or a topic</div>
+        <p class="step-sub">In the Links tab of your dashboard. No article URL required - a topic works too.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-title">Copy the tracked link</div>
+        <p class="step-sub">Pick from the matched experts, copy the link, and place it behind a natural phrase.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">03</span>
+        <div class="step-title">A reader books, you earn 50%</div>
+        <p class="step-sub">Attributed to you and the channel you used. Paid monthly via Wise or PayPal.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Best for</h2>
+    <ul class="bullets">
+      <li>Email newsletters - the one place the script formats can't reach.</li>
+      <li>Substack and Medium, where you don't control the &lt;head&gt;.</li>
+      <li>LinkedIn posts, community threads, and platforms with no custom code.</li>
+      <li>A one-off placement in a post that really warrants an expert, without installing anything.</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Where manual links work</h2>
+    <p class="section-lead">Anything that lets you place a hyperlink. No install, no script, nothing to maintain - just a link that carries your reference.</p>
+    <ul class="bullets">
+      <li>Email newsletters (any provider)</li>
+      <li>Substack &amp; Medium posts</li>
+      <li>LinkedIn, X, and community forums</li>
+      <li>Notion, Ghost members' emails, PDFs - anywhere a link is a link</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">The other formats</h2>
+    <div class="other-formats">
+      <a href="/product/inline-widget">In-article widget</a>
+      <a href="/product/carousel">Expert Carousel</a>
+      <a href="/product/expert-board">Expert Board</a>
+      <a href="/product">How it all works</a>
+    </div>
+  </section>
+
+  <div class="dark-cta">
+    <h2 class="dark-cta-title">Monetize the newsletter too.</h2>
+    <p class="dark-cta-sub">Free to join, nothing to install, and you keep 50% of every booking your links send our way.</p>
+    <a class="btn-gold" href="/signup">Create your account →</a>
+  </div>
+
+  <section class="section" style="margin-top:3.25rem">
+    <h2 class="section-title">Frequently asked questions</h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">Where do manual links work?</button>
+        <div class="faq-answer">Anywhere you can place a hyperlink: an email newsletter, Substack, Medium, LinkedIn, a Notion page, a platform with no custom-code access. If it lets you link out, a manual link works.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">How do I make a manual link?</button>
+        <div class="faq-answer">In your dashboard, paste the post or the topic. IntroLinq shows the matched experts. Pick one, copy the tracked link, and place it in your text - a phrase like "talk to a finance coach" pointed at that link.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">Is the booking still tracked to me?</button>
+        <div class="faq-answer">Yes. The link carries your publisher reference. Any booking that comes through it is attributed to you and shows in your dashboard against the channel you used.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">How do I earn from manual links?</button>
+        <div class="faq-answer">The same 50% of the booking fee as every other format. Payouts are monthly via Wise or PayPal once you reach $50.</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!--footer:start-->
+<!--
+  Shared site footer - single source of truth. Edit here only.
+  build.mjs injects this into the static pages; api/blog.js reads it for
+  /blog and post pages. Relies on the host page defining these CSS custom
+  properties: --ink --white --sage --sage-mid --gold.
+-->
+<style>
+/* Site footer - canonical. Do not copy this block back into a page. */
+.site-footer{background:var(--ink);color:rgba(255,255,255,0.7);margin-top:4rem;padding:3.5rem 2rem 2rem}
+.site-footer .footer-top{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1.15fr 0.8fr 1.6fr 1.05fr;gap:2.25rem;padding-bottom:2.5rem;border-bottom:1px solid rgba(255,255,255,0.1)}
+.site-footer .footer-brand{padding-right:1rem}
+.site-footer .footer-logo{font-family:'DM Serif Display',serif;font-size:1.375rem;color:var(--white);text-decoration:none;display:inline-block;margin-bottom:0.75rem}
+.site-footer .footer-logo span{color:var(--gold)}
+.site-footer .footer-tagline{font-size:0.8125rem;line-height:1.6;color:rgba(255,255,255,0.55)}
+.site-footer .footer-col-title{font-size:0.75rem;font-weight:600;color:rgba(255,255,255,0.9);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:1rem}
+.site-footer .footer-col .footer-link{display:block;font-size:0.8438rem;color:rgba(255,255,255,0.6);text-decoration:none;margin-bottom:0.7rem;transition:color 0.15s}
+.site-footer .footer-col .footer-link:hover{color:var(--white)}
+.site-footer .footer-col-guides .footer-link{font-size:0.8125rem;white-space:nowrap}
+.site-footer .footer-newsletter-sub{font-size:0.8125rem;color:rgba(255,255,255,0.55);line-height:1.5;margin-bottom:1rem}
+.site-footer .footer-newsletter-form{display:flex;gap:0.5rem}
+.site-footer .footer-input{flex:1;min-width:0;padding:0.625rem 0.875rem;border-radius:8px;border:1.5px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--white);font-size:0.8125rem;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.15s}
+.site-footer .footer-input::placeholder{color:rgba(255,255,255,0.35)}
+.site-footer .footer-input:focus{border-color:var(--sage-mid)}
+.site-footer .footer-subscribe-btn{background:var(--sage);color:var(--white);border:none;padding:0.625rem 1.125rem;border-radius:8px;font-size:0.8125rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:opacity 0.15s}
+.site-footer .footer-subscribe-btn:hover{opacity:0.85}
+.site-footer .footer-newsletter-msg{font-size:0.75rem;margin-top:0.625rem;min-height:1em}
+.site-footer .footer-newsletter-msg.success{color:var(--sage-mid)}
+.site-footer .footer-newsletter-msg.error{color:#f5a3a3}
+.site-footer .footer-bottom{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;padding-top:1.5rem}
+.site-footer .footer-copy{font-size:0.75rem;color:rgba(255,255,255,0.4)}
+.site-footer .footer-contact{font-size:0.75rem;color:rgba(255,255,255,0.5);text-decoration:none}
+.site-footer .footer-contact:hover{color:var(--white)}
+@media (max-width:820px){
+  .site-footer .footer-top{grid-template-columns:1fr 1fr;gap:2rem}
+  .site-footer .footer-brand,.site-footer .footer-newsletter{grid-column:1 / -1}
+}
+@media (max-width:480px){
+  .site-footer .footer-top{grid-template-columns:1fr}
+}
+</style>
+<footer class="site-footer">
+  <div class="footer-top">
+    <div class="footer-brand">
+      <a class="footer-logo" href="/">Intro<span>Linq</span></a>
+      <p class="footer-tagline">The AI matching layer between content and expert advice - free for publishers, forever.</p>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Product</div>
+      <a href="/product" class="footer-link">How it works</a>
+      <a href="/product/inline-widget" class="footer-link">In-article widget</a>
+      <a href="/product/carousel" class="footer-link">Expert Carousel</a>
+      <a href="/product/expert-board" class="footer-link">Expert Board</a>
+      <a href="/product/manual-links" class="footer-link">Manual links</a>
+      <a href="/signup" class="footer-link">Create your account</a>
+      <a href="/login" class="footer-link">Log in</a>
+      <a href="/blog" class="footer-link">Blog</a>
+    </div>
+    <div class="footer-col footer-col-guides">
+      <div class="footer-col-title">Guides</div>
+      <a href="/monetize-finance-blog" class="footer-link">How to monetize a finance blog</a>
+      <a href="/monetize-health-blog" class="footer-link">How to monetize a health blog</a>
+      <a href="/monetize-career-blog" class="footer-link">How to monetize a career blog</a>
+      <a href="/monetize-fashion-blog" class="footer-link">How to monetize a fashion blog</a>
+      <a href="/monetize-food-blog" class="footer-link">How to monetize a food blog</a>
+      <a href="/monetize-sport-blog" class="footer-link">How to monetize a fitness blog</a>
+      <a href="/monetize-beauty-blog" class="footer-link">How to monetize a beauty blog</a>
+      <a href="/monetize-parenting-blog" class="footer-link">How to monetize a parenting blog</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Legal</div>
+      <a href="/privacy" class="footer-link">Privacy Policy</a>
+      <a href="/terms" class="footer-link">Terms of Service</a>
+      <a href="/cookies" class="footer-link">Cookie Policy</a>
+    </div>
+    <div class="footer-col footer-newsletter">
+      <div class="footer-col-title">Stay in the loop</div>
+      <p class="footer-newsletter-sub">Occasional updates on new features and expert partners.</p>
+      <div class="footer-newsletter-form">
+        <input type="email" id="footer-email" placeholder="you@example.com" class="footer-input">
+        <button onclick="footerSubscribe()" class="footer-subscribe-btn">Subscribe</button>
+      </div>
+      <div class="footer-newsletter-msg" id="footer-newsletter-msg"></div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p class="footer-copy">Copyright &copy; 2026 IntroLinq. All rights reserved.</p>
+    <a href="mailto:hello@introlinq.com" class="footer-contact">hello@introlinq.com</a>
+  </div>
+</footer>
+<script>
+/* Footer newsletter - posts to the same /api/subscribe-email endpoint as the
+   exit popup. Guarded so a page that still defines its own copy wins harmlessly. */
+window.footerSubscribe = window.footerSubscribe || async function footerSubscribe() {
+  const emailInput = document.getElementById('footer-email');
+  const msgEl = document.getElementById('footer-newsletter-msg');
+  if (!emailInput || !msgEl) return;
+  const email = emailInput.value.trim();
+  msgEl.className = 'footer-newsletter-msg';
+  msgEl.textContent = '';
+  if (!email) return;
+  try {
+    const res = await fetch('/api/subscribe-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    if (!res.ok) throw new Error();
+    emailInput.value = '';
+    msgEl.textContent = "You're subscribed - check your inbox.";
+    msgEl.className = 'footer-newsletter-msg success';
+  } catch {
+    msgEl.textContent = 'Something went wrong. Try again.';
+    msgEl.className = 'footer-newsletter-msg error';
+  }
+};
+document.getElementById('footer-email')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') window.footerSubscribe();
+});
+</script>
+<!--footer:end-->
+
+<script>
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+/* Manual-link demo: type the pasted post, then reveal the match */
+(function () {
+  const typed = document.getElementById('ml-typed');
+  const match = document.getElementById('ml-match');
+  const copyBtn = document.getElementById('ml-copy');
+  const link = document.getElementById('ml-link');
+  if (!typed) return;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const text = 'Year two of freelancing and I still had no idea what I was doing with money…';
+
+  if (reduce) return; // page ships with the text and match already visible
+
+  function run() {
+    typed.textContent = '';
+    match.classList.add('pending');
+    let i = 0;
+    const iv = setInterval(() => {
+      typed.textContent = text.slice(0, ++i);
+      if (i >= text.length) {
+        clearInterval(iv);
+        setTimeout(() => match.classList.remove('pending'), 400);
+        setTimeout(run, 7000);
+      }
+    }, 34);
+  }
+  setTimeout(run, 2200);
+
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(link.textContent.trim()).then(() => {
+      copyBtn.textContent = 'Copied';
+      setTimeout(() => copyBtn.textContent = 'Copy', 1600);
+    }).catch(() => {});
+  });
+})();
+
+/* Nav dropdown - tap toggle for touch devices */
+document.querySelectorAll('.nav-drop-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const menu = btn.nextElementSibling;
+    const open = menu.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+});
+document.addEventListener('click', e => {
+  if (e.target.closest('.nav-drop')) return;
+  document.querySelectorAll('.nav-drop-menu.open').forEach(m => {
+    m.classList.remove('open');
+    m.previousElementSibling.setAttribute('aria-expanded', 'false');
+  });
+});
+</script>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-J1RDCPZ6SB"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-J1RDCPZ6SB');
+</script>
+</body>
+</html>
