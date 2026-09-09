@@ -132,8 +132,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .shot-bar span{margin-left:0.6rem;font-size:0.8125rem;color:var(--ink-muted)}
 .shot img{width:100%;display:block;max-height:600px;object-fit:cover;object-position:top center}
 /* the real Expert Carousel, embedded with the one-line snippet - renders on introlinq.com and on a deploy; the artifact preview sandbox blocks the third-party script */
-.live-embed-host{min-height:210px}
-.live-embed-host:not(:has(*:not(script)))::after{content:'The live Expert Carousel loads here from introlinq.com.';display:block;text-align:center;padding:2.75rem 1rem;font-size:0.9rem;color:rgba(255,255,255,0.55)}
+.live-embed-host{min-height:120px}
+.live-embed-fallback{display:block;width:100%;border-radius:12px}
+.live-embed-host:has(> div) .live-embed-fallback{display:none}
 /* plain screenshot (already has its own window chrome) - shown natural, uncropped */
 .shot-plain{max-width:860px;margin:0 auto;border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 16px 40px rgba(26,26,46,0.12);background:var(--white)}
 .shot-plain img{width:100%;display:block}
@@ -295,6 +296,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
     </div>
     <div class="shot-stage">
       <div class="live-embed-host">
+        <img class="live-embed-fallback" src="/product/screens/carousel-introlinq.png" alt="The IntroLinq Expert Carousel - a row of vetted experts with Book a call buttons">
         <script src="https://www.introlinq.com/carousel.js" data-publisher="introlinq"></script>
       </div>
     </div>
