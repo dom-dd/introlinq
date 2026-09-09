@@ -634,6 +634,7 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_email TEXT`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS company_name TEXT`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS category TEXT`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS website_type TEXT`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMPTZ`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS followup_1_sent_at TIMESTAMPTZ`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS followup_2_sent_at TIMESTAMPTZ`.catch(() => {});
@@ -655,22 +656,29 @@ export default async function handler(req, res) {
     // getting silently lumped into 'not_a_fit' with actual junk.
     const ALLOWED_STATUSES = ['discovered', 'to_contact', 'emailed', 'followed_up_1', 'followed_up_2', 'followed_up_3', 'important', 'contact_later', 'partner', 'openintro_partner', 'products_partner', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit', 'no_email_found', 'large_publisher'];
 
+    // Purely informational - what platform the blog runs on (WordPress,
+    // Substack, Ghost, ...). Set by hand in the Outreach UI; nothing keys
+    // off it, it's just recorded. Keep this list in sync with
+    // OUTREACH_WEBSITE_TYPES in outreach/index.html.
+    const ALLOWED_WEBSITE_TYPES = ['HTML', 'WordPress', 'Substack', 'Medium', 'Ghost', 'Squarespace', 'Wix', 'Webflow', 'Shopify', 'Blogger', 'Weebly', 'Notion', 'Framer', 'HubSpot', 'Drupal', 'Joomla', 'Gatsby', 'Hugo', 'Jekyll', 'Next.js', 'Craft CMS', 'Tumblr', 'Beehiiv', 'Hashnode', 'Bear Blog', 'Other'];
+
     // Manually-added leads (the "Create a lead" button). A helper's own
     // manually-added lead is auto-assigned to them (otherwise they'd
     // immediately lose sight of it); the owner can optionally assign it to
     // someone else at creation time.
     if (req.method === 'POST') {
-      const { domain, company_name, contact_name, contact_email, status, next_followup_at, outreach_notes, assigned_to } = req.body || {};
+      const { domain, company_name, contact_name, contact_email, status, next_followup_at, outreach_notes, assigned_to, website_type } = req.body || {};
       const cleanDomain = (domain || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
       if (!cleanDomain) return res.status(400).json({ error: 'Domain is required' });
 
       const initialStatus = ALLOWED_STATUSES.includes(status) ? status : 'discovered';
       const initialAssignee = isOwner ? (assigned_to || null) : helperId;
+      const initialWebsiteType = ALLOWED_WEBSITE_TYPES.includes(website_type) ? website_type : null;
 
       try {
         const [row] = await sql`
-          INSERT INTO candidate_publishers (domain, homepage_url, company_name, contact_name, contact_email, status, next_followup_at, outreach_notes, discovery_source, assigned_to)
-          VALUES (${cleanDomain}, ${'https://' + cleanDomain}, ${company_name || null}, ${contact_name || null}, ${contact_email || null}, ${initialStatus}, ${next_followup_at || null}, ${outreach_notes || null}, 'manual', ${initialAssignee})
+          INSERT INTO candidate_publishers (domain, homepage_url, company_name, contact_name, contact_email, status, next_followup_at, outreach_notes, discovery_source, assigned_to, website_type)
+          VALUES (${cleanDomain}, ${'https://' + cleanDomain}, ${company_name || null}, ${contact_name || null}, ${contact_email || null}, ${initialStatus}, ${next_followup_at || null}, ${outreach_notes || null}, 'manual', ${initialAssignee}, ${initialWebsiteType})
           RETURNING id
         `;
         return res.status(201).json({ ok: true, id: row.id });
@@ -720,6 +728,9 @@ export default async function handler(req, res) {
       } else if (action === 'set_category') {
         if (value && !CATEGORIES.includes(value)) return res.status(400).json({ error: 'invalid category' });
         await sql`UPDATE candidate_publishers SET category = ${value || null} WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
+      } else if (action === 'set_website_type') {
+        if (value && !ALLOWED_WEBSITE_TYPES.includes(value)) return res.status(400).json({ error: 'invalid website type' });
+        await sql`UPDATE candidate_publishers SET website_type = ${value || null} WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
       } else if (action === 'set_notes') {
         await sql`UPDATE candidate_publishers SET outreach_notes = ${value || null} WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
       } else {
@@ -733,7 +744,7 @@ export default async function handler(req, res) {
     // every other cp.* column is functionally dependent on it (Postgres
     // allows selecting them un-aggregated under that rule).
     const rows = await sql`
-      SELECT cp.id, cp.domain, cp.homepage_url, cp.title, cp.status, cp.priority_score, cp.contact_name, cp.contact_email, cp.company_name, cp.category,
+      SELECT cp.id, cp.domain, cp.homepage_url, cp.title, cp.status, cp.priority_score, cp.contact_name, cp.contact_email, cp.company_name, cp.category, cp.website_type,
              cp.person_linkedin_url, cp.company_linkedin_url, cp.twitter_url, cp.facebook_url, cp.assigned_to,
              cp.email_sent_at, cp.followup_1_sent_at, cp.followup_2_sent_at, cp.followup_3_sent_at, cp.next_followup_at, cp.outreach_notes, cp.created_at,
              COALESCE(json_agg(oc.clicked_at ORDER BY oc.clicked_at) FILTER (WHERE oc.clicked_at IS NOT NULL), '[]') AS click_times

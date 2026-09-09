@@ -683,6 +683,10 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
           </div>
         </div>
         <div class="form-group" style="margin-bottom:0.875rem">
+          <label class="form-label">Website type</label>
+          <select class="form-input" id="cl-website-type"></select>
+        </div>
+        <div class="form-group" style="margin-bottom:0.875rem">
           <label class="form-label">Next follow-up (optional)</label>
           <input class="form-input" id="cl-followup" type="date">
         </div>
@@ -797,6 +801,14 @@ const OUTREACH_CATEGORIES = [
   'Technology & Product', 'Legal', 'Health & Medicine', 'Fitness & Wellness',
   'Music', 'Art & Design', 'Media & Entertainment', 'Education & Coaching',
   'Real Estate', 'Other',
+];
+// What platform the blog runs on - informational only, set by hand. Nothing
+// keys off it. Keep in sync with ALLOWED_WEBSITE_TYPES in api/admin.js.
+const OUTREACH_WEBSITE_TYPES = [
+  'HTML', 'WordPress', 'Substack', 'Medium', 'Ghost', 'Squarespace', 'Wix',
+  'Webflow', 'Shopify', 'Blogger', 'Weebly', 'Notion', 'Framer', 'HubSpot',
+  'Drupal', 'Joomla', 'Gatsby', 'Hugo', 'Jekyll', 'Next.js', 'Craft CMS',
+  'Tumblr', 'Beehiiv', 'Hashnode', 'Bear Blog', 'Other',
 ];
 let _outreachCategoryFilter = '';
 let _outreachAssigneeFilter = ''; // '' = everyone, 'unassigned', or a helper's id as a string
@@ -1015,6 +1027,10 @@ function openCreateLeadModal() {
   categorySelect.innerHTML = '<option value="">No category</option>' +
     OUTREACH_CATEGORIES.map((cat) => `<option value="${esc(cat)}">${esc(cat)}</option>`).join('');
 
+  const websiteTypeSelect = document.getElementById('cl-website-type');
+  websiteTypeSelect.innerHTML = '<option value="">No website type</option>' +
+    OUTREACH_WEBSITE_TYPES.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+
   document.getElementById('create-lead-modal').classList.add('open');
   document.getElementById('cl-domain').focus();
 }
@@ -1042,6 +1058,7 @@ async function submitCreateLead() {
     contact_email: document.getElementById('cl-contact-email').value.trim() || null,
     status,
     category: document.getElementById('cl-category').value || null,
+    website_type: document.getElementById('cl-website-type').value || null,
     next_followup_at,
     outreach_notes: document.getElementById('cl-notes').value.trim() || null,
   };
@@ -1175,6 +1192,10 @@ function outreachRow(c, mode) {
     <option value="">No category</option>
     ${OUTREACH_CATEGORIES.map((cat) => `<option value="${esc(cat)}" ${c.category === cat ? 'selected' : ''}>${esc(cat)}</option>`).join('')}
   </select>`;
+  const websiteTypeSelect = `<select onchange="outreachSaveWebsiteType(${c.id}, this.value)" title="Website type" style="display:inline-block;width:auto;max-width:130px;margin-left:6px;padding:1px 4px;border-radius:100px;border:1px solid var(--border);background:${c.website_type ? 'var(--gold-light,#fef3c7)' : 'var(--cream,#faf8f4)'};color:${c.website_type ? 'var(--ink)' : 'var(--ink-muted)'};font-size:0.65rem;font-weight:600;vertical-align:middle;cursor:pointer">
+    <option value="">Website type</option>
+    ${OUTREACH_WEBSITE_TYPES.map((t) => `<option value="${esc(t)}" ${c.website_type === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}
+  </select>`;
   const statusOptions = outreachStatusOptionsHTML(c.status);
 
   const followupCell = mode === 'full' || mode === 'later'
@@ -1190,7 +1211,7 @@ function outreachRow(c, mode) {
     <tr data-lead-id="${c.id}">
       ${selectCell}
       <td>
-        <a href="${esc(c.homepage_url)}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:600;font-size:0.8125rem;text-decoration:none">${esc(c.domain)}</a>${categorySelect}
+        <a href="${esc(c.homepage_url)}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:600;font-size:0.8125rem;text-decoration:none">${esc(c.domain)}</a>${categorySelect}${websiteTypeSelect}
         ${title ? `<div style="font-size:0.7rem;color:var(--ink-muted);margin-top:2px">${title}</div>` : ''}
         ${outreachSocialLinks(c)}
         <input type="text" value="${esc(c.company_name || prettifyDomain(c.domain))}" placeholder="Company name (used in emails)" onblur="outreachSaveCompanyName(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE};margin-top:4px">
@@ -1263,6 +1284,13 @@ async function outreachSaveCategory(id, value) {
     const c = _outreach.find(x => x.id === id);
     if (c) c.category = value || null;
     renderOutreach();
+  }
+}
+
+async function outreachSaveWebsiteType(id, value) {
+  if (await outreachPatch({ id, action: 'set_website_type', value })) {
+    const c = _outreach.find(x => x.id === id);
+    if (c) c.website_type = value || null;
   }
 }
 
