@@ -56,14 +56,15 @@
   --border:rgba(26,26,46,0.10);--border-soft:rgba(26,26,46,0.06);
   --radius:12px;--radius-sm:8px;
 }
-body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;line-height:1.6;position:relative}
-/* Soft brand gradient wash (placeholder - to be matched to the reference screenshot) */
+body{font-family:'Inter',system-ui,sans-serif;background:#f0ede6;color:var(--ink);min-height:100vh;line-height:1.6;position:relative}
+/* Brand gradient wash */
 body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
   background:
-    radial-gradient(70% 55% at 12% -5%, rgba(61,122,95,0.13), transparent 60%),
-    radial-gradient(55% 45% at 100% 15%, rgba(230,168,32,0.12), transparent 55%),
-    radial-gradient(45% 40% at 85% 100%, rgba(61,122,95,0.08), transparent 60%),
-    var(--cream);
+    radial-gradient(72% 60% at 3% -12%, rgba(61,122,95,0.50), transparent 55%),
+    radial-gradient(66% 55% at 106% -4%, rgba(230,168,32,0.44), transparent 52%),
+    radial-gradient(70% 62% at 102% 104%, rgba(61,122,95,0.34), transparent 55%),
+    radial-gradient(52% 52% at 40% 122%, rgba(230,168,32,0.22), transparent 60%),
+    linear-gradient(160deg, #efe9de, #e9e2d3);
 }
 a{color:inherit}
 
@@ -99,24 +100,44 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .section-title{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--ink);letter-spacing:-0.02em;margin-bottom:0.75rem;line-height:1.15;text-wrap:balance}
 .section-lead{font-size:1.0625rem;color:var(--ink-soft);line-height:1.7}
 
-/* Format cards */
+/* Format cards - one dark card holding the screenshot + its description */
 .format-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.75rem}
-.format-card{background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;text-decoration:none;transition:border-color 0.18s,transform 0.18s,box-shadow 0.18s}
-.format-card:hover{border-color:var(--sage-mid);transform:translateY(-3px);box-shadow:0 18px 40px rgba(26,26,46,0.10)}
-.format-thumb{height:190px;background:var(--sage-light);border-bottom:1px solid var(--border-soft);overflow:hidden;display:flex;align-items:flex-start;justify-content:center}
-.format-thumb img{width:100%;height:100%;object-fit:cover;object-position:top center}
-.format-body{padding:1.75rem}
-.format-body h3{font-size:1.15rem;color:var(--ink);font-weight:600;margin-bottom:0.4rem}
-.format-body p{font-size:0.9375rem;color:var(--ink-soft);line-height:1.65}
-.format-body .go{display:inline-block;margin-top:1rem;font-size:0.8125rem;font-weight:600;color:var(--sage)}
+.format-card{background:#1b1b2e;border:1px solid rgba(255,255,255,0.10);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;text-decoration:none;box-shadow:0 16px 40px rgba(26,26,46,0.24);transition:transform 0.18s,box-shadow 0.18s}
+.format-card:hover{transform:translateY(-4px);box-shadow:0 30px 60px rgba(26,26,46,0.32)}
+.format-thumb{padding:1.15rem 1.15rem 0}
+.format-thumb .win{border-radius:9px;overflow:hidden;border:1px solid rgba(255,255,255,0.16);box-shadow:0 10px 26px rgba(0,0,0,0.4);background:#fff}
+.win-bar{display:flex;gap:4px;align-items:center;padding:6px 9px;background:#ecebe4;border-bottom:1px solid rgba(0,0,0,0.05)}
+.win-bar i{width:6px;height:6px;border-radius:50%;background:#c8c5bd}
+.win-shot{height:160px;overflow:hidden;position:relative}
+.win-shot img{width:100%;display:block}
+.win-shot::after{content:'';position:absolute;left:0;right:0;bottom:0;height:44px;background:linear-gradient(to bottom,transparent,rgba(255,255,255,0.92))}
+.format-body{padding:1.4rem 1.5rem 1.6rem}
+.format-body h3{font-size:1.15rem;color:#fff;font-weight:600;margin-bottom:0.375rem}
+.format-body p{font-size:0.9rem;color:rgba(255,255,255,0.62);line-height:1.6}
+.format-body .go{display:inline-block;margin-top:0.9rem;font-size:0.8125rem;font-weight:600;color:var(--sage-mid)}
+/* manual-links mini mock (no public screenshot to use) */
+.ml-mini{height:118px;padding:0.65rem 0.8rem;display:flex;flex-direction:column;gap:0.4rem;font-size:0.66rem;background:#fff}
+.ml-mini .lbl{font-size:0.56rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-muted)}
+.ml-mini-paste{border:1px dashed var(--border);border-radius:5px;padding:0.4rem 0.55rem;color:var(--ink-muted)}
+.ml-mini-match{display:flex;align-items:center;gap:0.35rem;color:var(--ink-soft);font-weight:500}
+.ml-mini-match .dot{width:13px;height:13px;border-radius:50%;background:var(--sage-light);flex-shrink:0}
+.ml-mini-link{display:flex;align-items:center;gap:0.4rem;background:var(--sage-light);color:var(--sage);border-radius:5px;padding:0.35rem 0.5rem;font-family:ui-monospace,monospace;font-size:0.56rem;overflow:hidden;white-space:nowrap;margin-top:auto}
+.ml-mini-link b{margin-left:auto;background:var(--ink);color:#fff;border-radius:100px;padding:0.12rem 0.5rem;font-family:'Inter',sans-serif;font-size:0.54rem;flex-shrink:0}
 
-/* Screenshot frame */
-.shot{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--white);box-shadow:0 20px 50px rgba(26,26,46,0.10)}
-.shot-bar{display:flex;align-items:center;gap:0.45rem;padding:0.8rem 1.1rem;border-bottom:1px solid var(--border-soft);background:#f3f2ee}
-.shot-bar i{width:10px;height:10px;border-radius:50%;background:#d8d6d0}
+/* Big screenshot on a dark stage */
+.shot-stage{background:#1b1b2e;border-radius:22px;padding:2rem;box-shadow:0 24px 60px rgba(26,26,46,0.18);position:relative}
+.shot{border-radius:12px;overflow:hidden;background:var(--white);border:1px solid rgba(255,255,255,0.12);box-shadow:0 20px 44px rgba(0,0,0,0.32)}
+.shot-bar{display:flex;align-items:center;gap:0.45rem;padding:0.75rem 1.1rem;border-bottom:1px solid var(--border-soft);background:#f0eee9}
+.shot-bar i{width:10px;height:10px;border-radius:50%;background:#c9c6bf}
 .shot-bar span{margin-left:0.6rem;font-size:0.8125rem;color:var(--ink-muted)}
-.shot img{width:100%;display:block}
-.shot-note{font-size:0.8438rem;color:var(--ink-muted);margin-top:0.9rem;text-align:center}
+.shot img{width:100%;display:block;max-height:600px;object-fit:cover;object-position:top center}
+/* the real Expert Carousel, embedded with the one-line snippet - renders on introlinq.com and on a deploy; the artifact preview sandbox blocks the third-party script */
+.live-embed-host{min-height:210px}
+.live-embed-host:not(:has(*:not(script)))::after{content:'The live Expert Carousel loads here from introlinq.com.';display:block;text-align:center;padding:2.75rem 1rem;font-size:0.9rem;color:rgba(255,255,255,0.55)}
+/* plain screenshot (already has its own window chrome) - shown natural, uncropped */
+.shot-plain{max-width:860px;margin:0 auto;border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 16px 40px rgba(26,26,46,0.12);background:var(--white)}
+.shot-plain img{width:100%;display:block}
+.shot-note{font-size:0.8438rem;color:var(--ink-muted);margin-top:1rem;text-align:center}
 
 /* Compare table */
 .compare-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:16px;background:var(--white)}
@@ -216,7 +237,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
     </div>
     <div class="format-grid">
       <a class="format-card" href="/product/inline-widget">
-        <div class="format-thumb"><img src="/product/screens/inline.jpg" alt="The in-article widget: highlighted phrases inside a real article" loading="lazy"></div>
+        <div class="format-thumb"><div class="win">
+          <div class="win-bar"><i></i><i></i><i></i></div>
+          <div class="win-shot"><img src="/product/screens/inline.jpg" alt="The in-article widget: highlighted phrases inside a real article" loading="lazy"></div>
+        </div></div>
         <div class="format-body">
           <h3>In-article widget</h3>
           <p>An underlined phrase inside your post. The reader hovers or taps and the matched expert appears - no layout work, runs on every article you have written.</p>
@@ -224,7 +248,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
         </div>
       </a>
       <a class="format-card" href="/product/carousel">
-        <div class="format-thumb"><img src="/product/screens/carousel.jpg" alt="The Expert Carousel: rotating cards of real experts" loading="lazy"></div>
+        <div class="format-thumb"><div class="win">
+          <div class="win-bar"><i></i><i></i><i></i></div>
+          <div class="win-shot"><img src="/product/screens/carousel.jpg" alt="The Expert Carousel: rotating cards of real experts" loading="lazy"></div>
+        </div></div>
         <div class="format-body">
           <h3>Expert Carousel</h3>
           <p>A standalone block that rotates through recent posts, each paired with its expert. Drop it in a sidebar or between articles.</p>
@@ -232,7 +259,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
         </div>
       </a>
       <a class="format-card" href="/product/expert-board">
-        <div class="format-thumb"><img src="/product/screens/board.jpg" alt="The Expert Board: a searchable grid of real experts" loading="lazy"></div>
+        <div class="format-thumb"><div class="win">
+          <div class="win-bar"><i></i><i></i><i></i></div>
+          <div class="win-shot"><img src="/product/screens/board.jpg" alt="The Expert Board: a searchable grid of real experts" loading="lazy"></div>
+        </div></div>
         <div class="format-body">
           <h3>Expert Board</h3>
           <p>A browsable, searchable directory of every expert relevant to your audience - a whole page a reader can filter and book from.</p>
@@ -240,7 +270,15 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
         </div>
       </a>
       <a class="format-card" href="/product/manual-links">
-        <div class="format-thumb"><img src="/product/screens/dashboard.jpg" alt="The dashboard, where manual links are generated" loading="lazy"></div>
+        <div class="format-thumb"><div class="win">
+          <div class="win-bar"><i></i><i></i><i></i></div>
+          <div class="ml-mini">
+            <div class="lbl">Links · your dashboard</div>
+            <div class="ml-mini-paste">Paste a post, or a topic…</div>
+            <div class="ml-mini-match"><span class="dot"></span>Ahana Banerjee · Founder &amp; CEO, Clear</div>
+            <div class="ml-mini-link">introlinq.com/x/ahana-banerjee?ref=you<b>Copy</b></div>
+          </div>
+        </div></div>
         <div class="format-body">
           <h3>Manual links</h3>
           <p>No script. Paste a post in your dashboard, get the matched expert, copy a tracked link, and drop it into a newsletter, Substack or Medium.</p>
@@ -253,13 +291,14 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
   <section class="section">
     <div class="section-head">
       <h2 class="section-title">Real experts, not placeholders</h2>
-      <p class="section-lead">This is the live Expert Carousel from introlinq.com, showing vetted experts from the network - the same one you would install on your site.</p>
+      <p class="section-lead">The Expert Carousel shows vetted experts from the network - the same one you would install on your site. It scrolls on its own and pauses on hover.</p>
     </div>
-    <div class="shot">
-      <div class="shot-bar"><i></i><i></i><i></i><span>introlinq.com</span></div>
-      <img src="/product/screens/carousel.jpg" alt="The IntroLinq Expert Carousel running with real experts including Adib Bamieh, Ahana Banerjee and Alan Knight OBE">
+    <div class="shot-stage">
+      <div class="live-embed-host">
+        <script src="https://www.introlinq.com/carousel.js" data-publisher="introlinq"></script>
+      </div>
     </div>
-    <p class="shot-note">Screenshot of the live widget · <a href="/product/carousel" style="color:var(--sage);font-weight:500">see the Carousel page</a></p>
+    <p class="shot-note">A live example of the Expert Carousel · <a href="/product/carousel" style="color:var(--sage);font-weight:500">see the Carousel page</a></p>
   </section>
 
   <section class="section">
@@ -276,7 +315,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
           <tr><td>In-article widget</td><td>A blog - the default</td><td>Yes (one line)</td><td>mid-sentence, in the article</td></tr>
           <tr><td>Expert Carousel</td><td>Sidebars, between-post slots</td><td>Yes (one line)</td><td>in a rotating block</td></tr>
           <tr><td>Expert Board</td><td>A dedicated "get advice" page</td><td>Yes (one line)</td><td>by browsing and filtering</td></tr>
-          <tr><td>Manual links</td><td>Newsletters, Substack, Medium</td><td>No</td><td>via a link you place yourself</td></tr>
+          <tr><td>Manual links</td><td>Newsletters, Substack, Medium, social media</td><td>No</td><td>via a link you place yourself</td></tr>
         </tbody>
       </table>
     </div>
@@ -303,10 +342,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
         <p class="step-sub">Every booking shows in your dashboard. Payouts monthly via Wise or PayPal once you pass $50.</p>
       </div>
     </div>
-    <div class="shot">
-      <div class="shot-bar"><i></i><i></i><i></i><span>introlinq.com/dashboard</span></div>
-      <img src="/product/screens/dashboard.jpg" alt="A publisher dashboard showing 12 months of earnings growing to $13,493" loading="lazy">
-    </div>
+    <div class="shot-plain"><img src="/product/screens/dashboard.jpg" alt="A publisher dashboard showing 12 months of earnings growing to $13,493" loading="lazy"></div>
     <p class="shot-note">A publisher's earnings dashboard</p>
   </section>
 

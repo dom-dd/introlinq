@@ -123,6 +123,7 @@ ${nav()}
   ${cards}
 </div>
 ${footer()}
+<script src="https://www.introlinq.com/widget.js" data-publisher="introlinq"></script>
 </body>
 </html>`;
 }
@@ -181,6 +182,7 @@ ${nav()}
   </div>
 </div>
 ${footer()}
+<script src="https://www.introlinq.com/widget.js" data-publisher="introlinq"></script>
 </body>
 </html>`;
 }

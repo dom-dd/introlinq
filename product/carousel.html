@@ -40,7 +40,7 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -51,13 +51,14 @@
   --border:rgba(26,26,46,0.10);--border-soft:rgba(26,26,46,0.06);
   --radius:12px;--radius-sm:8px;
 }
-body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;line-height:1.6;position:relative}
+body{font-family:'Inter',system-ui,sans-serif;background:#f0ede6;color:var(--ink);min-height:100vh;line-height:1.6;position:relative}
 body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
   background:
-    radial-gradient(70% 55% at 12% -5%, rgba(61,122,95,0.13), transparent 60%),
-    radial-gradient(55% 45% at 100% 15%, rgba(230,168,32,0.12), transparent 55%),
-    radial-gradient(45% 40% at 85% 100%, rgba(61,122,95,0.08), transparent 60%),
-    var(--cream);
+    radial-gradient(72% 60% at 3% -12%, rgba(61,122,95,0.50), transparent 55%),
+    radial-gradient(66% 55% at 106% -4%, rgba(230,168,32,0.44), transparent 52%),
+    radial-gradient(70% 62% at 102% 104%, rgba(61,122,95,0.34), transparent 55%),
+    radial-gradient(52% 52% at 40% 122%, rgba(230,168,32,0.22), transparent 60%),
+    linear-gradient(160deg, #efe9de, #e9e2d3);
 }
 a{color:inherit}
 
@@ -93,14 +94,25 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .section-title{font-family:'DM Serif Display',serif;font-size:1.875rem;color:var(--ink);letter-spacing:-0.02em;margin-bottom:0.75rem;line-height:1.15;text-wrap:balance}
 .section-lead{font-size:1.0625rem;color:var(--ink-soft);line-height:1.7}
 
-.shot{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--white);box-shadow:0 20px 50px rgba(26,26,46,0.10)}
-.shot-bar{display:flex;align-items:center;gap:0.45rem;padding:0.8rem 1.1rem;border-bottom:1px solid var(--border-soft);background:#f3f2ee}
-.shot-bar i{width:10px;height:10px;border-radius:50%;background:#d8d6d0}
+.shot-stage{background:#1b1b2e;border-radius:22px;padding:2rem;box-shadow:0 24px 60px rgba(26,26,46,0.18);position:relative}
+.shot{border-radius:12px;overflow:hidden;background:var(--white);border:1px solid rgba(255,255,255,0.12);box-shadow:0 20px 44px rgba(0,0,0,0.32)}
+.shot-bar{display:flex;align-items:center;gap:0.45rem;padding:0.75rem 1.1rem;border-bottom:1px solid var(--border-soft);background:#f0eee9}
+.shot-bar i{width:10px;height:10px;border-radius:50%;background:#c9c6bf}
 .shot-bar span{margin-left:0.6rem;font-size:0.8125rem;color:var(--ink-muted)}
-.shot img{width:100%;display:block}
-.shot-note{font-size:0.8438rem;color:var(--ink-muted);margin-top:0.9rem;text-align:center}
+.shot img{width:100%;display:block;max-height:600px;object-fit:cover;object-position:top center}
+/* the real Expert Carousel, embedded with the one-line snippet - renders on introlinq.com and on a deploy; the artifact preview sandbox blocks the third-party script */
+.live-embed-host{min-height:210px}
+.live-embed-host:not(:has(*:not(script)))::after{content:'The live Expert Carousel loads here from introlinq.com.';display:block;text-align:center;padding:2.75rem 1rem;font-size:0.9rem;color:rgba(255,255,255,0.55)}
+/* hand-drawn "customise this" annotation, tucked under the widget with an arrow reaching up to a Book-a-call button */
+.demo-block{position:relative}
+.shot{position:relative}
+.anno{display:flex;justify-content:flex-end;align-items:flex-start;gap:0.45rem;margin:-1.1rem 13% 0 0;position:relative;z-index:4;pointer-events:none}
+.anno-text{font-family:'Caveat',ui-rounded,cursive;font-weight:700;font-size:1.45rem;color:#1a1a2e;line-height:1.05;transform:rotate(-3deg);text-align:right;white-space:nowrap;text-shadow:0 1px 0 #fff,0 0 7px rgba(255,255,255,0.95),0 0 16px rgba(255,255,255,0.9)}
+.anno-arrow{width:66px;height:auto;color:#1a1a2e;flex-shrink:0;margin-top:-2.5rem;filter:drop-shadow(0 1px 2px rgba(255,255,255,0.9))}
+@media(max-width:900px){.anno{display:none}}
+.shot-note{font-size:0.8438rem;color:var(--ink-muted);margin-top:1rem;text-align:center}
 
-.live-wrap{margin-top:2rem;background:var(--white);border:1px solid var(--border);border-radius:16px;padding:1.5rem 1.75rem}
+.live-wrap{margin-top:1.75rem}
 .live-label{font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--sage);margin-bottom:1rem}
 .live-embed{min-height:0}
 .live-embed:empty::after{content:'The interactive widget renders here on introlinq.com.';font-size:0.875rem;color:var(--ink-muted);display:block}
@@ -191,18 +203,23 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
   <section class="section">
     <div class="section-head">
       <h2 class="section-title">See it with real experts</h2>
-      <p class="section-lead">This is the live Carousel from introlinq.com. Every card is a real vetted expert from the network - name, role, company and a "Book a call" link.</p>
+      <p class="section-lead">Every card is a real vetted expert from the network - name, role, company and a "Book a call" link. It scrolls on its own, and pauses when the reader hovers.</p>
     </div>
-    <div class="shot">
-      <div class="shot-bar"><i></i><i></i><i></i><span>introlinq.com</span></div>
-      <img src="/product/screens/carousel.jpg" alt="The IntroLinq Expert Carousel with real experts: Adib Bamieh, Ahana Banerjee, Alan Knight OBE, Alex Atherton">
+    <div class="demo-block">
+      <div class="shot-stage">
+        <div class="live-embed-host">
+          <script src="https://www.introlinq.com/carousel.js" data-publisher="introlinq"></script>
+        </div>
+      </div>
+      <div class="anno" aria-hidden="true">
+        <span class="anno-text">Change this colour<br>to match your site</span>
+        <svg class="anno-arrow" viewBox="0 0 90 130" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M80 124 C 72 92, 76 48, 40 26 C 27 18, 17 14, 8 12"/>
+          <path d="M27 5 L 6 11 L 14 31"/>
+        </svg>
+      </div>
     </div>
-    <p class="shot-note">Screenshot of the live widget, running on the demo publisher</p>
-
-    <div class="live-wrap">
-      <div class="live-label">Live on this page</div>
-      <div class="live-embed" id="live-carousel"></div>
-    </div>
+    <p class="shot-note">A live example of the Expert Carousel, with real experts from the network</p>
   </section>
 
   <section class="section">
@@ -431,18 +448,6 @@ document.addEventListener('click', function (e) {
     m.previousElementSibling.setAttribute('aria-expanded', 'false');
   });
 });
-</script>
-<!-- Live Expert Carousel (real widget, demo publisher). Renders on introlinq.com; blocked by CSP in isolated previews. -->
-<script>
-(function () {
-  var host = document.getElementById('live-carousel');
-  if (!host) return;
-  var s = document.createElement('script');
-  s.src = 'https://www.introlinq.com/carousel.js';
-  s.setAttribute('data-publisher', 'demo-homepage');
-  s.defer = true;
-  host.appendChild(s);
-})();
 </script>
 
 <!-- Google tag (gtag.js) -->
