@@ -95,13 +95,51 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+// A calm on-brand cover for posts with no photo (Wikimedia Commons search
+// came back empty, or a seed post). Mirrors the site's own radial-blob
+// background plus a small "connections" node graph, so it reads as designed
+// art rather than a missing image. Deterministic per slug, so a given post
+// always gets the same cover.
+function svgCover(slug) {
+  let seed = 2166136261 >>> 0;
+  for (let i = 0; i < slug.length; i++) { seed ^= slug.charCodeAt(i); seed = Math.imul(seed, 16777619) >>> 0; }
+  const rand = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+  const W = 1200, H = 420, N = 6;
+  const nodes = [];
+  for (let i = 0; i < N; i++) nodes.push([Math.round(140 + rand() * (W - 280)), Math.round(80 + rand() * (H - 190))]);
+  let lines = '';
+  for (let i = 1; i < N; i++) lines += `<line x1='${nodes[i - 1][0]}' y1='${nodes[i - 1][1]}' x2='${nodes[i][0]}' y2='${nodes[i][1]}'/>`;
+  lines += `<line x1='${nodes[0][0]}' y1='${nodes[0][1]}' x2='${nodes[N - 1][0]}' y2='${nodes[N - 1][1]}'/>`;
+  let dots = '';
+  nodes.forEach((n, i) => {
+    dots += `<circle cx='${n[0]}' cy='${n[1]}' r='${i % 2 ? 10 : 6}' fill='${i % 3 === 1 ? '#e6a820' : '#3d7a5f'}' fill-opacity='0.8'/>`;
+  });
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${W}' height='${H}' viewBox='0 0 ${W} ${H}'>`
+    + `<defs>`
+    + `<linearGradient id='bg' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#f2ede3'/><stop offset='1' stop-color='#e8e0d0'/></linearGradient>`
+    + `<radialGradient id='s' cx='0.12' cy='0.05' r='0.7'><stop offset='0' stop-color='#3d7a5f' stop-opacity='0.42'/><stop offset='1' stop-color='#3d7a5f' stop-opacity='0'/></radialGradient>`
+    + `<radialGradient id='o' cx='0.97' cy='0.03' r='0.6'><stop offset='0' stop-color='#e6a820' stop-opacity='0.4'/><stop offset='1' stop-color='#e6a820' stop-opacity='0'/></radialGradient>`
+    + `</defs>`
+    + `<rect width='${W}' height='${H}' fill='url(#bg)'/><rect width='${W}' height='${H}' fill='url(#s)'/><rect width='${W}' height='${H}' fill='url(#o)'/>`
+    + `<g stroke='#3d7a5f' stroke-opacity='0.3' stroke-width='1.5'>${lines}</g>${dots}`
+    + `<text x='64' y='372' font-family='Georgia, serif' font-size='30' fill='#1a1a2e' fill-opacity='0.66'>Intro<tspan fill='#3d7a5f' fill-opacity='0.85'>Linq</tspan></text>`
+    + `</svg>`;
+  return 'data:image/svg+xml,' + encodeURIComponent(svg);
+}
+
+// Real photo when the post has one, on-brand generated cover otherwise -
+// so every card and every article header carries an image.
+function coverSrc(post) {
+  return post.image_url || svgCover(post.slug || '');
+}
+
 function renderIndex(posts) {
   const title = 'Blog - IntroLinq';
   const description = 'Ideas and guides on monetizing a blog, written for independent publishers.';
   const cards = posts.length
     ? posts.map((p) => `
       <a class="post-card" href="/blog/${esc(p.slug)}">
-        ${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.image_alt || '')}" loading="lazy">` : ''}
+        <img src="${esc(coverSrc(p))}" alt="${esc(p.image_alt || p.title)}" loading="lazy">
         <div class="post-card-body">
           <div class="post-card-title">${esc(p.title)}</div>
           <p class="post-card-excerpt">${esc(p.excerpt || '')}</p>
@@ -159,6 +197,7 @@ function renderPost(post) {
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta property="og:title" content="${esc(post.title)}">
 <meta property="og:description" content="${esc(post.meta_description || post.excerpt || '')}">
+<meta property="og:type" content="article">
 ${post.image_url ? `<meta property="og:image" content="${esc(post.image_url)}">` : ''}
 <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
 ${fontLinks()}
@@ -168,11 +207,15 @@ ${fontLinks()}
 ${nav()}
 <div class="page-wrap">
   <a class="back-link" href="/blog">← Blog</a>
-  ${post.image_url ? `<img class="article-hero" src="${esc(post.image_url)}" alt="${esc(post.image_alt || '')}">` : ''}
+  <img class="article-hero" src="${esc(coverSrc(post))}" alt="${esc(post.image_alt || post.title)}">
   ${post.image_credit ? `<p class="article-credit">Image: ${esc(post.image_credit)}</p>` : ''}
   <h1 class="article-title">${esc(post.title)}</h1>
   <p class="article-date">${formatDate(post.created_at)}</p>
   <div class="article-body">${post.body_html}</div>
+
+  <div style="margin-top:3rem">
+    <script src="https://www.introlinq.com/carousel.js" data-publisher="introlinq"></script>
+  </div>
 
   <p class="related-title">More monetization guides</p>
   <div class="related-guides">
