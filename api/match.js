@@ -649,6 +649,91 @@ async function logCachedImpression(sql, { publisher, page_url, page_title, match
   }
 }
 
+// The serve-time widget config derived from a publisher row - the bits both
+// the main scan/cache-hit path and the lightweight checkCache poll need, in
+// one place so the two can't drift on the config shape. maxMatches and the
+// sensitivity instruction are NOT here: those only matter to a fresh AI scan,
+// which the poll path never runs.
+function publisherConfig(pub) {
+  if (!pub) {
+    return {
+      pubConfig: { color: '#e6a820', accent: '#e6a820', size: 'medium', highlightStyle: 'fill', discoveryCue: true },
+      enabledPartners: null, // null = homepage demo
+      noMatchFallbackEnabled: false,
+    };
+  }
+  return {
+    pubConfig: {
+      color: pub.widget_color || '#e6a820',
+      accent: pub.accent_color || '#e6a820',
+      size: pub.widget_size || 'medium',
+      highlightStyle: pub.highlight_style || 'fill',
+      discoveryCue: pub.discovery_cue_enabled !== false,
+      noMatchTextColor: pub.no_match_text_color || null,
+      noMatchAnchorSelector: pub.no_match_anchor_selector || null,
+      company_name: pub.name || null,
+    },
+    enabledPartners: pub.enabled_partners || ['openintro'],
+    noMatchFallbackEnabled: pub.no_match_fallback_enabled === true,
+  };
+}
+
+// Lightweight poll from widget.js after it received `pending: true` on a
+// cache miss: has the background scan written the cache yet? One indexed
+// cache read - no article body, no scan claim, no scan-cap accounting - so
+// the visitor who triggered the scan can still pick up the highlights on
+// this same pageview once it lands, instead of only on a later visit. The
+// widget stops polling on its own cap; a still-empty result just says
+// `pending` again.
+async function handleCacheCheck(req, res) {
+  const publisher = req.body.publisher;
+  const page_url = normalizePageUrl(req.body.page_url);
+  const contentHash = typeof req.body.content_hash === 'string' ? req.body.content_hash.slice(0, 64) : null;
+  if (!page_url) return res.status(200).json({ matches: [], pending: true });
+
+  const sql = neon(process.env.DATABASE_URL);
+  await ensureCacheTable(sql);
+
+  const [pubRows, cachedRows] = await Promise.all([
+    publisher
+      ? sql`SELECT name, widget_color, accent_color, widget_size, highlight_style, discovery_cue_enabled, no_match_fallback_enabled, no_match_text_color, no_match_anchor_selector, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners FROM publishers WHERE slug = ${publisher} AND active = true LIMIT 1`.catch(() => [null])
+      : Promise.resolve([null]),
+    sql`
+      SELECT result, has_match, content_hash, lang_code FROM match_cache
+      WHERE page_url = ${page_url}
+        AND publisher = ${publisher || ''}
+        AND country_code = ${GLOBAL_CACHE_COUNTRY}
+        AND (
+          has_match = true
+          OR (has_match = false AND (confirmed = true OR cached_at > NOW() - INTERVAL '24 hours'))
+        )
+        AND cached_at > NOW() - INTERVAL '1 year'
+      ORDER BY has_match DESC
+      LIMIT 1
+    `.catch(() => [null]),
+  ]);
+
+  const pub = pubRows[0];
+  if (publisher && !pub) return res.status(200).json({ matches: [] });
+
+  const cached = cachedRows[0];
+  // Not written yet, or the row describes different article text than the
+  // poller is looking at - keep it `pending` and let the widget's cap decide
+  // when to stop.
+  if (!cached || (cached.content_hash && contentHash && cached.content_hash !== contentHash)) {
+    return res.status(200).json({ matches: [], pending: true });
+  }
+
+  const { pubConfig, enabledPartners, noMatchFallbackEnabled } = publisherConfig(pub);
+  const readerCountry = (req.headers['x-vercel-ip-country'] || '').toUpperCase();
+  const ip = getClientIp(req);
+  if (await tryServeFromCache(res, sql, { cached, enabledPartners, publisher, page_url, page_title: req.body.page_title, readerCountry, ip, pubConfig, req, noMatchFallbackEnabled })) return;
+  // Row existed but yielded nothing servable (all referenced experts
+  // unpublished, drifted-empty positive) - treat as still pending; the
+  // widget stops on its cap and the next real visit rescans.
+  return res.status(200).json({ matches: [], pending: true });
+}
+
 // Shared by both the normal cache-hit path and the burst short-circuit
 // below - the only difference is whether the entry looked fresh or stale
 // when it was decided this was safe to serve. Sends the response itself
@@ -1244,6 +1329,11 @@ export default async function handler(req, res) {
   if (req.body && req.body.partialCache === true) {
     return handlePartialCache(req, res);
   }
+  // Cache-read-only poll the widget sends after a `pending` miss, to pick up
+  // the background scan's result on the same pageview (see handleCacheCheck).
+  if (req.body && req.body.checkCache === true) {
+    return handleCacheCheck(req, res);
+  }
 
   const { article, page_title, lang } = req.body;
   const page_url = normalizePageUrl(req.body.page_url);
@@ -1351,9 +1441,11 @@ export default async function handler(req, res) {
 
     let maxMatches = 3;
     let sensitivityInstruction = 'Match on broader topic overlap. If the expert\'s field is relevant to the section, include them. Prefer more matches over fewer.';
-    let pubConfig = { color: '#e6a820', accent: '#e6a820', size: 'medium', highlightStyle: 'fill', discoveryCue: true };
-    let enabledPartners = null; // null = homepage demo
-    let noMatchFallbackEnabled = false;
+    // Config shape shared with the checkCache poll path - see publisherConfig.
+    const resolved = publisherConfig(pub);
+    let pubConfig = resolved.pubConfig;
+    let enabledPartners = resolved.enabledPartners; // null = homepage demo
+    let noMatchFallbackEnabled = resolved.noMatchFallbackEnabled;
 
     if (pub) {
       const powerMap = { light: 2, moderate: 4, heavy: 10, unlimited: 15 };
@@ -1364,9 +1456,6 @@ export default async function handler(req, res) {
         open: 'Match on broader topic overlap. If the expert\'s field is relevant to the section, include them. Prefer more matches over fewer.',
       };
       sensitivityInstruction = sensitivityMap[pub.match_sensitivity] ?? sensitivityMap.balanced;
-      pubConfig = { color: pub.widget_color || '#e6a820', accent: pub.accent_color || '#e6a820', size: pub.widget_size || 'medium', highlightStyle: pub.highlight_style || 'fill', discoveryCue: pub.discovery_cue_enabled !== false, noMatchTextColor: pub.no_match_text_color || null, noMatchAnchorSelector: pub.no_match_anchor_selector || null, company_name: pub.name || null };
-      enabledPartners = pub.enabled_partners || ['openintro'];
-      noMatchFallbackEnabled = pub.no_match_fallback_enabled === true;
     }
 
     // widget2.js experiment - explicit opt-in only, so this can never affect

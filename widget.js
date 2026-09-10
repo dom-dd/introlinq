@@ -335,6 +335,53 @@
     var pageUrl = window.location.href;
     var contentHash = hashText(text);
 
+    // Renders whatever a cache-bearing response carried (a real match set, or
+    // a confirmed no-match verdict). Guarded so the first cache hit OR the
+    // first successful poll below renders, never both.
+    var rendered = false;
+    function renderFromData(data) {
+      if (rendered) return;
+      rendered = true;
+      if (data.noMatch) {
+        injectStyles(data.config || {});
+        showNoMatchFallback(el, data.config || {}, data.randomExperts, data.randomExpertsTotal);
+        return;
+      }
+      var shown = applyMatches(data);
+      if (data.matches.length > 0 && (!shown || shown.length === 0)) {
+        fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ staleCache: true, publisher: PUB, page_url: pageUrl })
+        }).catch(function () {});
+      }
+    }
+
+    // Cache-miss recovery: a miss makes the server claim a background scan and
+    // return `pending` with nothing to show (see api/match.js). That scan
+    // writes the cache a few seconds later - poll for it so a reader still on
+    // the page gets the highlights on THIS visit, not only on a later one.
+    // Backs off, then gives up (the next visit still serves it from cache).
+    // checkCache is a cache-read-only request: no article body, no scan claim.
+    var POLL_SCHEDULE = [3000, 4000, 5000, 7000, 9000, 11000, 13000];
+    function pollForCache(i) {
+      if (rendered || i >= POLL_SCHEDULE.length) return;
+      setTimeout(function () {
+        if (rendered) return;
+        fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ checkCache: true, publisher: PUB, page_url: pageUrl, page_title: document.title, content_hash: contentHash })
+        })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .catch(function () { return null; })
+          .then(function (data) {
+            if (data && data.cached) { renderFromData(data); return; }
+            pollForCache(i + 1);
+          });
+      }, POLL_SCHEDULE[i]);
+    }
+
     // One request for the whole article, whatever its length - no more
     // quick/chunk split, since nobody waits on the AI call anymore (see
     // api/match.js: a cache miss claims the page for a background scan and
@@ -361,37 +408,17 @@
             .catch(function () { return null; });
         })
         .then(function (data) {
-          // Nothing to render this visit, either because the page is still
-          // pending its background scan, or both attempts failed outright -
-          // there's nothing further to do; no polling, no follow-up request.
-          if (!data || !data.cached) return;
-          // NO-MATCH FALLBACK: the page was genuinely scanned and confirmed
-          // to have nothing relevant - the server sets noMatch:true
-          // specifically for this case (see tryServeFromCache in
-          // api/match.js), distinct from "not scanned yet" (which has no
-          // `cached` field at all and was already returned above). No need
-          // to re-check isLikelyArticlePage() here - tryRun already returned
-          // before reaching postScan() at all if this wasn't one.
-          if (data.noMatch) {
-            injectStyles(data.config || {});
-            showNoMatchFallback(el, data.config || {}, data.randomExperts, data.randomExpertsTotal);
-            return;
-          }
-          var shown = applyMatches(data);
-          // The server said this page has experts, but none of their phrases
-          // could be found in the live DOM - the exact wording drifted since
-          // it was scanned (a CMS re-render, an ad shifting surrounding text,
-          // anything), and a cache hit has no other way to ever learn that
-          // happened. Tell the server to throw the entry away so the NEXT
-          // visitor gets a fresh scan instead of the same silent failure
-          // repeating indefinitely.
-          if (data.matches.length > 0 && (!shown || shown.length === 0)) {
-            fetch(API, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ staleCache: true, publisher: PUB, page_url: pageUrl })
-            }).catch(function () {});
-          }
+          // Cache hit (a real match set, or a confirmed no-match verdict):
+          // render it. The stale-DOM self-heal for a drifted cache entry
+          // lives in renderFromData.
+          if (data && data.cached) { renderFromData(data); return; }
+          // Cache miss: the server has claimed a background scan (or joined
+          // one already in flight) and returned `pending` with nothing to
+          // show yet. Poll for the result so a reader who stays on the page
+          // still gets the highlights this visit. `capped` means no scan
+          // will run, and a null `data` means neither attempt reached the
+          // server, so nothing will ever land - don't poll in either case.
+          if (data && data.pending) pollForCache(0);
         });
     }
     postScan();
