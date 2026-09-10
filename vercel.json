@@ -9,6 +9,7 @@
     { "source": "/short.html", "destination": "/", "permanent": true }
   ],
   "rewrites": [
+    { "source": "/proposal", "destination": "/api/proposal" },
     { "source": "/brief", "destination": "/api/admin?resource=brief" },
     { "source": "/blog", "destination": "/api/blog" },
     { "source": "/blog/:slug", "destination": "/api/blog?slug=:slug" }
