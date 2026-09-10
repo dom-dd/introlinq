@@ -211,51 +211,49 @@ tr:last-child td{border-bottom:none}
   <h1>Investment Proposal</h1>
   <p class="meta">Prepared for Rob Pierre &nbsp;&middot;&nbsp; via Robert Rayner &amp; Talveer Atwal, Sarana Capital Partners &nbsp;&middot;&nbsp; 10 September 2026</p>
 
-  <p>Working summary of the terms reached in correspondence with Rob Pierre (&ldquo;RP&rdquo;). This is a reference to carry into the ASAs and shareholders&rsquo; agreement, not a binding offer. All figures in <strong>&pound;</strong> sterling. Both cash tranches are made through an <strong>ASA</strong> (Advance Subscription Agreement).</p>
+  <p>The terms below set out the proposed investment in full, for Rob Pierre (&ldquo;RP&rdquo;) to accept or decline. The binding documents will be the signed ASAs and shareholders&rsquo; agreement. All figures in <strong>&pound;</strong> sterling. Both cash tranches are made through an <strong>ASA</strong> (Advance Subscription Agreement).</p>
 
   <div class="callout">
-    <p><strong>Shape of the deal:</strong> RP reaches <strong>~20%</strong> of IntroLinq &mdash; a <strong>16%</strong> grant on day one that mirrors his OpenIntro holding, plus <strong>~2% + ~2%</strong> from two <strong>&pound;50,000</strong> investments at <strong>&pound;2.5m</strong> and <strong>&pound;2.55m</strong> post-money caps. Total new cash: <strong>&pound;100,000</strong>, the second half milestone-gated.</p>
+    <p><strong>Shape of the deal:</strong> RP reaches <strong>~20%</strong> of IntroLinq - a <strong>16%</strong> grant on day one (mirroring his 14.27% OpenIntro holding, rounded up as goodwill), plus <strong>~2% + ~2%</strong> from two <strong>&pound;50,000</strong> investments at <strong>&pound;2.5m</strong> and <strong>&pound;2.55m</strong> post-money caps. Total new cash: <strong>&pound;100,000</strong>, the second half milestone-gated.</p>
   </div>
 
   <h2>Headline terms</h2>
   <table>
     <tr><th>Element</th><th>Terms</th></tr>
-    <tr><td>Day 1 grant</td><td>16% of IntroLinq issued to RP up front, in respect of equity he contributed to OpenIntro and mirroring his current OpenIntro ownership. Not tied to the new cash.</td></tr>
-    <tr><td>Tranche 1</td><td><strong>&pound;50,000, unconditional.</strong> ASA, transferred monthly as 6 &times; &pound;8,333. Converts within 6 months of signing. &pound;2.5m post-money cap &rarr; ~2%.</td></tr>
-    <tr><td>Tranche 2</td><td><strong>&pound;50,000, milestone-gated.</strong> Second ASA, drawn in one lump if the month-5 milestones are met. Converts on milestone achievement. &pound;2.55m post-money cap &rarr; ~2%.</td></tr>
+    <tr><td>Day 1 grant</td><td>16% of IntroLinq issued to RP up front, mirroring his 14.27% OpenIntro holding with the balance offered as goodwill. Not tied to the new cash.</td></tr>
+    <tr><td>Tranche 1</td><td><strong>&pound;50,000, unconditional.</strong> ASA, transferred monthly as 6 &times; &pound;8,333. &pound;2.5m post-money cap &rarr; ~2%.</td></tr>
+    <tr><td>Tranche 2</td><td><strong>&pound;50,000, milestone-gated.</strong> Second ASA, drawn in one lump once the milestones are met. &pound;2.55m post-money cap &rarr; ~2%.</td></tr>
     <tr class="total"><td>If both tranches land</td><td>~20% for &pound;100,000 &nbsp;(16% + ~2% + ~2%)</td></tr>
     <tr class="total"><td>If Tranche 2 lapses</td><td>~18% for &pound;50,000 &nbsp;(16% + ~2%)</td></tr>
   </table>
 
-  <h2>Day 1 &mdash; the 16% grant</h2>
+  <h2>Day 1 - the 16% grant</h2>
   <ul>
-    <li>Shares equal to <strong>16%</strong> of IntroLinq, issued to RP on completion.</li>
-    <li>Recognises equity RP already contributed to OpenIntro and <strong>mirrors his current OpenIntro ownership</strong>.</li>
-    <li>An <strong>unpriced grant</strong> &mdash; separate from the cash, so it does not set or depress IntroLinq&rsquo;s headline valuation.</li>
-    <li>Supersedes the earlier idea of a single &pound;100k investment to equalise RP&rsquo;s OpenIntro shares into IntroLinq. Now: 16% mirror grant + &pound;50k guaranteed + &pound;50k conditional.</li>
+    <li>RP&rsquo;s holding in OpenIntro is exactly <strong>14.27%</strong>. IntroLinq will issue him shares equal to <strong>16%</strong>, with the difference offered as <strong>goodwill</strong> in recognition of his early support.</li>
+    <li>Mirrors his OpenIntro position, in respect of equity already contributed there.</li>
+    <li>An <strong>unpriced grant</strong>, separate from the cash, so it does not set or depress IntroLinq&rsquo;s headline valuation.</li>
+    <li>Supersedes the earlier idea of a single &pound;100k investment to equalise RP&rsquo;s OpenIntro shares into IntroLinq. Now: 16% grant + &pound;50k guaranteed + &pound;50k conditional.</li>
   </ul>
 
-  <h2>Tranche 1 &mdash; &pound;50,000, guaranteed</h2>
+  <h2>Tranche 1 - &pound;50,000, guaranteed</h2>
   <ul>
     <li>Via ASA. <strong>No conditions</strong> once the ASA is signed.</li>
     <li>Transferred in <strong>6 monthly instalments of &pound;8,333</strong> (upfront each month). The commitment is unconditional; only the transfer is phased.</li>
-    <li>Converts <strong>within 6 months of signing</strong>.</li>
     <li><strong>&pound;2.5m post-money cap</strong>, or a 20% discount to the next round if that round prices below &pound;2.5m.</li>
     <li>Priced entry works out at <strong>2%</strong> (2% &times; &pound;2.5m = &pound;50,000, exact).</li>
   </ul>
 
-  <h2>Tranche 2 &mdash; &pound;50,000, milestone-gated</h2>
-  <p>Second ASA, &pound;50,000 drawn in one go, subject to all of the following being met <strong>by the end of month 5</strong>:</p>
+  <h2>Tranche 2 - &pound;50,000, milestone-gated</h2>
+  <p>Second ASA, &pound;50,000 drawn in one go, subject to all of the following being met <strong>by the end of March 2027</strong>:</p>
   <ul>
-    <li>At least <strong>one sales-team resource hired</strong> &mdash; expected to be offshore, part-time and heavily performance-incentivised, not necessarily a full-time UK employee.</li>
+    <li>At least <strong>one sales-team resource hired</strong> - expected to be offshore, part-time and heavily performance-incentivised, not necessarily a full-time UK employee.</li>
     <li>More than <strong>200 publishers</strong> on the platform.</li>
-    <li>More than <strong>30 transactions</strong> &mdash; widened from &ldquo;bookings&rdquo; to &ldquo;transactions&rdquo; so it also captures course sales and other content.</li>
+    <li>More than <strong>30 transactions</strong> - widened from &ldquo;bookings&rdquo; to &ldquo;transactions&rdquo; so it also captures course sales and other content.</li>
     <li>More than <strong>one supplier</strong> live on the platform (i.e. not only OpenIntro).</li>
   </ul>
   <ul>
-    <li>Possible <strong>half-way review</strong> of milestone progress, if RP wants it.</li>
-    <li>Converts <strong>on milestone achievement</strong>.</li>
-    <li><strong>&pound;2.55m post-money cap</strong> &rarr; ~2%. (2% &times; &pound;2.55m = &pound;51,000; treat as ~2% for &pound;50,000 and let counsel pin the exact share count.)</li>
+    <li>The milestone period runs through to <strong>the end of March 2027</strong>, with an optional mid-point review of progress.</li>
+    <li><strong>&pound;2.55m post-money cap</strong> &rarr; ~2%. (2% &times; &pound;2.55m = &pound;51,000; treat as ~2% for &pound;50,000, with the exact share count set by counsel.)</li>
   </ul>
 
   <h2>Two funding rounds, back-to-back</h2>
@@ -268,28 +266,9 @@ tr:last-child td{border-bottom:none}
   <h2>SEIS</h2>
   <ul>
     <li>RP intends to claim <strong>SEIS relief</strong> on the investment.</li>
-    <li><strong>Tranche 1:</strong> unconditional commitment with a phased transfer &mdash; intended to sit under a <strong>single 6-month long-stop</strong>, not one per instalment.</li>
-    <li><strong>Tranche 2:</strong> separate ASA with its own <strong>6-month long-stop</strong> running from milestone achievement.</li>
-    <li>Long-stop treatment to be <strong>confirmed with a tax adviser</strong>.</li>
+    <li><strong>Tranche 1:</strong> treated as a single unconditional subscription despite the phased transfer, so it sits under one SEIS long-stop rather than one per instalment.</li>
+    <li><strong>Tranche 2:</strong> a separate ASA with its own SEIS long-stop running from milestone achievement.</li>
   </ul>
-
-  <h2>Open points to finalise</h2>
-  <ul>
-    <li><strong>&ldquo;Sales resource&rdquo; definition</strong> &mdash; direction agreed (offshore / part-time / performance-incentivised); exact wording to be set in the Tranche 2 ASA.</li>
-    <li><strong>Milestone attribution</strong> &mdash; whether the sales milestone is met by overall sign-up / transaction growth in the window, or only results attributable to that hire&rsquo;s activity. Raised, not yet resolved.</li>
-    <li><strong>Fixed vs scaling targets</strong> &mdash; whether the &gt;30 transactions / &gt;200 publishers targets stay fixed or scale with supplier diversity. Leaning towards tying the proof point to sign-ups / transactions driven by the sales spend.</li>
-    <li><strong>Exact percentages and share counts</strong> for both tranches &mdash; to be pinned by counsel.</li>
-    <li><strong>Tax adviser sign-off</strong> on the SEIS long-stop treatment for the phased Tranche 1.</li>
-  </ul>
-
-  <h2>Timing &amp; next steps</h2>
-  <ol>
-    <li>Circulate this revised proposal to Rob Pierre for final review.</li>
-    <li>Close out the open points above.</li>
-    <li>Instruct solicitors to draft the two ASAs and the shareholders&rsquo; agreement, with the Tranche 2 milestones written into the second ASA.</li>
-    <li>Board approval and shareholder consents for the allotment; issue the Day 1 16%.</li>
-  </ol>
-  <p>Target: terms agreed and papered <strong>by the end of September 2026</strong>.</p>
 
   <h2>Shareholding summary</h2>
   <table>
@@ -300,11 +279,11 @@ tr:last-child td{border-bottom:none}
   <p style="font-size:0.8125rem;color:var(--ink-muted)">Illustrative, before any option pool. Exact figures depend on the current cap table and how the pool is handled.</p>
 
   <div class="note">
-    <p>Working summary drawn from the deal correspondence up to 10 September 2026. The binding terms are the signed ASAs and shareholders&rsquo; agreement. Confidential &mdash; do not distribute.</p>
+    <p>Terms as proposed on 10 September 2026. The binding terms are the signed ASAs and shareholders&rsquo; agreement. Confidential - do not distribute.</p>
   </div>
 
   <div class="foot">
-    <span>IntroLinq &mdash; Confidential</span>
+    <span>IntroLinq - Confidential</span>
     <a href="/proposal?logout">Lock this page</a>
   </div>
 </div>
