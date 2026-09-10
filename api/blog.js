@@ -195,6 +195,56 @@ ${footer()}
 </html>`;
 }
 
+// Posts that ship with the repo rather than living in the blog_posts table.
+// Rendered through the same template as DB posts (so they carry the nav,
+// footer and the data-publisher="introlinq" widget script), and served when
+// the DB has no row for that slug - which also means they keep working if
+// the DB is briefly unreachable. A real blog_posts row with the same slug
+// overrides the seed. Added 2026-09 as a clean, self-hosted widget demo
+// surface for partner outreach.
+const SEED_POSTS = [
+  {
+    slug: 'first-decisions-when-you-start-a-company',
+    title: 'The First Decisions That Shape a Startup',
+    meta_description: 'The early calls that are hard to undo later: co-founder equity, when to raise, pricing the first product, and your first hire.',
+    excerpt: 'Most of what you do in year one is reversible. A few things are not. Here are the early decisions worth slowing down for.',
+    image_url: null,
+    image_alt: null,
+    image_credit: null,
+    topic: 'startups',
+    created_at: '2026-09-08T09:00:00.000Z',
+    body_html: `<p>Most of what you do in the first year of a company is reversible. You can rename the product, redo the landing page, cut a feature, change your mind about a market. A few decisions are different. They set terms that are awkward, expensive, or relationship-testing to unwind later, and they tend to get made fast, early, and with too little outside advice. These are the ones worth slowing down for.</p>
+
+<h2>Splitting equity with a co-founder</h2>
+<p>The default instinct is a clean 50/50, and for two people starting at the same time with the same commitment, that is often the right answer. The mistake is treating the split as a one-line agreement rather than a structure. Whatever the percentages, put everyone on a vesting schedule, usually four years with a one-year cliff, so a co-founder who leaves after five months does not walk away owning a quarter of the company. Write down what happens if someone goes part-time, brings in outside money on a side project, or wants out entirely.</p>
+<p>The conversation feels adversarial while you are still excited and aligned, which is exactly why it is easy to skip. It is far harder to have a year in, when the stakes are real and the goodwill is thinner. If you cannot get through the awkward version of this discussion now, that is useful information too.</p>
+
+<h2>Deciding when to raise, and how much</h2>
+<p>Raising money is not a milestone, it is a trade. You are selling a permanent share of the company for a temporary runway, and the price is set by how little proof you have. Raising before you can show that someone wants what you are building means selling that share cheaply. Raising a much larger round than you need buys time you might spend going in the wrong direction, and raises the bar for the round after it.</p>
+<p>Before you start a process, get specific about what the money is for. What will be true in twelve months that is not true today, and what is the smallest amount that gets you there with a margin for error. The structure matters as much as the amount. An early convertible or SAFE with a sensible cap is fast and cheap. A priced round brings a lead investor, a board seat, and terms that shape every round that follows. Someone who has sat on both sides of that table can talk you out of agreeing to something standard-looking that quietly costs you later.</p>
+
+<h2>Pricing the first version</h2>
+<p>Founders underprice. The first number you pick becomes an anchor that is hard to move up without a story, and a low anchor pulls in the customers who are hardest to serve and quickest to leave. Pricing at this stage is not a spreadsheet exercise. It is a series of conversations with the people you want as buyers, where you are trying to learn what the problem currently costs them and what they already pay to make it hurt less.</p>
+<p>Charge money early, even from friendly design partners, even at a discount. A customer who pays is giving you a real signal. A customer who uses it for free is doing you a favour.</p>
+
+<h2>Making the first hire</h2>
+<p>The first person you bring on sets the culture whether you mean them to or not. They usually need to be a generalist who is comfortable with no process and shifting priorities, not the strongest specialist you can afford. Try the working relationship as a paid contract project before either side commits to full time. Be honest with yourself about what you are genuinely slow or bad at, and hire against that, instead of hiring another version of yourself.</p>
+<p>The cost of a wrong early hire is not just the salary. It is the months you spend managing around the problem, and the bar it sets for everyone who joins after them.</p>
+
+<h2>Where to get a second opinion</h2>
+<p>None of these decisions has a single correct answer, and the advice that helps is specific to your situation, not a blog post. The people worth asking are the ones who have made the same call, ideally more than once, and can tell you what they would do differently. A short conversation before you sign something is worth far more than a long one afterwards.</p>`,
+  },
+];
+
+// DB posts win over a seed with the same slug; seeds fill in when the DB has
+// none for that slug (or is unreachable). Newest first, by created_at.
+function mergePosts(dbPosts) {
+  const seen = new Set(dbPosts.map((p) => p.slug));
+  return dbPosts
+    .concat(SEED_POSTS.filter((p) => !seen.has(p.slug)))
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+}
+
 export default async function handler(req, res) {
   const sql = neon(process.env.DATABASE_URL);
 
@@ -219,14 +269,16 @@ export default async function handler(req, res) {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
 
   if (slug) {
-    const [post] = await sql`SELECT * FROM blog_posts WHERE slug = ${slug}`.catch(() => []);
+    const [dbPost] = await sql`SELECT * FROM blog_posts WHERE slug = ${slug}`.catch(() => []);
+    const post = dbPost || SEED_POSTS.find((p) => p.slug === slug);
     if (!post) {
       res.status(404);
-      return res.send(renderIndex(await sql`SELECT slug, title, excerpt, image_url, image_alt, created_at FROM blog_posts ORDER BY created_at DESC`.catch(() => [])));
+      const dbPosts = await sql`SELECT slug, title, excerpt, image_url, image_alt, created_at FROM blog_posts ORDER BY created_at DESC`.catch(() => []);
+      return res.send(renderIndex(mergePosts(dbPosts)));
     }
     return res.send(renderPost(post));
   }
 
-  const posts = await sql`SELECT slug, title, excerpt, image_url, image_alt, created_at FROM blog_posts ORDER BY created_at DESC`.catch(() => []);
-  return res.send(renderIndex(posts));
+  const dbPosts = await sql`SELECT slug, title, excerpt, image_url, image_alt, created_at FROM blog_posts ORDER BY created_at DESC`.catch(() => []);
+  return res.send(renderIndex(mergePosts(dbPosts)));
 }
