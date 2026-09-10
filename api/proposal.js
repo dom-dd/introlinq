@@ -10,6 +10,11 @@ import crypto from 'crypto';
  * value is sha256(secret + password) so the raw password never round-trips
  * back in a header. No database, no sessions table - this is a one-reader
  * page, not an account system.
+ *
+ * Slack alerts mirror the /brief page (see api/admin.js): a password
+ * attempt fires one alert, the resulting page view fires another, and the
+ * page beacons its open duration back when the tab is hidden/closed. All
+ * go to #introlinq-notifications via SLACK_NOTIFICATIONS_WEBHOOK_URL.
  */
 const PASSWORD = 'RobP';
 const COOKIE = 'il_proposal';
@@ -29,9 +34,50 @@ function hasValidCookie(req) {
   return m ? safeEqual(decodeURIComponent(m[1]), TOKEN) : false;
 }
 
-export default function handler(req, res) {
+// Same #introlinq-notifications channel / same deliberate await as the
+// investor brief (api/admin.js notifySlack) - a serverless function can be
+// frozen the instant the response is sent, so a fire-and-forget POST to
+// Slack never actually lands. A missing webhook or a Slack outage must
+// never break the page, so every error is swallowed.
+async function notifySlack(text) {
+  if (!process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL) return;
+  try {
+    await fetch(process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+  } catch (err) {
+    console.error('Slack notify failed:', err);
+  }
+}
+
+function whereFrom(req) {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
+  const city = req.headers['x-vercel-ip-city'] ? decodeURIComponent(req.headers['x-vercel-ip-city']) : '';
+  const country = req.headers['x-vercel-ip-country'] || '';
+  const place = [city, country].filter(Boolean).join(', ');
+  return place ? `IP: ${ip} (${place})` : `IP: ${ip}`;
+}
+
+export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+
+  const from = whereFrom(req);
+
+  // Beacon from the proposal page itself (navigator.sendBeacon) when the tab
+  // is hidden or closed, reporting how long it was open. No auth check - it
+  // carries no content, it's a fire-and-forget analytics ping.
+  if (req.method === 'POST' && req.query && req.query.ping === 'close') {
+    let body = req.body;
+    if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
+    const seconds = Math.max(0, Math.min(Number(body?.duration) || 0, 86400));
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    await notifySlack(`👋 IntroLinq proposal session ended - ${mins}m ${secs}s\n${from}`);
+    return res.status(204).end();
+  }
 
   if (req.method === 'POST') {
     let pw = '';
@@ -40,7 +86,9 @@ export default function handler(req, res) {
     else if (typeof b === 'string') {
       try { pw = new URLSearchParams(b).get('password') || ''; } catch { pw = ''; }
     }
-    if (safeEqual(pw, PASSWORD)) {
+    const correct = safeEqual(pw, PASSWORD);
+    await notifySlack(`🔑 Password ${correct ? 'entered correctly' : 'attempt (wrong)'} on the IntroLinq proposal\n${from}`);
+    if (correct) {
       res.setHeader('Set-Cookie', `${COOKIE}=${TOKEN}; Path=/; Max-Age=${MAX_AGE}; HttpOnly; Secure; SameSite=Lax`);
       res.writeHead(303, { Location: '/proposal' });
       return res.end();
@@ -56,11 +104,13 @@ export default function handler(req, res) {
   }
 
   if (hasValidCookie(req)) {
+    await notifySlack(`📄 The IntroLinq proposal page was opened\n${from}`);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.status(200).send(PROPOSAL_HTML);
   }
 
   const bad = req.query && req.query.e !== undefined;
+  if (!bad) await notifySlack(`🔒 The IntroLinq proposal password prompt was shown\n${from}`);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   return res.status(bad ? 401 : 200).send(gateHtml(bad));
 }
@@ -258,5 +308,25 @@ tr:last-child td{border-bottom:none}
     <a href="/proposal?logout">Lock this page</a>
   </div>
 </div>
+<script>
+/* Beacon the open duration back when the tab is hidden or closed - same
+   idea as the investor brief page. Fire-and-forget; guarded so it only
+   sends once per view. */
+(function () {
+  var start = Date.now(), sent = false;
+  function end() {
+    if (sent) return; sent = true;
+    var s = Math.round((Date.now() - start) / 1000);
+    try {
+      navigator.sendBeacon('/proposal?ping=close',
+        new Blob([JSON.stringify({ duration: s })], { type: 'application/json' }));
+    } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') end();
+  });
+  window.addEventListener('pagehide', end);
+})();
+</script>
 </body>
 </html>`;
