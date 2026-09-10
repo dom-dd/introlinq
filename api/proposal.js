@@ -123,31 +123,32 @@ const PROPOSAL_HTML = `<!DOCTYPE html>
 :root{--ink:#1a1a2e;--ink-soft:#4a4a6a;--ink-muted:#8888a8;--cream:#faf8f4;--white:#fff;--sage:#3d7a5f;--sage-light:#edf5f0;--gold:#e6a820;--gold-light:#fef3c7;--border:rgba(26,26,46,0.10);--border-soft:rgba(26,26,46,0.06)}
 body{font-family:'Inter',system-ui,sans-serif;color:var(--ink);line-height:1.65;background:#f0ede6;position:relative}
 body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(72% 60% at 3% -12%,rgba(61,122,95,0.4),transparent 55%),radial-gradient(66% 55% at 106% -4%,rgba(230,168,32,0.36),transparent 52%),linear-gradient(160deg,#efe9de,#e9e2d3)}
-.sheet{max-width:760px;margin:3rem auto;background:var(--white);border:1px solid var(--border);border-radius:16px;box-shadow:0 20px 60px rgba(26,26,46,0.12);padding:3.5rem 3.5rem 3rem}
+.sheet{max-width:780px;margin:3rem auto;background:var(--white);border:1px solid var(--border);border-radius:16px;box-shadow:0 20px 60px rgba(26,26,46,0.12);padding:3.5rem 3.5rem 3rem}
 .topline{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;margin-bottom:2.25rem}
 .logo{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--ink);text-decoration:none}
 .logo span{color:var(--sage)}
-.tag{font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);border:1px solid var(--gold);border-radius:100px;padding:0.3rem 0.7rem}
+.tag{font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);border:1px solid var(--gold);border-radius:100px;padding:0.3rem 0.7rem;white-space:nowrap}
 h1{font-family:'DM Serif Display',serif;font-size:2rem;font-weight:400;line-height:1.2;margin-bottom:0.5rem}
 .meta{font-size:0.875rem;color:var(--ink-muted);margin-bottom:2rem}
 h2{font-family:'DM Serif Display',serif;font-size:1.25rem;font-weight:400;margin:2.5rem 0 0.9rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border-soft)}
 p{font-size:0.9375rem;color:var(--ink-soft);margin-bottom:0.9rem}
 ul,ol{margin:0 0 0.9rem 1.25rem}
-li{font-size:0.9375rem;color:var(--ink-soft);margin-bottom:0.45rem}
+li{font-size:0.9375rem;color:var(--ink-soft);margin-bottom:0.5rem}
+li strong{color:var(--ink)}
 strong{color:var(--ink);font-weight:600}
 table{width:100%;border-collapse:collapse;margin:0.5rem 0 1rem;font-size:0.9375rem}
-th,td{text-align:left;padding:0.65rem 0.75rem;border-bottom:1px solid var(--border-soft);vertical-align:top}
+th,td{text-align:left;padding:0.7rem 0.8rem;border-bottom:1px solid var(--border-soft);vertical-align:top}
 th{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-muted);font-weight:600}
-td:first-child{color:var(--ink);font-weight:500;width:38%}
+td:first-child{color:var(--ink);font-weight:500;width:34%}
 tr:last-child td{border-bottom:none}
 .total td{border-top:2px solid var(--border);font-weight:600;color:var(--ink)}
 .callout{background:var(--sage-light);border:1px solid rgba(61,122,95,0.2);border-radius:12px;padding:1rem 1.25rem;margin:1.25rem 0}
 .callout p{margin:0;color:var(--ink)}
-.note{background:var(--gold-light);border:1px solid rgba(230,168,32,0.35);border-radius:12px;padding:1rem 1.25rem;margin:1.25rem 0}
+.note{background:var(--gold-light);border:1px solid rgba(230,168,32,0.35);border-radius:12px;padding:1rem 1.25rem;margin:1.5rem 0 0}
 .note p{margin:0;color:#7a5b12;font-size:0.875rem}
-.foot{margin-top:3rem;padding-top:1.25rem;border-top:1px solid var(--border-soft);font-size:0.8125rem;color:var(--ink-muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.5rem}
+.foot{margin-top:2.5rem;padding-top:1.25rem;border-top:1px solid var(--border-soft);font-size:0.8125rem;color:var(--ink-muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.5rem}
 .foot a{color:var(--ink-muted)}
-@media (max-width:640px){.sheet{padding:2rem 1.5rem;margin:1rem}h1{font-size:1.6rem}}
+@media (max-width:640px){.sheet{padding:2rem 1.5rem;margin:1rem}h1{font-size:1.6rem}td:first-child{width:40%}}
 </style>
 </head>
 <body>
@@ -158,69 +159,102 @@ tr:last-child td{border-bottom:none}
   </div>
 
   <h1>Investment Proposal</h1>
-  <p class="meta">Prepared for Rob P &nbsp;&middot;&nbsp; 10 September 2026 &nbsp;&middot;&nbsp; Draft for discussion &mdash; not a binding offer</p>
+  <p class="meta">Prepared for Rob Pierre &nbsp;&middot;&nbsp; via Robert Rayner &amp; Talveer Atwal, Sarana Capital Partners &nbsp;&middot;&nbsp; 10 September 2026</p>
 
-  <p>This summarises the terms reached in correspondence. It is a working reference to take into the subscription and shareholders' agreement, not the definitive document. Figures in <strong>&pound;</strong> sterling.</p>
+  <p>Working summary of the terms reached in correspondence with Rob Pierre (&ldquo;RP&rdquo;). This is a reference to carry into the ASAs and shareholders&rsquo; agreement, not a binding offer. All figures in <strong>&pound;</strong> sterling. Both cash tranches are made through an <strong>ASA</strong> (Advance Subscription Agreement).</p>
+
+  <div class="callout">
+    <p><strong>Shape of the deal:</strong> RP reaches <strong>~20%</strong> of IntroLinq &mdash; a <strong>16%</strong> grant on day one that mirrors his OpenIntro holding, plus <strong>~2% + ~2%</strong> from two <strong>&pound;50,000</strong> investments at <strong>&pound;2.5m</strong> and <strong>&pound;2.55m</strong> post-money caps. Total new cash: <strong>&pound;100,000</strong>, the second half milestone-gated.</p>
+  </div>
 
   <h2>Headline terms</h2>
   <table>
-    <tr><th>Item</th><th>Terms</th></tr>
-    <tr><td>Initial stake</td><td>16% equity, granted up front on completion</td></tr>
-    <tr><td>Phase 1 investment</td><td>&pound;50,000 for a further 2%, at a &pound;2,500,000 post-money valuation</td></tr>
-    <tr><td>Phase 2 investment</td><td>&pound;50,000 for a further 2%, at a &pound;2,550,000 post-money valuation</td></tr>
-    <tr class="total"><td>Total to investor</td><td>20% equity for &pound;100,000 cash (phased)</td></tr>
+    <tr><th>Element</th><th>Terms</th></tr>
+    <tr><td>Day 1 grant</td><td>16% of IntroLinq issued to RP up front, in respect of equity he contributed to OpenIntro and mirroring his current OpenIntro ownership. Not tied to the new cash.</td></tr>
+    <tr><td>Tranche 1</td><td><strong>&pound;50,000, unconditional.</strong> ASA, transferred monthly as 6 &times; &pound;8,333. Converts within 6 months of signing. &pound;2.5m post-money cap &rarr; ~2%.</td></tr>
+    <tr><td>Tranche 2</td><td><strong>&pound;50,000, milestone-gated.</strong> Second ASA, drawn in one lump if the month-5 milestones are met. Converts on milestone achievement. &pound;2.55m post-money cap &rarr; ~2%.</td></tr>
+    <tr class="total"><td>If both tranches land</td><td>~20% for &pound;100,000 &nbsp;(16% + ~2% + ~2%)</td></tr>
+    <tr class="total"><td>If Tranche 2 lapses</td><td>~18% for &pound;50,000 &nbsp;(16% + ~2%)</td></tr>
   </table>
 
-  <h2>How the stake builds</h2>
+  <h2>Day 1 &mdash; the 16% grant</h2>
+  <ul>
+    <li>Shares equal to <strong>16%</strong> of IntroLinq, issued to RP on completion.</li>
+    <li>Recognises equity RP already contributed to OpenIntro and <strong>mirrors his current OpenIntro ownership</strong>.</li>
+    <li>An <strong>unpriced grant</strong> &mdash; separate from the cash, so it does not set or depress IntroLinq&rsquo;s headline valuation.</li>
+    <li>Supersedes the earlier idea of a single &pound;100k investment to equalise RP&rsquo;s OpenIntro shares into IntroLinq. Now: 16% mirror grant + &pound;50k guaranteed + &pound;50k conditional.</li>
+  </ul>
+
+  <h2>Tranche 1 &mdash; &pound;50,000, guaranteed</h2>
+  <ul>
+    <li>Via ASA. <strong>No conditions</strong> once the ASA is signed.</li>
+    <li>Transferred in <strong>6 monthly instalments of &pound;8,333</strong> (upfront each month). The commitment is unconditional; only the transfer is phased.</li>
+    <li>Converts <strong>within 6 months of signing</strong>.</li>
+    <li><strong>&pound;2.5m post-money cap</strong>, or a 20% discount to the next round if that round prices below &pound;2.5m.</li>
+    <li>Priced entry works out at <strong>2%</strong> (2% &times; &pound;2.5m = &pound;50,000, exact).</li>
+  </ul>
+
+  <h2>Tranche 2 &mdash; &pound;50,000, milestone-gated</h2>
+  <p>Second ASA, &pound;50,000 drawn in one go, subject to all of the following being met <strong>by the end of month 5</strong>:</p>
+  <ul>
+    <li>At least <strong>one sales-team resource hired</strong> &mdash; expected to be offshore, part-time and heavily performance-incentivised, not necessarily a full-time UK employee.</li>
+    <li>More than <strong>200 publishers</strong> on the platform.</li>
+    <li>More than <strong>30 transactions</strong> &mdash; widened from &ldquo;bookings&rdquo; to &ldquo;transactions&rdquo; so it also captures course sales and other content.</li>
+    <li>More than <strong>one supplier</strong> live on the platform (i.e. not only OpenIntro).</li>
+  </ul>
+  <ul>
+    <li>Possible <strong>half-way review</strong> of milestone progress, if RP wants it.</li>
+    <li>Converts <strong>on milestone achievement</strong>.</li>
+    <li><strong>&pound;2.55m post-money cap</strong> &rarr; ~2%. (2% &times; &pound;2.55m = &pound;51,000; treat as ~2% for &pound;50,000 and let counsel pin the exact share count.)</li>
+  </ul>
+
+  <h2>Two funding rounds, back-to-back</h2>
+  <ul>
+    <li>Tranche 1 and Tranche 2 convert as <strong>two separate rounds</strong>, not a single conversion event.</li>
+    <li>Round 1 at the <strong>&pound;2.5m</strong> cap; Round 2 at the <strong>&pound;2.55m</strong> cap.</li>
+    <li>Structured this way to keep each tranche <strong>SEIS-qualifying</strong>.</li>
+  </ul>
+
+  <h2>SEIS</h2>
+  <ul>
+    <li>RP intends to claim <strong>SEIS relief</strong> on the investment.</li>
+    <li><strong>Tranche 1:</strong> unconditional commitment with a phased transfer &mdash; intended to sit under a <strong>single 6-month long-stop</strong>, not one per instalment.</li>
+    <li><strong>Tranche 2:</strong> separate ASA with its own <strong>6-month long-stop</strong> running from milestone achievement.</li>
+    <li>Long-stop treatment to be <strong>confirmed with a tax adviser</strong>.</li>
+  </ul>
+
+  <h2>Open points to finalise</h2>
+  <ul>
+    <li><strong>&ldquo;Sales resource&rdquo; definition</strong> &mdash; direction agreed (offshore / part-time / performance-incentivised); exact wording to be set in the Tranche 2 ASA.</li>
+    <li><strong>Milestone attribution</strong> &mdash; whether the sales milestone is met by overall sign-up / transaction growth in the window, or only results attributable to that hire&rsquo;s activity. Raised, not yet resolved.</li>
+    <li><strong>Fixed vs scaling targets</strong> &mdash; whether the &gt;30 transactions / &gt;200 publishers targets stay fixed or scale with supplier diversity. Leaning towards tying the proof point to sign-ups / transactions driven by the sales spend.</li>
+    <li><strong>Exact percentages and share counts</strong> for both tranches &mdash; to be pinned by counsel.</li>
+    <li><strong>Tax adviser sign-off</strong> on the SEIS long-stop treatment for the phased Tranche 1.</li>
+  </ul>
+
+  <h2>Timing &amp; next steps</h2>
   <ol>
-    <li><strong>On completion &mdash; 16%.</strong> Rob P is issued 16% of the company up front.</li>
-    <li><strong>Phase 1 &mdash; +2% to 18%.</strong> Rob P invests <strong>&pound;50,000</strong> at a <strong>&pound;2.5m post-money</strong> valuation for a further 2%.</li>
-    <li><strong>Phase 2 &mdash; +2% to 20%.</strong> A second <strong>&pound;50,000</strong> at a <strong>&pound;2.55m post-money</strong> valuation for a further 2%, bringing the total holding to <strong>20%</strong>.</li>
+    <li>Circulate this revised proposal to Rob Pierre for final review.</li>
+    <li>Close out the open points above.</li>
+    <li>Instruct solicitors to draft the two ASAs and the shareholders&rsquo; agreement, with the Tranche 2 milestones written into the second ASA.</li>
+    <li>Board approval and shareholder consents for the allotment; issue the Day 1 16%.</li>
   </ol>
+  <p>Target: terms agreed and papered <strong>by the end of September 2026</strong>.</p>
 
-  <div class="callout">
-    <p><strong>Net result:</strong> Rob P ends on <strong>20%</strong>, the company takes in <strong>&pound;100,000</strong> of new cash across the two phases, and the second-phase money comes in at a valuation <strong>&pound;50,000 higher</strong> than the first.</p>
-  </div>
-
-  <h2>Valuation check</h2>
-  <ul>
-    <li>Phase 1 is exact: 2% &times; &pound;2,500,000 = &pound;50,000.</li>
-    <li>Phase 2 as described gives 2% &times; &pound;2,550,000 = &pound;51,000. Treat it as <strong>~2% for &pound;50,000</strong> and let the lawyers pin the exact share count &mdash; the intent is a modest step-up between phases, not a precise number.</li>
-  </ul>
-
-  <h2>Open points to confirm before papering</h2>
-  <p>These were not settled in the summary provided and need to be nailed down in the agreement:</p>
-  <ul>
-    <li><strong>Consideration for the initial 16%</strong> &mdash; cash on completion, advisory/services, or other. Not stated in the thread.</li>
-    <li><strong>Instrument</strong> &mdash; direct share subscription now, or a SAFE/ASA converting later.</li>
-    <li><strong>Triggers and long-stop dates</strong> for the Phase 1 and Phase 2 tranches &mdash; what unlocks each &pound;50,000, and by when.</li>
-    <li><strong>Basis of the percentages</strong> &mdash; fully diluted or not, and how any option pool is created and counted.</li>
-    <li><strong>Investor rights</strong> &mdash; board seat or observer, information rights, pro-rata, anti-dilution.</li>
-    <li><strong>Founder terms</strong> &mdash; vesting, leaver provisions, warranties, confidentiality, any exclusivity period.</li>
-  </ul>
-
-  <h2>Indicative cap table &mdash; after Phase 2</h2>
+  <h2>Shareholding summary</h2>
   <table>
-    <tr><th>Holder</th><th>Stake</th></tr>
-    <tr><td>Rob P</td><td>20%</td></tr>
-    <tr><td>Founder &amp; existing holders</td><td>80%</td></tr>
+    <tr><th>Scenario</th><th>RP</th><th>Others</th></tr>
+    <tr><td>Both tranches land</td><td>~20%</td><td>~80%</td></tr>
+    <tr><td>Tranche 2 lapses</td><td>~18%</td><td>~82%</td></tr>
   </table>
-  <p style="font-size:0.8125rem;color:var(--ink-muted)">Illustrative, pre option-pool. Exact figures depend on the current cap table and how the pool is handled.</p>
-
-  <h2>Next steps</h2>
-  <ol>
-    <li>Confirm the open points above.</li>
-    <li>Instruct solicitors to draft the subscription &amp; shareholders' agreement.</li>
-    <li>Board approval and shareholder consents for the allotment.</li>
-    <li>Complete the initial 16%; Phase 1 and Phase 2 follow on their agreed triggers.</li>
-  </ol>
+  <p style="font-size:0.8125rem;color:var(--ink-muted)">Illustrative, before any option pool. Exact figures depend on the current cap table and how the pool is handled.</p>
 
   <div class="note">
-    <p>Drafted from a short summary of the agreed terms, not the full correspondence. Once the email chain is to hand, this page should be checked line by line against it.</p>
+    <p>Working summary drawn from the deal correspondence up to 10 September 2026. The binding terms are the signed ASAs and shareholders&rsquo; agreement. Confidential &mdash; do not distribute.</p>
   </div>
 
   <div class="foot">
-    <span>IntroLinq &mdash; Confidential. Do not distribute.</span>
+    <span>IntroLinq &mdash; Confidential</span>
     <a href="/proposal?logout">Lock this page</a>
   </div>
 </div>
