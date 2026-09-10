@@ -218,7 +218,7 @@ tr:last-child td{border-bottom:none}
   <h2>Headline terms</h2>
   <table>
     <tr><th>Element</th><th>Terms</th></tr>
-    <tr><td>Day 1 grant</td><td>16% of IntroLinq issued to RP up front, mirroring his 14.27% OpenIntro holding with the balance offered as goodwill.</td></tr>
+    <tr><td>Day 1 grant</td><td>16% of IntroLinq issued to RP up front, mirroring his 14.27% OpenIntro holding with the difference offered as goodwill.</td></tr>
     <tr><td>Tranche 1</td><td>&pound;50,000, unconditional. ASA, transferred monthly as 6 &times; &pound;8,333. &pound;2.5m post-money cap &rarr; ~2%.</td></tr>
     <tr><td>Tranche 2</td><td>&pound;50,000, milestone-gated. Second ASA, drawn in one lump once the milestones are met. &pound;2.55m post-money cap &rarr; ~2%.</td></tr>
     <tr class="total"><td>If both tranches land</td><td>~20% for &pound;100,000 &nbsp;(16% + ~2% + ~2%)</td></tr>
