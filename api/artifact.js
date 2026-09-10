@@ -471,11 +471,11 @@ const ARTIFACT_HTML = `<!DOCTYPE html>
         </tr>
         <tr class="t-mid">
           <td><span class="vert"><span class="dot mid"></span>Career &amp; Job Search</span></td>
-          <td><span class="supply">TopResume</span>, TealHQ, MentorCruise career mentors</td>
-          <td>Service affiliate + mentor marketplace</td>
-          <td class="econ">TopResume flat / order &middot; MentorCruise 50% recurring</td>
+          <td><span class="supply">strawberry.me</span>, TopResume, TealHQ, MentorCruise career mentors</td>
+          <td>Coach-matching subscription (strawberry.me) + resume affiliate + mentor marketplace</td>
+          <td class="econ">strawberry.me no public affiliate - direct deal, ~10k signups/mo &middot; TopResume flat / order &middot; MentorCruise 50% recurring</td>
           <td><span class="diff med">Link / feed</span></td>
-          <td class="verdict">Rides the MentorCruise anchor + one resume affiliate</td>
+          <td class="verdict">strawberry.me is the lead consumer-coaching option - direct outreach; TopResume for resumes</td>
         </tr>
         <tr class="t-mid">
           <td><span class="vert"><span class="dot mid"></span>Music &amp; Instruments</span></td>
@@ -619,6 +619,7 @@ const ARTIFACT_HTML = `<!DOCTYPE html>
           <a href="https://www.flexoffers.com/affiliate-programs/keen-affiliate-program/">Keen affiliate - flexoffers.com</a>
           <a href="https://intro.co/">Intro.co marketplace - intro.co</a>
           <a href="https://www.codementor.io/">Codementor marketplace (no public affiliate found) - codementor.io</a>
+          <a href="https://strawberry.me/">strawberry.me coaching platform (no public affiliate found) - strawberry.me</a>
         </div>
       </details>
     </div>
