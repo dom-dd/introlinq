@@ -1079,6 +1079,7 @@ export default async function handler(req, res) {
     // deploy's first admin load doesn't error before any click has run the
     // matching ALTER in api/dashboard.js.
     await sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS integration TEXT`.catch(() => {});
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS status_override TEXT`.catch(() => {});
 
     if (req.method === 'GET') {
       // Demo publisher accounts (power the /demo/*.html showcase pages' widgets)
@@ -1088,7 +1089,7 @@ export default async function handler(req, res) {
       // Windowed to STATS_RESET_AT so these match what each publisher sees in
       // their own dashboard - not deleted, just filtered (see STATS_RESET_AT
       // comment above).
-      const [matchStats, clickStats, hoverStats, seenStats, modeStats, cacheStats] = await Promise.all([
+      const [matchStats, clickStats, hoverStats, seenStats, modeStats, cacheStats, lastClickStats] = await Promise.all([
         sql`SELECT publisher, COUNT(*)::int AS impressions FROM match_logs WHERE match_count > 0 AND is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY publisher`.catch(() => []),
         sql`SELECT publisher, COUNT(*)::int AS clicks FROM click_logs WHERE is_bot = false AND created_at >= ${STATS_RESET_AT} GROUP BY publisher`.catch(() => []),
         sql`SELECT publisher, COUNT(*)::int AS hovers FROM hover_logs WHERE is_bot = false GROUP BY publisher`.catch(() => []),
@@ -1151,19 +1152,33 @@ export default async function handler(req, res) {
         sql`SELECT publisher, COUNT(*)::int AS total, SUM(CASE WHEN has_match THEN 1 ELSE 0 END)::int AS matched,
               COUNT(*) FILTER (WHERE cached_at > NOW() - INTERVAL '30 days')::int AS last_30d
             FROM match_cache GROUP BY publisher`.catch(() => []),
+        // All-time (not windowed to STATS_RESET_AT) - this answers "is the
+        // click count I'm looking at still fresh" rather than "how many
+        // clicks in the current reporting window", so it deliberately
+        // ignores the stats-reset cutoff.
+        sql`SELECT publisher, MAX(created_at) AS last_click_at FROM click_logs WHERE is_bot = false GROUP BY publisher`.catch(() => []),
       ]);
       const matchMap = Object.fromEntries(matchStats.map(r => [r.publisher, r.impressions]));
       const clickMap = Object.fromEntries(clickStats.map(r => [r.publisher, r.clicks]));
       const hoverMap = Object.fromEntries(hoverStats.map(r => [r.publisher, r.hovers]));
       const seenMap = Object.fromEntries(seenStats.map(r => [r.publisher, r.seen]));
       const cacheMap = Object.fromEntries(cacheStats.map(r => [r.publisher, r]));
+      const lastClickMap = Object.fromEntries(lastClickStats.map(r => [r.publisher, r.last_click_at]));
       // publisher slug -> Set of non-widget modes genuinely in use. A mode
       // only counts with >=3 non-bot events from >=3 distinct IPs, so a
-      // handful of QA hits don't register as real usage.
+      // handful of QA hits don't register as real usage. Anything below
+      // that bar still gets recorded in modePendingMap so the admin can see
+      // "something's happening, just not confirmed yet" instead of a flat
+      // grey that looks identical to zero activity.
       const modeMap = {};
+      const modePendingMap = {};
       modeStats.forEach(r => {
-        if (!r.mode || r.n < 3 || r.ips < 3) return;
-        (modeMap[r.publisher] || (modeMap[r.publisher] = new Set())).add(r.mode);
+        if (!r.mode) return;
+        if (r.n >= 3 && r.ips >= 3) {
+          (modeMap[r.publisher] || (modeMap[r.publisher] = new Set())).add(r.mode);
+        } else {
+          (modePendingMap[r.publisher] || (modePendingMap[r.publisher] = {}))[r.mode] = { n: r.n, ips: r.ips };
+        }
       });
       const activationV2 = !!process.env.ACTIVATION_V2;
       const result = publishers.map(p => {
@@ -1177,7 +1192,9 @@ export default async function handler(req, res) {
           clicks: clickMap[p.slug] || 0,
           hovers: hoverMap[p.slug] || 0,
           seen: seenMap[p.slug] || 0,
+          last_click_at: lastClickMap[p.slug] || null,
           modes,
+          mode_pending: modePendingMap[p.slug] || null,
           activation_v2: activationV2,
           scanned_pages: c ? c.total : 0,
           matched_pages: c ? c.matched : 0,
@@ -1205,6 +1222,28 @@ export default async function handler(req, res) {
     // know what one is); the widget anchors right after whatever it
     // matches instead of guessing via findFallbackAnchor's heuristic.
     // Empty string clears it back to the default heuristic.
+    // Manual escape hatch for the three auto-derived tabs (Active/Inactive/
+    // Went Quiet - see publisherWidgetBucket() in admin/index.html). The
+    // bucket is normally computed live from fire/activity timestamps so it
+    // self-corrects the moment a publisher reinstalls; that's the right
+    // default, but it trusts those timestamps, and bot/stale traffic
+    // hitting a cached page can keep a genuinely-removed widget looking
+    // "Active" (seen with challenges.tn: last_widget_fire_at kept updating
+    // days after removal with no matching real match_log/click_log row -
+    // looks like stale/bot hits on a cached copy of the page, not a real
+    // visit). This lets Dom pin a publisher to a tab based on ground truth
+    // (e.g. he checked the site himself) until the automatic signal catches
+    // up or he clears the override. null/'' clears it back to automatic.
+    if (req.method === 'PATCH' && req.query.action === 'status-override') {
+      const { id, status_override } = req.body;
+      const ALLOWED_OVERRIDES = ['pub-active', 'pub-pending', 'pub-quiet'];
+      if (status_override && !ALLOWED_OVERRIDES.includes(status_override)) {
+        return res.status(400).json({ error: 'invalid status_override' });
+      }
+      const [pub] = await sql`UPDATE publishers SET status_override = ${status_override || null} WHERE id = ${id} RETURNING id, slug, status_override`;
+      return res.status(200).json(pub);
+    }
+
     if (req.method === 'PATCH' && req.query.action === 'no-match-anchor-selector') {
       const { id, no_match_anchor_selector } = req.body;
       await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS no_match_anchor_selector TEXT`.catch(() => {});

@@ -319,7 +319,11 @@ tr:hover td{background:rgba(0,0,0,0.01)}
            never-installed/live/gone-quiet logic renderWidgetStatusIcon
            already used for the single status icon, so a publisher moves
            between these tabs automatically the moment its widget fire
-           timestamps change - no separate stored status to keep in sync. -->
+           timestamps change - no separate stored status to keep in sync,
+           by default. The per-row "Pin" dropdown (status_override column)
+           is the escape hatch for when the timestamps lag or lie (e.g.
+           stale/bot hits keeping a removed widget looking live) - it wins
+           over the automatic bucket until cleared back to Auto. -->
       <div class="pub-subtab-bar">
         <button class="pub-subtab active" data-name="pub-active" onclick="switchPublishersSubtab('pub-active',this)">Active</button>
         <button class="pub-subtab" data-name="pub-pending" onclick="switchPublishersSubtab('pub-pending',this)">Inactive</button>
@@ -1541,15 +1545,26 @@ function renderModeIcons(p) {
   if (!Array.isArray(p.modes)) return '';
   const fmt = d => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
   const modes = p.modes;
+  const pending = p.mode_pending || {};
   return ['manual', 'carousel', 'board'].map(m => {
     const def = MODE_ICON_DEFS[m];
     const on = modes.includes(m);
-    const color = on ? def.on : '#c4c4d0';
-    const bg = on ? def.onBg : '#f5f5f8';
+    // Below the 3-events/3-IPs confirmation bar (see modeStats in
+    // api/admin.js) but not zero either - e.g. Satyam Sahu's manual links
+    // had 6 real clicks from only 2 distinct IPs, so the icon used to sit
+    // flat grey, identical to a publisher with zero activity. Render that
+    // as its own amber "detecting" state instead of collapsing it into
+    // "never seen".
+    const pend = !on && pending[m];
+    const color = on ? def.on : (pend ? '#b45309' : '#c4c4d0');
+    const bg = on ? def.onBg : (pend ? '#fef3c7' : '#f5f5f8');
+    const border = pend ? `border:1.5px dashed ${color};` : '';
     const tooltip = on
       ? `${def.label} - detected${p.last_activity_at ? `. Last activity across all modes: ${fmt(p.last_activity_at)}` : ''}.`
-      : `No ${def.label.toLowerCase()} activity detected for this publisher.`;
-    return `<span title="${esc(tooltip)}" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:${bg};color:${color};flex-shrink:0;cursor:default">`
+      : pend
+        ? `${def.label} - ${pend.n} click${pend.n === 1 ? '' : 's'} from ${pend.ips} visitor${pend.ips === 1 ? '' : 's'} so far, not yet confirmed (needs 3+ clicks from 3+ distinct visitors).`
+        : `No ${def.label.toLowerCase()} activity detected for this publisher.`;
+    return `<span title="${esc(tooltip)}" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:${bg};color:${color};${border}flex-shrink:0;cursor:default">`
       + `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${def.svg}</svg></span>`;
   }).join('');
 }
@@ -1605,6 +1620,7 @@ function reminderTooltip(p) {
 // never did anything at all). The internal key 'pub-pending' is kept for
 // the Inactive bucket so the sub-panel element IDs don't have to change.
 function publisherWidgetBucket(p) {
+  if (p.status_override) return p.status_override;
   if (!p.active) return 'pub-pending';
   const everActive = !!p.first_widget_fire_at || !!p.activated_at || (p.modes || []).length > 0;
   if (!everActive) return 'pub-pending';
@@ -1688,13 +1704,23 @@ function publisherRow(p) {
           // the section's width and force a horizontal scrollbar. A single
           // middot with normal (collapsible) spaces on each side reads just
           // as clearly at a fraction of the width.
+          // "Last click" answers a different question than the funnel
+          // above - not "how many", but "is this still happening, or am I
+          // looking at stats from weeks ago". Red once it's more than
+          // WIDGET_STALE_MS old so a stale number doesn't read as current.
+          const lastClick = p.last_click_at ? new Date(p.last_click_at) : null;
+          const lastClickStale = lastClick && (Date.now() - lastClick.getTime()) > WIDGET_STALE_MS;
+          const lastClickLabel = lastClick
+            ? `Last click: ${lastClick.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })}`
+            : 'No clicks yet';
           return `<div title="${esc(hoverTitle)}" style="font-size:0.75rem;color:var(--ink-soft);line-height:1.9;white-space:nowrap">
             <span style="font-weight:500;color:var(--ink)">${imp.toLocaleString()}</span> visits ·
             <span style="font-weight:500;color:var(--ink)">${seen.toLocaleString()}</span> seen ·
             <span style="font-weight:500;color:var(--ink)">${hov.toLocaleString()}</span> hov ·
             <span style="font-weight:500;color:var(--ink)">${clk.toLocaleString()}</span> clk ·
             <span style="font-weight:500;color:var(--ink)">${ctr}%</span>
-          </div>`;
+          </div>
+          <div style="font-size:0.7rem;color:${lastClickStale ? 'var(--red)' : 'var(--ink-muted)'};margin-top:2px">${esc(lastClickLabel)}</div>`;
         })()}
       </td>
       <td>
@@ -1754,6 +1780,12 @@ function publisherRow(p) {
           <button onclick="togglePublisher(${p.id}, ${!p.active})" title="${p.active ? 'Deactivate' : 'Activate'}" style="background:${p.active ? 'var(--red-light)' : 'var(--green-light)'};border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${p.active ? 'var(--red)' : 'var(--green)'}" stroke-width="2.5" stroke-linecap="round"><path d="M18.36 6.64A9 9 0 1 1 5.64 6.64"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
           </button>
+          <select onchange="setStatusOverride(${p.id}, this.value)" title="Pin this publisher to a tab, overriding the automatic Active/Inactive/Went Quiet detection - use this when you know something the timestamps don't (e.g. you checked the site yourself and the widget's gone)." style="font-size:0.7rem;border:1px solid ${p.status_override ? '#4f6ef7' : 'var(--border)'};border-radius:6px;padding:4px 3px;color:${p.status_override ? '#4f6ef7' : 'var(--ink-soft)'};background:${p.status_override ? '#eef2ff' : '#fff'};cursor:pointer;max-width:88px">
+            <option value=""${p.status_override ? '' : ' selected'}>Auto</option>
+            <option value="pub-active"${p.status_override === 'pub-active' ? ' selected' : ''}>Pin: Active</option>
+            <option value="pub-pending"${p.status_override === 'pub-pending' ? ' selected' : ''}>Pin: Inactive</option>
+            <option value="pub-quiet"${p.status_override === 'pub-quiet' ? ' selected' : ''}>Pin: Went Quiet</option>
+          </select>
         </div>
       </td>
     </tr>
@@ -1867,6 +1899,15 @@ async function toggleScanCap(id, scan_cap_override) {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest'},
     body: JSON.stringify({ id, scan_cap_override })
+  });
+  loadPublishers();
+}
+
+async function setStatusOverride(id, status_override) {
+  await fetch('/api/admin?resource=publishers&action=status-override', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+    body: JSON.stringify({ id, status_override })
   });
   loadPublishers();
 }
