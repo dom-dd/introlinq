@@ -390,9 +390,6 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
             </table>
           </div>
           <div class="empty" id="outreach-todo-empty">Loading...</div>
-          <div style="padding:0.75rem 1.25rem;border-top:1px solid var(--border)">
-            <button class="btn btn-ghost btn-sm" id="outreach-todo-more" onclick="showMoreOutreachTodo()" style="display:none">Show more</button>
-          </div>
         </div>
       </div>
 
@@ -801,7 +798,15 @@ initOutreachAuth();
 
 let _outreachLoaded = false;
 let _outreach = [];
-let _outreachTodoLimit = 30;
+// Every section renders at most this many rows at a time - with ~3,300
+// leads total, rendering every bucket in full (some sections had no cap at
+// all before this) was thousands of interactive <tr>s (dropdowns, buttons,
+// inline handlers) in the DOM simultaneously, which is what was crashing
+// the tab. The full list is still fetched in one request (needed for the
+// cross-bucket search box and the accurate "(N)" counts), only the DOM
+// render is capped, per-section, and grown via "Show more".
+const OUTREACH_PAGE_SIZE = 100;
+let _outreachLimits = {};
 
 const OUTREACH_INPUT_STYLE = 'width:100%;box-sizing:border-box;padding:0.3rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:Inter,sans-serif;color:var(--ink)';
 const OUTREACH_CATEGORIES = [
@@ -923,17 +928,44 @@ function outreachBucket(c, today) {
 }
 
 function renderOutreachSection(name, titleText, items, emptyMessage, rowMode) {
-  document.getElementById(`outreach-${name}-title`).textContent = `${titleText} (${items.length})`;
+  const limit = _outreachLimits[name] || OUTREACH_PAGE_SIZE;
+  const shown = items.slice(0, limit);
+  document.getElementById(`outreach-${name}-title`).textContent = shown.length < items.length
+    ? `${titleText} (${shown.length} of ${items.length})`
+    : `${titleText} (${items.length})`;
   const tbody = document.getElementById(`outreach-${name}-tbody`);
   const emptyEl = document.getElementById(`outreach-${name}-empty`);
-  if (items.length) {
-    tbody.innerHTML = items.map((c) => outreachRow(c, rowMode)).join('');
+  if (shown.length) {
+    tbody.innerHTML = shown.map((c) => outreachRow(c, rowMode)).join('');
     emptyEl.style.display = 'none';
   } else {
     tbody.innerHTML = '';
     emptyEl.textContent = emptyMessage;
     emptyEl.style.display = 'block';
   }
+  renderOutreachShowMore(name, items.length, shown.length);
+}
+
+// Creates the "Show more" control the first time a section needs one,
+// rather than hand-adding the same markup to all 15 section blocks in the
+// HTML above - reuses it (just toggling visibility) on every re-render.
+function renderOutreachShowMore(name, total, shownCount) {
+  const emptyEl = document.getElementById(`outreach-${name}-empty`);
+  if (!emptyEl) return;
+  let wrap = document.getElementById(`outreach-${name}-more-wrap`);
+  if (!wrap) {
+    wrap = document.createElement('div');
+    wrap.id = `outreach-${name}-more-wrap`;
+    wrap.style.cssText = 'padding:0.75rem 1.25rem;border-top:1px solid var(--border)';
+    wrap.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="showMoreOutreach('${name}')">Show more</button>`;
+    emptyEl.insertAdjacentElement('afterend', wrap);
+  }
+  wrap.style.display = total > shownCount ? 'block' : 'none';
+}
+
+function showMoreOutreach(name) {
+  _outreachLimits[name] = (_outreachLimits[name] || OUTREACH_PAGE_SIZE) + OUTREACH_PAGE_SIZE;
+  renderOutreach();
 }
 
 function renderOutreach() {
@@ -961,7 +993,7 @@ function renderOutreach() {
   buckets.largepub.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   renderOutreachSection('due', 'Due for follow-up', buckets.due, 'Nothing due right now.', 'full');
-  renderOutreachSection('todo', 'Untouched', buckets.todo.slice(0, _outreachTodoLimit), 'Nothing left to contact.', 'full');
+  renderOutreachSection('todo', 'Untouched', buckets.todo, 'Nothing left to contact.', 'full');
   renderOutreachSection('tocontact', 'To contact', buckets.tocontact, 'Nothing queued to contact yet.', 'full');
   renderOutreachSection('waiting', 'Follow ups', buckets.waiting, 'No one waiting on a reply.', 'full');
   renderOutreachSection('discussion', 'In discussion', buckets.discussion, 'No one currently in discussion.', 'simple');
@@ -976,9 +1008,6 @@ function renderOutreach() {
   renderOutreachSection('noemail', 'No email found', buckets.noemail, 'Nothing here yet.', 'simple');
   renderOutreachSection('largepub', 'Larger publishers', buckets.largepub, 'Nothing here yet.', 'simple');
 
-  document.getElementById('outreach-todo-title').textContent = `Untouched (${buckets.todo.length})`;
-  document.getElementById('outreach-todo-more').style.display = buckets.todo.length > _outreachTodoLimit ? 'inline-block' : 'none';
-
   if (_outreachSearchQuery) {
     const q = _outreachSearchQuery.toLowerCase();
     const matches = _outreach
@@ -986,11 +1015,6 @@ function renderOutreach() {
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     renderOutreachSection('search', 'Search results', matches, 'No leads match that search.', 'full');
   }
-}
-
-function showMoreOutreachTodo() {
-  _outreachTodoLimit += 30;
-  renderOutreach();
 }
 
 function switchOutreachSubtab(name, btn) {
