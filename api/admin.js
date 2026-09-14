@@ -228,11 +228,14 @@ export default async function handler(req, res) {
     return res.status(204).end();
   }
 
-  // Daily publisher discovery - authenticated via CRON_SECRET, triggered by
-  // a GitHub Actions schedule (see .github/workflows/discovery-cron.yml)
-  // rather than Vercel's own Cron Jobs, since Hobby caps both cron jobs (2)
-  // and serverless functions (12) per deployment - this reuses the existing
-  // api/admin.js function instead of adding a 13th file. Finds up to 50 new
+  // Daily publisher discovery - authenticated via CRON_SECRET.
+  // STALE NOTE (found 2026-09-14): this used to be triggered by a GitHub
+  // Actions schedule (.github/workflows/discovery-cron.yml), back when
+  // Vercel Hobby capped cron jobs at 2. That workflow file was deleted in
+  // commit a294c58 once weekly-blog moved to native Vercel cron on Pro
+  // (f2cbc60) - nothing replaced it as a trigger for this endpoint, so
+  // discovery has not run since 2026-09-03 (confirmed via discovery_queries).
+  // It is not currently wired into vercel.json's crons either. Finds up to 50 new
   // candidate domains via SerpAPI using the same logic/tables as the manual
   // discovery/discover.js script. This endpoint itself does not run
   // classify.js or enrich.js - the same GitHub Actions workflow runs
