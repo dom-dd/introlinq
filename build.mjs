@@ -40,6 +40,7 @@ const PAGES = [
   'product/carousel.html',
   'product/expert-board.html',
   'product/manual-links.html',
+  'partners/index.html',
   'monetize-finance-blog.html',
   'monetize-health-blog.html',
   'monetize-career-blog.html',
