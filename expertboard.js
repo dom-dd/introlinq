@@ -29,6 +29,20 @@
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  // api/board.js returns experts ordered alphabetically by name (needed for
+  // a stable, cacheable API response) - without this, whoever's name is
+  // first alphabetically would be first in every reader's grid, every page
+  // load, forever. Shuffled once per page load, client-side, so it's a real
+  // per-visitor order rather than one random order baked into the API's
+  // 5-minute shared cache.
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
+  }
+
   function countryToISO(c) {
     if (!c) return '';
     var m = {'united states':'US','usa':'US','united kingdom':'GB','uk':'GB','canada':'CA','australia':'AU','france':'FR','germany':'DE','spain':'ES','italy':'IT','netherlands':'NL','india':'IN','brazil':'BR','singapore':'SG','ireland':'IE','switzerland':'CH','sweden':'SE','norway':'NO','denmark':'DK','finland':'FI','portugal':'PT','belgium':'BE','austria':'AT','new zealand':'NZ','south africa':'ZA','nigeria':'NG','kenya':'KE','ghana':'GH','israel':'IL','uae':'AE','united arab emirates':'AE','saudi arabia':'SA','kuwait':'KW','japan':'JP','china':'CN','south korea':'KR','hong kong':'HK','taiwan':'TW','mexico':'MX','argentina':'AR','colombia':'CO','chile':'CL','poland':'PL','romania':'RO','ukraine':'UA','russia':'RU','turkey':'TR','thailand':'TH','vietnam':'VN','indonesia':'ID','malaysia':'MY','philippines':'PH','pakistan':'PK','bangladesh':'BD'};
@@ -114,7 +128,7 @@
   var PAGE_SIZE = 8; // 4 cols × 2 rows
 
   function render(data) {
-    _allExperts = data.experts || [];
+    _allExperts = shuffle((data.experts || []).slice());
     _color = data.config.color || '#e6a820';
     _contrast = getContrastColor(_color);
 

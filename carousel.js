@@ -28,6 +28,16 @@
   function esc(s) {
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
+  // See expertboard.js for why this exists - api/board.js orders experts
+  // alphabetically (a stable, cacheable API response), so without this the
+  // same names would always lead the carousel for every reader.
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
+  }
   function countryToISO(c) {
     if (!c) return '';
     var m={'united states':'US','usa':'US','united kingdom':'GB','uk':'GB','canada':'CA','australia':'AU','france':'FR','germany':'DE','spain':'ES','italy':'IT','netherlands':'NL','india':'IN','brazil':'BR','singapore':'SG','ireland':'IE','switzerland':'CH','sweden':'SE','norway':'NO','denmark':'DK','finland':'FI','portugal':'PT','belgium':'BE','austria':'AT','new zealand':'NZ','south africa':'ZA','nigeria':'NG','kenya':'KE','israel':'IL','uae':'AE','united arab emirates':'AE','saudi arabia':'SA','kuwait':'KW','japan':'JP','china':'CN','south korea':'KR','hong kong':'HK','taiwan':'TW','mexico':'MX','argentina':'AR','colombia':'CO','chile':'CL','poland':'PL','romania':'RO','ukraine':'UA','turkey':'TR','thailand':'TH','indonesia':'ID','malaysia':'MY','philippines':'PH'};
@@ -105,7 +115,7 @@
     .catch(function(){ container.innerHTML = ''; });
 
   function render(data) {
-    var experts = data.experts || [];
+    var experts = shuffle((data.experts || []).slice());
     var color = data.config.color || '#e6a820';
     var contrast = getContrastColor(color);
 
