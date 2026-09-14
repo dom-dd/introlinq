@@ -35,6 +35,10 @@
     {
       "path": "/api/cron/weekly-blog",
       "schedule": "0 10 * * 3"
+    },
+    {
+      "path": "/api/admin?resource=run-discovery",
+      "schedule": "0 6,12,18 * * *"
     }
   ],
   "functions": {

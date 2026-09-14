@@ -228,14 +228,15 @@ export default async function handler(req, res) {
     return res.status(204).end();
   }
 
-  // Daily publisher discovery - authenticated via CRON_SECRET.
-  // STALE NOTE (found 2026-09-14): this used to be triggered by a GitHub
-  // Actions schedule (.github/workflows/discovery-cron.yml), back when
-  // Vercel Hobby capped cron jobs at 2. That workflow file was deleted in
-  // commit a294c58 once weekly-blog moved to native Vercel cron on Pro
-  // (f2cbc60) - nothing replaced it as a trigger for this endpoint, so
-  // discovery has not run since 2026-09-03 (confirmed via discovery_queries).
-  // It is not currently wired into vercel.json's crons either. Finds up to 50 new
+  // Daily publisher discovery - authenticated via CRON_SECRET, triggered by
+  // a native Vercel cron (vercel.json, 06:00/12:00/18:00 UTC - restored
+  // 2026-09-14, matching the schedule of the GitHub Actions workflow this
+  // replaces). That workflow (.github/workflows/discovery-cron.yml, deleted
+  // in a294c58) also ran discovery/apollo-search.js, classify.js and
+  // verify-publisher-fit.js on the runner right after this endpoint -
+  // those spend real Apollo/Anthropic credits and were deliberately left
+  // OFF this restoration - ask before re-enabling them. This endpoint
+  // alone only spends SerpAPI searches, self-budgeted below - it finds up to 50 new
   // candidate domains via SerpAPI using the same logic/tables as the manual
   // discovery/discover.js script. This endpoint itself does not run
   // classify.js or enrich.js - the same GitHub Actions workflow runs
