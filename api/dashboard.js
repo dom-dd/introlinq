@@ -345,6 +345,24 @@ export default async function handler(req, res) {
     }
     const isBot = await isBotHit(req, sql, 'click_logs', { ip, publisher: pub, page_url: article, expert_id: expert_id || null, expert_name: expert_name || null });
 
+    // Impact.com-backed providers (Preply etc.) don't call our booking
+    // webhook - there's no live push, so attribution has to survive inside
+    // Impact's own tracking link instead, via their subId1/subId2 params
+    // (confirmed format: help.impact.com .../sub-id-and-shared-id-parameters-explained-for-partners).
+    // A separate reconciliation job later pulls Impact's reporting API and
+    // matches bookings back to a publisher by subId1. Looked up by expert_id
+    // since the widget only ever sends us the destination URL, not the
+    // provider it came from.
+    let providerSlug = null;
+    if (expert_id) {
+      const [expertRow] = await sql`
+        SELECT p.slug AS provider_slug FROM experts e
+        LEFT JOIN providers p ON p.id = e.provider_id
+        WHERE e.id = ${expert_id} LIMIT 1
+      `.catch(() => [null]);
+      providerSlug = expertRow?.provider_slug || null;
+    }
+
     // Build partner URL with full attribution params
     let destUrl;
     try {
@@ -354,6 +372,10 @@ export default async function handler(req, res) {
       dest.searchParams.set('click_id', click_id);
       if (lang) dest.searchParams.set('lang', lang);
       if (article) dest.searchParams.set('campaign', decodeURIComponent(article).slice(0, 200));
+      if (providerSlug === 'preply') {
+        dest.searchParams.set('subId1', pub);
+        dest.searchParams.set('subId2', click_id);
+      }
       destUrl = dest.toString();
     } catch {
       destUrl = decodeURIComponent(expert_url);
