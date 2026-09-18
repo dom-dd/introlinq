@@ -49,6 +49,7 @@ const PAGES = [
   'monetize-sport-blog.html',
   'monetize-beauty-blog.html',
   'monetize-parenting-blog.html',
+  'monetize-language-blog.html',
   'signup/index.html',
   'login/index.html',
 ];
