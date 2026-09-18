@@ -251,9 +251,9 @@ const SEED_POSTS = [
     title: 'The First Decisions That Shape a Startup',
     meta_description: 'The early calls that are hard to undo later: co-founder equity, when to raise, pricing the first product, and your first hire.',
     excerpt: 'Most of what you do in year one is reversible. A few things are not. Here are the early decisions worth slowing down for.',
-    image_url: null,
-    image_alt: null,
-    image_credit: null,
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Middle-aged_woman_working_on_laptop_at_home.jpg/1920px-Middle-aged_woman_working_on_laptop_at_home.jpg',
+    image_alt: 'A person working on a laptop at home',
+    image_credit: 'Shixart1985 / Wikimedia Commons, CC BY 2.0',
     topic: 'startups',
     created_at: '2026-09-08T09:00:00.000Z',
     body_html: `<p>Most of what you do in the first year of a company is reversible. You can rename the product, redo the landing page, cut a feature, change your mind about a market. A few decisions are different. They set terms that are awkward, expensive, or relationship-testing to unwind later, and they tend to get made fast, early, and with too little outside advice. These are the ones worth slowing down for.</p>
