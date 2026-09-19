@@ -42,6 +42,22 @@
     ko: '추천 상담 전문가'
   };
   var BOOK_LABEL = 'Book a call →';
+  var _poweredTpl = {
+    en: 'powered by {il} in partnership with {oi}', fr: 'propulsé par {il} en partenariat avec {oi}',
+    es: 'con la tecnología de {il}, en colaboración con {oi}', de: 'bereitgestellt von {il} in Zusammenarbeit mit {oi}',
+    it: 'offerto da {il} in collaborazione con {oi}', pt: 'fornecido por {il} em parceria com {oi}',
+    nl: 'mogelijk gemaakt door {il} in samenwerking met {oi}', pl: 'obsługiwane przez {il} we współpracy z {oi}',
+    sv: 'drivs av {il} i samarbete med {oi}', no: 'drevet av {il} i samarbeid med {oi}',
+    da: 'drevet af {il} i samarbejde med {oi}', fi: '{il}:n tarjoama, yhteistyössä {oi}:n kanssa',
+    ro: 'oferit de {il} în parteneriat cu {oi}', tr: '{il} tarafından sağlanır, {oi} iş birliğiyle',
+    ar: 'مقدَّم من {il} بالشراكة مع {oi}', zh: '由 {il} 提供，与 {oi} 合作',
+    ja: '{il} 提供、{oi} と提携', ko: '{il} 제공, {oi}와 협력'
+  };
+  function poweredHtml() {
+    return (_poweredTpl[_lang] || _poweredTpl.en)
+      .replace('{il}', '<a href="https://www.introlinq.com" target="_blank" rel="noopener">IntroLinq</a>')
+      .replace('{oi}', '<a href="https://www.open-intro.com" target="_blank" rel="noopener">OpenIntro</a>');
+  }
 
   function getContrastColor(hex) {
     var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
@@ -177,7 +193,7 @@
       +'<div class="ilc-header">'
       +'<div class="ilc-header-left">'
       +'<div class="ilc-label">'+(data.config.carousel_title||_titleLabels[_lang]||_titleLabels.en)+'</div>'
-      +'<span class="ilc-powered">powered by <a href="https://www.introlinq.com" target="_blank" rel="noopener">IntroLinq</a> in partnership with <a href="https://www.open-intro.com" target="_blank" rel="noopener">OpenIntro</a></span>'
+      +'<span class="ilc-powered">'+poweredHtml()+'</span>'
       +'</div>'
       +'<div class="ilc-arrows">'
       +'<button class="ilc-arrow" id="'+prevId+'" aria-label="Previous">'

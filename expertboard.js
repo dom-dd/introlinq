@@ -48,6 +48,22 @@
   };
   var BOOK_LABEL = 'Book a call →';
   var BOARD_LABEL = _boardLabels.en;
+  var _poweredTpl = {
+    en: 'powered by {il} in partnership with {oi}', fr: 'propulsé par {il} en partenariat avec {oi}',
+    es: 'con la tecnología de {il}, en colaboración con {oi}', de: 'bereitgestellt von {il} in Zusammenarbeit mit {oi}',
+    it: 'offerto da {il} in collaborazione con {oi}', pt: 'fornecido por {il} em parceria com {oi}',
+    nl: 'mogelijk gemaakt door {il} in samenwerking met {oi}', pl: 'obsługiwane przez {il} we współpracy z {oi}',
+    sv: 'drivs av {il} i samarbete med {oi}', no: 'drevet av {il} i samarbeid med {oi}',
+    da: 'drevet af {il} i samarbejde med {oi}', fi: '{il}:n tarjoama, yhteistyössä {oi}:n kanssa',
+    ro: 'oferit de {il} în parteneriat cu {oi}', tr: '{il} tarafından sağlanır, {oi} iş birliğiyle',
+    ar: 'مقدَّم من {il} بالشراكة مع {oi}', zh: '由 {il} 提供，与 {oi} 合作',
+    ja: '{il} 提供、{oi} と提携', ko: '{il} 제공, {oi}와 협력'
+  };
+  function poweredHtml() {
+    return (_poweredTpl[_lang] || _poweredTpl.en)
+      .replace('{il}', '<a href="https://www.introlinq.com" target="_blank" rel="noopener">IntroLinq</a>')
+      .replace('{oi}', '<a href="https://www.open-intro.com" target="_blank" rel="noopener">OpenIntro</a>');
+  }
 
   function getContrastColor(hex) {
     var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
@@ -171,7 +187,7 @@
     var html = '<div class="ilb-header">'
       + '<div class="ilb-title-block">'
       + '<div class="ilb-title">' + esc(BOARD_LABEL.title) + '</div>'
-      + '<div class="ilb-powered">powered by <a href="https://www.introlinq.com" target="_blank" rel="noopener">IntroLinq</a> in partnership with <a href="https://www.open-intro.com" target="_blank" rel="noopener">OpenIntro</a></div>'
+      + '<div class="ilb-powered">'+poweredHtml()+'</div>'
       + '</div>'
       + '<div class="ilb-search">'
       + '<svg class="ilb-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>'

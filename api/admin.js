@@ -1677,6 +1677,52 @@ export default async function handler(req, res) {
       return res.status(200).json(experts);
     }
 
+    // One-off backfill: re-translates existing headlines for the 10
+    // languages added to ALL_HEADLINE_LANGS after they were first generated
+    // (Japanese, Arabic, Chinese, Korean, Turkish, Romanian, Finnish, Danish,
+    // Norwegian - see translateHeadline above) - only fills the gap for
+    // experts that already have an English headline, never regenerates or
+    // overwrites an existing translation. Paginated (offset/limit) with
+    // bounded concurrency so one call stays well under the 60s function
+    // limit; call again with the returned nextOffset until done is true.
+    if (req.method === 'POST' && req.query.action === 'backfill-languages') {
+      if (!process.env.ANTHROPIC_API_KEY) return res.status(503).json({ error: 'ANTHROPIC_API_KEY not configured' });
+      const limit = Math.min(parseInt(req.query.limit, 10) || 25, 50);
+      const offset = parseInt(req.query.offset, 10) || 0;
+
+      const experts = await sql`
+        SELECT e.id, e.headlines
+        FROM experts e
+        JOIN providers p ON p.id = e.provider_id
+        WHERE e.active = true AND p.is_demo IS NOT TRUE
+          AND e.headlines->>'en' IS NOT NULL AND e.headlines->>'en' <> ''
+        ORDER BY e.id ASC
+        OFFSET ${offset} LIMIT ${limit}
+      `;
+
+      const outcomes = await mapLimit(experts, 5, async (e) => {
+        const existing = e.headlines || {};
+        const missing = ALL_HEADLINE_LANGS.filter(l => !existing[l]);
+        if (!missing.length) return 'skipped';
+        try {
+          const translations = await translateHeadlineLangs(existing.en, missing);
+          const merged = { ...existing, ...translations };
+          await sql`UPDATE experts SET headlines = ${JSON.stringify(merged)}::jsonb WHERE id = ${e.id}`;
+          return 'updated';
+        } catch { return 'failed'; }
+      });
+
+      return res.status(200).json({
+        ok: true,
+        processed: experts.length,
+        updated: outcomes.filter(o => o === 'updated').length,
+        skipped: outcomes.filter(o => o === 'skipped').length,
+        failed: outcomes.filter(o => o === 'failed').length,
+        nextOffset: offset + experts.length,
+        done: experts.length < limit,
+      });
+    }
+
     if (req.method === 'POST') {
       const { expert_id, headline } = req.body;
       if (!expert_id) return res.status(400).json({ error: 'expert_id required' });
@@ -1827,16 +1873,46 @@ async function callClaude(prompt) {
   return d.content?.[0]?.text || '';
 }
 
-async function translateHeadline(headline) {
-  const text = await callClaude(`Translate this expert headline into 7 languages. Keep it equally punchy and short (max 8 words). Natural tone, not literal.
+// Covers the same 18 languages carousel.js/expertboard.js can now detect
+// and render chrome text in (see detectLanguageFromSite in api/auth.js) -
+// previously only 7, so a detected language outside that set (Japanese,
+// Arabic, Chinese, Korean, Turkish, Romanian, Finnish, Danish, Norwegian)
+// always fell back to the English bio on the expert card even once the
+// widget itself was correctly showing everything else in that language.
+const ALL_HEADLINE_LANGS = ['fr','es','de','it','pt','nl','pl','sv','no','da','fi','ro','tr','ar','zh','ja','ko'];
+
+async function translateHeadlineLangs(headline, langs) {
+  if (!langs.length) return {};
+  const shape = langs.map(l => `"${l}":"..."`).join(',');
+  const text = await callClaude(`Translate this expert headline into these languages: ${langs.join(', ')}. Keep it equally punchy and short (max 8 words). Natural tone, not literal.
 
 English: "${headline}"
 
-Return ONLY valid JSON: {"fr":"...","es":"...","de":"...","it":"...","pt":"...","nl":"...","pl":"...","sv":"..."}`);
+Return ONLY valid JSON: {${shape}}`);
   try {
     const m = text.match(/\{[\s\S]*?\}/);
     return m ? JSON.parse(m[0]) : {};
   } catch(e) { return {}; }
+}
+
+async function translateHeadline(headline) {
+  return translateHeadlineLangs(headline, ALL_HEADLINE_LANGS);
+}
+
+// Bounded-concurrency map - used by the headlines backfill below to run
+// several Claude translation calls at once per request without blowing
+// past api/admin.js's 60s maxDuration on a page of experts.
+async function mapLimit(items, limit, fn) {
+  const results = new Array(items.length);
+  let i = 0;
+  async function worker() {
+    while (i < items.length) {
+      const idx = i++;
+      results[idx] = await fn(items[idx], idx);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
 }
 
 function welcomeEmail(name, link) {
