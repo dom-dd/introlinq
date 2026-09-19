@@ -50,6 +50,60 @@ function detectPlatformFromSite(hostname, html) {
   return null;
 }
 
+// Mirrors widget.js's own detectLanguage(), which runs client-side against
+// extracted article text on every page load - carousel.js and expertboard.js
+// have no article text to scan (they render a fixed expert list, not a
+// scanned page), so this runs the same word-frequency detector once, server
+// side, against the homepage HTML already fetched below for platform
+// detection, and the result is persisted to publishers.widget_language for
+// those two widgets to read at render time instead of trusting the page's
+// <html lang> (often wrong/missing on CMS sites - see widget.js's own
+// comment on that).
+const LANG_WORDS = {
+  en: ['the','and','of','to','is','in','that','for','with','you','your','are','this','have','from','will','not','but','they','was','can','what','how','which','their','has','been','were','would','about','when','more','other','into','than','them','then','some','also','because','through'],
+  fr: ['le','la','les','des','une','est','et','pour','avec','dans','vous','votre','nous','sur','qui','que','pas','plus','cette','du','au','par','mais','ont','leur','aux','ce','ses','vos','elle','son','sa','comme','tout','aussi','bien','faire','peut','être','très','sans','même'],
+  es: ['el','los','las','que','para','con','una','es','por','su','este','esta','del','se','más','como','pero','sus','al','lo','tiene','también','puede','hacer','todo','cuando','muy','sin','sobre','entre','ya','hay','desde','está','cada'],
+  de: ['der','die','das','und','ist','für','mit','den','sie','auf','nicht','ein','eine','des','im','dem','zu','von','werden','auch','sich','bei','oder','wir','aber','wenn','kann','haben','mehr','wie','nach','über','nur','aus','durch','einen','einer','zum','zur','sind'],
+  it: ['il','di','che','per','con','una','non','sono','questo','della','del','le','si','più','come','anche','alla','nel','gli','dei','delle','essere','hanno','questa','tra','ma','dal','ai','sul','nella'],
+  pt: ['os','um','uma','não','com','para','por','mais','como','seu','sua','dos','das','em','ao','pelo','isso','você','tem','ser','foi','pela','são','muito','quando','também','já','ou','na','da'],
+  nl: ['de','het','een','van','voor','met','niet','dat','dit','zijn','worden','ook','naar','maar','bij','uit','deze','wordt','heeft','hebben','kan','meer','als','dan','wat','onze','je'],
+  pl: ['nie','się','jest','dla','na','że','ale','jak','po','przez','tego','być','są','oraz','tym','przy','czy','może','tylko','już','bardzo'],
+  sv: ['och','att','det','som','för','med','inte','den','är','av','på','har','till','ett','om','ska','kan','från','vi','du','eller','men','efter','vid'],
+  no: ['og','det','som','ikke','den','er','av','på','har','til','et','om','skal','kan','fra','vi','du','eller','men','etter','ved','også'],
+  da: ['og','det','som','ikke','den','er','af','på','har','til','et','om','skal','kan','fra','vi','du','eller','men','efter','ved','også'],
+  fi: ['ja','on','ei','se','että','ovat','tämä','mutta','kun','myös','voi','ole','sen','joka','niin','kuin','jos','vain','mitä'],
+  ro: ['și','este','pentru','care','din','pe','cu','nu','mai','sau','sunt','această','acest','dar','după','până','fost','poate','fiecare'],
+};
+const LANG_SETS = {};
+for (const l in LANG_WORDS) {
+  const set = {};
+  for (const w of LANG_WORDS[l]) set[w] = 1;
+  LANG_SETS[l] = set;
+}
+export function detectLanguageFromSite(html) {
+  const text = (html || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<[^>]+>/g, ' ');
+  if (/[؀-ۿ]/.test(text)) return 'ar';
+  if (/[぀-ヿｦ-ﾟ]/.test(text)) return 'ja';
+  if (/[가-힯]/.test(text)) return 'ko';
+  if (/[一-鿿]/.test(text)) return 'zh';
+
+  const words = text.slice(0, 20000).toLowerCase().split(/[^a-zß-ÿĀ-ſȘ-ț]+/);
+  let best = 'en', bestN = 0;
+  for (const lang in LANG_SETS) {
+    const set = LANG_SETS[lang];
+    let n = 0;
+    for (const w of words) if (set[w]) n++;
+    if (n > bestN) { bestN = n; best = lang; }
+  }
+  // Weak signal (very short/mixed page): default to English, same as widget.js
+  if (best !== 'en' && bestN < 10) return 'en';
+  return best;
+}
+
 async function ensureTables(sql) {
   if (tableReady) return;
   await sql`CREATE TABLE IF NOT EXISTS magic_links (
@@ -201,6 +255,13 @@ export default async function handler(req, res) {
     // tab falls back to the manual picker, same as before this existed.
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS platform TEXT`.catch(() => {});
     await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS platform_detected BOOLEAN NOT NULL DEFAULT false`.catch(() => {});
+    // widget_language: read by api/board.js (carousel.js/expertboard.js) as
+    // the site-level default those two widgets show in - detected once here
+    // rather than per-page like widget.js's own detectLanguage(), since
+    // neither has article text of its own to detect from. NULL means
+    // detection failed/never ran; those widgets fall back to <html lang>
+    // then 'en', same as before this existed.
+    await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS widget_language TEXT`.catch(() => {});
     try {
       const siteRes = await fetch(cleanDomain, {
         signal: AbortSignal.timeout(8000),
@@ -212,6 +273,8 @@ export default async function handler(req, res) {
         if (detected) {
           await sql`UPDATE publishers SET platform = ${detected}, platform_detected = true WHERE id = ${pub.id}`;
         }
+        const detectedLang = detectLanguageFromSite(html);
+        await sql`UPDATE publishers SET widget_language = ${detectedLang} WHERE id = ${pub.id}`;
       }
     } catch {}
 

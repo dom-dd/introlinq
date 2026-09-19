@@ -1,7 +1,7 @@
 ﻿import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import { createMagicToken } from './auth.js';
+import { createMagicToken, detectLanguageFromSite } from './auth.js';
 import { DECK_HTML_B64 } from './_deckContent.js';
 import { ensureBotColumns, getClientIp } from './_botDetect.js';
 import { CATEGORIES } from './suggest-expert.js';
@@ -1272,6 +1272,27 @@ export default async function handler(req, res) {
           VALUES (${name}, ${email}, ${clean}, ${domain || null}, ${notes || null}, ${contact_first_name || null}, ${contact_last_name || null}, ${revenue_share ?? 0.70}, ${enabled_partners || null}, ${match_sensitivity || 'balanced'}, true)
           RETURNING *
         `;
+
+        // Best-effort site-language detection, same as the self-service
+        // signup flow in api/auth.js - read by api/board.js for the
+        // carousel/board widgets. Never allowed to fail or delay the
+        // response; a wrong/missing result just leaves widget_language
+        // NULL and those widgets fall back to <html lang> then 'en'.
+        if (pub.domain) {
+          await sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS widget_language TEXT`.catch(() => {});
+          try {
+            let cleanDomain = pub.domain.trim().replace(/\/+$/, '');
+            if (!/^https?:\/\//i.test(cleanDomain)) cleanDomain = 'https://' + cleanDomain;
+            const siteRes = await fetch(cleanDomain, {
+              signal: AbortSignal.timeout(8000),
+              headers: { 'User-Agent': 'IntroLinq-PlatformDetect/1.0 (+https://www.introlinq.com)' },
+            });
+            if (siteRes.ok) {
+              const html = await siteRes.text();
+              await sql`UPDATE publishers SET widget_language = ${detectLanguageFromSite(html)} WHERE id = ${pub.id}`;
+            }
+          } catch {}
+        }
 
         // Send welcome email with magic link (7-day expiry)
         const firstName = contact_first_name || name;

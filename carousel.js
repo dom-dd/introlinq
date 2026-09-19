@@ -17,9 +17,31 @@
   var TRACK = 'https://www.introlinq.com/api/dashboard?action=out';
   var IMPRESSION = 'https://www.introlinq.com/api/dashboard?action=carousel_view&pub=' + encodeURIComponent(PUB);
 
-  var _lang = (document.documentElement.lang || 'en').toLowerCase().slice(0, 2);
-  var _bookLabels = { fr:'Réserver →',es:'Reservar →',de:'Buchen →',it:'Prenota →',pt:'Agendar →',nl:'Boeken →',pl:'Umów →',sv:'Boka →' };
-  var BOOK_LABEL = _bookLabels[_lang] || 'Book a call →';
+  // _lang is finalized once api/board.js responds (see below): its
+  // widget_language - detected once server-side from the publisher's
+  // homepage at install (see detectLanguageFromSite in api/auth.js) - takes
+  // priority over the page's own <html lang>, which is often missing or
+  // wrong on CMS sites. Falls back to <html lang> then 'en' for publishers
+  // whose account predates that detection or where it failed.
+  var _lang = 'en';
+  var _bookLabels = {
+    fr:'Réserver →', es:'Reservar →', de:'Buchen →', it:'Prenota →',
+    pt:'Agendar →', nl:'Boeken →', pl:'Umów →', sv:'Boka →',
+    no:'Book →', da:'Book →', fi:'Varaa →', ro:'Programează →',
+    tr:'Randevu al →', ar:'احجز الآن →', zh:'立即预约 →', ja:'今すぐ予約 →', ko:'지금 예약 →'
+  };
+  var _titleLabels = {
+    en: 'Suggested experts to speak to', fr: 'Experts suggérés à qui parler',
+    es: 'Expertos sugeridos con quién hablar', de: 'Empfohlene Experten zum Gespräch',
+    it: 'Esperti suggeriti con cui parlare', pt: 'Especialistas sugeridos para falar',
+    nl: 'Aanbevolen experts om mee te praten', pl: 'Polecani eksperci do rozmowy',
+    sv: 'Föreslagna experter att prata med', no: 'Foreslåtte eksperter å snakke med',
+    da: 'Foreslåede eksperter at tale med', fi: 'Ehdotetut asiantuntijat, joiden kanssa puhua',
+    ro: 'Experți sugerați cu care poți vorbi', tr: 'Konuşabileceğiniz önerilen uzmanlar',
+    ar: 'خبراء مقترحون للتحدث معهم', zh: '建议交流的专家', ja: 'おすすめの相談相手',
+    ko: '추천 상담 전문가'
+  };
+  var BOOK_LABEL = 'Book a call →';
 
   function getContrastColor(hex) {
     var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
@@ -94,6 +116,8 @@
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(data) {
       if (!data || !data.experts || !data.experts.length) { container.innerHTML = ''; return; }
+      _lang = ((data.config && data.config.language) || document.documentElement.lang || 'en').toLowerCase().slice(0, 2);
+      BOOK_LABEL = _bookLabels[_lang] || 'Book a call →';
       render(data);
       // Impression: the carousel is a fixed, publisher-curated list rather
       // than an AI-matched scan of the page, so unlike widget.js it has no
@@ -152,7 +176,7 @@
     container.innerHTML = '<div class="ilc-wrap">'
       +'<div class="ilc-header">'
       +'<div class="ilc-header-left">'
-      +'<div class="ilc-label">'+(data.config.carousel_title||'Suggested experts to speak to')+'</div>'
+      +'<div class="ilc-label">'+(data.config.carousel_title||_titleLabels[_lang]||_titleLabels.en)+'</div>'
       +'<span class="ilc-powered">powered by <a href="https://www.introlinq.com" target="_blank" rel="noopener">IntroLinq</a> in partnership with <a href="https://www.open-intro.com" target="_blank" rel="noopener">OpenIntro</a></span>'
       +'</div>'
       +'<div class="ilc-arrows">'

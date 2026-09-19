@@ -13,12 +13,41 @@
   var TRACK = 'https://www.introlinq.com/api/dashboard?action=out';
   var IMPRESSION = 'https://www.introlinq.com/api/dashboard?action=board_view&pub=' + encodeURIComponent(PUB);
 
-  var _lang = (document.documentElement.lang || 'en').toLowerCase().slice(0, 2);
+  // _lang is finalized once api/board.js responds (see below): its
+  // widget_language - detected once server-side from the publisher's
+  // homepage at install (see detectLanguageFromSite in api/auth.js) - takes
+  // priority over the page's own <html lang>, which is often missing or
+  // wrong on CMS sites. Falls back to <html lang> then 'en' for publishers
+  // whose account predates that detection or where it failed.
+  var _lang = 'en';
   var _bookLabels = {
     fr: 'Réserver →', es: 'Reservar →', de: 'Buchen →', it: 'Prenota →',
-    pt: 'Agendar →', nl: 'Boeken →', pl: 'Umów →', sv: 'Boka →'
+    pt: 'Agendar →', nl: 'Boeken →', pl: 'Umów →', sv: 'Boka →',
+    no: 'Book →', da: 'Book →', fi: 'Varaa →', ro: 'Programează →',
+    tr: 'Randevu al →', ar: 'احجز الآن →', zh: '立即预约 →', ja: '今すぐ予約 →', ko: '지금 예약 →'
   };
-  var BOOK_LABEL = _bookLabels[_lang] || 'Book a call →';
+  var _boardLabels = {
+    en: { title: 'Book an expert', search: 'Search experts or tags...', more: 'Show more ↓', empty: 'No experts found.' },
+    fr: { title: 'Réservez un expert', search: 'Rechercher des experts ou des sujets...', more: 'Voir plus ↓', empty: 'Aucun expert trouvé.' },
+    es: { title: 'Reserva un experto', search: 'Buscar expertos o temas...', more: 'Ver más ↓', empty: 'No se encontraron expertos.' },
+    de: { title: 'Experten buchen', search: 'Experten oder Themen suchen...', more: 'Mehr anzeigen ↓', empty: 'Keine Experten gefunden.' },
+    it: { title: 'Prenota un esperto', search: 'Cerca esperti o argomenti...', more: 'Mostra altro ↓', empty: 'Nessun esperto trovato.' },
+    pt: { title: 'Agende com um especialista', search: 'Pesquisar especialistas ou temas...', more: 'Ver mais ↓', empty: 'Nenhum especialista encontrado.' },
+    nl: { title: 'Boek een expert', search: 'Zoek experts of onderwerpen...', more: 'Meer tonen ↓', empty: 'Geen experts gevonden.' },
+    pl: { title: 'Umów się z ekspertem', search: 'Szukaj ekspertów lub tematów...', more: 'Pokaż więcej ↓', empty: 'Nie znaleziono ekspertów.' },
+    sv: { title: 'Boka en expert', search: 'Sök experter eller ämnen...', more: 'Visa mer ↓', empty: 'Inga experter hittades.' },
+    no: { title: 'Book en ekspert', search: 'Søk etter eksperter eller emner...', more: 'Vis mer ↓', empty: 'Ingen eksperter funnet.' },
+    da: { title: 'Book en ekspert', search: 'Søg efter eksperter eller emner...', more: 'Vis mere ↓', empty: 'Ingen eksperter fundet.' },
+    fi: { title: 'Varaa asiantuntija', search: 'Etsi asiantuntijoita tai aiheita...', more: 'Näytä lisää ↓', empty: 'Asiantuntijoita ei löytynyt.' },
+    ro: { title: 'Programează un expert', search: 'Caută experți sau subiecte...', more: 'Arată mai mult ↓', empty: 'Niciun expert găsit.' },
+    tr: { title: 'Bir uzmanla görüş', search: 'Uzman veya konu ara...', more: 'Daha fazla göster ↓', empty: 'Uzman bulunamadı.' },
+    ar: { title: 'احجز مع خبير', search: 'ابحث عن خبراء أو مواضيع...', more: 'عرض المزيد ↓', empty: 'لم يتم العثور على خبراء.' },
+    zh: { title: '预约专家', search: '搜索专家或话题...', more: '显示更多 ↓', empty: '未找到专家。' },
+    ja: { title: '専門家に相談', search: '専門家やトピックを検索...', more: 'もっと見る ↓', empty: '専門家が見つかりません。' },
+    ko: { title: '전문가 예약하기', search: '전문가 또는 주제 검색...', more: '더 보기 ↓', empty: '전문가를 찾을 수 없습니다.' }
+  };
+  var BOOK_LABEL = 'Book a call →';
+  var BOARD_LABEL = _boardLabels.en;
 
   function getContrastColor(hex) {
     var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
@@ -100,6 +129,9 @@
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(data) {
       if (!data) { container.innerHTML = ''; return; }
+      _lang = ((data.config && data.config.language) || document.documentElement.lang || 'en').toLowerCase().slice(0, 2);
+      BOOK_LABEL = _bookLabels[_lang] || 'Book a call →';
+      BOARD_LABEL = _boardLabels[_lang] || _boardLabels.en;
       render(data);
       // Impression ping - mirrors carousel.js. The board shows a fixed
       // curated list with no content scan, so this is its only "was shown"
@@ -138,12 +170,12 @@
 
     var html = '<div class="ilb-header">'
       + '<div class="ilb-title-block">'
-      + '<div class="ilb-title">Book an expert</div>'
+      + '<div class="ilb-title">' + esc(BOARD_LABEL.title) + '</div>'
       + '<div class="ilb-powered">powered by <a href="https://www.introlinq.com" target="_blank" rel="noopener">IntroLinq</a> in partnership with <a href="https://www.open-intro.com" target="_blank" rel="noopener">OpenIntro</a></div>'
       + '</div>'
       + '<div class="ilb-search">'
       + '<svg class="ilb-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>'
-      + '<input type="text" placeholder="Search experts or tags..." id="ilb-search-input" autocomplete="off">'
+      + '<input type="text" placeholder="' + esc(BOARD_LABEL.search) + '" id="ilb-search-input" autocomplete="off">'
       + '</div></div>';
 
     html += '<div class="ilb-grid" id="ilb-grid"></div>';
@@ -205,7 +237,7 @@
           ti = setTimeout(function() { type(word, pos - 1, true); }, 55);
         } else {
           wi = (wi + 1) % words.length;
-          input.placeholder = 'Search experts...';
+          input.placeholder = BOARD_LABEL.search;
           ti = setTimeout(function() { type(words[wi], 0, false); }, 700);
         }
       }
@@ -227,7 +259,7 @@
     });
 
     if (!filtered.length) {
-      grid.innerHTML = '<div class="ilb-empty" style="grid-column:1/-1">No experts found.</div>';
+      grid.innerHTML = '<div class="ilb-empty" style="grid-column:1/-1">' + esc(BOARD_LABEL.empty) + '</div>';
       if (expandBtn) expandBtn.style.display = 'none';
       return;
     }
@@ -238,7 +270,7 @@
     if (expandBtn) {
       if (remaining > 0) {
         expandBtn.style.display = 'block';
-        expandBtn.textContent = 'Show more ↓';
+        expandBtn.textContent = BOARD_LABEL.more;
       } else {
         expandBtn.style.display = 'none';
       }

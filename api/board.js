@@ -14,11 +14,12 @@ export default async function handler(req, res) {
   await Promise.all([
     sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS carousel_title TEXT`.catch(() => {}),
     sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS board_text_color TEXT`.catch(() => {}),
+    sql`ALTER TABLE publishers ADD COLUMN IF NOT EXISTS widget_language TEXT`.catch(() => {}),
     sql`ALTER TABLE experts ADD COLUMN IF NOT EXISTS headlines JSONB DEFAULT '{}'`.catch(() => {}),
   ]);
 
   const [publisher] = await sql`
-    SELECT name, widget_color, accent_color, carousel_title, board_text_color, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners
+    SELECT name, widget_color, accent_color, carousel_title, board_text_color, widget_language, COALESCE(enabled_partners, ARRAY['openintro']) AS enabled_partners
     FROM publishers WHERE slug = ${pub} AND active = true LIMIT 1
   `;
   if (!publisher) return res.status(404).json({ error: 'Publisher not found' });
@@ -53,6 +54,7 @@ export default async function handler(req, res) {
       accent: publisher.accent_color || publisher.widget_color || '#e6a820',
       carousel_title: publisher.carousel_title || null,
       text_color: publisher.board_text_color || '#1a1a2e',
+      language: publisher.widget_language || null,
     }
   });
 }
