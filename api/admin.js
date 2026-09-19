@@ -1690,23 +1690,31 @@ export default async function handler(req, res) {
       const limit = Math.min(parseInt(req.query.limit, 10) || 25, 50);
       const offset = parseInt(req.query.offset, 10) || 0;
 
+      // Widened beyond headlines->>'en' - most experts never had a headline
+      // generated at all (headlines defaults to '{}'), so carousel.js/
+      // expertboard.js's own fallback chain reads e.bio directly instead
+      // (see (e.headlines||{})[_lang] || (e.headlines||{})['en'] || e.bio in
+      // both widgets). Those experts are exactly who showed English bios in
+      // a Japanese carousel, so bio is used as the English source text below
+      // whenever headlines.en is itself missing.
       const experts = await sql`
-        SELECT e.id, e.headlines
+        SELECT e.id, e.bio, e.headlines
         FROM experts e
         JOIN providers p ON p.id = e.provider_id
         WHERE e.active = true AND p.is_demo IS NOT TRUE
-          AND e.headlines->>'en' IS NOT NULL AND e.headlines->>'en' <> ''
+          AND (COALESCE(e.headlines->>'en', '') <> '' OR COALESCE(e.bio, '') <> '')
         ORDER BY e.id ASC
         OFFSET ${offset} LIMIT ${limit}
       `;
 
       const outcomes = await mapLimit(experts, 5, async (e) => {
         const existing = e.headlines || {};
+        const sourceText = existing.en || e.bio || '';
         const missing = ALL_HEADLINE_LANGS.filter(l => !existing[l]);
-        if (!missing.length) return 'skipped';
+        if (!sourceText || !missing.length) return 'skipped';
         try {
-          const translations = await translateHeadlineLangs(existing.en, missing);
-          const merged = { ...existing, ...translations };
+          const translations = await translateHeadlineLangs(sourceText, missing);
+          const merged = { en: sourceText, ...existing, ...translations };
           await sql`UPDATE experts SET headlines = ${JSON.stringify(merged)}::jsonb WHERE id = ${e.id}`;
           return 'updated';
         } catch { return 'failed'; }
@@ -1884,7 +1892,11 @@ const ALL_HEADLINE_LANGS = ['fr','es','de','it','pt','nl','pl','sv','no','da','f
 async function translateHeadlineLangs(headline, langs) {
   if (!langs.length) return {};
   const shape = langs.map(l => `"${l}":"..."`).join(',');
-  const text = await callClaude(`Translate this expert headline into these languages: ${langs.join(', ')}. Keep it equally punchy and short (max 8 words). Natural tone, not literal.
+  // Used both for a freshly-generated punchy headline (already ≤8 words) and,
+  // in the backfill below, a raw multi-sentence bio used as-is when an expert
+  // never had a headline generated - "keep the same length" instead of a
+  // fixed word cap so it doesn't compress the latter into a slogan.
+  const text = await callClaude(`Translate this expert profile text into these languages: ${langs.join(', ')}. Natural, idiomatic tone, not literal word-for-word - but keep the same length and level of detail as the English. Don't shorten it into a slogan, don't add anything.
 
 English: "${headline}"
 
