@@ -1714,6 +1714,13 @@ export default async function handler(req, res) {
         if (!sourceText || !missing.length) return 'skipped';
         try {
           const translations = await translateHeadlineLangs(sourceText, missing);
+          // translateHeadlineLangs fails closed to {} (JSON parse errors,
+          // truncated output) rather than throwing - that's the right
+          // default for the interactive single-expert flow above, which
+          // must still save the English headline even if translation
+          // fails, but here it means "call succeeded" and "translated
+          // nothing" look identical unless checked explicitly.
+          if (!Object.keys(translations).length) return 'failed';
           const merged = { en: sourceText, ...existing, ...translations };
           await sql`UPDATE experts SET headlines = ${JSON.stringify(merged)}::jsonb WHERE id = ${e.id}`;
           return 'updated';
@@ -1867,7 +1874,7 @@ async function sendPayPalPayout({ email, amount, currency, note, batchId }) {
   return data.batch_header?.payout_batch_id || batchId;
 }
 
-async function callClaude(prompt) {
+async function callClaude(prompt, maxTokens = 256) {
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -1875,7 +1882,7 @@ async function callClaude(prompt) {
       'anthropic-version': '2023-06-01',
       'content-type': 'application/json',
     },
-    body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 256, messages: [{ role: 'user', content: prompt }] }),
+    body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] }),
   });
   const d = await r.json();
   return d.content?.[0]?.text || '';
@@ -1896,11 +1903,19 @@ async function translateHeadlineLangs(headline, langs) {
   // in the backfill below, a raw multi-sentence bio used as-is when an expert
   // never had a headline generated - "keep the same length" instead of a
   // fixed word cap so it doesn't compress the latter into a slogan.
+  // maxTokens scaled per language (previously the shared 256-token default,
+  // which truncated mid-JSON for anything beyond ~2 short languages once
+  // this went from 7 langs of short headlines to 17 langs of full-length
+  // bio text - every backfilled expert silently ended up with only the
+  // 'en' key and no translations, the JSON parse below failing closed to
+  // {} rather than throwing). ~180 tokens/language covers a long bio
+  // translation with room to spare; CJK/Arabic scripts don't need more
+  // tokens per word than Latin scripts under Claude's tokenizer.
   const text = await callClaude(`Translate this expert profile text into these languages: ${langs.join(', ')}. Natural, idiomatic tone, not literal word-for-word - but keep the same length and level of detail as the English. Don't shorten it into a slogan, don't add anything.
 
 English: "${headline}"
 
-Return ONLY valid JSON: {${shape}}`);
+Return ONLY valid JSON: {${shape}}`, Math.min(180 * langs.length + 200, 8192));
   try {
     const m = text.match(/\{[\s\S]*?\}/);
     return m ? JSON.parse(m[0]) : {};
