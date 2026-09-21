@@ -208,41 +208,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .mock-post p:last-child{margin-bottom:0}
 .example-hint{font-size:0.8rem;color:var(--ink-muted);margin-top:0.75rem}
 
-.carousel-wrap{background:var(--ink);border-radius:20px;padding:1.75rem;position:relative;margin-top:1.75rem}
-.carousel-label{font-size:0.7rem;font-weight:500;color:rgba(255,255,255,0.4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:1rem}
-.carousel-track{position:relative;overflow:visible;border-radius:var(--radius)}
-.carousel-slide{display:none;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem 1.75rem 1.25rem;text-align:left;animation:slideIn 0.4s ease}
-.carousel-slide.active{display:block}
-@keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-.carousel-niche{font-size:0.7rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:0.5rem}
-.carousel-title{font-family:'DM Serif Display',serif;font-size:1.1rem;margin-bottom:0.75rem;color:var(--ink);line-height:1.3}
-.carousel-text{font-size:0.9rem;color:var(--ink-soft);line-height:1.85}
-.carousel-text-2{font-size:0.9rem;color:var(--ink-soft);line-height:1.85;margin-top:0.5rem}
-.carousel-dots{display:flex;gap:0.5rem;justify-content:center;margin-top:1rem}
-.carousel-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.2);border:none;cursor:pointer;padding:0;transition:background 0.2s}
-.carousel-dot.active{background:var(--sage)}
-
-/* Expert popup - shared by both examples */
-.expert-trigger{position:relative;color:var(--sage);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;cursor:pointer;display:inline-block}
-.expert-trigger-dot{display:inline-block;width:6px;height:6px;background:var(--sage);border-radius:50%;vertical-align:middle;margin-left:3px;animation:pulse 2s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.85)}}
-.expert-popup{display:block;position:absolute;bottom:calc(100% + 10px);left:0;background:var(--white);border:1px solid rgba(26,26,46,0.10);border-radius:16px;padding:18px;width:300px;max-width:calc(100vw - 2.5rem);z-index:30;box-shadow:0 16px 48px rgba(0,0,0,0.14),0 2px 8px rgba(0,0,0,0.06);text-align:left;pointer-events:none;opacity:0;transition:opacity 0.25s}
-.expert-popup::after{content:'';position:absolute;top:100%;left:24px;border:7px solid transparent;border-top-color:rgba(26,26,46,0.10)}
-.expert-popup::before{content:'';position:absolute;top:100%;left:25px;border:6px solid transparent;border-top-color:var(--white);z-index:1}
-.expert-trigger:hover .expert-popup,.expert-trigger.open .expert-popup,.expert-trigger.auto-open .expert-popup{opacity:1;pointer-events:auto}
-.popup-header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
-.popup-avatar{width:54px;height:54px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--sage-light)}
-.popup-info{flex:1;min-width:0}
-.popup-name{display:flex;align-items:center;gap:6px;font-weight:600;font-size:15px;color:var(--ink);line-height:1.25}
-.popup-flag{width:18px;height:18px;border-radius:50%;flex-shrink:0;object-fit:cover}
-.popup-role{display:block;font-size:11.5px;color:var(--ink-soft);line-height:1.3;margin-top:2px}
-.popup-company{display:block;font-size:11.5px;color:var(--ink-muted);line-height:1.3}
-.popup-bio{display:block;font-size:11.5px;font-weight:500;color:var(--ink);line-height:1.45;margin-bottom:8px}
-.popup-rec{display:block;font-size:12.5px;color:var(--ink-soft);font-style:italic;line-height:1.6;border-left:2px solid rgba(230,168,32,0.4);padding-left:10px;margin-bottom:12px}
-.popup-book{display:block;width:100%;box-sizing:border-box;background:var(--gold);color:var(--ink);border:none;padding:9px;border-radius:100px;font-size:13px;font-weight:700;cursor:pointer;text-align:center}
-.popup-footer-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(26,26,46,0.07);font-size:8.5px;color:var(--ink-muted);white-space:nowrap}
-.popup-partner{overflow:hidden;text-overflow:ellipsis;min-width:0}
-.popup-il{flex-shrink:0}
+.live-embed{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;overflow:hidden}
+.live-embed-note{font-size:0.8rem;color:var(--ink-muted);margin-top:0.75rem}
 
 /* Site footer styles now live in partials/footer.html (injected at build). */
 
@@ -402,53 +369,34 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
     </div>
   </section>
 
-  <section class="guide-section">
+  <section class="guide-section" id="live-demo">
     <h2 class="section-title">What it looks like on your blog</h2>
-    <p class="prose" style="margin-bottom:0">Two formats, same engine. Most language blogs use the in-article widget; the carousel is a standalone block for between posts or a sidebar.</p>
+    <p class="prose" style="margin-bottom:0">Three formats, one engine. Everything below is the real, live IntroLinq product running with <strong>Preply</strong> tutors - not a mockup. Placeholder tutor profiles for now; they'd be swapped for real Preply tutors once the feed is connected.</p>
 
-    <p class="example-mode-label" style="margin-top:1.75rem">1 &nbsp;·&nbsp; In-article widget</p>
-    <div class="mock-post">
+    <p class="example-mode-label" style="margin-top:1.75rem">1 &nbsp;·&nbsp; AI widget in your articles</p>
+    <article class="post-content mock-post">
       <div class="mock-post-kicker">From the blog</div>
       <div class="mock-post-title">I finished a 400-day Spanish streak and still couldn't order a coffee</div>
       <div class="mock-post-byline">By Priya Nandakumar · 6 min read</div>
       <p>The app told me I was doing great. Every lesson green, every review perfect. Then I stood in a café in Oaxaca and completely froze - not because I didn't know the words, but because I had never once said them out loud to a real person.</p>
-      <p>What actually fixed it wasn't another module. It was <span class="expert-trigger" onclick="this.classList.toggle('open')">a few sessions of real, unscripted conversation practice with a native speaker<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=47" alt="Sofía Herrera"><span class="popup-info"><span class="popup-name">Sofía Herrera<img class="popup-flag" src="https://hatscripts.github.io/circle-flags/flags/es.svg" alt=""></span><span class="popup-role">Spanish Tutor</span><span class="popup-company">Preply</span></span></span><span class="popup-bio">Native Spanish speaker teaching conversational and business Spanish for travel, work and life</span><span class="popup-rec">Fluent on an app but freeze in real conversation? Sofía can fix that fast.</span><button class="popup-book">Learn Spanish with Sofía →</button><span class="popup-footer-row"><span class="popup-partner">In partnership with Preply</span><span class="popup-il">IntroLinq</span></span></span></span> - the part no app streak covers.</p>
-    </div>
-    <p class="example-hint">Hover (or tap) the underlined phrase - that's the expert IntroLinq matched to this article, placed automatically.</p>
+      <p>Apps are brilliant for building vocabulary and drilling grammar. What they can't do is make you uncomfortable in the right way. Real conversation is fast, messy and full of words you only half know, and the only way to get comfortable with it is to have a lot of it, with someone patient who can correct you as you go.</p>
+      <p>My friend Jonas hit the same wall with German. He had eight weeks before moving to Berlin, and flashcards were never going to help him deal with a landlord or open a bank account. Lessons built around the conversations he would actually have got him functional before the move.</p>
+      <p>It is the same story at work. A colleague of mine reads English perfectly but goes quiet in meetings, because thinking on your feet in a live discussion is a different skill from reading and writing. Practising real workplace scenarios with a tutor changed that in a few weeks.</p>
+      <p>If I could go back, I would cut the app time in half and book conversation practice from week one. The streak makes you feel like you are progressing. Speaking to a person is what actually shows you where you are.</p>
+    </article>
+    <p class="example-hint">Hover (or tap) a highlighted phrase - IntroLinq's AI read the article and matched the right tutor to it, automatically.</p>
 
     <p class="example-mode-label" style="margin-top:2rem">2 &nbsp;·&nbsp; Expert carousel</p>
-    <div class="carousel-wrap">
-      <div class="carousel-label">One block, rotating through recent posts - IntroLinq picks the expert for each</div>
-      <div class="carousel-track">
-
-        <div class="carousel-slide active">
-          <div class="carousel-niche">Workplace confidence</div>
-          <div class="carousel-title">My English was "good enough" to get the job. It wasn't good enough to lead the meeting.</div>
-          <p class="carousel-text">Reading and writing had never been the problem - it was thinking on my feet in a live discussion. <span class="expert-trigger" onclick="this.classList.toggle('open')">Structured practice built around real workplace scenarios<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=5" alt="Emma Clarke"><span class="popup-info"><span class="popup-name">Emma Clarke<img class="popup-flag" src="https://hatscripts.github.io/circle-flags/flags/gb.svg" alt=""></span><span class="popup-role">English Tutor</span><span class="popup-company">Preply</span></span></span><span class="popup-bio">Certified ESL tutor helping professionals build fluency and confidence in everyday English</span><span class="popup-rec">Need to sound as sharp in meetings as you are on paper?</span><button class="popup-book">Learn English with Emma →</button><span class="popup-footer-row"><span class="popup-partner">In partnership with Preply</span><span class="popup-il">IntroLinq</span></span></span></span> changed that in a few weeks, not another year of grammar drills.</p>
-          <p class="carousel-text-2">Vocabulary gets you in the room. Fluency is what gets you heard in it.</p>
-        </div>
-
-        <div class="carousel-slide">
-          <div class="carousel-niche">Conversation practice</div>
-          <div class="carousel-title">Three years of French classes and I still panicked ordering lunch in Lyon</div>
-          <p class="carousel-text">Classroom French and spoken French turned out to be almost different languages. <span class="expert-trigger" onclick="this.classList.toggle('open')">A few casual conversation sessions with a native speaker<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=9" alt="Camille Dubois"><span class="popup-info"><span class="popup-name">Camille Dubois<img class="popup-flag" src="https://hatscripts.github.io/circle-flags/flags/fr.svg" alt=""></span><span class="popup-role">French Tutor</span><span class="popup-company">Preply</span></span></span><span class="popup-bio">Paris-based tutor specialising in conversational French for beginners and intermediate learners</span><span class="popup-rec">Textbook French not matching what you hear on the street?</span><button class="popup-book">Learn French with Camille →</button><span class="popup-footer-row"><span class="popup-partner">In partnership with Preply</span><span class="popup-il">IntroLinq</span></span></span></span> closed the gap faster than another semester would have.</p>
-          <p class="carousel-text-2">The classroom teaches you the rules. A real conversation teaches you the language.</p>
-        </div>
-
-        <div class="carousel-slide">
-          <div class="carousel-niche">Relocation prep</div>
-          <div class="carousel-title">We had eight weeks before the move to Berlin and my German was Duolingo-owl-level</div>
-          <p class="carousel-text">Renting an apartment, opening a bank account, talking to a landlord - none of that is covered by "der, die, das" flashcards. <span class="expert-trigger" onclick="this.classList.toggle('open')">Focused lessons built around the actual conversations I'd need to have<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=13" alt="Lukas Weber"><span class="popup-info"><span class="popup-name">Lukas Weber<img class="popup-flag" src="https://hatscripts.github.io/circle-flags/flags/de.svg" alt=""></span><span class="popup-role">German Tutor</span><span class="popup-company">Preply</span></span></span><span class="popup-bio">Experienced German tutor supporting learners relocating or working with German-speaking teams</span><span class="popup-rec">Moving to a German-speaking country on a deadline?</span><button class="popup-book">Learn German with Lukas →</button><span class="popup-footer-row"><span class="popup-partner">In partnership with Preply</span><span class="popup-il">IntroLinq</span></span></span></span> got me functional before the moving truck arrived.</p>
-          <p class="carousel-text-2">You don't need fluency to relocate. You need the ten conversations you'll actually have.</p>
-        </div>
-
-      </div>
-      <div class="carousel-dots">
-        <button class="carousel-dot active" onclick="ilGoToSlide(0)" aria-label="Show slide 1"></button>
-        <button class="carousel-dot" onclick="ilGoToSlide(1)" aria-label="Show slide 2"></button>
-        <button class="carousel-dot" onclick="ilGoToSlide(2)" aria-label="Show slide 3"></button>
-      </div>
+    <div class="live-embed">
+      <script src="https://www.introlinq.com/carousel.js" data-publisher="language-blog-demo"></script>
     </div>
+    <p class="live-embed-note">A standalone block for between posts or a sidebar. It scrolls on its own and pauses on hover.</p>
+
+    <p class="example-mode-label" style="margin-top:2rem">3 &nbsp;·&nbsp; Expert board</p>
+    <div class="live-embed">
+      <script src="https://www.introlinq.com/expertboard.js" data-publisher="language-blog-demo"></script>
+    </div>
+    <p class="live-embed-note">A searchable directory readers can browse and book from without leaving your page.</p>
   </section>
 
   <section class="guide-section prose">
@@ -683,38 +631,6 @@ function toggleFaq(btn) {
   if (!isOpen) item.classList.add('open');
 }
 
-/* Expert carousel - rotates slides and auto-reveals the matched expert, like the home demo */
-(function () {
-  const slides = document.querySelectorAll('.carousel-slide');
-  const dots = document.querySelectorAll('.carousel-dot');
-  if (!slides.length) return;
-  let cur = 0, autoTimer, popupTimer;
-  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  window.ilGoToSlide = function (n) {
-    slides[cur].querySelectorAll('.expert-trigger').forEach(t => t.classList.remove('auto-open', 'open'));
-    slides[cur].classList.remove('active');
-    dots[cur].classList.remove('active');
-    cur = n;
-    slides[cur].classList.add('active');
-    dots[cur].classList.add('active');
-    clearInterval(autoTimer);
-    if (!reduce) autoTimer = setInterval(() => window.ilGoToSlide((cur + 1) % slides.length), 9000);
-    clearTimeout(popupTimer);
-    popupTimer = setTimeout(() => {
-      const trigger = slides[cur].querySelector('.expert-trigger');
-      if (trigger) trigger.classList.add('auto-open');
-    }, 1600);
-  };
-
-  if (!reduce) {
-    autoTimer = setInterval(() => window.ilGoToSlide((cur + 1) % slides.length), 9000);
-    popupTimer = setTimeout(() => {
-      const trigger = slides[0].querySelector('.expert-trigger');
-      if (trigger) trigger.classList.add('auto-open');
-    }, 1600);
-  }
-})();
 </script>
 
 <!-- Google tag (gtag.js) -->
