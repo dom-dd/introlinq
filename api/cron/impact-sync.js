@@ -197,6 +197,7 @@ export default async function handler(req, res) {
   const sid = process.env.IMPACT_ACCOUNT_SID;
   const token = process.env.IMPACT_AUTH_TOKEN;
   if (!sid || !token) {
+    console.log('impact-sync: skipped - IMPACT_ACCOUNT_SID / IMPACT_AUTH_TOKEN not set in this deployment');
     return res.status(200).json({ skipped: 'IMPACT_ACCOUNT_SID / IMPACT_AUTH_TOKEN not set' });
   }
 
@@ -206,6 +207,8 @@ export default async function handler(req, res) {
 
   try {
     const summary = await runImpactSync({ sql, sid, token, days, dry });
+    // Vercel's log view doesn't show response bodies, so put the outcome in the log itself.
+    console.log('impact-sync result:', JSON.stringify(summary));
     return res.status(200).json(summary);
   } catch (err) {
     console.error('impact-sync failed:', err);
