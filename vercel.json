@@ -10,6 +10,7 @@
   ],
   "rewrites": [
     { "source": "/proposal", "destination": "/api/proposal" },
+    { "source": "/preply-example", "destination": "/api/preply-example" },
     { "source": "/artifact", "destination": "/api/artifact" },
     { "source": "/brief", "destination": "/api/admin?resource=brief" },
     { "source": "/blog", "destination": "/api/blog" },
