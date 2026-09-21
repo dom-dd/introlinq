@@ -20,6 +20,7 @@
   // wrong on CMS sites. Falls back to <html lang> then 'en' for publishers
   // whose account predates that detection or where it failed.
   var _lang = 'en';
+  var _partners = [];
   var _bookLabels = {
     fr: 'Réserver →', es: 'Reservar →', de: 'Buchen →', it: 'Prenota →',
     pt: 'Agendar →', nl: 'Boeken →', pl: 'Umów →', sv: 'Boka →',
@@ -59,10 +60,21 @@
     ar: 'مقدَّم من {il} بالشراكة مع {oi}', zh: '由 {il} 提供，与 {oi} 合作',
     ja: '{il} 提供、{oi} と提携', ko: '{il} 제공, {oi}와 협력'
   };
+  // Names the provider(s) actually behind this publisher's experts
+  // (api/board.js sends config.partners). Falls back to OpenIntro, the only
+  // provider before multi-provider support, when a response predates that field.
+  function partnerHtml() {
+    if (!_partners.length) return '<a href="https://www.open-intro.com" target="_blank" rel="noopener">OpenIntro</a>';
+    return _partners.map(function (p) {
+      var name = esc(p.name);
+      var url = p.slug === 'openintro' ? 'https://www.open-intro.com' : p.url;
+      return url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + name + '</a>' : name;
+    }).join(' &amp; ');
+  }
   function poweredHtml() {
     return (_poweredTpl[_lang] || _poweredTpl.en)
       .replace('{il}', '<a href="https://www.introlinq.com" target="_blank" rel="noopener">IntroLinq</a>')
-      .replace('{oi}', '<a href="https://www.open-intro.com" target="_blank" rel="noopener">OpenIntro</a>');
+      .replace('{oi}', function () { return partnerHtml(); });
   }
 
   function getContrastColor(hex) {
@@ -148,6 +160,7 @@
     .then(function(data) {
       if (!data) { container.innerHTML = ''; return; }
       _lang = ((data.config && data.config.language) || document.documentElement.lang || 'en').toLowerCase().slice(0, 2);
+      _partners = (data.config && data.config.partners) || [];
       BOOK_LABEL = _bookLabels[_lang] || 'Book a call →';
       BOARD_LABEL = _boardLabels[_lang] || _boardLabels.en;
       render(data);

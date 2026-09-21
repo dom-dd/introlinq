@@ -31,7 +31,7 @@ export default async function handler(req, res) {
            COALESCE(e.highlights, '{}') AS highlights,
            COALESCE(e.services, '{}') AS services,
            COALESCE(e.notable_categories, '{}') AS notable_categories,
-           p.slug AS provider_slug, p.website_url AS provider_url
+           p.slug AS provider_slug, p.name AS provider_name, p.website_url AS provider_url
     FROM experts e
     JOIN providers p ON p.id = e.provider_id
     WHERE e.active = true
@@ -45,6 +45,18 @@ export default async function handler(req, res) {
   experts.forEach(e => (e.topics || []).forEach(t => topicSet.add(t)));
   const topics = [...topicSet].sort();
 
+  // The providers actually behind this publisher's experts, so the carousel and
+  // board can name them in their "in partnership with" line instead of always
+  // saying OpenIntro.
+  const partners = [];
+  const seenProviders = new Set();
+  experts.forEach(e => {
+    if (seenProviders.has(e.provider_slug)) return;
+    seenProviders.add(e.provider_slug);
+    partners.push({ slug: e.provider_slug, name: e.provider_name, url: e.provider_url });
+  });
+  partners.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+
   res.setHeader('Cache-Control', 'public, s-maxage=300');
   return res.status(200).json({
     experts,
@@ -55,6 +67,7 @@ export default async function handler(req, res) {
       carousel_title: publisher.carousel_title || null,
       text_color: publisher.board_text_color || '#1a1a2e',
       language: publisher.widget_language || null,
+      partners,
     }
   });
 }
