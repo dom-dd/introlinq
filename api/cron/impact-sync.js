@@ -75,7 +75,9 @@ export async function runImpactSync({ sql, sid, token, days, dry = false, fetchI
   const lookback = days || (seen === 0 ? FIRST_RUN_DAYS : DEFAULT_LOOKBACK_DAYS);
   const end = new Date();
   const start = new Date(end.getTime() - lookback * 86400000);
-  const actions = await fetchActions({ sid, token, startIso: start.toISOString(), endIso: end.toISOString(), fetchImpl });
+  // Impact rejects fractional seconds ("...:27.639Z" -> 400 invalid value), so trim them.
+  const isoNoMs = (d) => d.toISOString().replace(/\.\d{3}Z$/, 'Z');
+  const actions = await fetchActions({ sid, token, startIso: isoNoMs(start), endIso: isoNoMs(end), fetchImpl });
 
   const publisherCache = new Map();
   async function getPublisher(slug) {
