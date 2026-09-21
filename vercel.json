@@ -38,6 +38,10 @@
       "schedule": "0 10 * * 3"
     },
     {
+      "path": "/api/cron/impact-sync",
+      "schedule": "30 7 * * *"
+    },
+    {
       "path": "/api/admin?resource=run-discovery",
       "schedule": "0 6,12,18 * * *"
     }
@@ -48,6 +52,7 @@
     "api/suggest.js": { "maxDuration": 60 },
     "api/dashboard.js": { "maxDuration": 30 },
     "api/cron/weekly-blog.js": { "maxDuration": 60 },
+    "api/cron/impact-sync.js": { "maxDuration": 60 },
     "api/blog.js": { "maxDuration": 30, "includeFiles": "partials/**" }
   }
 }

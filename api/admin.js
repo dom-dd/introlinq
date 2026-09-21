@@ -5,6 +5,7 @@ import { createMagicToken, detectLanguageFromSite } from './auth.js';
 import { DECK_HTML_B64 } from './_deckContent.js';
 import { ensureBotColumns, getClientIp } from './_botDetect.js';
 import { CATEGORIES } from './suggest-expert.js';
+import { notifyBooking, providerLabel } from './_bookingNotify.js';
 
 let adminBotColumnsReady = false;
 
@@ -1411,22 +1412,38 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
       const { provider = 'openintro', publisher, expert_name, booking_amount,
               booking_currency = 'GBP', commission_amount, commission_currency = 'GBP',
-              booked_at, booking_id } = req.body;
+              booked_at, booking_id, notify = true } = req.body;
 
-      const [pub] = await sql`SELECT revenue_share FROM publishers WHERE slug = ${publisher} LIMIT 1`.catch(() => [null]);
+      const [pub] = await sql`SELECT slug, name, payment_email, revenue_share FROM publishers WHERE slug = ${publisher} LIMIT 1`.catch(() => [null]);
       const revenue_share = parseFloat(pub?.revenue_share || 0.70);
       const publisher_payout = commission_amount ? Math.round(commission_amount * revenue_share * 100) / 100 : null;
       const introlinq_margin = commission_amount ? Math.round((commission_amount - publisher_payout) * 100) / 100 : null;
 
-      await sql`INSERT INTO bookings
+      const inserted = await sql`INSERT INTO bookings
         (entry_type, provider, publisher, expert_name, booking_id, booking_amount, booking_currency,
          commission_amount, commission_currency, revenue_share, publisher_payout, introlinq_margin, booked_at)
         VALUES ('manual', ${provider}, ${publisher}, ${expert_name || null}, ${booking_id || null},
                 ${booking_amount || null}, ${booking_currency}, ${commission_amount || null},
                 ${commission_currency}, ${revenue_share}, ${publisher_payout}, ${introlinq_margin},
                 ${booked_at ? new Date(booked_at) : new Date()})
-        ON CONFLICT (booking_id) DO NOTHING`;
-      return res.status(201).json({ ok: true });
+        ON CONFLICT (booking_id) DO NOTHING
+        RETURNING id`;
+
+      // Tell the publisher (and the team) the same way the automated paths do,
+      // instead of the booking silently appearing. Only for a genuinely new row
+      // with a known publisher and a commission to report; pass notify:false to
+      // log a historical correction without emailing anyone.
+      if (notify !== false && inserted.length > 0 && pub && publisher_payout != null) {
+        await notifyBooking({
+          publisher: { ...pub, revenue_share },
+          providerName: providerLabel(provider),
+          expertName: expert_name || 'an expert',
+          bookingAmount: Number(commission_amount),
+          payout: publisher_payout,
+          currency: commission_currency,
+        });
+      }
+      return res.status(201).json({ ok: true, notified: notify !== false && inserted.length > 0 && !!pub && publisher_payout != null });
     }
   }
 
