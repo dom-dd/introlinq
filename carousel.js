@@ -57,10 +57,23 @@
     tr: 'Öğrenmeye başla →', ar: 'ابدأ التعلّم →', zh: '开始学习 →',
     ja: '学習を始める →', ko: '학습 시작하기 →'
   };
+  // A tutor's languages entry can be a specialty ("Business English",
+  // "Conversational Spanish"), not a language - only a real language name
+  // goes into the button, so that reads "Learn English today".
+  var _knownLanguages = ['Arabic','Bengali','Cantonese','Chinese','Czech','Danish','Dutch','English','Finnish','French','German','Greek','Hebrew','Hindi','Hungarian','Indonesian','Italian','Japanese','Korean','Mandarin','Norwegian','Persian','Polish','Portuguese','Punjabi','Romanian','Russian','Spanish','Swahili','Swedish','Tagalog','Thai','Turkish','Ukrainian','Urdu','Vietnamese'];
+  function languageInName(name) {
+    var words = ' ' + String(name).toLowerCase().replace(/[^a-z]+/g, ' ') + ' ';
+    var found = null;
+    _knownLanguages.forEach(function (k) {
+      if (!found && words.indexOf(' ' + k.toLowerCase() + ' ') > -1) found = k;
+    });
+    return found;
+  }
   function bookLabelFor(e) {
     if (!e || e.provider_slug !== 'preply') return BOOK_LABEL;
     var langs = Array.isArray(e.languages) ? e.languages.filter(Boolean) : [];
-    if (_lang === 'en' && langs.length === 1) return _learnLabels.enLang.replace('{language}', langs[0]);
+    var language = langs.length === 1 ? languageInName(String(langs[0])) : null;
+    if (_lang === 'en' && language) return _learnLabels.enLang.replace('{language}', language);
     return _learnLabels[_lang] || _learnLabels.en;
   }
   var _poweredTpl = {
