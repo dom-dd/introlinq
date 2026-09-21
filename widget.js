@@ -134,6 +134,27 @@
   var RECOMMEND_LABEL = _recommendLabels[_lang] || _recommendLabels.en;
   var NO_MATCH_LABEL = _noMatchLabels[_lang] || _noMatchLabels.en;
 
+  // Preply tutors sell lessons, not a meeting, so "Meet now" reads wrong for
+  // them. English names the language when the tutor teaches exactly one
+  // ("Learn Spanish today") and otherwise, or on any other page language,
+  // uses a generic "Start learning" - the language name isn't translated,
+  // and a multi-language tutor must never get the wrong one.
+  var _learnLabels = {
+    en: 'Start learning today →', enLang: 'Learn {language} today →',
+    fr: 'Commencer à apprendre →', es: 'Empieza a aprender →', de: 'Jetzt lernen →',
+    it: 'Inizia a imparare →', pt: 'Comece a aprender →', nl: 'Begin met leren →',
+    pl: 'Zacznij naukę →', sv: 'Börja lära dig →', no: 'Begynn å lære →',
+    da: 'Begynd at lære →', fi: 'Aloita oppiminen →', ro: 'Începe să înveți →',
+    tr: 'Öğrenmeye başla →', ar: 'ابدأ التعلّم →', zh: '开始学习 →',
+    ja: '学習を始める →', ko: '학습 시작하기 →'
+  };
+  function bookLabelFor(e) {
+    if (!e || e.provider_slug !== 'preply') return BOOK_LABEL;
+    var langs = Array.isArray(e.languages) ? e.languages.filter(Boolean) : [];
+    if (_lang === 'en' && langs.length === 1) return _learnLabels.enLang.replace('{language}', langs[0]);
+    return _learnLabels[_lang] || _learnLabels.en;
+  }
+
   // Detects language from the article's own text rather than trusting the page's
   // <html lang> (often misconfigured on CMS sites) or the visitor's browser locale.
   // Counts total function-word occurrences per language, with English competing
@@ -1616,7 +1637,7 @@
     var nameHtml = href !== '#'
       ? '<a class="il2-opt-name" href="' + href + '" target="_blank" rel="noopener">' + nameEsc + '</a>'
       : '<div class="il2-opt-name">' + nameEsc + '</div>';
-    var bookLabel = BOOK_LABEL.replace(/</g,'&lt;');
+    var bookLabel = bookLabelFor(e).replace(/</g,'&lt;');
     return '<div class="il2-opt">' +
         photoHtml +
         '<div class="il2-opt-info">' +

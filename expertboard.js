@@ -48,6 +48,26 @@
     ko: { title: '전문가 예약하기', search: '전문가 또는 주제 검색...', more: '더 보기 ↓', empty: '전문가를 찾을 수 없습니다.' }
   };
   var BOOK_LABEL = 'Book a call →';
+  // Preply tutors sell lessons, not a call, so "Book a call" reads wrong for
+  // them. English names the language when the tutor teaches exactly one
+  // ("Learn Spanish today") and otherwise, or on any other page language,
+  // uses a generic "Start learning" - the language name isn't translated,
+  // and a multi-language tutor must never get the wrong one.
+  var _learnLabels = {
+    en: 'Start learning today →', enLang: 'Learn {language} today →',
+    fr: 'Commencer à apprendre →', es: 'Empieza a aprender →', de: 'Jetzt lernen →',
+    it: 'Inizia a imparare →', pt: 'Comece a aprender →', nl: 'Begin met leren →',
+    pl: 'Zacznij naukę →', sv: 'Börja lära dig →', no: 'Begynn å lære →',
+    da: 'Begynd at lære →', fi: 'Aloita oppiminen →', ro: 'Începe să înveți →',
+    tr: 'Öğrenmeye başla →', ar: 'ابدأ التعلّم →', zh: '开始学习 →',
+    ja: '学習を始める →', ko: '학습 시작하기 →'
+  };
+  function bookLabelFor(e) {
+    if (!e || e.provider_slug !== 'preply') return BOOK_LABEL;
+    var langs = Array.isArray(e.languages) ? e.languages.filter(Boolean) : [];
+    if (_lang === 'en' && langs.length === 1) return _learnLabels.enLang.replace('{language}', langs[0]);
+    return _learnLabels[_lang] || _learnLabels.en;
+  }
   var BOARD_LABEL = _boardLabels.en;
   var _poweredTpl = {
     en: 'powered by {il} in partnership with {oi}', fr: 'propulsé par {il} en partenariat avec {oi}',
@@ -327,7 +347,7 @@
         + '<div class="ilb-name"><span class="ilb-name-text">' + esc(e.name) + '</span>' + flagHtml + '</div>'
         + (role ? '<div class="ilb-role">' + esc(role) + '</div>' : '')
         + (bio ? '<div class="ilb-bio">' + esc(bio) + '</div>' : '')
-        + (bookUrl !== '#' ? '<a class="ilb-btn" href="' + esc(bookUrl) + '" target="_blank" rel="noopener">' + BOOK_LABEL + '</a>' : '')
+        + (bookUrl !== '#' ? '<a class="ilb-btn" href="' + esc(bookUrl) + '" target="_blank" rel="noopener">' + esc(bookLabelFor(e)) + '</a>' : '')
         + '</div>';
     }).join('');
   }
