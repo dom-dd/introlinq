@@ -194,6 +194,23 @@ h2 .n{display:inline-block;width:1.7rem;height:1.7rem;line-height:1.7rem;text-al
 .post p:last-child{margin-bottom:0}
 .hint{font-size:0.8rem;color:var(--ink-muted);text-align:center;margin-top:0.85rem}
 .embed{border:1px solid var(--border);border-radius:12px;padding:1.25rem;background:var(--white);overflow:hidden}
+.compare-note{background:var(--gold-light);border:1px solid rgba(230,168,32,0.35);border-radius:12px;padding:0.875rem 1.125rem;margin:0.6rem 0 1.25rem}
+.compare-note p{margin:0;color:#7a5b12;font-size:0.8438rem}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.compare-label{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-muted);margin-bottom:0.6rem;text-align:center}
+.compare-card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:1.125rem;height:100%;box-sizing:border-box}
+.compare-header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.compare-avatar{width:54px;height:54px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--sage-light)}
+.compare-info{flex:1;min-width:0}
+.compare-name{display:flex;align-items:center;gap:6px;font-weight:600;font-size:15px;color:var(--ink);line-height:1.25}
+.compare-flag{width:18px;height:18px;border-radius:50%;flex-shrink:0;object-fit:cover}
+.compare-role{display:block;font-size:11.5px;color:var(--ink-soft);line-height:1.3;margin-top:2px}
+.compare-company{display:block;font-size:11.5px;color:var(--ink-muted);line-height:1.3}
+.compare-bio{display:block;font-size:11.5px;font-weight:500;color:var(--ink);line-height:1.45;margin-bottom:8px}
+.compare-rec{display:block;font-size:12.5px;color:var(--ink-soft);font-style:italic;line-height:1.6;border-left:2px solid rgba(230,168,32,0.4);padding-left:10px;margin-bottom:12px}
+.compare-book{display:block;width:100%;box-sizing:border-box;background:var(--gold);color:var(--ink);border:none;padding:9px;border-radius:100px;font-size:13px;font-weight:700;text-align:center}
+.compare-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(26,26,46,0.07);font-size:8.5px;color:var(--ink-muted)}
+@media (max-width:640px){.compare-grid{grid-template-columns:1fr}}
 .foot{margin-top:3rem;padding-top:1.25rem;border-top:1px solid var(--border-soft);font-size:0.8125rem;color:var(--ink-muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.5rem}
 .foot a{color:var(--ink-muted)}
 @media (max-width:700px){.sheet{padding:1.75rem 1.25rem;margin:1rem}h1{font-size:1.6rem}.post{padding:1.25rem}}
@@ -215,7 +232,7 @@ h2 .n{display:inline-block;width:1.7rem;height:1.7rem;line-height:1.7rem;text-al
   </div>
 
   <p><strong>Preply</strong> is an online marketplace where learners book 1-on-1 lessons with tutors across many languages. <strong>IntroLinq</strong> helps publishers earn from their content by recommending the right expert to a reader at the moment an article shows they need one. The publisher adds one line of code, IntroLinq reads each article, and the best-matched expert appears in context.</p>
-  <p>Below is how Preply tutors would appear on a language-learning blog, in the three formats a publisher can choose from. Everything on this page is the live product, not a mockup, and every tutor link goes through your Impact tracking link.</p>
+  <p>Below is how Preply tutors would appear on a language-learning blog, in the three formats a publisher can choose from. These are the live product, not a mockup, and every tutor link goes through your Impact tracking link.</p>
   <div class="callout"><p>The tutor profiles shown here are placeholders for illustration. They would be replaced by real Preply tutors once a tutor feed is connected.</p></div>
 
   <h2><span class="n">1</span>AI text widget</h2>
@@ -234,6 +251,45 @@ h2 .n{display:inline-block;width:1.7rem;height:1.7rem;line-height:1.7rem;text-al
     <p>If I could go back, I would cut the app time in half and book conversation practice from week one. The streak makes you feel like you are progressing. Speaking to a person is what actually shows you where you are.</p>
   </article>
   <p class="hint">The highlighted phrases are found and matched automatically by IntroLinq's AI. Nothing here was placed by hand.</p>
+
+  <h2>Using a tutor vs. using a language</h2>
+  <div class="compare-note"><p>This part is a mockup, not the live product - two directions for the same card, to compare side by side.</p></div>
+  <p class="lead">Same moment in the article above - "Frozen when speaking Spanish in real life?" - shown two ways.</p>
+  <div class="compare-grid">
+    <div>
+      <div class="compare-label">Using a tutor profile</div>
+      <div class="compare-card">
+        <div class="compare-header">
+          <img class="compare-avatar" src="https://i.pravatar.cc/150?img=47" alt="Sofía Herrera">
+          <div class="compare-info">
+            <div class="compare-name">Sofía Herrera<img class="compare-flag" src="https://hatscripts.github.io/circle-flags/flags/es.svg" alt=""></div>
+            <span class="compare-role">Spanish Tutor</span>
+            <span class="compare-company">Preply</span>
+          </div>
+        </div>
+        <span class="compare-bio">Native Spanish speaker teaching conversational and business Spanish for travel, work and life.</span>
+        <span class="compare-rec">Frozen when speaking Spanish in real life? Sofía can help.</span>
+        <span class="compare-book">Meet now →</span>
+        <div class="compare-footer"><span>In partnership with Preply</span><span>IntroLinq</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="compare-label">Using a language</div>
+      <div class="compare-card">
+        <div class="compare-header">
+          <img class="compare-avatar" src="https://hatscripts.github.io/circle-flags/flags/es.svg" alt="Spanish">
+          <div class="compare-info">
+            <div class="compare-name">Learn Spanish</div>
+            <span class="compare-role">with a Preply tutor</span>
+          </div>
+        </div>
+        <span class="compare-bio">Real conversation practice, matched to your level.</span>
+        <span class="compare-rec">Frozen when speaking Spanish in real life?</span>
+        <span class="compare-book">Find a tutor →</span>
+        <div class="compare-footer"><span>In partnership with Preply</span><span>IntroLinq</span></div>
+      </div>
+    </div>
+  </div>
 
   <h2><span class="n">2</span>Expert carousel</h2>
   <p class="lead">A standalone block a publisher can drop between posts or into a sidebar. It scrolls on its own and pauses when the reader hovers.</p>
