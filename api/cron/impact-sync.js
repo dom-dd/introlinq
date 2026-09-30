@@ -168,6 +168,20 @@ export async function runImpactSync({ sql, sid, token, days, dry = false, fetchI
           flags.reversal = true;
         }
       }
+
+      // 4b. Reversed before ever being approved (e.g. a refunded test
+      // transaction) - correctly never became a booking, but without this the
+      // action just goes quiet forever with no confirmation anyone sees. Same
+      // flag as 4b (booked/not-booked are mutually exclusive), different
+      // wording so it doesn't read as a payout problem when there was none.
+      if (state === 'REVERSED' && !flags.booked && !flags.reversal) {
+        step.do.push('alert: reversed before approval');
+        summary.reversed_before_booking = (summary.reversed_before_booking || 0) + 1;
+        if (!dry) {
+          await slackPing(`↩️ Impact ${providerName} conversion ${id} was reversed before approval - ${pub.name} (${money(payout, currency)}). No booking was created and none is needed.`);
+          flags.reversal = true;
+        }
+      }
     }
 
     if (step.do.length) summary.plan.push(step);
