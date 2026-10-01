@@ -203,6 +203,7 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
         <button class="outreach-subtab grp-partner" data-name="physicalgoods" onclick="switchOutreachSubtab('physicalgoods',this)">Physical goods partners</button>
         <span class="outreach-subtab-divider"></span>
         <button class="outreach-subtab grp-others" data-name="others" onclick="switchOutreachSubtab('others',this)">Others</button>
+        <button class="outreach-subtab grp-others" data-name="invalidurl" onclick="switchOutreachSubtab('invalidurl',this)">Invalid URL</button>
         <button class="btn btn-primary btn-sm" style="flex-shrink:0;margin:0.4rem 0 0.4rem auto;padding-left:0.75rem;padding-right:0.75rem" onclick="openCreateLeadModal()">+ Create a lead</button>
       </div>
 
@@ -343,6 +344,36 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
             </table>
           </div>
           <div class="empty" id="outreach-others-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-invalidurl">
+        <div class="section">
+          <div class="section-header">
+            <div style="display:flex;align-items:center">
+              <div class="section-title" id="outreach-invalidurl-title">Invalid URL</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">The domain doesn't resolve to a real, reachable website - dead, parked, or otherwise not a valid lead to review.</span></span>
+            </div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1480px">
+              <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
+                <th style="width:190px">Site</th>
+                <th style="width:160px">Category</th>
+                <th style="width:150px">Website type</th>
+                <th style="width:150px">Name for emails</th>
+                <th style="width:130px">Contact name</th>
+                <th style="width:190px">Email</th>
+                <th style="width:150px">Move to...</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th style="width:180px">Notes</th>
+                <th style="width:44px"></th>
+              </tr></thead>
+              <tbody id="outreach-invalidurl-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-invalidurl-empty">Loading...</div>
         </div>
       </div>
 
@@ -689,6 +720,7 @@ const OUTREACH_STATUS_LABELS = {
   not_a_fit: 'Not a fit',
   replied_not_interested: 'Not interested',
   large_publisher: 'Larger publishers',
+  invalid_url: 'Invalid URL',
 };
 const OUTREACH_STATUS_COLORS = {
   discovered: 'var(--ink-muted)',
@@ -701,6 +733,7 @@ const OUTREACH_STATUS_COLORS = {
   not_a_fit: 'var(--ink-muted)',
   replied_not_interested: 'var(--red, #dc2626)',
   large_publisher: '#0891b2',
+  invalid_url: '#78716c',
 };
 // Same 3 groups as the subtab bar's coloring, rendered as <optgroup>s so
 // every Status <select> in the page (the row dropdown and the Create-a-lead
@@ -709,7 +742,7 @@ const OUTREACH_STATUS_COLORS = {
 const OUTREACH_STATUS_GROUPS = [
   { label: 'Status', keys: ['discovered'] },
   { label: 'Partner', keys: ['partner', 'openintro_partner', 'products_partner', 'physical_partner'] },
-  { label: 'Others', keys: ['important', 'large_publisher', 'not_a_fit', 'replied_not_interested', 'signed_up'] },
+  { label: 'Others', keys: ['important', 'large_publisher', 'not_a_fit', 'replied_not_interested', 'signed_up', 'invalid_url'] },
 ];
 
 function outreachStatusOptionsHTML(selectedValue) {
@@ -744,6 +777,7 @@ function outreachBucket(c) {
   if (c.status === 'openintro_partner') return 'openintro';
   if (c.status === 'products_partner') return 'products';
   if (c.status === 'physical_partner') return 'physicalgoods';
+  if (c.status === 'invalid_url') return 'invalidurl';
   return 'todo'; // discovered, to_contact, emailed, followed_up_1/2/3, contact_later, replied_interested, no_email_found
 }
 
@@ -789,7 +823,7 @@ function showMoreOutreach(name) {
 }
 
 function renderOutreach() {
-  const buckets = { todo: [], partner: [], openintro: [], products: [], physicalgoods: [], important: [], others: [], largepub: [] };
+  const buckets = { todo: [], partner: [], openintro: [], products: [], physicalgoods: [], important: [], others: [], invalidurl: [], largepub: [] };
   let visible = _outreachCategoryFilter ? _outreach.filter((c) => c.category === _outreachCategoryFilter) : _outreach;
   if (_outreachAssigneeFilter === 'unassigned') visible = visible.filter((c) => !c.assigned_to);
   else if (_outreachAssigneeFilter) visible = visible.filter((c) => c.assigned_to === Number(_outreachAssigneeFilter));
@@ -801,6 +835,7 @@ function renderOutreach() {
   buckets.products.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.physicalgoods.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.others.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.invalidurl.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.largepub.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   // Never-contacted leads first; anything that was already emailed before
   // (and got swept back into Untouched) sorts below them, ready to revisit
@@ -815,6 +850,7 @@ function renderOutreach() {
   renderOutreachSection('products', 'Products partners', buckets.products, 'No potential products partners flagged yet.');
   renderOutreachSection('physicalgoods', 'Physical goods partners', buckets.physicalgoods, 'No potential physical goods partners flagged yet.');
   renderOutreachSection('others', 'Others', buckets.others, 'Nothing here yet.');
+  renderOutreachSection('invalidurl', 'Invalid URL', buckets.invalidurl, 'Nothing here yet.');
 
   if (_outreachSearchQuery) {
     const q = _outreachSearchQuery.toLowerCase();
