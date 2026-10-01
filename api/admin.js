@@ -19,7 +19,7 @@ function auth(req) {
 // ── Outreach helper-access auth (separate from the IP-gated owner auth()
 // above) - password-only accounts Dom creates himself for people helping
 // with outreach, so each helper only ever sees leads assigned to them.
-// See /outreach (outreach/index.html) for the page this backs.
+// See /review (review/index.html) for the page this backs.
 const OUTREACH_LOGIN_MAX_ATTEMPTS = 5;
 const OUTREACH_LOGIN_LOCKOUT_MS = 15 * 60 * 1000;
 
@@ -88,7 +88,7 @@ async function issueOutreachSession(sql, res, userId) {
 // Dom's own allowlisted IP (home/office network) is still correctly
 // restricted to helper access instead of the IP silently overriding their
 // session's role. The IP allowlist only serves as a fallback for reaching
-// this without ever having logged into /outreach at all (e.g. Dom on his
+// this without ever having logged into /review at all (e.g. Dom on his
 // own network, no session cookie present).
 async function isOutreachOwner(req, sql) {
   const session = await getOutreachSession(req, sql);
@@ -418,7 +418,7 @@ export default async function handler(req, res) {
 
   // ── Outreach helper login (password-only) ──────────────────────────────
   // Everything below runs before the IP gate - helpers have no allowlisted
-  // IP, so they need to reach these without passing it. See /outreach.
+  // IP, so they need to reach these without passing it. See /review.
 
   if (resource === 'outreach-bootstrap-check' && req.method === 'GET') {
     const sql = neon(process.env.DATABASE_URL);
@@ -500,7 +500,7 @@ export default async function handler(req, res) {
   }
 
   // Owner-only management of helper accounts - "Manage users" panel on
-  // /outreach. Never returns password_hash.
+  // /review. Never returns password_hash.
   if (resource === 'outreach-users') {
     const sql = neon(process.env.DATABASE_URL);
     await ensureOutreachTables(sql);

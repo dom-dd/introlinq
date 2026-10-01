@@ -209,7 +209,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
     <button class="tab-btn active" onclick="switchTab('publishers',this)">Publishers</button>
     <button class="tab-btn" onclick="switchTab('stats',this)">Stats</button>
     <button class="tab-btn" onclick="switchTab('waitlist',this)">Waitlist</button>
-    <a class="tab-btn" href="/outreach" target="_blank" rel="noopener">Outreach ↗</a>
+    <a class="tab-btn" href="/review" target="_blank" rel="noopener">Review ↗</a>
     <button class="tab-btn" onclick="switchTab('outreach-users',this)">Outreach users</button>
     <button class="tab-btn" onclick="switchTab('affiliate-outreach',this)">Affiliate outreach</button>
     <button class="tab-btn" onclick="switchTab('bookings',this)">Bookings</button>
@@ -539,9 +539,9 @@ tr:hover td{background:rgba(0,0,0,0.01)}
     </div>
 
     <!-- Outreach users - account provisioning only (create/deactivate
-         helper logins for /outreach). The actual lead table lives
-         exclusively at /outreach now, not here - see outreach/index.html.
-         Reuses the same resource=outreach-users endpoint /outreach's own
+         helper logins for /review). The actual lead table lives
+         exclusively at /review now, not here - see review/index.html.
+         Reuses the same resource=outreach-users endpoint /review's own
          former "Manage users" panel used; that panel was removed from
          there once this existed, so there's exactly one place to manage
          accounts. -->
@@ -592,7 +592,7 @@ tr:hover td{background:rgba(0,0,0,0.01)}
     </div>
 
     <!-- Affiliate outreach tab - same pipeline shape as Outreach (now at
-         /outreach - see outreach/index.html), but for companies IntroLinq
+         /review - see review/index.html), but for companies IntroLinq
          wants to become an affiliate OF (SaaS tools, retailers, expert-
          marketplace competitors), not publishers to recruit. See
          loadAffiliateOutreach/renderAffiliateOutreach etc. -->
@@ -2233,7 +2233,7 @@ async function saveSubscriberEdit() {
   toast('Signup details saved');
 }
 
-// Outreach moved to /outreach (see outreach/index.html) - OUTREACH_INPUT_STYLE
+// Outreach moved to /review (see review/index.html) - OUTREACH_INPUT_STYLE
 // and prettifyDomain below are kept here because Affiliate outreach (next
 // section) still uses both; everything else outreach-specific moved with
 // the rest of that page.
@@ -2259,11 +2259,11 @@ function prettifyDomain(domain) {
 }
 
 
-// ── Outreach users (account provisioning for /outreach) ─────────────────
-// Reuses the same resource=outreach-users endpoint /outreach's own "Manage
+// ── Outreach users (account provisioning for /review) ─────────────────
+// Reuses the same resource=outreach-users endpoint /review's own "Manage
 // users" panel used before it was removed from there in favour of this one
 // place - the endpoint already accepts either the IP allowlist (this page)
-// or an owner-role /outreach session, so no backend change was needed.
+// or an owner-role /review session, so no backend change was needed.
 
 let _outreachUsers = [];
 let _outreachUsersLoaded = false;

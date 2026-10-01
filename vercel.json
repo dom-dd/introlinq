@@ -6,7 +6,8 @@
     { "source": "/landing", "destination": "/", "permanent": true },
     { "source": "/landing.html", "destination": "/", "permanent": true },
     { "source": "/short", "destination": "/", "permanent": true },
-    { "source": "/short.html", "destination": "/", "permanent": true }
+    { "source": "/short.html", "destination": "/", "permanent": true },
+    { "source": "/outreach", "destination": "/review", "permanent": true }
   ],
   "rewrites": [
     { "source": "/proposal", "destination": "/api/proposal" },

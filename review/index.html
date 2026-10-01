@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex,nofollow">
-<title>IntroLinq Outreach</title>
+<title>IntroLinq Review</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -168,7 +168,7 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
 <div id="login-view">
   <div class="login-card">
     <div class="login-logo">Intro<span>Linq</span></div>
-    <div class="login-sub" id="login-sub">Outreach</div>
+    <div class="login-sub" id="login-sub">Review</div>
     <div id="bootstrap-fields" style="display:none">
       <input type="text" class="login-input" id="bootstrap-name" placeholder="Your name" autocomplete="name">
       <input type="text" class="login-input" id="bootstrap-title" placeholder="Your title (e.g. Founder & CEO) - optional" autocomplete="organization-title">
@@ -182,7 +182,7 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
 <!-- Outreach -->
 <div id="outreach-view">
   <div class="admin-header">
-    <div class="admin-logo">Intro<span>Linq</span><em>Outreach</em></div>
+    <div class="admin-logo">Intro<span>Linq</span><em>Review</em></div>
     <div class="header-right">
       <span class="header-user" id="header-user"></span>
       <button class="logout-btn" onclick="outreachLogout()">Sign out</button>
@@ -639,7 +639,7 @@ async function initOutreachAuth() {
     _needsBootstrap = !!data.needsBootstrap;
   } catch {}
 
-  document.getElementById('login-sub').textContent = _needsBootstrap ? 'Set your owner password' : 'Outreach';
+  document.getElementById('login-sub').textContent = _needsBootstrap ? 'Set your owner password' : 'Review';
   document.getElementById('bootstrap-fields').style.display = _needsBootstrap ? 'block' : 'none';
   document.getElementById('login-submit-btn').textContent = _needsBootstrap ? 'Create account' : 'Log in';
 }
