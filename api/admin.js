@@ -689,7 +689,7 @@ export default async function handler(req, res) {
     // value. 'large_publisher' (2026-08-25, see reject-unfit-todo.js) is a
     // genuine blog/publication just too large/well-known to be a near-term
     // outreach target - kept separate from 'not_a_fit' junk.
-    const ALLOWED_STATUSES = ['discovered', 'important', 'partner', 'openintro_partner', 'products_partner', 'replied_not_interested', 'signed_up', 'not_a_fit', 'large_publisher'];
+    const ALLOWED_STATUSES = ['discovered', 'important', 'partner', 'openintro_partner', 'products_partner', 'physical_partner', 'replied_not_interested', 'signed_up', 'not_a_fit', 'large_publisher'];
 
     // Purely informational - what platform the blog runs on (WordPress,
     // Substack, Ghost, ...). Set by hand in the Outreach UI; nothing keys
