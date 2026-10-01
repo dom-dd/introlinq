@@ -194,6 +194,7 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
       <div class="outreach-subtab-bar">
         <button class="outreach-subtab grp-status active" data-name="findemail" onclick="switchOutreachSubtab('findemail',this)">Find email</button>
         <button class="outreach-subtab grp-status" data-name="toclassify" onclick="switchOutreachSubtab('toclassify',this)">To be classified</button>
+        <button class="outreach-subtab grp-status" data-name="addedtosheet" onclick="switchOutreachSubtab('addedtosheet',this)">Added to sheet</button>
         <span class="outreach-subtab-divider"></span>
         <button class="outreach-subtab grp-others" data-name="important" onclick="switchOutreachSubtab('important',this)">VIP</button>
         <button class="outreach-subtab grp-others" data-name="largepub" onclick="switchOutreachSubtab('largepub',this)">Larger publishers</button>
@@ -345,6 +346,36 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
             </table>
           </div>
           <div class="empty" id="outreach-toclassify-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-addedtosheet">
+        <div class="section">
+          <div class="section-header">
+            <div style="display:flex;align-items:center">
+              <div class="section-title" id="outreach-addedtosheet-title">Added to sheet</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Already handed off to GMass via the spreadsheet - out of the active review queue. Moves to a different tab automatically once its status actually changes (reply, conversion, etc.).</span></span>
+            </div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1480px">
+              <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
+                <th style="width:190px">Site</th>
+                <th style="width:160px">Category</th>
+                <th style="width:150px">Website type</th>
+                <th style="width:150px">Name for emails</th>
+                <th style="width:130px">Contact name</th>
+                <th style="width:190px">Email</th>
+                <th style="width:150px">Move to...</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th style="width:180px">Notes</th>
+                <th style="width:44px"></th>
+              </tr></thead>
+              <tbody id="outreach-addedtosheet-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-addedtosheet-empty">Loading...</div>
         </div>
       </div>
 
@@ -811,6 +842,11 @@ function outreachBucket(c) {
   if (c.status === 'products_partner') return 'products';
   if (c.status === 'physical_partner') return 'physicalgoods';
   if (c.status === 'invalid_url') return 'invalidurl';
+  // Already handed off to GMass via the spreadsheet - out of the active
+  // review queue regardless of verified_fit_at, unless/until a real status
+  // change (reply, conversion, etc.) moves it into one of the buckets
+  // above, which still takes priority over this.
+  if (c.exported_to_sheet_at) return 'addedtosheet';
   // status === 'discovered' (or any stray legacy status) from here down -
   // verified_fit_at is set by reject-unfit-todo.js's real-content AI pass
   // when it confirms a genuine small/independent publication. Nothing sets
@@ -862,7 +898,7 @@ function showMoreOutreach(name) {
 }
 
 function renderOutreach() {
-  const buckets = { findemail: [], toclassify: [], partner: [], openintro: [], products: [], physicalgoods: [], important: [], others: [], invalidurl: [], largepub: [] };
+  const buckets = { findemail: [], toclassify: [], addedtosheet: [], partner: [], openintro: [], products: [], physicalgoods: [], important: [], others: [], invalidurl: [], largepub: [] };
   let visible = _outreachCategoryFilter ? _outreach.filter((c) => c.category === _outreachCategoryFilter) : _outreach;
   if (_outreachAssigneeFilter === 'unassigned') visible = visible.filter((c) => !c.assigned_to);
   else if (_outreachAssigneeFilter) visible = visible.filter((c) => c.assigned_to === Number(_outreachAssigneeFilter));
@@ -876,6 +912,7 @@ function renderOutreach() {
   buckets.others.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.invalidurl.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.largepub.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.addedtosheet.sort((a, b) => new Date(b.exported_to_sheet_at) - new Date(a.exported_to_sheet_at));
   // Never-contacted leads first; anything that was already emailed before
   // (and got swept back into these buckets) sorts below them, ready to
   // revisit in a few weeks rather than crowding out brand-new leads.
@@ -885,6 +922,7 @@ function renderOutreach() {
 
   renderOutreachSection('findemail', 'Find email', buckets.findemail, 'Nothing confirmed and ready yet.');
   renderOutreachSection('toclassify', 'To be classified', buckets.toclassify, 'Nothing left to classify.');
+  renderOutreachSection('addedtosheet', 'Added to sheet', buckets.addedtosheet, 'Nothing exported yet.');
   renderOutreachSection('important', 'VIP', buckets.important, 'Nothing flagged as VIP.');
   renderOutreachSection('largepub', 'Larger publishers', buckets.largepub, 'Nothing here yet.');
   renderOutreachSection('partner', 'IntroLinq partners', buckets.partner, 'No potential IntroLinq partners flagged yet.');
