@@ -223,11 +223,13 @@ async function main() {
     } else if (result.verdict === 'fit_small' && actOnIt) {
       confirmedSmall++;
       console.log(`[${processedCount}/${rows.length}] ${row.domain}: fit (small) - ${result.reason}`);
-      // Left in 'discovered' (Untouched) on purpose - stays exactly where a
-      // real outreach target belongs, this just refines its category from
-      // real page content instead of the original search snippet.
-      if (!DRY_RUN && result.category) {
-        await sql`UPDATE candidate_publishers SET category = ${result.category} WHERE id = ${row.id}`;
+      // Left in 'discovered' on purpose - stays exactly where a real
+      // outreach target belongs. verified_fit_at is what actually moves it
+      // from "To be classified" into "Find email" in the CRM (see
+      // outreachBucket in outreach/index.html) - category also gets
+      // refined from real page content instead of the original snippet.
+      if (!DRY_RUN) {
+        await sql`UPDATE candidate_publishers SET verified_fit_at = NOW(), category = COALESCE(${result.category}, category) WHERE id = ${row.id}`;
       }
     } else {
       unsure++;

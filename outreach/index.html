@@ -192,7 +192,8 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
   <div class="admin-body" id="outreach-content">
 
       <div class="outreach-subtab-bar">
-        <button class="outreach-subtab grp-status active" data-name="todo" onclick="switchOutreachSubtab('todo',this)">Untouched</button>
+        <button class="outreach-subtab grp-status active" data-name="findemail" onclick="switchOutreachSubtab('findemail',this)">Find email</button>
+        <button class="outreach-subtab grp-status" data-name="toclassify" onclick="switchOutreachSubtab('toclassify',this)">To be classified</button>
         <span class="outreach-subtab-divider"></span>
         <button class="outreach-subtab grp-others" data-name="important" onclick="switchOutreachSubtab('important',this)">VIP</button>
         <button class="outreach-subtab grp-others" data-name="largepub" onclick="switchOutreachSubtab('largepub',this)">Larger publishers</button>
@@ -287,12 +288,12 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
         </div>
       </div>
 
-      <div class="outreach-subpanel active" id="outreach-sub-todo">
+      <div class="outreach-subpanel active" id="outreach-sub-findemail">
         <div class="section">
           <div class="section-header">
             <div style="display:flex;align-items:center">
-              <div class="section-title" id="outreach-todo-title">Untouched</div>
-              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Brand new leads that haven't been contacted yet.</span></span>
+              <div class="section-title" id="outreach-findemail-title">Find email</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">AI-confirmed as a genuine independent blog/publication from real page content. Next step: find the contact email and send it to the spreadsheet.</span></span>
             </div>
           </div>
           <div class="section-body" style="overflow-x:auto">
@@ -310,10 +311,40 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
                 <th style="width:180px">Notes</th>
                 <th style="width:44px"></th>
               </tr></thead>
-              <tbody id="outreach-todo-tbody"></tbody>
+              <tbody id="outreach-findemail-tbody"></tbody>
             </table>
           </div>
-          <div class="empty" id="outreach-todo-empty">Loading...</div>
+          <div class="empty" id="outreach-findemail-empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="outreach-subpanel" id="outreach-sub-toclassify">
+        <div class="section">
+          <div class="section-header">
+            <div style="display:flex;align-items:center">
+              <div class="section-title" id="outreach-toclassify-title">To be classified</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Not yet confirmed a genuine fit by real-content review - either never checked yet, or checked but inconclusive (often the site blocks automated requests). Needs a human look.</span></span>
+            </div>
+          </div>
+          <div class="section-body" style="overflow-x:auto">
+            <table style="min-width:1480px">
+              <thead><tr>
+                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
+                <th style="width:190px">Site</th>
+                <th style="width:160px">Category</th>
+                <th style="width:150px">Website type</th>
+                <th style="width:150px">Name for emails</th>
+                <th style="width:130px">Contact name</th>
+                <th style="width:190px">Email</th>
+                <th style="width:150px">Move to...</th>
+                <th style="width:100px" class="assign-th">Assign</th>
+                <th style="width:180px">Notes</th>
+                <th style="width:44px"></th>
+              </tr></thead>
+              <tbody id="outreach-toclassify-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="outreach-toclassify-empty">Loading...</div>
         </div>
       </div>
 
@@ -778,7 +809,13 @@ function outreachBucket(c) {
   if (c.status === 'products_partner') return 'products';
   if (c.status === 'physical_partner') return 'physicalgoods';
   if (c.status === 'invalid_url') return 'invalidurl';
-  return 'todo'; // discovered, to_contact, emailed, followed_up_1/2/3, contact_later, replied_interested, no_email_found
+  // status === 'discovered' (or any stray legacy status) from here down -
+  // verified_fit_at is set by reject-unfit-todo.js's real-content AI pass
+  // when it confirms a genuine small/independent publication. Nothing sets
+  // it means either never reviewed yet, or reviewed but inconclusive
+  // (couldn't fetch the page, often bot-blocked, or genuinely ambiguous) -
+  // both cases need a human look, so they share one bucket.
+  return c.verified_fit_at ? 'findemail' : 'toclassify';
 }
 
 function renderOutreachSection(name, titleText, items, emptyMessage) {
@@ -823,7 +860,7 @@ function showMoreOutreach(name) {
 }
 
 function renderOutreach() {
-  const buckets = { todo: [], partner: [], openintro: [], products: [], physicalgoods: [], important: [], others: [], invalidurl: [], largepub: [] };
+  const buckets = { findemail: [], toclassify: [], partner: [], openintro: [], products: [], physicalgoods: [], important: [], others: [], invalidurl: [], largepub: [] };
   let visible = _outreachCategoryFilter ? _outreach.filter((c) => c.category === _outreachCategoryFilter) : _outreach;
   if (_outreachAssigneeFilter === 'unassigned') visible = visible.filter((c) => !c.assigned_to);
   else if (_outreachAssigneeFilter) visible = visible.filter((c) => c.assigned_to === Number(_outreachAssigneeFilter));
@@ -838,11 +875,14 @@ function renderOutreach() {
   buckets.invalidurl.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.largepub.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   // Never-contacted leads first; anything that was already emailed before
-  // (and got swept back into Untouched) sorts below them, ready to revisit
-  // in a few weeks rather than crowding out brand-new leads.
-  buckets.todo.sort((a, b) => (!!a.email_sent_at - !!b.email_sent_at) || (b.priority_score || 0) - (a.priority_score || 0) || new Date(b.created_at) - new Date(a.created_at));
+  // (and got swept back into these buckets) sorts below them, ready to
+  // revisit in a few weeks rather than crowding out brand-new leads.
+  const notContactedFirst = (a, b) => (!!a.email_sent_at - !!b.email_sent_at) || (b.priority_score || 0) - (a.priority_score || 0) || new Date(b.created_at) - new Date(a.created_at);
+  buckets.findemail.sort(notContactedFirst);
+  buckets.toclassify.sort(notContactedFirst);
 
-  renderOutreachSection('todo', 'Untouched', buckets.todo, 'Nothing left to contact.');
+  renderOutreachSection('findemail', 'Find email', buckets.findemail, 'Nothing confirmed and ready yet.');
+  renderOutreachSection('toclassify', 'To be classified', buckets.toclassify, 'Nothing left to classify.');
   renderOutreachSection('important', 'VIP', buckets.important, 'Nothing flagged as VIP.');
   renderOutreachSection('largepub', 'Larger publishers', buckets.largepub, 'Nothing here yet.');
   renderOutreachSection('partner', 'IntroLinq partners', buckets.partner, 'No potential IntroLinq partners flagged yet.');
@@ -882,7 +922,7 @@ function outreachSearch(query) {
     document.querySelectorAll('.outreach-subpanel').forEach((p) => p.classList.remove('active'));
     document.getElementById('outreach-sub-search').classList.add('active');
   } else {
-    switchOutreachSubtab('todo', document.querySelector('.outreach-subtab[data-name="todo"]'));
+    switchOutreachSubtab('findemail', document.querySelector('.outreach-subtab[data-name="findemail"]'));
   }
 }
 

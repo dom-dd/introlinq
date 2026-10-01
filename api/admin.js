@@ -675,6 +675,7 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS outreach_notes TEXT`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS exported_to_sheet_at TIMESTAMPTZ`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS exported_to_sheet_tab TEXT`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS verified_fit_at TIMESTAMPTZ`.catch(() => {});
     await sql`CREATE TABLE IF NOT EXISTS outreach_clicks (
       id SERIAL PRIMARY KEY,
       candidate_id INT NOT NULL REFERENCES candidate_publishers(id),
@@ -787,7 +788,7 @@ export default async function handler(req, res) {
       SELECT cp.id, cp.domain, cp.homepage_url, cp.title, cp.status, cp.priority_score, cp.contact_name, cp.contact_email, cp.company_name, cp.category, cp.website_type,
              cp.person_linkedin_url, cp.company_linkedin_url, cp.twitter_url, cp.facebook_url, cp.assigned_to,
              cp.email_sent_at, cp.followup_1_sent_at, cp.followup_2_sent_at, cp.followup_3_sent_at, cp.next_followup_at, cp.outreach_notes, cp.created_at,
-             cp.exported_to_sheet_at, cp.exported_to_sheet_tab,
+             cp.exported_to_sheet_at, cp.exported_to_sheet_tab, cp.verified_fit_at,
              COALESCE(json_agg(oc.clicked_at ORDER BY oc.clicked_at) FILTER (WHERE oc.clicked_at IS NOT NULL), '[]') AS click_times
       FROM candidate_publishers cp
       LEFT JOIN outreach_clicks oc ON oc.candidate_id = cp.id
