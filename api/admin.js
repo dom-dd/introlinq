@@ -690,7 +690,7 @@ export default async function handler(req, res) {
     // value. 'large_publisher' (2026-08-25, see reject-unfit-todo.js) is a
     // genuine blog/publication just too large/well-known to be a near-term
     // outreach target - kept separate from 'not_a_fit' junk.
-    const ALLOWED_STATUSES = ['discovered', 'important', 'partner', 'openintro_partner', 'products_partner', 'physical_partner', 'replied_not_interested', 'signed_up', 'not_a_fit', 'large_publisher', 'invalid_url'];
+    const ALLOWED_STATUSES = ['discovered', 'important', 'partner', 'openintro_partner', 'products_partner', 'physical_partner', 'replied_not_interested', 'opted_out', 'signed_up', 'not_a_fit', 'large_publisher', 'invalid_url'];
 
     // Purely informational - what platform the blog runs on (WordPress,
     // Substack, Ghost, ...). Set by hand in the Outreach UI; nothing keys
@@ -756,10 +756,16 @@ export default async function handler(req, res) {
         await sql`UPDATE candidate_publishers SET outreach_notes = ${value || null} WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
       } else if (action === 'export_to_sheet') {
         const [row] = await sql`
-          SELECT domain, contact_name, contact_email, company_name, category, exported_to_sheet_at
+          SELECT domain, status, contact_name, contact_email, company_name, category, exported_to_sheet_at
           FROM candidate_publishers WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})
         `;
         if (!row) return res.status(404).json({ error: 'Lead not found' });
+        // Hard block, not just a UI nicety - someone already said no (or
+        // explicitly opted out), so this must never go out via GMass again
+        // regardless of what button gets clicked.
+        if (row.status === 'opted_out' || row.status === 'replied_not_interested') {
+          return res.status(403).json({ error: 'This lead already said no - cannot be added to the spreadsheet' });
+        }
         if (!row.contact_email) return res.status(400).json({ error: 'Add an email before sending to the spreadsheet' });
         if (!row.category) return res.status(400).json({ error: 'Set a category before sending to the spreadsheet' });
         if (row.exported_to_sheet_at) return res.status(409).json({ error: 'Already added to the spreadsheet' });

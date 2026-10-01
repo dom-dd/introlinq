@@ -750,6 +750,7 @@ const OUTREACH_STATUS_LABELS = {
   important: 'VIP',
   not_a_fit: 'Not a fit',
   replied_not_interested: 'Not interested',
+  opted_out: 'Opted out',
   large_publisher: 'Larger publishers',
   invalid_url: 'Invalid URL',
 };
@@ -763,6 +764,7 @@ const OUTREACH_STATUS_COLORS = {
   important: '#e6a820',
   not_a_fit: 'var(--ink-muted)',
   replied_not_interested: 'var(--red, #dc2626)',
+  opted_out: '#7f1d1d',
   large_publisher: '#0891b2',
   invalid_url: '#78716c',
 };
@@ -773,7 +775,7 @@ const OUTREACH_STATUS_COLORS = {
 const OUTREACH_STATUS_GROUPS = [
   { label: 'Status', keys: ['discovered'] },
   { label: 'Partner', keys: ['partner', 'openintro_partner', 'products_partner', 'physical_partner'] },
-  { label: 'Others', keys: ['important', 'large_publisher', 'not_a_fit', 'replied_not_interested', 'signed_up', 'invalid_url'] },
+  { label: 'Others', keys: ['important', 'large_publisher', 'not_a_fit', 'replied_not_interested', 'opted_out', 'signed_up', 'invalid_url'] },
 ];
 
 function outreachStatusOptionsHTML(selectedValue) {
@@ -801,7 +803,7 @@ async function loadOutreach() {
 // still open (todo), already resolved one way or another (others), or in
 // one of the hand-picked categories that keep their own tab.
 function outreachBucket(c) {
-  if (c.status === 'signed_up' || c.status === 'not_a_fit' || c.status === 'replied_not_interested') return 'others';
+  if (c.status === 'signed_up' || c.status === 'not_a_fit' || c.status === 'replied_not_interested' || c.status === 'opted_out') return 'others';
   if (c.status === 'large_publisher') return 'largepub';
   if (c.status === 'important') return 'important';
   if (c.status === 'partner') return 'partner';
@@ -1007,7 +1009,8 @@ function outreachExportButton(c) {
     const when = new Date(c.exported_to_sheet_at).toLocaleDateString();
     return `<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;color:var(--sage);font-weight:700" title="Added to the “${esc(c.exported_to_sheet_tab || '')}” tab on ${when}">&#10003;</span>`;
   }
-  const missing = !c.contact_email ? 'Add an email first' : !c.category ? 'Set a category first' : '';
+  const missing = (c.status === 'opted_out' || c.status === 'replied_not_interested') ? 'Already said no - cannot be re-contacted'
+    : !c.contact_email ? 'Add an email first' : !c.category ? 'Set a category first' : '';
   return `<button onclick="addLeadToSheet(${c.id})" ${missing ? 'disabled' : ''} title="${missing ? esc(missing) : 'Add to spreadsheet'}" style="width:24px;height:24px;padding:0;border-radius:6px;border:1px solid var(--border);background:${missing ? 'var(--cream)' : 'var(--sage)'};color:${missing ? 'var(--ink-muted)' : '#fff'};font-size:1rem;font-weight:700;line-height:1;cursor:${missing ? 'not-allowed' : 'pointer'}">+</button>`;
 }
 
