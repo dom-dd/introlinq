@@ -224,7 +224,7 @@ h2 .n{display:inline-block;width:1.7rem;height:1.7rem;line-height:1.7rem;text-al
   </div>
 
   <div class="intro">
-    <img src="/networks%20logos/preply.png" alt="Preply" width="64" height="64">
+    <img src="/networks%20logos/Preply-logo-pink.png" alt="Preply" width="150" height="64" style="border-radius:8px">
     <div>
       <h1>IntroLinq and Preply</h1>
       <p class="meta">Prepared for Patz &nbsp;&middot;&nbsp; September 2026</p>
