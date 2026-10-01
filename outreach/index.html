@@ -192,24 +192,16 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
   <div class="admin-body" id="outreach-content">
 
       <div class="outreach-subtab-bar">
-        <button class="outreach-subtab grp-urgent active" data-name="due" onclick="switchOutreachSubtab('due',this)">Due</button>
-        <button class="outreach-subtab grp-urgent" data-name="tocontact" onclick="switchOutreachSubtab('tocontact',this)">To contact</button>
+        <button class="outreach-subtab grp-status active" data-name="todo" onclick="switchOutreachSubtab('todo',this)">Untouched</button>
         <span class="outreach-subtab-divider"></span>
-        <button class="outreach-subtab grp-status" data-name="todo" onclick="switchOutreachSubtab('todo',this)">Untouched</button>
-        <button class="outreach-subtab grp-status" data-name="waiting" onclick="switchOutreachSubtab('waiting',this)">Follow ups</button>
-        <button class="outreach-subtab grp-status" data-name="discussion" onclick="switchOutreachSubtab('discussion',this)">In discussion</button>
-        <button class="outreach-subtab grp-status" data-name="onboarded" onclick="switchOutreachSubtab('onboarded',this)">Onboarded</button>
-        <button class="outreach-subtab grp-status" data-name="later" onclick="switchOutreachSubtab('later',this)">Contact later</button>
+        <button class="outreach-subtab grp-others" data-name="important" onclick="switchOutreachSubtab('important',this)">VIP</button>
+        <button class="outreach-subtab grp-others" data-name="largepub" onclick="switchOutreachSubtab('largepub',this)">Larger publishers</button>
         <span class="outreach-subtab-divider"></span>
         <button class="outreach-subtab grp-partner" data-name="partner" onclick="switchOutreachSubtab('partner',this)">IntroLinq partners</button>
         <button class="outreach-subtab grp-partner" data-name="openintro" onclick="switchOutreachSubtab('openintro',this)">OpenIntro partners</button>
         <button class="outreach-subtab grp-partner" data-name="products" onclick="switchOutreachSubtab('products',this)">Products partners</button>
         <span class="outreach-subtab-divider"></span>
-        <button class="outreach-subtab grp-others" data-name="important" onclick="switchOutreachSubtab('important',this)">VIP</button>
-        <button class="outreach-subtab grp-others" data-name="notfit" onclick="switchOutreachSubtab('notfit',this)">Not a fit</button>
-        <button class="outreach-subtab grp-others" data-name="notinterested" onclick="switchOutreachSubtab('notinterested',this)">Not interested</button>
-        <button class="outreach-subtab grp-others" data-name="noemail" onclick="switchOutreachSubtab('noemail',this)">No email found</button>
-        <button class="outreach-subtab grp-others" data-name="largepub" onclick="switchOutreachSubtab('largepub',this)">Larger publishers</button>
+        <button class="outreach-subtab grp-others" data-name="others" onclick="switchOutreachSubtab('others',this)">Others</button>
         <button class="btn btn-primary btn-sm" style="flex-shrink:0;margin:0.4rem 0 0.4rem auto;padding-left:0.75rem;padding-right:0.75rem" onclick="openCreateLeadModal()">+ Create a lead</button>
       </div>
 
@@ -231,86 +223,6 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
         <select id="bulk-assign-select"><option value="">Unassigned</option></select>
         <button class="btn btn-primary btn-sm" onclick="applyBulkAssign()">Assign</button>
         <button class="bulk-toolbar-clear" onclick="clearLeadSelection()">Clear selection</button>
-      </div>
-
-      <div class="outreach-subpanel active" id="outreach-sub-due">
-        <div class="section">
-          <div class="section-header">
-            <div style="display:flex;align-items:center">
-              <div class="section-title" id="outreach-due-title">Due for follow-up</div>
-              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Anything with a follow-up date that's arrived, regardless of status - always takes priority over other sections.</span></span>
-            </div>
-          </div>
-          <div class="section-body" style="overflow-x:auto">
-            <table style="min-width:1000px">
-              <thead><tr>
-                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:250px">1. Blog</th>
-                <th style="width:180px">2. Contact</th>
-                <th style="width:150px">3. Status</th>
-                <th style="width:100px" class="assign-th">Assign</th>
-                <th style="width:130px">4. Next follow-up</th>
-                <th style="width:190px">5. Add to spreadsheet</th>
-                <th>6. Notes</th>
-              </tr></thead>
-              <tbody id="outreach-due-tbody"></tbody>
-            </table>
-          </div>
-          <div class="empty" id="outreach-due-empty">Loading...</div>
-        </div>
-      </div>
-
-      <div class="outreach-subpanel" id="outreach-sub-waiting">
-        <div class="section">
-          <div class="section-header">
-            <div style="display:flex;align-items:center">
-              <div class="section-title" id="outreach-waiting-title">To follow up</div>
-              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Mid-sequence - intro emailed, or follow-up 1/2/3 sent - and not due for a touch right now.</span></span>
-            </div>
-          </div>
-          <div class="section-body" style="overflow-x:auto">
-            <table style="min-width:1000px">
-              <thead><tr>
-                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:250px">1. Blog</th>
-                <th style="width:180px">2. Contact</th>
-                <th style="width:150px">3. Status</th>
-                <th style="width:100px" class="assign-th">Assign</th>
-                <th style="width:130px">4. Next follow-up</th>
-                <th style="width:190px">5. Add to spreadsheet</th>
-                <th>6. Notes</th>
-              </tr></thead>
-              <tbody id="outreach-waiting-tbody"></tbody>
-            </table>
-          </div>
-          <div class="empty" id="outreach-waiting-empty">Loading...</div>
-        </div>
-      </div>
-
-      <div class="outreach-subpanel" id="outreach-sub-later">
-        <div class="section">
-          <div class="section-header">
-            <div style="display:flex;align-items:center">
-              <div class="section-title" id="outreach-later-title">Contact later</div>
-              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Not right now - parked with a future follow-up date instead of being actively worked.</span></span>
-            </div>
-          </div>
-          <div class="section-body" style="overflow-x:auto">
-            <table style="min-width:700px">
-              <thead><tr>
-                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:250px">1. Blog</th>
-                <th style="width:180px">2. Contact</th>
-                <th style="width:150px">3. Status</th>
-                <th style="width:100px" class="assign-th">Assign</th>
-                <th style="width:130px">4. Next follow-up</th>
-                <th>5. Notes</th>
-              </tr></thead>
-              <tbody id="outreach-later-tbody"></tbody>
-            </table>
-          </div>
-          <div class="empty" id="outreach-later-empty">Loading...</div>
-        </div>
       </div>
 
       <div class="outreach-subpanel" id="outreach-sub-important">
@@ -363,7 +275,7 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
         </div>
       </div>
 
-      <div class="outreach-subpanel" id="outreach-sub-todo">
+      <div class="outreach-subpanel active" id="outreach-sub-todo">
         <div class="section">
           <div class="section-header">
             <div style="display:flex;align-items:center">
@@ -390,39 +302,12 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
         </div>
       </div>
 
-      <div class="outreach-subpanel" id="outreach-sub-tocontact">
+      <div class="outreach-subpanel" id="outreach-sub-others">
         <div class="section">
           <div class="section-header">
             <div style="display:flex;align-items:center">
-              <div class="section-title" id="outreach-tocontact-title">To contact</div>
-              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Reviewed and worth pursuing, but the intro email hasn't gone out yet - often still needs a contact name/email found before it can be sent.</span></span>
-            </div>
-          </div>
-          <div class="section-body" style="overflow-x:auto">
-            <table style="min-width:1000px">
-              <thead><tr>
-                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:250px">1. Blog</th>
-                <th style="width:180px">2. Contact</th>
-                <th style="width:150px">3. Status</th>
-                <th style="width:100px" class="assign-th">Assign</th>
-                <th style="width:130px">4. Next follow-up</th>
-                <th style="width:190px">5. Add to spreadsheet</th>
-                <th>6. Notes</th>
-              </tr></thead>
-              <tbody id="outreach-tocontact-tbody"></tbody>
-            </table>
-          </div>
-          <div class="empty" id="outreach-tocontact-empty">Loading...</div>
-        </div>
-      </div>
-
-      <div class="outreach-subpanel" id="outreach-sub-discussion">
-        <div class="section">
-          <div class="section-header">
-            <div style="display:flex;align-items:center">
-              <div class="section-title" id="outreach-discussion-title">In discussion</div>
-              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">They replied and are actively considering it.</span></span>
+              <div class="section-title" id="outreach-others-title">Others</div>
+              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Already resolved one way or another - signed up, explicitly not interested, or screened out as not a fit. Kept out of Untouched so they don't get re-contacted by mistake.</span></span>
             </div>
           </div>
           <div class="section-body" style="overflow-x:auto">
@@ -435,110 +320,10 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
                 <th style="width:100px" class="assign-th">Assign</th>
                 <th>4. Notes</th>
               </tr></thead>
-              <tbody id="outreach-discussion-tbody"></tbody>
+              <tbody id="outreach-others-tbody"></tbody>
             </table>
           </div>
-          <div class="empty" id="outreach-discussion-empty">Loading...</div>
-        </div>
-      </div>
-
-      <div class="outreach-subpanel" id="outreach-sub-onboarded">
-        <div class="section">
-          <div class="section-header">
-            <div style="display:flex;align-items:center">
-              <div class="section-title" id="outreach-onboarded-title">Onboarded</div>
-              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">They've signed up and installed the widget - fully converted.</span></span>
-            </div>
-          </div>
-          <div class="section-body" style="overflow-x:auto">
-            <table style="min-width:600px">
-              <thead><tr>
-                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:250px">1. Blog</th>
-                <th style="width:180px">2. Contact</th>
-                <th style="width:150px">3. Status</th>
-                <th style="width:100px" class="assign-th">Assign</th>
-                <th>4. Notes</th>
-              </tr></thead>
-              <tbody id="outreach-onboarded-tbody"></tbody>
-            </table>
-          </div>
-          <div class="empty" id="outreach-onboarded-empty">Loading...</div>
-        </div>
-      </div>
-
-      <div class="outreach-subpanel" id="outreach-sub-notfit">
-        <div class="section">
-          <div class="section-header">
-            <div style="display:flex;align-items:center">
-              <div class="section-title" id="outreach-notfit-title">Not a fit</div>
-              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Screened out - wrong audience, no relevant content, or otherwise not a good match, whether or not they were ever contacted.</span></span>
-            </div>
-          </div>
-          <div class="section-body" style="overflow-x:auto">
-            <table style="min-width:600px">
-              <thead><tr>
-                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:250px">1. Blog</th>
-                <th style="width:180px">2. Contact</th>
-                <th style="width:150px">3. Status</th>
-                <th style="width:100px" class="assign-th">Assign</th>
-                <th>4. Notes</th>
-              </tr></thead>
-              <tbody id="outreach-notfit-tbody"></tbody>
-            </table>
-          </div>
-          <div class="empty" id="outreach-notfit-empty">Loading...</div>
-        </div>
-      </div>
-
-      <div class="outreach-subpanel" id="outreach-sub-notinterested">
-        <div class="section">
-          <div class="section-header">
-            <div style="display:flex;align-items:center">
-              <div class="section-title" id="outreach-notinterested-title">Not interested</div>
-              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Contacted, and they explicitly said no.</span></span>
-            </div>
-          </div>
-          <div class="section-body" style="overflow-x:auto">
-            <table style="min-width:600px">
-              <thead><tr>
-                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:250px">1. Blog</th>
-                <th style="width:180px">2. Contact</th>
-                <th style="width:150px">3. Status</th>
-                <th style="width:100px" class="assign-th">Assign</th>
-                <th>4. Notes</th>
-              </tr></thead>
-              <tbody id="outreach-notinterested-tbody"></tbody>
-            </table>
-          </div>
-          <div class="empty" id="outreach-notinterested-empty">Loading...</div>
-        </div>
-      </div>
-
-      <div class="outreach-subpanel" id="outreach-sub-noemail">
-        <div class="section">
-          <div class="section-header">
-            <div style="display:flex;align-items:center">
-              <div class="section-title" id="outreach-noemail-title">No email found</div>
-              <span class="info-icon" tabindex="0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="info-tooltip">Worth pursuing, but no contact email could be found for this blog/company.</span></span>
-            </div>
-          </div>
-          <div class="section-body" style="overflow-x:auto">
-            <table style="min-width:600px">
-              <thead><tr>
-                <th class="select-th"><input type="checkbox" class="lead-checkbox" onchange="toggleSelectAllInHeader(this)"></th>
-                <th style="width:250px">1. Blog</th>
-                <th style="width:180px">2. Contact</th>
-                <th style="width:150px">3. Status</th>
-                <th style="width:100px" class="assign-th">Assign</th>
-                <th>4. Notes</th>
-              </tr></thead>
-              <tbody id="outreach-noemail-tbody"></tbody>
-            </table>
-          </div>
-          <div class="empty" id="outreach-noemail-empty">Loading...</div>
+          <div class="empty" id="outreach-others-empty">Loading...</div>
         </div>
       </div>
 
@@ -868,12 +653,6 @@ const OUTREACH_STATUS_COLORS = {
   no_email_found: '#94a3b8',
   large_publisher: '#0891b2',
 };
-// Terminal-ish statuses that take priority over "Due" even if a stale
-// next_followup_at is somehow still set - once a lead is in discussion,
-// onboarded, not a fit, or not interested, it belongs in its own section,
-// not cluttering the Due list.
-const OUTREACH_RESOLVED = ['replied_interested', 'signed_up', 'replied_not_interested', 'not_a_fit', 'no_email_found', 'large_publisher'];
-
 // Same 3 groups as the subtab bar's coloring, rendered as <optgroup>s so
 // every Status <select> in the page (the row dropdown and the Create-a-lead
 // modal) shows the same dividers between groups - a plain flat list made it
@@ -904,22 +683,18 @@ async function loadOutreach() {
   renderOutreach();
 }
 
-function outreachBucket(c, today) {
-  if (c.status === 'replied_interested') return 'discussion';
-  if (c.status === 'signed_up') return 'onboarded';
-  if (c.status === 'not_a_fit') return 'notfit';
-  if (c.status === 'replied_not_interested') return 'notinterested';
-  if (c.status === 'no_email_found') return 'noemail';
+// Sending/follow-ups live in GMass now (see addLeadToSheet), so status no
+// longer needs to track where a lead sits mid-sequence - just whether it's
+// still open (todo), already resolved one way or another (others), or in
+// one of the hand-picked categories that keep their own tab.
+function outreachBucket(c) {
+  if (c.status === 'signed_up' || c.status === 'not_a_fit' || c.status === 'replied_not_interested') return 'others';
   if (c.status === 'large_publisher') return 'largepub';
-  if (c.next_followup_at && c.next_followup_at.slice(0, 10) <= today) return 'due';
   if (c.status === 'important') return 'important';
-  if (c.status === 'contact_later') return 'later';
   if (c.status === 'partner') return 'partner';
   if (c.status === 'openintro_partner') return 'openintro';
   if (c.status === 'products_partner') return 'products';
-  if (c.status === 'discovered') return 'todo';
-  if (c.status === 'to_contact') return 'tocontact';
-  return 'waiting'; // emailed, followed_up_1/2/3
+  return 'todo'; // discovered, to_contact, emailed, followed_up_1/2/3, contact_later, replied_interested, no_email_found
 }
 
 function renderOutreachSection(name, titleText, items, emptyMessage, rowMode) {
@@ -964,44 +739,30 @@ function showMoreOutreach(name) {
 }
 
 function renderOutreach() {
-  const today = new Date().toISOString().slice(0, 10);
-  const buckets = { due: [], todo: [], tocontact: [], waiting: [], discussion: [], onboarded: [], later: [], partner: [], openintro: [], products: [], important: [], notfit: [], notinterested: [], noemail: [], largepub: [] };
+  const buckets = { todo: [], partner: [], openintro: [], products: [], important: [], others: [], largepub: [] };
   let visible = _outreachCategoryFilter ? _outreach.filter((c) => c.category === _outreachCategoryFilter) : _outreach;
   if (_outreachAssigneeFilter === 'unassigned') visible = visible.filter((c) => !c.assigned_to);
   else if (_outreachAssigneeFilter) visible = visible.filter((c) => c.assigned_to === Number(_outreachAssigneeFilter));
-  for (const c of visible) buckets[outreachBucket(c, today)].push(c);
+  for (const c of visible) buckets[outreachBucket(c)].push(c);
 
-  buckets.due.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
-  buckets.later.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
   buckets.important.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.partner.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.openintro.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.products.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  buckets.todo.sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0) || new Date(b.created_at) - new Date(a.created_at));
-  buckets.tocontact.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  buckets.waiting.sort((a, b) => (a.next_followup_at || '').localeCompare(b.next_followup_at || ''));
-  buckets.discussion.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  buckets.onboarded.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  buckets.notfit.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  buckets.notinterested.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  buckets.noemail.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  buckets.others.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   buckets.largepub.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  // Never-contacted leads first; anything that was already emailed before
+  // (and got swept back into Untouched) sorts below them, ready to revisit
+  // in a few weeks rather than crowding out brand-new leads.
+  buckets.todo.sort((a, b) => (!!a.email_sent_at - !!b.email_sent_at) || (b.priority_score || 0) - (a.priority_score || 0) || new Date(b.created_at) - new Date(a.created_at));
 
-  renderOutreachSection('due', 'Due for follow-up', buckets.due, 'Nothing due right now.', 'full');
   renderOutreachSection('todo', 'Untouched', buckets.todo, 'Nothing left to contact.', 'full');
-  renderOutreachSection('tocontact', 'To contact', buckets.tocontact, 'Nothing queued to contact yet.', 'full');
-  renderOutreachSection('waiting', 'Follow ups', buckets.waiting, 'No one waiting on a reply.', 'full');
-  renderOutreachSection('discussion', 'In discussion', buckets.discussion, 'No one currently in discussion.', 'simple');
-  renderOutreachSection('onboarded', 'Onboarded', buckets.onboarded, 'No one onboarded yet.', 'simple');
-  renderOutreachSection('later', 'Contact later', buckets.later, 'Nothing parked for later.', 'later');
+  renderOutreachSection('important', 'VIP', buckets.important, 'Nothing flagged as VIP.', 'simple');
+  renderOutreachSection('largepub', 'Larger publishers', buckets.largepub, 'Nothing here yet.', 'simple');
   renderOutreachSection('partner', 'IntroLinq partners', buckets.partner, 'No potential IntroLinq partners flagged yet.', 'simple');
   renderOutreachSection('openintro', 'OpenIntro partners', buckets.openintro, 'No potential OpenIntro partners flagged yet.', 'simple');
   renderOutreachSection('products', 'Products partners', buckets.products, 'No potential products partners flagged yet.', 'simple');
-  renderOutreachSection('important', 'VIP', buckets.important, 'Nothing flagged as VIP.', 'simple');
-  renderOutreachSection('notfit', 'Not a fit', buckets.notfit, 'Nothing here yet.', 'simple');
-  renderOutreachSection('notinterested', 'Not interested', buckets.notinterested, 'No one has replied not interested yet.', 'simple');
-  renderOutreachSection('noemail', 'No email found', buckets.noemail, 'Nothing here yet.', 'simple');
-  renderOutreachSection('largepub', 'Larger publishers', buckets.largepub, 'Nothing here yet.', 'simple');
+  renderOutreachSection('others', 'Others', buckets.others, 'Nothing here yet.', 'simple');
 
   if (_outreachSearchQuery) {
     const q = _outreachSearchQuery.toLowerCase();
@@ -1033,7 +794,7 @@ function outreachSearch(query) {
     document.querySelectorAll('.outreach-subpanel').forEach((p) => p.classList.remove('active'));
     document.getElementById('outreach-sub-search').classList.add('active');
   } else {
-    switchOutreachSubtab('due', document.querySelector('.outreach-subtab[data-name="due"]'));
+    switchOutreachSubtab('todo', document.querySelector('.outreach-subtab[data-name="todo"]'));
   }
 }
 
@@ -1181,7 +942,7 @@ function outreachRow(c, mode) {
   </select>`;
   const statusOptions = outreachStatusOptionsHTML(c.status);
 
-  const followupCell = mode === 'full' || mode === 'later'
+  const followupCell = mode === 'full'
     ? `<td><input type="date" value="${c.next_followup_at ? c.next_followup_at.slice(0, 10) : ''}" onchange="outreachSetFollowup(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE}"></td>`
     : '';
   const actionEmailCells = mode === 'full'
