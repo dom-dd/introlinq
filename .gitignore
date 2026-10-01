@@ -16,3 +16,5 @@ _wtest
 potential project.txt
 
 .vercel
+
+.claude/settings.local.json
