@@ -32,6 +32,7 @@
 import { pathToFileURL } from 'node:url';
 import { sql } from './lib/db.js';
 import { searchPerson, revealEmail, isRealEmail, isRedactedName, titlesForRow } from './lib/apollo.js';
+import { findContactOnSite } from './lib/siteScrape.js';
 
 const AUTO_ENRICH_EXCLUDED_SOURCES = ['blogdirectory'];
 
@@ -56,6 +57,7 @@ export async function ensureColumns() {
   await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_email TEXT`;
   await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_title TEXT`;
   await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_status TEXT`;
+  await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS contact_source TEXT`;
 }
 
 // Core enrichment pass, shared by the CLI below and by classify.js's
@@ -86,6 +88,29 @@ export async function enrichPendingPublishers({ limit = 20, dryRun = false, excl
   let noEmail = 0;
 
   for (const row of rows) {
+    // Free - tried first so a hit also saves an Apollo credit. Apollo is
+    // built around registered companies with LinkedIn-style employee
+    // records and often has nothing for a solo blogger, even when the
+    // email is sitting right on the site's own contact/about page.
+    try {
+      const scraped = await findContactOnSite(row.domain);
+      if (scraped) {
+        found++;
+        console.log(`[${row.domain}] site scrape: ${scraped.name || '(no name)'} <${scraped.email}>`);
+        if (!dryRun) {
+          await sql`
+            UPDATE candidate_publishers
+            SET contact_email = ${scraped.email}, contact_name = ${scraped.name || null}, contact_status = 'found', contact_source = 'site_scrape'
+            WHERE id = ${row.id}
+          `;
+        }
+        await sleep(300);
+        continue;
+      }
+    } catch (err) {
+      console.error(`[${row.domain}] site scrape failed: ${err.message}`);
+    }
+
     const titles = titlesForRow(row);
     try {
       const person = await searchPerson(row.domain, titles);
@@ -136,7 +161,8 @@ export async function enrichPendingPublishers({ limit = 20, dryRun = false, excl
               contact_name = ${contactName},
               contact_email = ${email},
               contact_title = ${title},
-              contact_status = 'found'
+              contact_status = 'found',
+              contact_source = 'apollo'
           WHERE id = ${row.id}
         `;
       } else {
