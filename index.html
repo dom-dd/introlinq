@@ -158,19 +158,29 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .expert-popup::after{content:'';position:absolute;top:100%;left:24px;border:7px solid transparent;border-top-color:rgba(26,26,46,0.10)}
 .expert-popup::before{content:'';position:absolute;top:100%;left:25px;border:6px solid transparent;border-top-color:var(--white);z-index:1}
 .expert-trigger:hover .expert-popup,.expert-trigger.open .expert-popup,.expert-trigger.auto-open .expert-popup{opacity:1;pointer-events:auto}
-.popup-header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
-.popup-avatar{width:54px;height:54px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--sage-light)}
-.popup-info{flex:1;min-width:0}
-.popup-name{display:flex;align-items:center;gap:6px;font-weight:600;font-size:15px;color:var(--ink);line-height:1.25}
-.popup-flag{width:18px;height:18px;border-radius:50%;flex-shrink:0;object-fit:cover}
-.popup-role{display:block;font-size:11.5px;color:var(--ink-soft);line-height:1.3;margin-top:2px}
-.popup-company{display:block;font-size:11.5px;color:var(--ink-muted);line-height:1.3}
-.popup-bio{display:block;font-size:11.5px;font-weight:500;color:var(--ink);line-height:1.45;margin-bottom:8px}
-.popup-rec{display:block;font-size:12.5px;color:var(--ink-soft);font-style:italic;line-height:1.6;border-left:2px solid rgba(230,168,32,0.4);padding-left:10px;margin-bottom:12px}
-.popup-book{display:block;width:100%;box-sizing:border-box;background:var(--gold);color:var(--ink);border:none;padding:9px;border-radius:100px;font-size:13px;font-weight:700;cursor:pointer;text-align:center}
-.popup-footer-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(26,26,46,0.07);font-size:8.5px;color:var(--ink-muted);white-space:nowrap}
-.popup-partner{overflow:hidden;text-overflow:ellipsis;min-width:0}
-.popup-il{flex-shrink:0}
+.expert-popup{width:340px}
+.pp-hook{display:block;font-size:14px;font-weight:700;color:var(--ink);line-height:1.4;margin-bottom:8px}
+.pp-cta{display:block;width:100%;box-sizing:border-box;background:var(--gold);color:var(--ink);border:none;padding:9px;border-radius:100px;font-size:13px;font-weight:700;cursor:pointer;text-align:center;font-family:inherit;margin-bottom:14px}
+.pp-label{display:block;font-size:11.5px;font-weight:700;color:var(--ink);letter-spacing:.02em;padding-top:12px;border-top:1px solid rgba(26,26,46,0.1);margin-bottom:4px}
+.pp-opt{display:flex;align-items:center;gap:10px;padding:9px 0}
+.pp-photo{width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--sage-light)}
+.pp-info{display:block;flex:1;min-width:0}
+.pp-name{display:block;font-weight:600;font-size:12px;color:var(--ink);line-height:1.2}
+.pp-role{display:block;font-size:11px;font-weight:500;color:var(--ink-soft);line-height:1.25}
+.pp-facts{display:block;font-size:10.5px;font-weight:500;color:var(--ink-soft);line-height:1.45;margin-top:3px}
+.pp-meet{flex-shrink:0;background:var(--gold);color:var(--ink);border:none;padding:5px 12px;border-radius:100px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit}
+.pp-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(26,26,46,0.07);font-size:8.5px;color:var(--ink-muted);letter-spacing:.02em;white-space:nowrap}
+.pp-partner{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pp-il{display:flex;align-items:center;gap:3px;flex-shrink:0}
+.pp-il img{width:11px;height:11px;border-radius:2px}
+/* Hover cue: cursor glides onto the phrase, then the card opens */
+.demo-cursor{position:absolute;z-index:40;width:33px;height:30px;pointer-events:none;opacity:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))}
+.demo-cursor img{width:100%;height:100%;display:block}
+.demo-cursor.play{animation:cursorIn 1.1s ease forwards,cursorOut .8s ease 3s forwards}
+@keyframes cursorIn{0%{opacity:0;transform:translate(-50%,calc(-50% + 40px))}100%{opacity:1;transform:translate(-50%,-50%)}}
+@keyframes cursorOut{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,calc(-50% + 22px))}}
+.demo-note{display:none;margin-top:.75rem;text-align:center;font-size:.8rem;color:#fff;background:rgba(255,255,255,0.12);border-radius:10px;padding:.5rem .75rem;line-height:1.5}
+.demo-note.show{display:block}
 
 /* Form card */
 .form-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;box-shadow:0 4px 24px rgba(26,26,46,0.07);height:100%;display:flex;flex-direction:column}
@@ -209,11 +219,12 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 .expert-card-sm-company{font-size:0.75rem;font-weight:600;color:var(--sage);margin-bottom:0.2rem;line-height:1.3}
 .expert-card-sm-title{font-size:0.7rem;color:var(--ink-muted);line-height:1.4}
 .expert-card-sm-price{font-size:0.7rem;font-weight:600;color:var(--sage);background:var(--sage-light);padding:0.2rem 0.6rem;border-radius:100px;margin-top:0.6rem;letter-spacing:0.01em}
-.partnership-strip{display:flex;align-items:center;justify-content:center;gap:1.75rem;margin-top:1.5rem;padding:1.5rem 2rem;background:var(--white);border:1px solid var(--border);border-radius:var(--radius)}
+.partnership-strip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.875rem;margin-top:1.5rem;padding:1.5rem 2rem;background:var(--white);border:1px solid var(--border);border-radius:var(--radius)}
 .partnership-label{font-size:0.9375rem;color:var(--ink-muted)}
+.partnership-logos-row{display:flex;align-items:center;justify-content:center;gap:1.75rem}
 .partnership-logo-link{display:flex;align-items:center;opacity:0.9;transition:opacity 0.15s;text-decoration:none}
 .partnership-logo-link:hover{opacity:1}
-.partnership-logo{height:38px;display:block}
+.partnership-logo{height:28px;display:block}
 .partnership-logo-pink{height:52px}
 .partnership-soon{font-size:0.8125rem;color:var(--ink-muted);text-align:center;margin-top:0.875rem}
 .dark-cta-box{margin-top:3.5rem;background:var(--ink);border-radius:16px;padding:2.5rem 2rem;text-align:center}
@@ -415,42 +426,42 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
         <div class="carousel-slide active">
           <div class="carousel-niche">Finance</div>
           <div class="carousel-title">Year two of freelancing and I still had no idea what I was doing financially</div>
-          <p class="carousel-text">I kept telling myself I'd sort it out when I had more time. Spoiler: you never have more time. At some point I started asking around - other freelancers who'd been at it longer, people who'd actually figured out <span class="expert-trigger" onclick="this.classList.toggle('open')">how to manage money as a self-employed creative<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=5" alt="Claire Dawson"><span class="popup-info"><span class="popup-name">Claire Dawson<img class="popup-flag" src="https://hatscripts.github.io/circle-flags/flags/gb.svg" alt=""></span><span class="popup-role">Finance coach</span><span class="popup-company">folio.co</span></span></span><span class="popup-bio">If budgeting as a freelancer feels like guesswork, Claire can turn it into an actual plan</span><span class="popup-rec">Need help managing your finances as a freelancer or creative?</span><button class="popup-book">Speak with Claire →</button><span class="popup-footer-row"><span class="popup-partner">In partnership with Folio.co</span><span class="popup-il">IntroLinq</span></span></span></span>. Most of them had got some outside help at some point.</p>
+          <p class="carousel-text">I kept telling myself I'd sort it out when I had more time. Spoiler: you never have more time. At some point I started asking around - other freelancers who'd been at it longer, people who'd actually figured out <span class="expert-trigger">how to manage money as a self-employed creative<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="pp-hook">Need help managing your finances as a freelancer or creative?</span><button class="pp-cta" type="button">Speak with Claire →</button><span class="pp-label">We recommend talking to:</span><span class="pp-opt"><img class="pp-photo" src="https://i.pravatar.cc/150?img=5" alt="Claire Dawson"><span class="pp-info"><span class="pp-name">Claire Dawson</span><span class="pp-role">Finance coach · folio.co</span><span class="pp-facts">If budgeting as a freelancer feels like guesswork, Claire can turn it into an actual plan</span></span><button class="pp-meet" type="button">Meet now</button></span><span class="pp-foot"><span class="pp-partner">In partnership with Folio.co</span><span class="pp-il"><img src="/favicon.svg" alt="">Powered by IntroLinq</span></span></span></span>. Most of them had got some outside help at some point.</p>
           <p class="carousel-text-2">I waited too long. The stuff I thought would sort itself out, didn't.</p>
         </div>
 
         <div class="carousel-slide">
           <div class="carousel-niche">Food & Nutrition</div>
           <div class="carousel-title">I switched to fermented foods for gut health and had no idea where to actually start</div>
-          <p class="carousel-text">Sourdough, kimchi, kefir - everyone seems to swear by them. But every source told me something different. Too much too soon and things got worse, not better. Eventually I found someone who could explain <span class="expert-trigger" onclick="this.classList.toggle('open')">which fermented foods actually suit your gut, and how to introduce them properly<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=25" alt="Dr. Sarah Collins"><span class="popup-info"><span class="popup-name">Dr. Sarah Collins<img class="popup-flag" src="https://hatscripts.github.io/circle-flags/flags/us.svg" alt=""></span><span class="popup-role">Registered Dietitian</span><span class="popup-company">wellcast.com</span></span></span><span class="popup-bio">If your gut health plan feels like trial and error, Sarah can turn it into an actual system</span><span class="popup-rec">Not sure which fermented foods are right for your gut?</span><button class="popup-book">Speak with Sarah →</button><span class="popup-footer-row"><span class="popup-partner">In partnership with Wellcast</span><span class="popup-il">IntroLinq</span></span></span></span>. It's far more individual than the internet makes it sound.</p>
+          <p class="carousel-text">Sourdough, kimchi, kefir - everyone seems to swear by them. But every source told me something different. Too much too soon and things got worse, not better. Eventually I found someone who could explain <span class="expert-trigger">which fermented foods actually suit your gut, and how to introduce them properly<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="pp-hook">Not sure which fermented foods are right for your gut?</span><button class="pp-cta" type="button">Speak with Sarah →</button><span class="pp-label">We recommend talking to:</span><span class="pp-opt"><img class="pp-photo" src="https://i.pravatar.cc/150?img=25" alt="Dr. Sarah Collins"><span class="pp-info"><span class="pp-name">Dr. Sarah Collins</span><span class="pp-role">Registered Dietitian · wellcast.com</span><span class="pp-facts">If your gut health plan feels like trial and error, Sarah can turn it into an actual system</span></span><button class="pp-meet" type="button">Meet now</button></span><span class="pp-foot"><span class="pp-partner">In partnership with Wellcast</span><span class="pp-il"><img src="/favicon.svg" alt="">Powered by IntroLinq</span></span></span></span>. It's far more individual than the internet makes it sound.</p>
           <p class="carousel-text-2">What works for one gut doesn't work for another. That's not a caveat - it's the whole point.</p>
         </div>
 
         <div class="carousel-slide">
           <div class="carousel-niche">Sport & Fitness</div>
           <div class="carousel-title">I signed up for a marathon mostly as a joke. Then had to actually train for it.</div>
-          <p class="carousel-text">The first month was fine. The second month everything started hurting in ways Google couldn't really explain. I started looking for people who'd done <span class="expert-trigger" onclick="this.classList.toggle('open')">marathon training later in life, not just the usual 25-year-old advice<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=15" alt="Tom Barrett"><span class="popup-info"><span class="popup-name">Tom Barrett<img class="popup-flag" src="https://hatscripts.github.io/circle-flags/flags/gb.svg" alt=""></span><span class="popup-role">Running coach</span><span class="popup-company">coachnow.io</span></span></span><span class="popup-bio">If training for a marathon feels overwhelming past 25, Tom can build a plan that actually fits your life</span><span class="popup-rec">Need help structuring a marathon plan that works for your age and schedule?</span><button class="popup-book">Speak with Tom →</button><span class="popup-footer-row"><span class="popup-partner">In partnership with CoachNow</span><span class="popup-il">IntroLinq</span></span></span></span>. It turns out the approach is quite different.</p>
+          <p class="carousel-text">The first month was fine. The second month everything started hurting in ways Google couldn't really explain. I started looking for people who'd done <span class="expert-trigger">marathon training later in life, not just the usual 25-year-old advice<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="pp-hook">Need help structuring a marathon plan that works for your age and schedule?</span><button class="pp-cta" type="button">Speak with Tom →</button><span class="pp-label">We recommend talking to:</span><span class="pp-opt"><img class="pp-photo" src="https://i.pravatar.cc/150?img=15" alt="Tom Barrett"><span class="pp-info"><span class="pp-name">Tom Barrett</span><span class="pp-role">Running coach · coachnow.io</span><span class="pp-facts">If training for a marathon feels overwhelming past 25, Tom can build a plan that actually fits your life</span></span><button class="pp-meet" type="button">Meet now</button></span><span class="pp-foot"><span class="pp-partner">In partnership with CoachNow</span><span class="pp-il"><img src="/favicon.svg" alt="">Powered by IntroLinq</span></span></span></span>. It turns out the approach is quite different.</p>
           <p class="carousel-text-2">The generic plans work until they don't. Then you need someone who can actually adapt.</p>
         </div>
 
         <div class="carousel-slide">
           <div class="carousel-niche">Fashion & Style</div>
           <div class="carousel-title">My wardrobe was full and I still had nothing to wear</div>
-          <p class="carousel-text">I knew it wasn't a quantity problem. I kept buying things that looked right in the shop and felt wrong the moment I got home. Eventually I stopped trying to solve it alone and started talking to people who understood <span class="expert-trigger" onclick="this.classList.toggle('open')">dressing for your real life rather than some aspirational version of it<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=47" alt="Elise Moreau"><span class="popup-info"><span class="popup-name">Elise Moreau<img class="popup-flag" src="https://hatscripts.github.io/circle-flags/flags/fr.svg" alt=""></span><span class="popup-role">Personal stylist</span><span class="popup-company">stylematch.com</span></span></span><span class="popup-bio">If your wardrobe never feels quite right, Elise can help you dress for your actual life</span><span class="popup-rec">Want help building a wardrobe that actually works for your life?</span><button class="popup-book">Speak with Elise →</button><span class="popup-footer-row"><span class="popup-partner">In partnership with Stylematch</span><span class="popup-il">IntroLinq</span></span></span></span>. Humbling how obvious the gaps were once someone pointed them out.</p>
+          <p class="carousel-text">I knew it wasn't a quantity problem. I kept buying things that looked right in the shop and felt wrong the moment I got home. Eventually I stopped trying to solve it alone and started talking to people who understood <span class="expert-trigger">dressing for your real life rather than some aspirational version of it<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="pp-hook">Want help building a wardrobe that actually works for your life?</span><button class="pp-cta" type="button">Speak with Elise →</button><span class="pp-label">We recommend talking to:</span><span class="pp-opt"><img class="pp-photo" src="https://i.pravatar.cc/150?img=47" alt="Elise Moreau"><span class="pp-info"><span class="pp-name">Elise Moreau</span><span class="pp-role">Personal stylist · stylematch.com</span><span class="pp-facts">If your wardrobe never feels quite right, Elise can help you dress for your actual life</span></span><button class="pp-meet" type="button">Meet now</button></span><span class="pp-foot"><span class="pp-partner">In partnership with Stylematch</span><span class="pp-il"><img src="/favicon.svg" alt="">Powered by IntroLinq</span></span></span></span>. Humbling how obvious the gaps were once someone pointed them out.</p>
           <p class="carousel-text-2">You don't need more things. You need the right things, and someone who can spot the difference.</p>
         </div>
 
         <div class="carousel-slide">
           <div class="carousel-niche">Career & Tech</div>
           <div class="carousel-title">I applied for sixty jobs in a year. Then I stopped applying entirely.</div>
-          <p class="carousel-text">The applications weren't really the problem - I'd got fairly good at those. What I had no visibility on was <span class="expert-trigger" onclick="this.classList.toggle('open')">how hiring decisions actually get made at the level I was trying to reach<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=33" alt="Daniel Park"><span class="popup-info"><span class="popup-name">Daniel Park<img class="popup-flag" src="https://hatscripts.github.io/circle-flags/flags/us.svg" alt=""></span><span class="popup-role">Career strategist</span><span class="popup-company">advisr.com</span></span></span><span class="popup-bio">If job applications keep going nowhere, Daniel can show you what's really being judged</span><span class="popup-rec">Struggling to break into senior roles? Daniel has been on both sides of the hiring table.</span><button class="popup-book">Speak with Daniel →</button><span class="popup-footer-row"><span class="popup-partner">In partnership with Advisr</span><span class="popup-il">IntroLinq</span></span></span></span>. I started having conversations instead of sending CVs. Completely different outcome.</p>
+          <p class="carousel-text">The applications weren't really the problem - I'd got fairly good at those. What I had no visibility on was <span class="expert-trigger">how hiring decisions actually get made at the level I was trying to reach<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="pp-hook">Struggling to break into senior roles? Daniel has been on both sides of the hiring table.</span><button class="pp-cta" type="button">Speak with Daniel →</button><span class="pp-label">We recommend talking to:</span><span class="pp-opt"><img class="pp-photo" src="https://i.pravatar.cc/150?img=33" alt="Daniel Park"><span class="pp-info"><span class="pp-name">Daniel Park</span><span class="pp-role">Career strategist · advisr.com</span><span class="pp-facts">If job applications keep going nowhere, Daniel can show you what's really being judged</span></span><button class="pp-meet" type="button">Meet now</button></span><span class="pp-foot"><span class="pp-partner">In partnership with Advisr</span><span class="pp-il"><img src="/favicon.svg" alt="">Powered by IntroLinq</span></span></span></span>. I started having conversations instead of sending CVs. Completely different outcome.</p>
           <p class="carousel-text-2">Most people optimise the wrong thing. The CV is rarely what's holding you back.</p>
         </div>
 
         <div class="carousel-slide">
           <div class="carousel-niche">Health & Wellness</div>
           <div class="carousel-title">I tracked my sleep for three months and it made everything worse</div>
-          <p class="carousel-text">Sleep apps, supplements, blackout curtains, the whole lot. Each thing helped a bit and then stopped. What actually shifted things was finding someone who looked at <span class="expert-trigger" onclick="this.classList.toggle('open')">sleep as part of a wider picture rather than a standalone thing to optimise<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="popup-header"><img class="popup-avatar" src="https://i.pravatar.cc/150?img=53" alt="Dr. Nina Wells"><span class="popup-info"><span class="popup-name">Dr. Nina Wells<img class="popup-flag" src="https://hatscripts.github.io/circle-flags/flags/ca.svg" alt=""></span><span class="popup-role">Sleep &amp; wellness specialist</span><span class="popup-company">wellcast.com</span></span></span><span class="popup-bio">If you've tried everything for sleep and nothing's stuck, Nina can find what's actually going on</span><span class="popup-rec">Having trouble sleeping and not sure why? Dr. Nina looks beyond bedtime habits.</span><button class="popup-book">Speak with Nina →</button><span class="popup-footer-row"><span class="popup-partner">In partnership with Wellcast</span><span class="popup-il">IntroLinq</span></span></span></span>. The answer wasn't another product.</p>
+          <p class="carousel-text">Sleep apps, supplements, blackout curtains, the whole lot. Each thing helped a bit and then stopped. What actually shifted things was finding someone who looked at <span class="expert-trigger">sleep as part of a wider picture rather than a standalone thing to optimise<span class="expert-trigger-dot"></span><span class="expert-popup"><span class="pp-hook">Having trouble sleeping and not sure why? Dr. Nina looks beyond bedtime habits.</span><button class="pp-cta" type="button">Speak with Nina →</button><span class="pp-label">We recommend talking to:</span><span class="pp-opt"><img class="pp-photo" src="https://i.pravatar.cc/150?img=53" alt="Dr. Nina Wells"><span class="pp-info"><span class="pp-name">Dr. Nina Wells</span><span class="pp-role">Sleep &amp; wellness specialist · wellcast.com</span><span class="pp-facts">If you've tried everything for sleep and nothing's stuck, Nina can find what's actually going on</span></span><button class="pp-meet" type="button">Meet now</button></span><span class="pp-foot"><span class="pp-partner">In partnership with Wellcast</span><span class="pp-il"><img src="/favicon.svg" alt="">Powered by IntroLinq</span></span></span></span>. The answer wasn't another product.</p>
           <p class="carousel-text-2">When you've tried everything, the missing piece is usually someone who can see what you can't.</p>
         </div>
 
@@ -463,6 +474,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
         <button class="carousel-dot" onclick="goToSlide(4)"></button>
         <button class="carousel-dot" onclick="goToSlide(5)"></button>
       </div>
+      <div class="demo-note" id="demo-note" role="status"></div>
       </div><!-- /demo panel -->
     </div><!-- /carousel-wrap -->
     </div><!-- /left-col -->
@@ -505,12 +517,14 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.25re
 
   <div class="partnership-strip">
     <span class="partnership-label">In partnership with</span>
-    <a href="https://www.open-intro.com" target="_blank" rel="noopener" class="partnership-logo-link">
-      <img src="/networks%20logos/OpenIntro-Black-Large.png" alt="OpenIntro" class="partnership-logo">
-    </a>
-    <a href="https://preply.com" target="_blank" rel="noopener" class="partnership-logo-link">
-      <img src="/networks%20logos/Preply-logo-pink.png" alt="Preply" class="partnership-logo partnership-logo-pink">
-    </a>
+    <div class="partnership-logos-row">
+      <a href="https://www.open-intro.com" target="_blank" rel="noopener" class="partnership-logo-link">
+        <img src="/networks%20logos/OpenIntro-Black-Large.png" alt="OpenIntro" class="partnership-logo">
+      </a>
+      <a href="https://preply.com" target="_blank" rel="noopener" class="partnership-logo-link">
+        <img src="/networks%20logos/Preply-logo-pink.png" alt="Preply" class="partnership-logo partnership-logo-pink">
+      </a>
+    </div>
   </div>
   <p class="partnership-soon">More partnerships to follow - new expert networks joining soon.</p>
 
@@ -910,7 +924,32 @@ document.getElementById('footer-email')?.addEventListener('keydown', e => {
 let currentSlide = 0;
 const slides = document.querySelectorAll('.carousel-slide');
 const dots = document.querySelectorAll('.carousel-dot');
-let autoTimer, popupTimer;
+let autoTimer, popupTimer, cueTimer;
+
+// Demo cue: a cursor glides onto the underlined phrase, then the card opens -
+// shows the card is a hover interaction, not something that just appears.
+function clearCue() {
+  clearTimeout(cueTimer);
+  document.querySelectorAll('.demo-cursor').forEach(c => c.remove());
+}
+function playCue(slide) {
+  const trigger = slide && slide.querySelector('.expert-trigger');
+  const wrap = trigger && trigger.closest('.carousel-wrap');
+  if (!trigger) return;
+  clearCue();
+  const r = trigger.getBoundingClientRect();
+  const w = wrap.getBoundingClientRect();
+  const cue = document.createElement('div');
+  cue.className = 'demo-cursor';
+  cue.style.left = (r.left - w.left + Math.min(r.width / 2, 70)) + 'px';
+  cue.style.top = (r.top - w.top + 12) + 'px';
+  cue.innerHTML = '<img src="/cue-icons/cursor-over.png" alt="">';
+  wrap.appendChild(cue);
+  void cue.offsetWidth;
+  cue.classList.add('play');
+  popupTimer = setTimeout(() => trigger.classList.add('auto-open'), 1300);
+  cueTimer = setTimeout(() => cue.remove(), 3900);
+}
 
 function goToSlide(n) {
   slides[currentSlide].querySelectorAll('.expert-trigger').forEach(t => t.classList.remove('auto-open','open'));
@@ -919,20 +958,44 @@ function goToSlide(n) {
   currentSlide = n;
   slides[currentSlide].classList.add('active');
   dots[currentSlide].classList.add('active');
+  hideDemoNote();
   clearInterval(autoTimer);
   autoTimer = setInterval(() => goToSlide((currentSlide + 1) % slides.length), 10000);
   clearTimeout(popupTimer);
-  popupTimer = setTimeout(() => {
-    const trigger = slides[currentSlide]?.querySelector('.expert-trigger');
-    if (trigger) trigger.classList.add('auto-open');
-  }, 1850);
+  clearCue();
+  cueTimer = setTimeout(() => playCue(slides[currentSlide]), 500);
 }
 
 autoTimer = setInterval(() => goToSlide((currentSlide + 1) % slides.length), 10000);
-popupTimer = setTimeout(() => {
-  const trigger = slides[0]?.querySelector('.expert-trigger');
-  if (trigger) trigger.classList.add('auto-open');
-}, 1850);
+cueTimer = setTimeout(() => playCue(slides[0]), 500);
+
+// Visitors will try clicking the underlined phrase / buttons like real links.
+// Open the card for them and explain how the real widget behaves.
+const demoNote = document.getElementById('demo-note');
+let demoNoteTimer;
+function showDemoNote(msg) {
+  if (!demoNote) return;
+  demoNote.textContent = msg;
+  demoNote.classList.add('show');
+  clearTimeout(demoNoteTimer);
+  demoNoteTimer = setTimeout(hideDemoNote, 6000);
+}
+function hideDemoNote() {
+  if (demoNote) demoNote.classList.remove('show');
+}
+document.addEventListener('click', function (e) {
+  const trigger = e.target.closest && e.target.closest('.expert-trigger');
+  if (!trigger) return;
+  const isButton = e.target.closest('.pp-cta, .pp-meet');
+  const hasHover = window.matchMedia('(hover:hover)').matches;
+  trigger.classList.add('open');
+  clearCue();
+  if (isButton) {
+    showDemoNote('This is a demo - on your site, this button opens the expert’s booking page and you earn 50% of the booking.');
+  } else if (!e.target.closest('.expert-popup') && hasHover) {
+    showDemoNote('It’s not a link - readers just hover the phrase (or tap it on mobile) and this card appears. Try hovering instead of clicking.');
+  }
+});
 
 // FAQ accordion
 function toggleFaq(btn) {
