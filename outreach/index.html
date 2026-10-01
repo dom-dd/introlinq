@@ -250,9 +250,8 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
                 <th style="width:150px">3. Status</th>
                 <th style="width:100px" class="assign-th">Assign</th>
                 <th style="width:130px">4. Next follow-up</th>
-                <th style="width:190px">5. Action</th>
-                <th style="width:150px">6. Emails</th>
-                <th>7. Notes</th>
+                <th style="width:190px">5. Add to spreadsheet</th>
+                <th>6. Notes</th>
               </tr></thead>
               <tbody id="outreach-due-tbody"></tbody>
             </table>
@@ -278,9 +277,8 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
                 <th style="width:150px">3. Status</th>
                 <th style="width:100px" class="assign-th">Assign</th>
                 <th style="width:130px">4. Next follow-up</th>
-                <th style="width:190px">5. Action</th>
-                <th style="width:150px">6. Emails</th>
-                <th>7. Notes</th>
+                <th style="width:190px">5. Add to spreadsheet</th>
+                <th>6. Notes</th>
               </tr></thead>
               <tbody id="outreach-waiting-tbody"></tbody>
             </table>
@@ -382,9 +380,8 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
                 <th style="width:150px">3. Status</th>
                 <th style="width:100px" class="assign-th">Assign</th>
                 <th style="width:130px">4. Next follow-up</th>
-                <th style="width:190px">5. Action</th>
-                <th style="width:150px">6. Emails</th>
-                <th>7. Notes</th>
+                <th style="width:190px">5. Add to spreadsheet</th>
+                <th>6. Notes</th>
               </tr></thead>
               <tbody id="outreach-todo-tbody"></tbody>
             </table>
@@ -410,9 +407,8 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
                 <th style="width:150px">3. Status</th>
                 <th style="width:100px" class="assign-th">Assign</th>
                 <th style="width:130px">4. Next follow-up</th>
-                <th style="width:190px">5. Action</th>
-                <th style="width:150px">6. Emails</th>
-                <th>7. Notes</th>
+                <th style="width:190px">5. Add to spreadsheet</th>
+                <th>6. Notes</th>
               </tr></thead>
               <tbody id="outreach-tocontact-tbody"></tbody>
             </table>
@@ -635,9 +631,8 @@ body.is-owner .select-th,body.is-owner .select-td{display:table-cell}
                 <th style="width:150px">3. Status</th>
                 <th style="width:100px" class="assign-th">Assign</th>
                 <th style="width:130px">4. Next follow-up</th>
-                <th style="width:190px">5. Action</th>
-                <th style="width:150px">6. Emails</th>
-                <th>7. Notes</th>
+                <th style="width:190px">5. Add to spreadsheet</th>
+                <th>6. Notes</th>
               </tr></thead>
               <tbody id="outreach-search-tbody"></tbody>
             </table>
@@ -1118,76 +1113,32 @@ async function submitCreateLead() {
   if (btn) switchOutreachSubtab(bucket, btn);
 }
 
-// Sender identity comes from whoever's actually logged in (_outreachUser,
-// set by outreach-me) - not hardcoded, so every account's outreach reads as
-// genuinely coming from them, title included when they've set one.
-function outreachSenderIntro() {
-  const name = _outreachUser?.name || 'the IntroLinq team';
-  const title = _outreachUser?.title;
-  return title ? `${name}, ${title} at IntroLinq` : `${name}, from the IntroLinq team`;
+// Sending/follow-ups now happen in GMass off the exported spreadsheet, not
+// here - this just hands a lead off once it's ready (see addLeadToSheet).
+function outreachExportButton(c) {
+  if (c.exported_to_sheet_at) {
+    const when = new Date(c.exported_to_sheet_at).toLocaleDateString();
+    return `<span style="font-size:0.75rem;color:var(--sage)" title="Added to the “${esc(c.exported_to_sheet_tab || '')}” tab on ${when}">&#10003; Added to spreadsheet</span>`;
+  }
+  const missing = !c.contact_email ? 'Add an email first' : !c.category ? 'Set a category first' : '';
+  return `<button class="btn btn-primary btn-sm" ${missing ? 'disabled title="' + esc(missing) + '"' : ''} onclick="addLeadToSheet(${c.id})">Add to spreadsheet</button>`;
 }
 
-function outreachSenderSignoff() {
-  return _outreachUser?.name || 'The IntroLinq team';
-}
-
-function outreachEmailTemplates(c) {
-  const firstName = (c.contact_name || '').trim().split(' ')[0] || 'there';
-  const company = (c.company_name || '').trim() || prettifyDomain(c.domain);
-  const sender = outreachSenderIntro();
-  const signoff = outreachSenderSignoff();
-  return {
-    intro: {
-      subject: `Affiliation proposal - IntroLinq x ${company}`,
-      body: `Hi ${firstName},\n\nI am ${sender}. We are a new company enabling publishers and bloggers to generate a new revenue stream from their content.\nI came across ${company} and think it would be a great fit if you would like to monetise your blog effortlessly.\n\nOur widget automatically scans your pages (old and new), matching keywords and topics - and creating affiliate links to bookable, vetted industry experts on our partners sites.\nIf a reader books - within a 90 day cookie period - we split the commission 50/50 with you.\n\nIt's 100% free, no maintenance required, and setup takes a couple of minutes.\n\nHere's the platform: https://introlinq.com/\nOur current partner is OpenIntro (https://open-intro.com/), with more partners joining soon.\n\nFeel free to register or I'd be happy to send more details or hop on a call if you'd prefer.\nLooking forward to hearing your thoughts.\n\nBest,\n${signoff}`,
-    },
-    followup1: {
-      subject: `(Follow up) Affiliation proposal - IntroLinq x ${company}`,
-      body: `Hi ${firstName},\n\nI wanted to follow up on my email from a few days ago, and check whether you had time yet to review our website or had any questions which may be easier to discuss over a call.\n\nOur widget scans your existing pages (no new writing needed), matches topics to vetted experts, and if a reader books a call within 90 days of clicking, you keep 50% of that commission. Our partner experts charge $100-$300/session, so it doesn't take many bookings to quickly add up to a significant additional revenue stream. Every post already live on ${company} is an opportunity to earn money you're not collecting yet.\n\nSetup takes about 2 minutes, it's free, and no maintenance required after that - we have different widget styles, plus a manual add-on for newsletters if that fits your setup better.\n\nWe're hand-picking our first wave of publishers to keep quality high, and I'd like to add ${company} to that batch if you're up for it.\n\nTake a look: https://introlinq.com/\n\nBest,\n${signoff}`,
-    },
-    followup2: {
-      subject: `Re: Quick idea for ${company}`,
-      body: `Hi ${firstName},\n\nStill think this could be a good fit for ${company} - turning existing articles into a passive revenue stream, zero extra work on your side.\n\nHappy to answer any questions, or just say the word and I'll set you up.\n\nBest,\n${signoff}`,
-    },
-    followup3: {
-      subject: `Re: Quick idea for ${company}`,
-      body: `Hi ${firstName},\n\nLast note from me on this one - I don't want to keep cluttering your inbox.\n\nIf turning ${company}'s content into a passive revenue stream is ever something you'd want to explore, the door's always open. Either way, wishing you all the best with the site.\n\nBest,\n${signoff}`,
-    },
-  };
-}
-
-const OUTREACH_EMAIL_TITLES = { intro: 'Intro email', followup1: 'First follow-up', followup2: 'Second follow-up', followup3: 'Third follow-up' };
-
-function outreachNextStage(c) {
-  if (c.status === 'discovered' || c.status === 'to_contact') return 'intro';
-  if (c.status === 'emailed') return 'followup1';
-  if (c.status === 'followed_up_1') return 'followup2';
-  if (c.status === 'followed_up_2') return 'followup3';
-  return null;
-}
-
-function outreachEmailButton(c) {
-  const stage = outreachNextStage(c);
-  if (!stage) return '';
-  return `<button class="btn btn-ghost btn-sm" onclick="openOutreachEmailInGmail(${c.id},'${stage}')">${OUTREACH_EMAIL_TITLES[stage]}</button>`;
-}
-
-function openOutreachEmailInGmail(id, stage) {
-  const c = _outreach.find(x => x.id === id);
-  if (!c) return;
-  const tpl = outreachEmailTemplates(c)[stage];
-  const params = new URLSearchParams({ view: 'cm', fs: '1', su: tpl.subject, body: tpl.body });
-  if (c.contact_email) params.set('to', c.contact_email);
-  else toast('No email saved for this contact - opening blank, add the address in Gmail');
-  window.open(`https://mail.google.com/mail/?${params.toString()}`, '_blank');
-}
-
-function outreachActionButton(c) {
-  if (c.status === 'discovered' || c.status === 'to_contact') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_email_sent')">Mark email sent</button>`;
-  if (c.status === 'emailed') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_followup_1')">Mark follow-up 1 sent</button>`;
-  if (c.status === 'followed_up_1') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_followup_2')">Mark follow-up 2 sent</button>`;
-  if (c.status === 'followed_up_2') return `<button class="btn btn-primary btn-sm" onclick="outreachMark(${c.id},'mark_followup_3')">Mark follow-up 3 sent</button>`;
-  return '';
+async function addLeadToSheet(id) {
+  try {
+    const res = await fetch('/api/admin?resource=outreach', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'x-requested-with': 'xmlhttprequest' },
+      credentials: 'include',
+      body: JSON.stringify({ id, action: 'export_to_sheet' }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { toast(data.error || 'Failed to add to spreadsheet', true); return; }
+    toast('Added to spreadsheet');
+    await loadOutreach();
+  } catch {
+    toast('Failed to add to spreadsheet - try again', true);
+  }
 }
 
 function prettifyDomain(domain) {
@@ -1234,7 +1185,7 @@ function outreachRow(c, mode) {
     ? `<td><input type="date" value="${c.next_followup_at ? c.next_followup_at.slice(0, 10) : ''}" onchange="outreachSetFollowup(${c.id}, this.value)" style="${OUTREACH_INPUT_STYLE}"></td>`
     : '';
   const actionEmailCells = mode === 'full'
-    ? `<td>${outreachActionButton(c)}</td><td>${outreachEmailButton(c)}</td>`
+    ? `<td>${outreachExportButton(c)}</td>`
     : '';
   const assignCell = `<td class="assign-td">${outreachAssignedName(c)}</td>`;
   const selectCell = `<td class="select-td"><input type="checkbox" class="lead-checkbox" ${_outreachSelectedIds.has(c.id) ? 'checked' : ''} onchange="toggleLeadSelection(${c.id}, this.checked)"></td>`;
@@ -1282,10 +1233,6 @@ async function outreachPatch(body) {
     toast('Failed to save - try again', true);
     return false;
   }
-}
-
-async function outreachMark(id, action) {
-  if (await outreachPatch({ id, action })) await loadOutreach();
 }
 
 async function outreachSetStatus(id, value) {

@@ -8,7 +8,8 @@
     "discover": "node discovery/discover.js",
     "classify": "node discovery/classify.js",
     "enrich": "node discovery/enrich.js",
-    "export": "node discovery/export.js"
+    "export": "node discovery/export.js",
+    "sheets-auth": "node discovery/get-refresh-token.js"
   },
   "repository": {
     "type": "git",
@@ -27,6 +28,7 @@
     "@vercel/og": "^0.11.1",
     "bcryptjs": "^3.0.3",
     "dotenv": "^16.4.5",
+    "googleapis": "^144.0.0",
     "resend": "^6.14.0"
   }
 }

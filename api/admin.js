@@ -6,6 +6,7 @@ import { DECK_HTML_B64 } from './_deckContent.js';
 import { ensureBotColumns, getClientIp } from './_botDetect.js';
 import { CATEGORIES } from './suggest-expert.js';
 import { notifyBooking, providerLabel } from './_bookingNotify.js';
+import { getSheetsClient, ensureTabWithHeader, appendRow } from '../discovery/lib/sheets.js';
 
 let adminBotColumnsReady = false;
 
@@ -612,6 +613,32 @@ export default async function handler(req, res) {
     }
   }
 
+  // Duplicated from outreach/index.html's prettifyDomain rather than
+  // imported - api/ and the static outreach/ page are separate deployment
+  // contexts, same reasoning as discovery/'s own CATEGORIES duplication.
+  function prettifyDomainServer(domain) {
+    if (!domain) return '';
+    const GENERIC_SUBDOMAINS = ['www', 'blog', 'hiring', 'careers', 'jobs', 'shop', 'app', 'my', 'get', 'about', 'news'];
+    let parts = domain.split('.');
+    if (parts.length > 2 && GENERIC_SUBDOMAINS.includes(parts[0])) parts = parts.slice(1);
+    const label = parts.length > 1 ? parts[parts.length - 2] : parts[0];
+    return label.replace(/[-_]+/g, ' ').split(' ').filter(Boolean)
+      .map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
+  }
+
+  // Appends one lead to the Google Sheet tab matching its category (creating
+  // the tab with a header row the first time that category is exported).
+  // GOOGLE_SHEETS_SPREADSHEET_ID is the "Gmass bloggers outreach" sheet GMass
+  // campaigns read their recipient lists from.
+  async function appendLeadToSheet({ category, domain, firstName, company, email }) {
+    const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
+    if (!spreadsheetId) throw new Error('GOOGLE_SHEETS_SPREADSHEET_ID not set');
+    const sheets = getSheetsClient();
+    const tabName = category.slice(0, 95);
+    await ensureTabWithHeader(sheets, spreadsheetId, tabName, ['Email Address', 'First Name', 'Company', 'Domain']);
+    await appendRow(sheets, spreadsheetId, tabName, [email, firstName, company, domain]);
+  }
+
   // Outreach tracking for candidate_publishers (the SerpAPI discovery
   // pipeline's leads - see run-discovery above). Access: the owner
   // (real outreach_users session, or the IP allowlist as a fallback when
@@ -646,6 +673,8 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS followup_3_sent_at TIMESTAMPTZ`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS next_followup_at DATE`.catch(() => {});
     await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS outreach_notes TEXT`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS exported_to_sheet_at TIMESTAMPTZ`.catch(() => {});
+    await sql`ALTER TABLE candidate_publishers ADD COLUMN IF NOT EXISTS exported_to_sheet_tab TEXT`.catch(() => {});
     await sql`CREATE TABLE IF NOT EXISTS outreach_clicks (
       id SERIAL PRIMARY KEY,
       candidate_id INT NOT NULL REFERENCES candidate_publishers(id),
@@ -738,6 +767,26 @@ export default async function handler(req, res) {
         await sql`UPDATE candidate_publishers SET website_type = ${value || null} WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
       } else if (action === 'set_notes') {
         await sql`UPDATE candidate_publishers SET outreach_notes = ${value || null} WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
+      } else if (action === 'export_to_sheet') {
+        const [row] = await sql`
+          SELECT domain, contact_name, contact_email, company_name, category, exported_to_sheet_at
+          FROM candidate_publishers WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})
+        `;
+        if (!row) return res.status(404).json({ error: 'Lead not found' });
+        if (!row.contact_email) return res.status(400).json({ error: 'Add an email before sending to the spreadsheet' });
+        if (!row.category) return res.status(400).json({ error: 'Set a category before sending to the spreadsheet' });
+        if (row.exported_to_sheet_at) return res.status(409).json({ error: 'Already added to the spreadsheet' });
+
+        const firstName = (row.contact_name || '').trim().split(' ')[0] || '';
+        const company = (row.company_name || '').trim() || prettifyDomainServer(row.domain);
+
+        try {
+          await appendLeadToSheet({ category: row.category, domain: row.domain, firstName, company, email: row.contact_email });
+        } catch (err) {
+          return res.status(502).json({ error: 'Failed to write to spreadsheet: ' + err.message });
+        }
+
+        await sql`UPDATE candidate_publishers SET exported_to_sheet_at = NOW(), exported_to_sheet_tab = ${row.category} WHERE id = ${id}`;
       } else {
         return res.status(400).json({ error: 'unknown action' });
       }
@@ -752,6 +801,7 @@ export default async function handler(req, res) {
       SELECT cp.id, cp.domain, cp.homepage_url, cp.title, cp.status, cp.priority_score, cp.contact_name, cp.contact_email, cp.company_name, cp.category, cp.website_type,
              cp.person_linkedin_url, cp.company_linkedin_url, cp.twitter_url, cp.facebook_url, cp.assigned_to,
              cp.email_sent_at, cp.followup_1_sent_at, cp.followup_2_sent_at, cp.followup_3_sent_at, cp.next_followup_at, cp.outreach_notes, cp.created_at,
+             cp.exported_to_sheet_at, cp.exported_to_sheet_tab,
              COALESCE(json_agg(oc.clicked_at ORDER BY oc.clicked_at) FILTER (WHERE oc.clicked_at IS NOT NULL), '[]') AS click_times
       FROM candidate_publishers cp
       LEFT JOIN outreach_clicks oc ON oc.candidate_id = cp.id
