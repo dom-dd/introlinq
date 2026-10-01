@@ -681,14 +681,15 @@ export default async function handler(req, res) {
       clicked_at TIMESTAMPTZ DEFAULT NOW()
     )`.catch(() => {});
 
-    // 'substack' and 'confirmed_fit' were removed (Aug 2026) - any existing
-    // rows were migrated to 'discovered' via a one-off script, not here, so
-    // this list intentionally no longer accepts either as a set_status value.
-    // 'large_publisher' added 2026-08-25 (see reject-unfit-todo.js) - a
-    // genuine blog/publication that's just too large/well-known to be a
-    // near-term outreach target, kept visible in its own bucket rather than
-    // getting silently lumped into 'not_a_fit' with actual junk.
-    const ALLOWED_STATUSES = ['discovered', 'to_contact', 'emailed', 'followed_up_1', 'followed_up_2', 'followed_up_3', 'important', 'contact_later', 'partner', 'openintro_partner', 'products_partner', 'replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit', 'no_email_found', 'large_publisher'];
+    // Trimmed down (2026-09-30) once sending/follow-ups moved to GMass - the
+    // old mid-sequence statuses (to_contact/emailed/followed_up_N/
+    // contact_later/replied_interested/no_email_found) no longer map to any
+    // tab, so a bulk migration reset every lead in those statuses back to
+    // 'discovered' and this list stopped accepting them as a set_status
+    // value. 'large_publisher' (2026-08-25, see reject-unfit-todo.js) is a
+    // genuine blog/publication just too large/well-known to be a near-term
+    // outreach target - kept separate from 'not_a_fit' junk.
+    const ALLOWED_STATUSES = ['discovered', 'important', 'partner', 'openintro_partner', 'products_partner', 'replied_not_interested', 'signed_up', 'not_a_fit', 'large_publisher'];
 
     // Purely informational - what platform the blog runs on (WordPress,
     // Substack, Ghost, ...). Set by hand in the Outreach UI; nothing keys
@@ -736,24 +737,9 @@ export default async function handler(req, res) {
       if (action === 'assign_lead') {
         if (!isOwner) return res.status(403).json({ error: 'Forbidden' });
         await sql`UPDATE candidate_publishers SET assigned_to = ${value || null} WHERE id = ${id}`;
-      } else if (action === 'mark_email_sent') {
-        await sql`UPDATE candidate_publishers SET email_sent_at = NOW(), status = 'emailed', next_followup_at = CURRENT_DATE + 4 WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
-      } else if (action === 'mark_followup_1') {
-        await sql`UPDATE candidate_publishers SET followup_1_sent_at = NOW(), status = 'followed_up_1', next_followup_at = CURRENT_DATE + 5 WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
-      } else if (action === 'mark_followup_2') {
-        await sql`UPDATE candidate_publishers SET followup_2_sent_at = NOW(), status = 'followed_up_2', next_followup_at = CURRENT_DATE + 5 WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
-      } else if (action === 'mark_followup_3') {
-        await sql`UPDATE candidate_publishers SET followup_3_sent_at = NOW(), status = 'followed_up_3', next_followup_at = NULL WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
-      } else if (action === 'set_next_followup') {
-        await sql`UPDATE candidate_publishers SET next_followup_at = ${value || null} WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
       } else if (action === 'set_status') {
         if (!ALLOWED_STATUSES.includes(value)) return res.status(400).json({ error: 'invalid status' });
-        const resolved = ['replied_interested', 'replied_not_interested', 'signed_up', 'not_a_fit', 'no_email_found', 'large_publisher'].includes(value);
-        if (resolved) {
-          await sql`UPDATE candidate_publishers SET status = ${value}, next_followup_at = NULL WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
-        } else {
-          await sql`UPDATE candidate_publishers SET status = ${value} WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
-        }
+        await sql`UPDATE candidate_publishers SET status = ${value} WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;
       } else if (action === 'set_contact') {
         const { contact_name, contact_email } = req.body || {};
         await sql`UPDATE candidate_publishers SET contact_name = ${contact_name || null}, contact_email = ${contact_email || null} WHERE id = ${id} AND (assigned_to = ${helperId} OR ${isOwner})`;

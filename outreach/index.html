@@ -649,40 +649,24 @@ let _outreachSearchQuery = '';
 // 'not_a_fit' alongside actual junk (vendors, dead sites, directories).
 const OUTREACH_STATUS_LABELS = {
   discovered: 'Untouched',
-  to_contact: 'To contact',
-  emailed: 'Emailed',
-  followed_up_1: 'Follow-up 1 sent',
-  followed_up_2: 'Follow-up 2 sent',
-  followed_up_3: 'Follow-up 3 sent',
-  replied_interested: 'In discussion',
   signed_up: 'Onboarded',
-  contact_later: 'Contact later',
   partner: 'IntroLinq partners',
   openintro_partner: 'OpenIntro partners',
   products_partner: 'Products partners',
   important: 'VIP',
   not_a_fit: 'Not a fit',
   replied_not_interested: 'Not interested',
-  no_email_found: 'No email found',
   large_publisher: 'Larger publishers',
 };
 const OUTREACH_STATUS_COLORS = {
   discovered: 'var(--ink-muted)',
-  to_contact: '#f59e0b',
-  emailed: '#4f6ef7',
-  followed_up_1: '#4f6ef7',
-  followed_up_2: '#4f6ef7',
-  followed_up_3: '#4f6ef7',
-  replied_interested: 'var(--sage)',
   signed_up: 'var(--sage)',
-  contact_later: '#4f6ef7',
   partner: '#8b5cf6',
   openintro_partner: '#0d9488',
   products_partner: '#db2777',
   important: '#e6a820',
   not_a_fit: 'var(--ink-muted)',
   replied_not_interested: 'var(--red, #dc2626)',
-  no_email_found: '#94a3b8',
   large_publisher: '#0891b2',
 };
 // Same 3 groups as the subtab bar's coloring, rendered as <optgroup>s so
@@ -690,9 +674,9 @@ const OUTREACH_STATUS_COLORS = {
 // modal) shows the same dividers between groups - a plain flat list made it
 // hard to tell where one group ended and the next began.
 const OUTREACH_STATUS_GROUPS = [
-  { label: 'Status', keys: ['discovered', 'to_contact', 'emailed', 'followed_up_1', 'followed_up_2', 'followed_up_3', 'replied_interested', 'signed_up', 'contact_later'] },
+  { label: 'Status', keys: ['discovered'] },
   { label: 'Partner', keys: ['partner', 'openintro_partner', 'products_partner'] },
-  { label: 'Others', keys: ['important', 'not_a_fit', 'replied_not_interested', 'no_email_found', 'large_publisher'] },
+  { label: 'Others', keys: ['important', 'large_publisher', 'not_a_fit', 'replied_not_interested', 'signed_up'] },
 ];
 
 function outreachStatusOptionsHTML(selectedValue) {
