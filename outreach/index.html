@@ -1083,6 +1083,7 @@ async function outreachSaveContact(id, name, email) {
   const contact_email = email !== null ? email : (c?.contact_email || '');
   if (await outreachPatch({ id, action: 'set_contact', contact_name, contact_email })) {
     if (c) { c.contact_name = contact_name; c.contact_email = contact_email; }
+    renderOutreach();
   }
 }
 
