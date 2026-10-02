@@ -2401,12 +2401,16 @@ async function togglePartner(slug, enabled) {
     const cb = card.querySelector('input[type=checkbox]');
     return { slug: id, enabled: id === slug ? enabled : cb.checked };
   }).filter(p => p.enabled).map(p => p.slug);
-  await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
+  const res = await fetch('/api/dashboard?pub=' + encodeURIComponent(PUB), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
     body: JSON.stringify({ enabled_partners: partners })
-  });
+  }).catch(() => null);
+  if (!res || !res.ok) {
+    toast('Could not save - please try again');
+    return;
+  }
   toast(enabled ? 'Partner enabled' : 'Partner disabled');
 }
 

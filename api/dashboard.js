@@ -756,7 +756,7 @@ export default async function handler(req, res) {
         discovery_cue_enabled = COALESCE(${discovery_cue_enabled ?? null}, discovery_cue_enabled),
         no_match_fallback_enabled = COALESCE(${no_match_fallback_enabled ?? null}, no_match_fallback_enabled),
         no_match_text_color = COALESCE(${no_match_text_color ?? null}, no_match_text_color),
-        enabled_partners = COALESCE(${enabled_partners ? sql.array(enabled_partners) : null}, enabled_partners),
+        enabled_partners = COALESCE(${Array.isArray(enabled_partners) ? enabled_partners : null}::text[], enabled_partners),
         payment_email = COALESCE(${payment_email ?? null}, payment_email),
         payment_method = COALESCE(${payoutMethod}, payment_method),
         active = COALESCE(${active ?? null}, active),
