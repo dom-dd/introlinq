@@ -394,12 +394,21 @@ export default async function handler(req, res) {
     const articleTitle = title ? String(title).slice(0, 80) : null;
     const coolingDown = await isNotificationCoolingDown(sql, pub);
     const willNotify = !!(process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL && !isBot && !coolingDown);
+    // The card's "In partnership with [logo]" link carries no expert, so
+    // label it by where it went (hostname, no SQL) instead of "an expert".
+    let clickLabel = expert_name || 'an expert';
+    if (!expert_name && click_source === 'partner_logo') {
+      let host = '';
+      try { host = new URL(decodeURIComponent(expert_url)).hostname.replace(/^www\./, ''); } catch {}
+      const partner = /preply/i.test(host) ? 'Preply' : /openintro/i.test(host) ? 'OpenIntro' : host;
+      clickLabel = `Card-logo click${partner ? ` (${partner})` : ''}`;
+    }
     const slackPromise = willNotify
       ? fetch(process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL, {
           method: 'POST',
           signal: AbortSignal.timeout(1500),
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: `👉 *Expert link clicked* - ${expert_name || 'an expert'} · ${pub || '/app'}${articleTitle ? ` · _${articleTitle}_` : ''}` }),
+          body: JSON.stringify({ text: `👉 *Expert link clicked* - ${clickLabel} · ${pub || '/app'}${articleTitle ? ` · _${articleTitle}_` : ''}` }),
         }).catch(() => {})
       : Promise.resolve();
 
