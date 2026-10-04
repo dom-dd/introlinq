@@ -103,6 +103,59 @@ export function isAllowlistedCrawler(req) {
   return CRAWLER_UA_ALLOWLIST.test(ua);
 }
 
+// The OTHER User-Agent signal, and the one that was missing entirely until
+// now: CRAWLER_UA_ALLOWLIST above only names the crawlers whose visit we're
+// happy to see, so every other self-identifying non-reader sailed straight
+// through as a genuine click. These are the one-and-done fetchers -
+// link-preview bots (one reader sharing an article on Slack/LinkedIn/WhatsApp
+// makes that platform fetch every link on the page), corporate mail scanners
+// that open links in a newsletter before the recipient does, uptime/SEO
+// tools, and raw HTTP clients. A single hit is all any of them ever makes, so
+// none of the volume heuristics below can possibly see them, and a missing
+// User-Agent counts as automated for the same reason (every real browser
+// sends one). This was exactly the gap that let a click fire a Slack ping
+// here while OpenIntro's own page-view notification - which has always had a
+// generic UA filter - stayed silent for the very same visit (diagnosed
+// 2026-10-04): the two sides now run deliberately equivalent lists, so a
+// ping on one side means a ping on the other. Patterns match anywhere in the
+// UA unless listed in the anchored set below, which is for names that also
+// occur inside otherwise-normal browser UAs: WhatsApp's preview fetcher is
+// "WhatsApp/2.x", but some in-app webviews append the app name to a real
+// browser UA, so only the leading form is automated.
+const BOT_UA_PATTERN = /bot|crawler|spider|crawl|slurp|scrape|scrapy|prerender|headless|phantomjs|puppeteer|playwright|selenium|python-requests|python-urllib|curl|wget|axios|go-http-client|node-fetch|okhttp|java\/|libwww|httpclient|postman|insomnia|facebookexternalhit|skypeuripreview|iframely|embedly|safelinks|proofpoint|mimecast|barracuda|zscaler|forcepoint|censys|shodan|netcraft|pingdom|lighthouse/i;
+const BOT_UA_PREFIX_PATTERN = /^(whatsapp|vkshare|mastodon|synapse)\b/i;
+
+export function isBotUserAgent(req) {
+  const ua = req.headers['user-agent'] || '';
+  if (!ua) return true;
+  return BOT_UA_PATTERN.test(ua) || BOT_UA_PREFIX_PATTERN.test(ua);
+}
+
+// Top-level-navigation check, for the click redirect ONLY. A person clicking
+// a link produces a document navigation, which every current browser labels
+// Sec-Fetch-Mode: navigate and Sec-Fetch-Dest: document. A scanner or preview
+// fetcher doing a plain HTTP GET either sends no Sec-Fetch headers at all or
+// honestly labels itself a subresource/CORS fetch, and asks for */* rather
+// than text/html - which is what catches the ones that spoof a browser
+// User-Agent and so get past isBotUserAgent above.
+//
+// Deliberately NOT folded into isBotHit: match.js's impression and hover
+// calls are genuine browser fetch()es that correctly report mode=cors /
+// dest=empty, so this check would flag every real reader on those tables.
+// Only an endpoint the reader's own browser NAVIGATES to may use it, which
+// today means the action=out click redirect and api/r.js. Browsers predating
+// the Sec-Fetch family (Safari before 16.4) send none of those headers, so
+// they fall back to whether HTML was asked for rather than being assumed
+// automated - a no-Sec-Fetch browser is old, not a bot.
+export function isNonBrowserRequest(req) {
+  const mode = req.headers['sec-fetch-mode'];
+  const dest = req.headers['sec-fetch-dest'];
+  if (mode && mode !== 'navigate') return true;
+  if (dest && dest !== 'document') return true;
+  if (!mode && !dest) return !/text\/html/i.test(req.headers['accept'] || '');
+  return false;
+}
+
 export async function isBurstTraffic(sql, table, { ip, publisher, page_url }) {
   const urlColumn = TABLE_URL_COLUMNS[table];
   if (!urlColumn) throw new Error('isBurstTraffic: invalid table ' + table);
@@ -256,11 +309,12 @@ export function isTrustedIp(ip) {
 }
 
 // Single source of truth for "should this row count as a bot" - combines
-// every signal (known-crawler IP range, known-crawler User-Agent, same-page
-// burst, sitewide burst, distributed fan-out burst, coordinated multi-IP
-// burst) so a signal added to one call site is never accidentally missing
-// from another. isAllowlistedCrawler was previously wired only into the
-// stale-cache-serve decision in match.js, never into any is_bot tagging -
+// every signal (known-crawler IP range, known-crawler User-Agent, generic
+// bot/scanner User-Agent, same-page burst, sitewide burst, distributed
+// fan-out burst, coordinated multi-IP burst) so a signal added to one call
+// site is never accidentally missing from another. isAllowlistedCrawler was
+// previously wired only into the stale-cache-serve decision in match.js,
+// never into any is_bot tagging -
 // which meant Googlebot/Bingbot/GPTBot/etc traffic (identifiable by
 // User-Agent even when its IP range isn't hardcoded, e.g. Googlebot's
 // 66.249.64.0/19) sailed through untagged into match_logs, inflating Page
@@ -269,7 +323,7 @@ export function isTrustedIp(ip) {
 // (scraping), so all get the same is_bot=true treatment here.
 export async function isBotHit(req, sql, table, { ip, publisher, page_url, expert_id, expert_name }) {
   if (isTrustedIp(ip)) return false;
-  if (isKnownCrawlerIp(ip) || isAllowlistedCrawler(req)) return true;
+  if (isKnownCrawlerIp(ip) || isAllowlistedCrawler(req) || isBotUserAgent(req)) return true;
   if (await isBurstTraffic(sql, table, { ip, publisher, page_url })) return true;
   if (await isCoordinatedBurst(sql, table, { ip, publisher, page_url, expert_id, expert_name })) return true;
   const country = req.headers['x-vercel-ip-country'];

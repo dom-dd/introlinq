@@ -1,7 +1,7 @@
 ﻿import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import { getClientIp, isBotHit, ensureBotColumns } from './_botDetect.js';
+import { getClientIp, isBotHit, isNonBrowserRequest, ensureBotColumns } from './_botDetect.js';
 import { notifyTeam, escapeHtml } from './_notify.js';
 
 const PASSWORD_MIN_LENGTH = 8;
@@ -338,12 +338,24 @@ export default async function handler(req, res) {
       // social) - null for every non-manual click. Drives the per-channel
       // click breakdown on the dashboard.
       sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS manual_channel TEXT`.catch(() => {}),
+      // The raw User-Agent, so "was that click a person?" is answerable from
+      // the data rather than inferred. is_bot already encodes the verdict,
+      // but the string itself is what shows WHICH automated clients are
+      // reaching us, and lets a new pattern be checked against clicks already
+      // logged instead of only against traffic arriving after it ships -
+      // which is precisely what was missing when the same question came up on
+      // 2026-10-04 and had to be answered from code alone.
+      sql`ALTER TABLE click_logs ADD COLUMN IF NOT EXISTS user_agent TEXT`.catch(() => {}),
     ]);
     if (!clickBotColumnsReady) {
       await ensureBotColumns(sql, 'click_logs');
       clickBotColumnsReady = true;
     }
-    const isBot = await isBotHit(req, sql, 'click_logs', { ip, publisher: pub, page_url: article, expert_id: expert_id || null, expert_name: expert_name || null });
+    // isNonBrowserRequest first: it's header-only (no SQL round-trip) and it
+    // catches the scanners that spoof a browser User-Agent, which every check
+    // inside isBotHit would otherwise wave through on a single hit.
+    const userAgent = req.headers['user-agent'] || null;
+    const isBot = isNonBrowserRequest(req) || await isBotHit(req, sql, 'click_logs', { ip, publisher: pub, page_url: article, expert_id: expert_id || null, expert_name: expert_name || null });
 
     // Impact.com-backed providers (Preply etc.) don't call our booking
     // webhook - there's no live push, so attribution has to survive inside
@@ -394,21 +406,30 @@ export default async function handler(req, res) {
     const articleTitle = title ? String(title).slice(0, 80) : null;
     const coolingDown = await isNotificationCoolingDown(sql, pub);
     const willNotify = !!(process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL && !isBot && !coolingDown);
-    // The card's "In partnership with [logo]" link carries no expert, so
-    // label it by where it went (hostname, no SQL) instead of "an expert".
-    let clickLabel = expert_name || 'an expert';
-    if (!expert_name && click_source === 'partner_logo') {
-      let host = '';
-      try { host = new URL(decodeURIComponent(expert_url)).hostname.replace(/^www\./, ''); } catch {}
-      const partner = /preply/i.test(host) ? 'Preply' : /openintro/i.test(host) ? 'OpenIntro' : host;
-      clickLabel = `Card-logo click${partner ? ` (${partner})` : ''}`;
-    }
+    // Where the click actually WENT. Without this the ping was unreadable
+    // the moment the board carried more than one provider: a Preply click and
+    // an OpenIntro click produced identical messages, so "clicks here but no
+    // visit on the OpenIntro side" had no explanation visible in Slack. The
+    // host is also the only thing that separates a real expert-page click
+    // from one that lands on a provider's homepage (partner_logo,
+    // no_match_cta) or never leaves introlinq.com at all (the no-match
+    // fallback board) - neither of which can produce an expert-page
+    // notification on the partner's side, by design, not through a fault.
+    // Read off destUrl (already built above) so it reflects the real
+    // destination including the fallback branch, and costs no extra SQL.
+    let destHost = '';
+    try { destHost = new URL(destUrl).hostname.replace(/^www\./, ''); } catch {}
+    const destLabel = destHost ? ` -> ${destHost}` : '';
+    const sourceLabel = click_source ? ` (${click_source})` : '';
+    // The card's "In partnership with [logo]" link carries no expert, so it
+    // has no name to show - destLabel above now says where it went.
+    const clickLabel = expert_name || (click_source === 'partner_logo' ? 'Card-logo click' : 'an expert');
     const slackPromise = willNotify
       ? fetch(process.env.SLACK_NOTIFICATIONS_WEBHOOK_URL, {
           method: 'POST',
           signal: AbortSignal.timeout(1500),
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: `👉 *Expert link clicked* - ${clickLabel} · ${pub || '/app'}${articleTitle ? ` · _${articleTitle}_` : ''}` }),
+          body: JSON.stringify({ text: `👉 *Expert link clicked* - ${clickLabel}${destLabel}${sourceLabel} · ${pub || '/app'}${articleTitle ? ` · _${articleTitle}_` : ''}` }),
         }).catch(() => {})
       : Promise.resolve();
 
@@ -424,9 +445,9 @@ export default async function handler(req, res) {
     // don't let them count as activation.
     const isPreview = /introlinq\.com/i.test(article || '');
     await Promise.all([
-      sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, article_title, phrase, lang, timezone, device, traffic_source, ip, is_bot, click_source, notification_sent, integration, manual_channel)
+      sql`INSERT INTO click_logs (publisher, expert_id, expert_name, click_id, article_url, article_title, phrase, lang, timezone, device, traffic_source, ip, is_bot, click_source, notification_sent, integration, manual_channel, user_agent)
         VALUES (${pub}, ${expert_id || null}, ${expert_name || null}, ${click_id}, ${article || null},
-                ${title || null}, ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null}, ${ip || null}, ${isBot}, ${click_source || null}, ${willNotify}, ${integration}, ${manualChannel})
+                ${title || null}, ${phrase || null}, ${lang || null}, ${tz || null}, ${device || null}, ${source || null}, ${ip || null}, ${isBot}, ${click_source || null}, ${willNotify}, ${integration}, ${manualChannel}, ${userAgent})
       `.catch(() => {}),
       slackPromise,
       (isBot || isPreview) ? Promise.resolve() : stampActivity(sql, pub, { script: !isManualLink }),
